@@ -12,12 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { createBrowserHistory, createMemoryHistory } from "history";
 import { atom } from "jotai";
 import { atomWithLocation } from "jotai-location";
 
 import appConfig, { AppConfig } from "../config";
 
 import { Location, pathToRoute, Route, routeToPath } from "./routes";
+
+/* Use memory history for testing */
+export const history = import.meta.vitest
+  ? createMemoryHistory()
+  : createBrowserHistory();
 
 export const appConfigAtom = atom<AppConfig>(appConfig);
 
@@ -30,7 +36,41 @@ const locationToRoute = (root: string, location: Location): Route => {
   return pathToRoute(path);
 };
 
-export const locationAtom = atomWithLocation();
+const getLocation = (): Location => {
+  return {
+    pathname: history.location.pathname,
+    searchParams: new URLSearchParams(history.location.search),
+  };
+};
+
+const applyLocation = (
+  location: Location,
+  options?: { replace?: boolean },
+): void => {
+  const destination = {
+    pathname: location.pathname,
+    search: location.searchParams?.toString(),
+  };
+
+  if (options?.replace) {
+    history.replace(destination);
+  } else {
+    history.push(destination);
+  }
+};
+
+type Callback = () => void;
+type Unsubscribe = () => void;
+const subscribe = (callback: Callback): Unsubscribe =>
+  history.listen(() => {
+    callback();
+  });
+
+export const locationAtom = atomWithLocation({
+  subscribe,
+  getLocation,
+  applyLocation,
+});
 
 export const routeAtom = atom(
   (get) => {

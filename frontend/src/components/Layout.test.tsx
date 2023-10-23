@@ -15,47 +15,12 @@
 // @vitest-environment happy-dom
 
 import { render } from "@testing-library/react";
-import { Provider } from "jotai";
-import { useHydrateAtoms } from "jotai/utils";
-import { Suspense } from "react";
 import { describe, expect, it, vi, afterAll, beforeEach } from "vitest";
 
 import { currentUserIdAtom, GqlResult } from "../atoms";
-import { appConfigAtom, locationAtom } from "../routing";
+import { WithLocation } from "../test-utils/WithLocation";
 
 import Layout from "./Layout";
-
-beforeEach(async () => {
-  // For some reason, the locationAtom gets updated with `about:black` on render,
-  // so we need to set a "real" location and wait for the next tick
-  window.location.assign("https://example.com/");
-  // Wait the next tick for the location to update
-  await new Promise((resolve) => setTimeout(resolve, 0));
-});
-
-const HydrateLocation: React.FC<React.PropsWithChildren<{ path: string }>> = ({
-  children,
-  path,
-}) => {
-  useHydrateAtoms([
-    [appConfigAtom, { root: "/", graphqlEndpoint: "/graphql" }],
-    [locationAtom, { pathname: path }],
-  ]);
-  return <>{children}</>;
-};
-
-const WithLocation: React.FC<React.PropsWithChildren<{ path: string }>> = ({
-  children,
-  path,
-}) => {
-  return (
-    <Provider>
-      <Suspense>
-        <HydrateLocation path={path}>{children}</HydrateLocation>
-      </Suspense>
-    </Provider>
-  );
-};
 
 describe("<Layout />", () => {
   beforeEach(() => {
@@ -63,9 +28,11 @@ describe("<Layout />", () => {
       "abc123" as unknown as GqlResult<string | null>,
     );
   });
+
   afterAll(() => {
     vi.restoreAllMocks();
   });
+
   it("renders app navigation correctly", async () => {
     const component = render(
       <WithLocation path="/account">

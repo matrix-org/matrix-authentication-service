@@ -36,6 +36,7 @@ function i18nHotReload(): PluginOption {
     },
   };
 }
+
 export default defineConfig((env) => ({
   base: "./",
 
@@ -43,6 +44,10 @@ export default defineConfig((env) => ({
     modules: {
       localsConvention: "camelCaseOnly",
     },
+  },
+
+  define: {
+    "import.meta.vitest": "undefined",
   },
 
   build: {

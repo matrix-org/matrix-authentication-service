@@ -13,7 +13,7 @@
 // limitations under the License.
 
 export type Location = Readonly<{
-  pathname?: string;
+  pathname: string;
   searchParams?: URLSearchParams;
 }>;
 
