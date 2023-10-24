@@ -32,6 +32,7 @@ use camino::{Utf8Path, Utf8PathBuf};
 use mas_i18n::Translator;
 use mas_router::UrlBuilder;
 use mas_spa::ViteManifest;
+use minijinja::Value;
 use rand::Rng;
 use serde::Serialize;
 use thiserror::Error;
@@ -52,8 +53,8 @@ pub use self::{
         EmailVerificationPageContext, EmptyContext, ErrorContext, FormPostContext, IndexContext,
         LoginContext, LoginFormField, NotFoundContext, PolicyViolationContext, PostAuthContext,
         PostAuthContextInner, ReauthContext, ReauthFormField, RegisterContext, RegisterFormField,
-        TemplateContext, UpstreamExistingLinkContext, UpstreamRegister, UpstreamSuggestLink,
-        WithCsrf, WithLanguage, WithOptionalSession, WithSession,
+        SiteBranding, TemplateContext, UpstreamExistingLinkContext, UpstreamRegister,
+        UpstreamSuggestLink, WithCsrf, WithLanguage, WithOptionalSession, WithSession,
     },
     forms::{FieldError, FormError, FormField, FormState, ToFormState},
 };
@@ -73,6 +74,7 @@ pub struct Templates {
     environment: Arc<ArcSwap<minijinja::Environment<'static>>>,
     translator: Arc<ArcSwap<Translator>>,
     url_builder: UrlBuilder,
+    branding: SiteBranding,
     vite_manifest_path: Utf8PathBuf,
     translations_path: Utf8PathBuf,
     path: Utf8PathBuf,
@@ -151,12 +153,14 @@ impl Templates {
         url_builder: UrlBuilder,
         vite_manifest_path: Utf8PathBuf,
         translations_path: Utf8PathBuf,
+        branding: SiteBranding,
     ) -> Result<Self, TemplateLoadingError> {
         let (translator, environment) = Self::load_(
             &path,
             url_builder.clone(),
             &vite_manifest_path,
             &translations_path,
+            branding.clone(),
         )
         .await?;
         Ok(Self {
@@ -166,6 +170,7 @@ impl Templates {
             url_builder,
             vite_manifest_path,
             translations_path,
+            branding,
         })
     }
 
@@ -174,6 +179,7 @@ impl Templates {
         url_builder: UrlBuilder,
         vite_manifest_path: &Utf8Path,
         translations_path: &Utf8Path,
+        branding: SiteBranding,
     ) -> Result<(Arc<Translator>, Arc<minijinja::Environment<'static>>), TemplateLoadingError> {
         let path = path.to_owned();
         let span = tracing::Span::current();
@@ -226,6 +232,8 @@ impl Templates {
         })
         .await??;
 
+        env.add_global("branding", Value::from_struct_object(branding));
+
         self::functions::register(
             &mut env,
             url_builder,
@@ -259,6 +267,7 @@ impl Templates {
             self.url_builder.clone(),
             &self.vite_manifest_path,
             &self.translations_path,
+            self.branding.clone(),
         )
         .await?;
 
@@ -409,13 +418,20 @@ mod tests {
 
         let path = Utf8Path::new(env!("CARGO_MANIFEST_DIR")).join("../../templates/");
         let url_builder = UrlBuilder::new("https://example.com/".parse().unwrap(), None, None);
+        let branding = SiteBranding::new("example.com").with_service_name("Example");
         let vite_manifest_path =
             Utf8Path::new(env!("CARGO_MANIFEST_DIR")).join("../../frontend/dist/manifest.json");
         let translations_path =
             Utf8Path::new(env!("CARGO_MANIFEST_DIR")).join("../../translations");
-        let templates = Templates::load(path, url_builder, vite_manifest_path, translations_path)
-            .await
-            .unwrap();
+        let templates = Templates::load(
+            path,
+            url_builder,
+            vite_manifest_path,
+            translations_path,
+            branding,
+        )
+        .await
+        .unwrap();
         templates.check_render(now, &mut rng).unwrap();
     }
 }

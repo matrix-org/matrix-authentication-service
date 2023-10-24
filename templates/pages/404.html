@@ -17,21 +17,19 @@ limitations under the License.
 {% extends "base.html" %}
 
 {% block content %}
-<section class="flex-1 flex items-center justify-center">
-    <div class="w-64 flex flex-col gap-2">
-        <h1 class="text-xl font-semibold">{{ _("mas.not_found.heading") }}</h1>
-        <p>{{ _("mas.not_found.description") }}</p>
-        <div>
-            {{ button.link_text(text=_("mas.back_to_homepage"), href="/") }}
-        </div>
+<main class="w-96 flex-1 flex flex-col gap-2 justify-center">
+  <h1 class="text-xl font-semibold">{{ _("mas.not_found.heading") }}</h1>
+  <p>{{ _("mas.not_found.description") }}</p>
+  <div>
+    {{ button.link_text(text=_("mas.back_to_homepage"), href="/") }}
+  </div>
 
-        <hr />
+  <hr />
 
-        <code>
-            <pre class="whitespace-pre-wrap break-all">{{ method }} {{ uri }} {{ version }}
+  <code>
+    <pre class="whitespace-pre-wrap break-all">{{ method }} {{ uri }} {{ version }}
 
 {{ version }} 404 Not Found</pre>
-        </code>
-    </div>
-</section>
+  </code>
+</main>
 {% endblock %}

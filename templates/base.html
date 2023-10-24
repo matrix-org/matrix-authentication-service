@@ -20,7 +20,6 @@ limitations under the License.
 {% import "components/field.html" as field %}
 {% import "components/back_to_client.html" as back_to_client %}
 {% import "components/logout.html" as logout %}
-{% import "components/navbar.html" as navbar %}
 {% import "components/errors.html" as errors %}
 {% import "components/icon.html" as icon %}
 {% import "components/scope.html" as scope %}
@@ -33,7 +32,10 @@ limitations under the License.
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {{ include_asset('src/templates.css', preload=true) | indent(4) | safe }}
   </head>
-  <body class="flex flex-col min-h-screen">
-    {% block content %}{% endblock content %}
+  <body>
+    <div class="layout-container">
+      {% block content %}{% endblock content %}
+      {% include "components/footer.html" %}
+    </div>
   </body>
 </html>

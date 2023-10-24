@@ -17,64 +17,58 @@ limitations under the License.
 {% extends "base.html" %}
 
 {% block content %}
-  <section class="flex items-center justify-center flex-1">
-    <div class="grid grid-cols-1 gap-6 w-96 my-2 mx-8">
-      <form method="POST" class="grid grid-cols-1 gap-6">
-        <h1 class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 text-center font-medium text-lg">
-          {% if force_localpart %}
-            {{ _("mas.upstream_oauth2.register.create_account") }}
-          {% else %}
-            {{ _("mas.upstream_oauth2.register.choose_username") }}
-          {% endif %}
-        </h1>
+  <section class="flex-1 flex flex-col justify-center gap-6">
+    <h1 class="cpd-text-heading-xl-semibold text-center">
+      {% if force_localpart %}
+        {{ _("mas.upstream_oauth2.register.create_account") }}
+      {% else %}
+        {{ _("mas.upstream_oauth2.register.choose_username") }}
+      {% endif %}
+    </h1>
 
-        <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-        <input type="hidden" name="action" value="register" />
-        {% if force_localpart %}
-          <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-4">
-            <div class="font-medium"> {{ _("mas.upstream_oauth2.register.forced_localpart") }}</div>
-            <div class="font-mono">{{ suggested_localpart }}</div>
+    <form method="POST" class="flex flex-col gap-6">
+      <input type="hidden" name="csrf" value="{{ csrf_token }}" />
+      <input type="hidden" name="action" value="register" />
+      {% if force_localpart %}
+        <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-4">
+          <div class="font-medium"> {{ _("mas.upstream_oauth2.register.forced_localpart") }}</div>
+          <div class="font-mono">{{ suggested_localpart }}</div>
+        </div>
+      {% else %}
+        {{ field.input(label=_("common.username"), name="username", autocomplete="username", autocorrect="off", autocapitalize="none") }}
+      {% endif %}
+
+      {% if suggested_email %}
+        <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-4">
+          <div class="font-medium">
+            {% if force_email %}
+              {{ _("mas.upstream_oauth2.register.forced_email") }}
+            {% else %}
+              <input type="checkbox" name="import_email" id="import_email" checked="checked" />
+              <label for="import_email">{{ _("mas.upstream_oauth2.register.suggested_email") }}</label>
+            {% endif %}
           </div>
-        {% else %}
-          {{ field.input(label=_("common.username"), name="username", autocomplete="username", autocorrect="off", autocapitalize="none") }}
-        {% endif %}
+          <div class="font-mono">{{ suggested_email }}</div>
+        </div>
+      {% endif %}
 
-        {% if suggested_email %}
-          <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-4">
-            <div class="font-medium">
-              {% if force_email %}
-                {{ _("mas.upstream_oauth2.register.forced_email") }}
-              {% else %}
-                <input type="checkbox" name="import_email" id="import_email" checked="checked" />
-                <label for="import_email">{{ _("mas.upstream_oauth2.register.suggested_email") }}</label>
-              {% endif %}
-            </div>
-            <div class="font-mono">{{ suggested_email }}</div>
+      {% if suggested_display_name %}
+        <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-4">
+          <div class="font-medium">
+            {% if force_display_name %}
+              {{ _("mas.upstream_oauth2.register.forced_display_name") }}
+            {% else %}
+            <input type="checkbox" name="import_display_name" id="import_display_name" checked="checked" />
+            <label for="import_display_name">{{ _("mas.upstream_oauth2.register.suggested_display_name") }}</label>
+            {% endif %}
           </div>
-        {% endif %}
+          <div class="font-mono">{{ suggested_display_name }}</div>
+        </div>
+      {% endif %}
 
-        {% if suggested_display_name %}
-          <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-4">
-            <div class="font-medium">
-              {% if force_display_name %}
-                {{ _("mas.upstream_oauth2.register.forced_display_name") }}
-              {% else %}
-              <input type="checkbox" name="import_display_name" id="import_display_name" checked="checked" />
-              <label for="import_display_name">{{ _("mas.upstream_oauth2.register.suggested_display_name") }}</label>
-              {% endif %}
-            </div>
-            <div class="font-mono">{{ suggested_display_name }}</div>
-          </div>
-        {% endif %}
-
-        {{ button.button(text=_("action.create_account")) }}
-      </form>
-      <div class="flex items-center">
-        <hr class="flex-1" />
-        <div class="mx-2">{{ _("mas.or_separator") }}</div>
-        <hr class="flex-1" />
-      </div>
-      {{ button.link_outline(text=_("mas.upstream_oauth2.register.link_existing"), href=login_link) }}
-    </div>
+      {{ button.button(text=_("action.create_account")) }}
+    </form>
+    {{ field.separator() }}
+    {{ button.link_outline(text=_("mas.upstream_oauth2.register.link_existing"), href=login_link) }}
   </section>
 {% endblock content %}

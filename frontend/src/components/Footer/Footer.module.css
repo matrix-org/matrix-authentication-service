@@ -13,27 +13,28 @@
  * limitations under the License.
  */
 
-.container {
-    box-sizing: border-box;
-    max-width: calc(378px + var(--cpd-space-6x) * 2);
-    margin: 0 auto;
-    padding: var(--cpd-space-6x);
-}
+.legal-footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cpd-space-2x);
 
-.footer {
-    margin-top: var(--cpd-space-6x);
-    padding: var(--cpd-space-6x) 0;
-    border-top: 1px solid var(--cpd-color-border-interactive-secondary);
+  font: var(--cpd-font-body-sm-regular);
+  letter-spacing: var(--cpd-font-letter-spacing-body-sm);
+
+  & nav {
+    display: flex;
+    gap: var(--cpd-space-2x);
+    align-items: center;
+    justify-content: center;
     text-align: center;
-}
 
-.footer-links {
-    margin: var(--cpd-space-4x) 0;
-
-    & > ul {
-        display: flex;
-        flex-direction: row;
-        justify-content: center;
-        gap: var(--cpd-space-2x);
+    & .separator {
+      color: var(--cpd-color-text-secondary);
     }
+  }
+
+  & .imprint {
+    color: var(--cpd-color-text-secondary);
+    text-align: center;
+  }
 }

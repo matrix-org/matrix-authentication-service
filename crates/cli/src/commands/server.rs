@@ -93,7 +93,13 @@ impl Options {
         );
 
         // Load and compile the templates
-        let templates = templates_from_config(&config.templates, &url_builder).await?;
+        let templates = templates_from_config(
+            &config.templates,
+            &config.branding,
+            &url_builder,
+            &config.matrix.homeserver,
+        )
+        .await?;
 
         let http_client_factory = HttpClientFactory::new().await?;
 

@@ -16,14 +16,14 @@ use std::time::Duration;
 
 use anyhow::Context;
 use mas_config::{
-    DatabaseConfig, DatabaseConnectConfig, EmailConfig, EmailSmtpMode, EmailTransportConfig,
-    PasswordsConfig, PolicyConfig, TemplatesConfig,
+    BrandingConfig, DatabaseConfig, DatabaseConnectConfig, EmailConfig, EmailSmtpMode,
+    EmailTransportConfig, PasswordsConfig, PolicyConfig, TemplatesConfig,
 };
 use mas_email::{MailTransport, Mailer};
 use mas_handlers::{passwords::PasswordManager, ActivityTracker};
 use mas_policy::PolicyFactory;
 use mas_router::UrlBuilder;
-use mas_templates::{TemplateLoadingError, Templates};
+use mas_templates::{SiteBranding, TemplateLoadingError, Templates};
 use sqlx::{
     postgres::{PgConnectOptions, PgPoolOptions},
     ConnectOptions, PgConnection, PgPool,
@@ -116,13 +116,34 @@ pub async fn policy_factory_from_config(
 
 pub async fn templates_from_config(
     config: &TemplatesConfig,
+    branding: &BrandingConfig,
     url_builder: &UrlBuilder,
+    server_name: &str,
 ) -> Result<Templates, TemplateLoadingError> {
+    let mut site_branding = SiteBranding::new(server_name);
+
+    if let Some(service_name) = branding.service_name.as_deref() {
+        site_branding = site_branding.with_service_name(service_name);
+    }
+
+    if let Some(policy_uri) = &branding.policy_uri {
+        site_branding = site_branding.with_policy_uri(policy_uri.as_str());
+    }
+
+    if let Some(tos_uri) = &branding.tos_uri {
+        site_branding = site_branding.with_tos_uri(tos_uri.as_str());
+    }
+
+    if let Some(imprint) = branding.imprint.as_deref() {
+        site_branding = site_branding.with_imprint(imprint);
+    }
+
     Templates::load(
         config.path.clone(),
         url_builder.clone(),
         config.assets_manifest.clone(),
         config.translations_path.clone(),
+        site_branding,
     )
     .await
 }

@@ -30,9 +30,7 @@ struct AcceptLanguagePart {
 
 impl PartialOrd for AcceptLanguagePart {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        // When comparing two AcceptLanguage structs, we only consider the
-        // quality, in reverse.
-        Reverse(self.quality).partial_cmp(&Reverse(other.quality))
+        Some(self.cmp(other))
     }
 }
 

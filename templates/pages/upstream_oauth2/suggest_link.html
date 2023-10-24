@@ -17,10 +17,8 @@ limitations under the License.
 {% extends "base.html" %}
 
 {% block content %}
-  {{ navbar.top() }}
-  <section class="flex items-center justify-center flex-1">
-    <div class="grid grid-cols-1 gap-6 w-96 my-2 mx-8">
-      <h1 class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 flex flex-col font-medium text-lg text-center">
+  <section class="flex-1 flex flex-col gap-6 justify-center">
+      <h1 class="cpd-text-heading-xl-semibold text-center">
         {{ _("mas.upstream_oauth2.suggest_link.heading") }}
       </h1>
 
@@ -31,13 +29,8 @@ limitations under the License.
         {{ button.button(text=_("mas.upstream_oauth2.suggest_link.action"), class="flex-1") }}
       </form>
 
-      <div class="flex items-center">
-        <hr class="flex-1" />
-        <div class="mx-2">{{ _("mas.or_separator") }}</div>
-        <hr class="flex-1" />
-      </div>
+      {{ field.separator() }}
 
       {{ logout.button(text=_("action.sign_out"), csrf_token=csrf_token, post_logout_action=post_logout_action) }}
-    </div>
   </section>
 {% endblock content %}

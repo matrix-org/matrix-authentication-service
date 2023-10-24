@@ -54,8 +54,8 @@ impl SynapseConnection {
             .uri(
                 self.endpoint
                     .join(url)
-                    .map(Url::into)
-                    .unwrap_or(String::new()),
+                    .map(String::from)
+                    .unwrap_or_default(),
             )
             .header(AUTHORIZATION, format!("Bearer {}", self.access_token))
     }

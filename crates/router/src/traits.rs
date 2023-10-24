@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::borrow::{Borrow, Cow};
+use std::borrow::Cow;
 
 use serde::Serialize;
 use url::Url;
@@ -41,7 +41,7 @@ pub trait Route {
     fn absolute_url(&self, base: &Url) -> Url {
         let relative = self.path_and_query();
         let relative = relative.trim_start_matches('/');
-        base.join(relative.borrow()).unwrap()
+        base.join(relative).unwrap()
     }
 }
 

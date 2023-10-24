@@ -1,0 +1,41 @@
+{#
+Copyright 2023 The Matrix.org Foundation C.I.C.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+#}
+
+<footer class="legal-footer">
+  {%- if branding.policy_uri or branding.tos_uri -%}
+    <nav>
+      {%- if branding.policy_uri -%}
+        <a href="{{ branding.policy_uri }}" referrerpolicy="no-referrer" title="{{ _('branding.privacy_policy.alt') }}" class="cpd-link" data-kind="primary">
+          {{- _("branding.privacy_policy.link") -}}
+        </a>
+      {%- endif -%}
+
+      {%- if branding.policy_uri and branding.tos_uri -%}
+        <div class="separator" aria-hidden="true">•</div>
+      {%- endif -%}
+
+      {%- if branding.tos_uri -%}
+        <a href="{{ branding.tos_uri }}" referrerpolicy="no-referrer" title="{{ _('branding.terms_and_conditions.alt') }}" class="cpd-link" data-kind="primary">
+          {{- _("branding.terms_and_conditions.link") -}}
+        </a>
+      {%- endif -%}
+    </nav>
+  {%- endif -%}
+
+  {%- if branding.imprint -%}
+    <p class="imprint">{{ branding.imprint }}</p>
+  {%- endif -%}
+</footer>

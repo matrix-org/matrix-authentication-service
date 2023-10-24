@@ -17,12 +17,13 @@ limitations under the License.
 {% extends "base.html" %}
 
 {% block content %}
-  <section class="flex items-center justify-center flex-1">
-    <form method="POST" class="grid grid-cols-1 gap-6 w-96 my-2 mx-8">
-      <div class="text-center">
-        <h1 class="text-lg text-center font-medium">{{ _("mas.register.create_account.heading") }}</h1>
-        <p>{{ _("mas.register.create_account.description") }}</p>
-      </div>
+  <section class="flex-1 flex flex-col gap-6 justify-center">
+    <div class="text-center">
+      <h1 class="text-lg text-center font-medium">{{ _("mas.register.create_account.heading") }}</h1>
+      <p>{{ _("mas.register.create_account.description") }}</p>
+    </div>
+
+    <form method="POST" class="flex flex-col gap-6">
       {% if form.errors is not empty %}
         {% for error in form.errors %}
           <div class="text-critical font-medium">
@@ -36,29 +37,23 @@ limitations under the License.
       {{ field.input(label=_("common.email_address"), name="email", type="email", form_state=form, autocomplete="email") }}
       {{ field.input(label=_("common.password"), name="password", type="password", form_state=form, autocomplete="new-password") }}
       {{ field.input(label=_("common.password_confirm"), name="password_confirm", type="password", form_state=form, autocomplete="new-password") }}
-
-      {% if next and next.kind == "continue_authorization_grant" %}
-        <div class="grid grid-cols-2 gap-4">
-          {{ back_to_client.link(
-            text=_("action.cancel"),
-            kind="destructive",
-            uri=next.grant.redirect_uri,
-            mode=next.grant.response_mode,
-            params=dict(error="access_denied", state=next.grant.state)
-          ) }}
-          {{ button.button(text=_("action.continue")) }}
-        </div>
-      {% else %}
-        <div class="grid grid-cols-1 gap-4">    
-          {{ button.button(text=_("action.continue")) }}
-        </div>
-      {% endif %}
-      <div class="text-center mt-4">
-        {{ _("mas.register.call_to_login") }}
-        {% set params = next["params"] | default({}) | to_params(prefix="?") %}
-        {{ button.link_text(text=_("mas.register.sign_in_instead"), href="/login" ~ params) }}
-      </div>
+      {{ button.button(text=_("action.continue")) }}
     </form>
-  </section>
 
+    {% if next and next.kind == "continue_authorization_grant" %}
+        {{ back_to_client.link(
+          text=_("action.cancel"),
+          kind="destructive",
+          uri=next.grant.redirect_uri,
+          mode=next.grant.response_mode,
+          params=dict(error="access_denied", state=next.grant.state)
+        ) }}
+    {% endif %}
+
+    <div class="text-center mt-4">
+      {{ _("mas.register.call_to_login") }}
+      {% set params = next["params"] | default({}) | to_params(prefix="?") %}
+      {{ button.link_text(text=_("mas.register.sign_in_instead"), href="/login" ~ params) }}
+    </div>
+  </section>
 {% endblock content %}
