@@ -13,6 +13,14 @@
  * limitations under the License.
  */
 
-.alert > * {
-  box-sizing: content-box;
+.layout-container {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+
+  max-width: calc(420px + var(--cpd-space-6x) * 2);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: var(--cpd-space-6x);
+  gap: var(--cpd-space-6x);
 }

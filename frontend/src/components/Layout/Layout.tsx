@@ -15,19 +15,21 @@
 import { useAtomValue } from "jotai";
 import { useTranslation } from "react-i18next";
 
-import { currentUserIdAtom } from "../atoms";
-import { isErr, unwrapErr, unwrapOk } from "../result";
-import { routeAtom } from "../routing";
+import { currentUserIdAtom } from "../../atoms";
+import { isErr, unwrapErr, unwrapOk } from "../../result";
+import { appConfigAtom, routeAtom } from "../../routing";
+import Footer from "../Footer";
+import GraphQLError from "../GraphQLError";
+import NavBar from "../NavBar";
+import NavItem from "../NavItem";
+import NotLoggedIn from "../NotLoggedIn";
+import UserGreeting from "../UserGreeting";
 
-import GraphQLError from "./GraphQLError";
 import styles from "./Layout.module.css";
-import NavBar from "./NavBar";
-import NavItem from "./NavItem";
-import NotLoggedIn from "./NotLoggedIn";
-import UserGreeting from "./UserGreeting";
 
 const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const route = useAtomValue(routeAtom);
+  const appConfig = useAtomValue(appConfigAtom);
   const result = useAtomValue(currentUserIdAtom);
   const { t } = useTranslation();
 
@@ -45,7 +47,7 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     );
 
   return (
-    <div className={styles.container}>
+    <div className={styles.layoutContainer}>
       {shouldHideNavBar ? null : (
         <>
           <UserGreeting userId={userId} />
@@ -63,18 +65,11 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
 
       <main>{children}</main>
 
-      {/* TODO: the footer needs to be reworked to show configurable info not hardcoded links: https://github.com/matrix-org/matrix-authentication-service/issues/1675 */}
-      {/* <footer className={styles.footer}>
-        <nav className={styles.footerLinks}>
-          <ul>
-            <Link href="https://matrix.org/legal/copyright-notice">Info</Link>
-            <Link href="https://matrix.org/legal/privacy-notice">Privacy</Link>
-            <Link href="https://matrix.org/legal/terms-and-conditions">
-              Terms & Conditions
-            </Link>
-          </ul>
-        </nav>
-      </footer> */}
+      <Footer
+        imprint={appConfig.branding?.imprint}
+        tosUri={appConfig.branding?.tosUri}
+        policyUri={appConfig.branding?.policyUri}
+      />
     </div>
   );
 };

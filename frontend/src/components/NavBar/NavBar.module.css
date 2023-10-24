@@ -15,7 +15,6 @@
 
 .nav-bar {
     border-bottom: var(--cpd-border-width-1) solid var(--cpd-color-gray-400);
-    margin: var(--cpd-space-6x) 0;
     padding: 0 var(--cpd-space-10x);
 }
 

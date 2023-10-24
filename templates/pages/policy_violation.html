@@ -17,37 +17,33 @@ limitations under the License.
 {% extends "base.html" %}
 
 {% block content %}
-  <section class="flex items-center justify-center flex-1">
-    <div class="w-96 my-2 mx-8">
-      <div class="grid grid-cols-1 gap-6">
-        <h1 class="text-xl font-semibold">{{ _("mas.policy_violation.heading") }}</h1>
-        <p>{{ _("mas.policy_violation.description") }}</p>
-        <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 flex items-center">
-          <div class="bg-white rounded w-16 h-16 overflow-hidden mx-auto">
-            {% if client.logo_uri %}
-              <img referrerpolicy="no-referrer" class="w-16 h-16" src="{{ client.logo_uri }}" />
-            {% endif %}
-          </div>
-          <h1 class="text-lg text-center font-medium flex-1"><a target="_blank" href="{{ client.client_uri }}" class="cpd-link" data-kind="primary">{{ client.client_name | default(client.client_id) }}</a></h1>
-        </div>
-
-        <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 flex items-center">
-          <div class="text-center flex-1">
-            {{ _("mas.policy_violation.logged_as", username=current_session.user.username) }}
-          </div>
-
-          {{ logout.button(text=_("action.sign_out"), csrf_token=csrf_token, post_logout_action=action) }}
-        </div>
-
-        {{ back_to_client.link(
-          text=_("action.cancel"),
-          kind="destructive",
-          uri=grant.redirect_uri,
-          mode=grant.response_mode,
-          params=dict(error="access_denied", state=grant.state)
-        ) }}
+  <section class="flex-1 flex flex-col gap-10 justify-center">
+    <h1 class="cpd-text-heading-xl-semibold">{{ _("mas.policy_violation.heading") }}</h1>
+    <p>{{ _("mas.policy_violation.description") }}</p>
+    <div class="flex items-center justify-center gap-4">
+      <div class="bg-white rounded w-16 h-16 overflow-hidden">
+        {% if client.logo_uri %}
+          <img referrerpolicy="no-referrer" class="w-16 h-16" src="{{ client.logo_uri }}" />
+        {% endif %}
       </div>
+      <a target="_blank" href="{{ client.client_uri }}" class="cpd-link" data-kind="primary">{{ client.client_name | default(client.client_id) }}</a>
     </div>
+
+    <div class="flex gap-4 justify-center items-center">
+      <p>
+        {{ _("mas.policy_violation.logged_as", username=current_session.user.username) }}
+      </p>
+
+      {{ logout.button(text=_("action.sign_out"), csrf_token=csrf_token, post_logout_action=action, as_link=True) }}
+    </div>
+
+    {{ back_to_client.link(
+      text=_("action.cancel"),
+      kind="destructive",
+      uri=grant.redirect_uri,
+      mode=grant.response_mode,
+      params=dict(error="access_denied", state=grant.state)
+    ) }}
   </section>
 {% endblock content %}
 

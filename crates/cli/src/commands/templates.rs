@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use clap::Parser;
-use mas_config::TemplatesConfig;
+use mas_config::{BrandingConfig, MatrixConfig, TemplatesConfig};
 use mas_storage::{Clock, SystemClock};
 use rand::SeedableRng;
 use tracing::info_span;
@@ -39,13 +39,22 @@ impl Options {
             SC::Check => {
                 let _span = info_span!("cli.templates.check").entered();
 
-                let config: TemplatesConfig = root.load_config()?;
+                let template_config: TemplatesConfig = root.load_config()?;
+                let branding_config: BrandingConfig = root.load_config()?;
+                let matrix_config: MatrixConfig = root.load_config()?;
+
                 let clock = SystemClock::default();
                 // XXX: we should disallow SeedableRng::from_entropy
                 let mut rng = rand_chacha::ChaChaRng::from_entropy();
                 let url_builder =
                     mas_router::UrlBuilder::new("https://example.com/".parse()?, None, None);
-                let templates = templates_from_config(&config, &url_builder).await?;
+                let templates = templates_from_config(
+                    &template_config,
+                    &branding_config,
+                    &url_builder,
+                    &matrix_config.homeserver,
+                )
+                .await?;
                 templates.check_render(clock.now(), &mut rng)?;
 
                 Ok(())

@@ -8,6 +8,21 @@
     "secrets"
   ],
   "properties": {
+    "branding": {
+      "description": "Configuration section for tweaking the branding of the service",
+      "default": {
+        "imprint": null,
+        "logo_uri": null,
+        "policy_uri": null,
+        "service_name": null,
+        "tos_uri": null
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/BrandingConfig"
+        }
+      ]
+    },
     "clients": {
       "description": "List of OAuth 2.0/OIDC clients config",
       "default": [],
@@ -298,6 +313,35 @@
           }
         }
       ]
+    },
+    "BrandingConfig": {
+      "description": "Configuration section for tweaking the branding of the service",
+      "type": "object",
+      "properties": {
+        "imprint": {
+          "description": "Legal imprint, displayed in the footer in the footer of web pages and emails.",
+          "type": "string"
+        },
+        "logo_uri": {
+          "description": "Logo displayed in some web pages.",
+          "type": "string",
+          "format": "uri"
+        },
+        "policy_uri": {
+          "description": "Link to a privacy policy, displayed in the footer of web pages and emails. It is also advertised to clients through the `op_policy_uri` OIDC provider metadata.",
+          "type": "string",
+          "format": "uri"
+        },
+        "service_name": {
+          "description": "A human-readable name. Defaults to the server's address.",
+          "type": "string"
+        },
+        "tos_uri": {
+          "description": "Link to a terms of service document, displayed in the footer of web pages and emails. It is also advertised to clients through the `op_tos_uri` OIDC provider metadata.",
+          "type": "string",
+          "format": "uri"
+        }
+      }
     },
     "ClaimsImports": {
       "description": "How claims should be imported",

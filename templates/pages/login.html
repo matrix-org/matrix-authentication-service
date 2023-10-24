@@ -17,21 +17,21 @@ limitations under the License.
 {% extends "base.html" %}
 
 {% block content %}
-  <section class="flex items-center justify-center flex-1">
-    <form method="POST" class="grid grid-cols-1 gap-6 w-96 my-2 mx-8">
-      {% if not password_disabled %}
-        {% if next and next.kind == "link_upstream" %}
-          <div class="text-center">
-            <h1 class="text-lg text-center font-medium">{{ _("mas.login.link.headline") }}</h1>
-            <p class="text-sm">{{ _("mas.login.link.description", provider=next.provider.issuer) }}</p>
-          </div>
-        {% else %}
-          <div class="text-center">
-            <h1 class="text-lg text-center font-medium">{{ _("mas.login.headline") }}</h1>
-            <p>{{ _("mas.login.description") }}</p>
-          </div>
-        {% endif %}
+  <div class="flex-1 flex flex-col gap-6 justify-center">
+    {% if not password_disabled %}
+      {% if next and next.kind == "link_upstream" %}
+        <div class="text-center">
+          <h1 class="text-lg text-center font-medium">{{ _("mas.login.link.headline") }}</h1>
+          <p class="text-sm">{{ _("mas.login.link.description", provider=next.provider.issuer) }}</p>
+        </div>
+      {% else %}
+        <div class="text-center">
+          <h1 class="text-lg text-center font-medium">{{ _("mas.login.headline") }}</h1>
+          <p>{{ _("mas.login.description") }}</p>
+        </div>
+      {% endif %}
 
+      <form method="POST" class="flex flex-col gap-6">
         {% if form.errors is not empty %}
           {% for error in form.errors %}
             <div class="text-critical font-medium">
@@ -43,52 +43,43 @@ limitations under the License.
         <input type="hidden" name="csrf" value="{{ csrf_token }}" />
         {{ field.input(label=_("common.username"), name="username", form_state=form, autocomplete="username", autocorrect="off", autocapitalize="none") }}
         {{ field.input(label=_("common.password"), name="password", type="password", form_state=form, autocomplete="password") }}
-        {% if next and next.kind == "continue_authorization_grant" %}
-          <div class="grid grid-cols-2 gap-4">
-            {{ back_to_client.link(
-              text=_("action.cancel"),
-              kind="destructive",
-              uri=next.grant.redirect_uri,
-              mode=next.grant.response_mode,
-              params=dict(error="access_denied", state=next.grant.state)
-            ) }}
-            {{ button.button(text=_("action.continue")) }}
-          </div>
-        {% else %}
-          <div class="grid grid-cols-1 gap-4">
-            {{ button.button(text=_("action.continue")) }}
-          </div>
-        {% endif %}
+        {{ button.button(text=_("action.continue")) }}
+      </form>
 
-        {% if not next or next.kind != "link_upstream" %}
-          <div class="text-center mt-4">
-            {{ _("mas.login.call_to_register") }}
-            {% set params = next["params"] | default({}) | to_params(prefix="?") %}
-            {{ button.link_text(text=_("action.create_account"), href="/register" ~ params) }}
-          </div>
-        {% endif %}
-      {% endif %}
-
-      {% if providers %}
-        {% if not password_disabled %}
-          <div class="flex items-center">
-            <hr class="flex-1" />
-            <div class="mx-2">{{ _("mas.or_separator") }}</div>
-            <hr class="flex-1" />
-          </div>
-        {% endif %}
-
-        {% for provider in providers %}
+      {% if not next or next.kind != "link_upstream" %}
+        <div class="text-center mt-4">
+          {{ _("mas.login.call_to_register") }}
           {% set params = next["params"] | default({}) | to_params(prefix="?") %}
-          {{ button.link(text=_("mas.login.continue_with_provider", provider=provider.issuer), href="/upstream/authorize/" ~ provider.id ~ params) }}
-        {% endfor %}
-      {% endif %}
-
-      {% if not providers and password_disabled %}
-        <div class="text-center">
-          {{ _("mas.login.no_login_methods") }}
+          {{ button.link_text(text=_("action.create_account"), href="/register" ~ params) }}
         </div>
       {% endif %}
-    </form>
-  </section>
+    {% endif %}
+
+    {% if providers %}
+      {% if not password_disabled %}
+        {{ field.separator() }}
+      {% endif %}
+
+      {% for provider in providers %}
+        {% set params = next["params"] | default({}) | to_params(prefix="?") %}
+        <a class="cpd-button" data-kind="secondary" data-size="lg" href="{{ ('/upstream/authorize/' ~ provider.id ~ params) | prefix_url }}">{{ _("mas.login.continue_with_provider", provider=provider.issuer | simplify_url) }}</a>
+      {% endfor %}
+    {% endif %}
+
+    {% if not providers and password_disabled %}
+      <div class="text-center">
+        {{ _("mas.login.no_login_methods") }}
+      </div>
+    {% endif %}
+
+    {% if next and next.kind == "continue_authorization_grant" %}
+      {{ back_to_client.link(
+        text=_("action.cancel"),
+        kind="destructive",
+        uri=next.grant.redirect_uri,
+        mode=next.grant.response_mode,
+        params=dict(error="access_denied", state=next.grant.state)
+      ) }}
+    {% endif %}
+  </div>
 {% endblock content %}

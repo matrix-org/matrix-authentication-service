@@ -14,6 +14,8 @@
 
 //! Contexts used in templates
 
+mod branding;
+
 use std::fmt::Formatter;
 
 use chrono::{DateTime, Utc};
@@ -29,6 +31,7 @@ use serde::{ser::SerializeStruct, Deserialize, Serialize};
 use ulid::Ulid;
 use url::Url;
 
+pub use self::branding::SiteBranding;
 use crate::{FormField, FormState};
 
 /// Helper trait to construct context wrappers

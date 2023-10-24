@@ -2,68 +2,90 @@
   "action": {
     "cancel": "Cancel",
     "@cancel": {
-      "context": "pages/consent.html:63:13-31, pages/login.html:49:19-37, pages/policy_violation.html:43:15-33, pages/register.html:43:17-35"
+      "context": "pages/consent.html:62:11-29, pages/login.html:77:13-31, pages/policy_violation.html:41:11-29, pages/register.html:45:15-33"
     },
     "continue": "Continue",
     "@continue": {
-      "context": "pages/account/emails/add.html:37:28-48, pages/consent.html:59:30-50, pages/login.html:55:34-54, pages/login.html:59:34-54, pages/reauth.html:39:34-54, pages/reauth.html:43:34-54, pages/register.html:49:32-52, pages/register.html:53:32-52, pages/sso.html:42:30-50"
+      "context": "pages/account/emails/add.html:33:26-46, pages/consent.html:58:28-48, pages/login.html:46:30-50, pages/reauth.html:30:28-48, pages/register.html:40:28-48, pages/sso.html:41:28-48"
     },
     "create_account": "Create Account",
     "@create_account": {
-      "context": "pages/login.html:67:37-63, pages/upstream_oauth2/do_register.html:70:30-56"
+      "context": "pages/login.html:53:35-61, pages/upstream_oauth2/do_register.html:69:28-54"
     },
     "sign_in": "Sign in",
     "@sign_in": {
-      "context": "components/navbar.html:30:28-47"
+      "context": "pages/index.html:34:26-45"
     },
     "sign_out": "Sign out",
     "@sign_out": {
-      "context": "components/navbar.html:28:30-50, pages/consent.html:72:30-50, pages/policy_violation.html:39:32-52, pages/sso.html:47:30-50, pages/upstream_oauth2/link_mismatch.html:27:33-53, pages/upstream_oauth2/suggest_link.html:40:28-48"
+      "context": "pages/consent.html:71:28-48, pages/index.html:32:28-48, pages/policy_violation.html:37:28-48, pages/sso.html:46:28-48, pages/upstream_oauth2/link_mismatch.html:25:26-46, pages/upstream_oauth2/suggest_link.html:34:28-48"
     },
     "submit": "Submit",
     "@submit": {
-      "context": "pages/account/emails/verify.html:38:28-46"
+      "context": "pages/account/emails/verify.html:36:26-44"
     }
   },
   "app": {
     "human_name": "Matrix Authentication Service",
     "@human_name": {
-      "context": "pages/index.html:23:63-82",
+      "context": "pages/index.html:21:48-67",
       "description": "Human readable name of the application"
     },
     "name": "matrix-authentication-service",
     "@name": {
-      "context": "app.html:25:14-27, base.html:32:31-44",
+      "context": "app.html:25:14-27, base.html:31:31-44",
       "description": "Name of the application"
     },
     "technical_description": "OpenID Connect discovery document: <a class=\"cpd-link\" data-kind=\"primary\" href=\"%(discovery_url)s\">%(discovery_url)s</a>",
     "@technical_description": {
-      "context": "pages/index.html:25:11-70",
+      "context": "pages/index.html:23:9-68",
       "description": "Introduction text displayed on the home page"
+    }
+  },
+  "branding": {
+    "privacy_policy": {
+      "alt": "Link to the service privacy policy",
+      "@alt": {
+        "context": "components/footer.html:21:83-115"
+      },
+      "link": "Privacy Policy",
+      "@link": {
+        "context": "components/footer.html:22:14-47"
+      }
+    },
+    "terms_and_conditions": {
+      "alt": "Link to the service terms and conditions",
+      "@alt": {
+        "context": "components/footer.html:31:80-118"
+      },
+      "link": "Terms & Conditions",
+      "@link": {
+        "context": "components/footer.html:32:14-53"
+      }
     }
   },
   "common": {
     "email_address": "Email address",
     "@email_address": {
-      "context": "pages/account/emails/add.html:36:27-52, pages/register.html:36:27-52"
+      "context": "pages/account/emails/add.html:32:25-50, pages/register.html:37:27-52"
     },
     "password": "Password",
     "@password": {
-      "context": "pages/login.html:45:29-49, pages/reauth.html:29:29-49, pages/register.html:37:27-47"
+      "context": "pages/login.html:45:29-49, pages/reauth.html:29:27-47, pages/register.html:38:27-47"
     },
     "password_confirm": "Confirm password",
     "@password_confirm": {
-      "context": "pages/register.html:38:27-55"
+      "context": "pages/register.html:39:27-55"
     },
     "username": "Username",
     "@username": {
-      "context": "pages/login.html:44:29-49, pages/register.html:35:27-47, pages/upstream_oauth2/do_register.html:39:31-51"
+      "context": "pages/login.html:44:29-49, pages/register.html:36:27-47, pages/upstream_oauth2/do_register.html:38:29-49"
     }
   },
   "error": {
     "unexpected": "Unexpected error",
     "@unexpected": {
-      "context": "pages/error.html:25:41-62",
+      "context": "pages/error.html:24:41-62",
       "description": "Error message displayed when an unexpected error occurs"
     }
   },
@@ -71,38 +93,38 @@
     "add_email": {
       "heading": "Add an email address",
       "@heading": {
-        "context": "pages/account/emails/add.html:24:55-81",
+        "context": "pages/account/emails/add.html:21:48-74",
         "description": "Heading for the page to add an email address"
       }
     },
     "back_to_homepage": "Go back to the homepage",
     "@back_to_homepage": {
-      "context": "pages/404.html:25:37-62"
+      "context": "pages/404.html:24:29-54"
     },
     "change_password": {
       "change": "Change password",
       "@change": {
-        "context": "pages/account/password.html:28:28-59",
+        "context": "pages/account/password.html:26:26-57",
         "description": "Button to change the user's password"
       },
       "confirm": "Confirm password",
       "@confirm": {
-        "context": "pages/account/password.html:27:27-59",
+        "context": "pages/account/password.html:25:25-57",
         "description": "Confirmation field for the new password"
       },
       "current": "Current password",
       "@current": {
-        "context": "pages/account/password.html:25:27-59",
+        "context": "pages/account/password.html:23:25-57",
         "description": "Field for the user's current password"
       },
       "heading": "Change my password",
       "@heading": {
-        "context": "pages/account/password.html:23:57-89",
+        "context": "pages/account/password.html:21:48-80",
         "description": "Heading on the change password page"
       },
       "new": "New password",
       "@new": {
-        "context": "pages/account/password.html:26:27-55",
+        "context": "pages/account/password.html:24:25-53",
         "description": "Field for the user's new password"
       }
     },
@@ -155,106 +177,106 @@
     "login": {
       "call_to_register": "Don't have an account yet?",
       "@call_to_register": {
-        "context": "pages/login.html:65:15-46"
+        "context": "pages/login.html:51:13-44"
       },
       "continue_with_provider": "Continue with %(provider)s",
       "@continue_with_provider": {
-        "context": "pages/login.html:83:30-93",
+        "context": "pages/login.html:65:144-222",
         "description": "Button to log in with an upstream provider"
       },
       "description": "Please sign in to continue:",
       "@description": {
-        "context": "pages/login.html:31:18-44"
+        "context": "pages/login.html:30:16-42"
       },
       "headline": "Sign in",
       "@headline": {
-        "context": "pages/login.html:30:59-82"
+        "context": "pages/login.html:29:57-80"
       },
       "link": {
         "description": "Linking your <span class=\"break-keep text-links\">%(provider)s</span> account",
         "@description": {
-          "context": "pages/login.html:26:34-96"
+          "context": "pages/login.html:25:32-94"
         },
         "headline": "Sign in to link",
         "@headline": {
-          "context": "pages/login.html:25:59-87"
+          "context": "pages/login.html:24:57-85"
         }
       },
       "no_login_methods": "No login methods available.",
       "@no_login_methods": {
-        "context": "pages/login.html:89:13-44"
+        "context": "pages/login.html:71:11-42"
       }
     },
     "navbar": {
       "my_account": "My account",
       "@my_account": {
-        "context": "components/navbar.html:27:28-54"
+        "context": "pages/index.html:31:26-52"
       },
       "register": "Create an account",
       "@register": {
-        "context": "components/navbar.html:31:36-60"
+        "context": "pages/index.html:35:34-58"
       },
       "signed_in_as": "Signed in as <span class=\"font-semibold\">%(username)s</span>.",
       "@signed_in_as": {
-        "context": "components/navbar.html:24:13-81",
+        "context": "pages/index.html:28:11-79",
         "description": "Displayed in the navbar when the user is signed in"
       }
     },
     "not_found": {
       "description": "The page you were looking for doesn't exist or has been moved",
       "@description": {
-        "context": "pages/404.html:23:14-44"
+        "context": "pages/404.html:22:8-38"
       },
       "heading": "Page not found",
       "@heading": {
-        "context": "pages/404.html:22:45-71"
+        "context": "pages/404.html:21:39-65"
       }
     },
     "not_you": "Not %(username)s?",
     "@not_you": {
-      "context": "pages/consent.html:71:11-67, pages/sso.html:46:11-67",
+      "context": "pages/consent.html:70:9-65, pages/sso.html:45:9-65",
       "description": "Suggestions for the user to log in as a different user"
     },
     "or_separator": "Or",
     "@or_separator": {
-      "context": "pages/login.html:76:33-54, pages/upstream_oauth2/do_register.html:74:29-50, pages/upstream_oauth2/suggest_link.html:36:29-50",
+      "context": "components/field.html:62:10-31",
       "description": "Separator between the login methods"
     },
     "policy_violation": {
       "description": "This might be because of the client which authored the request, the currently logged in user, or the request itself.",
       "@description": {
-        "context": "pages/policy_violation.html:24:14-51",
+        "context": "pages/policy_violation.html:22:10-47",
         "description": "Displayed when an authorization request is denied by the policy"
       },
       "heading": "The authorization request was denied the policy enforced by this service",
       "@heading": {
-        "context": "pages/policy_violation.html:23:45-78",
+        "context": "pages/policy_violation.html:21:48-81",
         "description": "Displayed when an authorization request is denied by the policy"
       },
       "logged_as": "Logged as <span class=\"font-semibold\">%(username)s</span>",
       "@logged_as": {
-        "context": "pages/policy_violation.html:36:15-90"
+        "context": "pages/policy_violation.html:34:11-86"
       }
     },
     "register": {
       "call_to_login": "Already have an account?",
       "@call_to_login": {
-        "context": "pages/register.html:57:11-42",
+        "context": "pages/register.html:54:9-40",
         "description": "Displayed on the registration page to suggest to log in instead"
       },
       "create_account": {
         "description": "Please create an account to get started:",
         "@description": {
-          "context": "pages/register.html:24:14-58"
+          "context": "pages/register.html:23:12-56"
         },
         "heading": "Create an account",
         "@heading": {
-          "context": "pages/register.html:23:55-95"
+          "context": "pages/register.html:22:53-93"
         }
       },
       "sign_in_instead": "Sign in instead",
       "@sign_in_instead": {
-        "context": "pages/register.html:59:33-66"
+        "context": "pages/register.html:56:31-64"
       }
     },
     "scope": {
@@ -297,75 +319,75 @@
       "link_mismatch": {
         "heading": "This upstream account is already linked to another account.",
         "@heading": {
-          "context": "pages/upstream_oauth2/link_mismatch.html:24:11-57",
+          "context": "pages/upstream_oauth2/link_mismatch.html:22:9-55",
           "description": "Page shown when the user tries to link an upstream account that is already linked to another account"
         }
       },
       "register": {
         "choose_username": "Choose your username",
         "@choose_username": {
-          "context": "pages/upstream_oauth2/do_register.html:27:15-64",
+          "context": "pages/upstream_oauth2/do_register.html:25:11-60",
           "description": "Displayed when creating a new account from an SSO login, and the username is not forced"
         },
         "create_account": "Create a new account",
         "@create_account": {
-          "context": "pages/upstream_oauth2/do_register.html:25:15-63",
+          "context": "pages/upstream_oauth2/do_register.html:23:11-59",
           "description": "Displayed when creating a new account from an SSO login, and the username is pre-filled and forced"
         },
         "forced_display_name": "Will use the following display name",
         "@forced_display_name": {
-          "context": "pages/upstream_oauth2/do_register.html:60:19-72",
+          "context": "pages/upstream_oauth2/do_register.html:59:17-70",
           "description": "Tells the user what display name will be imported"
         },
         "forced_email": "Will use the following email address",
         "@forced_email": {
-          "context": "pages/upstream_oauth2/do_register.html:46:19-65",
+          "context": "pages/upstream_oauth2/do_register.html:45:17-63",
           "description": "Tells the user which email address will be imported"
         },
         "forced_localpart": "Will use the following username",
         "@forced_localpart": {
-          "context": "pages/upstream_oauth2/do_register.html:35:41-91",
+          "context": "pages/upstream_oauth2/do_register.html:34:39-89",
           "description": "Tells the user which username will be used"
         },
         "link_existing": "Link to an existing account",
         "@link_existing": {
-          "context": "pages/upstream_oauth2/do_register.html:77:34-81",
+          "context": "pages/upstream_oauth2/do_register.html:72:32-79",
           "description": "Button to link an existing account after an SSO login"
         },
         "suggested_display_name": "Import display name",
         "@suggested_display_name": {
-          "context": "pages/upstream_oauth2/do_register.html:63:50-106",
+          "context": "pages/upstream_oauth2/do_register.html:62:48-104",
           "description": "Option to let the user import their display name after an SSO login"
         },
         "suggested_email": "Import email address",
         "@suggested_email": {
-          "context": "pages/upstream_oauth2/do_register.html:49:45-94",
+          "context": "pages/upstream_oauth2/do_register.html:48:43-92",
           "description": "Option to let the user import their email address after an SSO login"
         }
       },
       "suggest_link": {
         "action": "Link",
         "@action": {
-          "context": "pages/upstream_oauth2/suggest_link.html:31:30-74"
+          "context": "pages/upstream_oauth2/suggest_link.html:29:30-74"
         },
         "heading": "Link to your existing account",
         "@heading": {
-          "context": "pages/upstream_oauth2/suggest_link.html:24:11-56"
+          "context": "pages/upstream_oauth2/suggest_link.html:22:11-56"
         }
       }
     },
     "verify_email": {
       "code": "Code",
       "@code": {
-        "context": "pages/account/emails/verify.html:37:27-53"
+        "context": "pages/account/emails/verify.html:35:25-51"
       },
       "description": "Please enter the 6-digit code sent to: <span class=\"font-semibold\">%(email)s</span>",
       "@description": {
-        "context": "pages/account/emails/verify.html:25:14-66"
+        "context": "pages/account/emails/verify.html:23:12-64"
       },
       "headline": "Email verification",
       "@headline": {
-        "context": "pages/account/emails/verify.html:24:55-85"
+        "context": "pages/account/emails/verify.html:22:50-80"
       }
     }
   }

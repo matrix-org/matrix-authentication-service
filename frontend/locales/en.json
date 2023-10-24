@@ -5,6 +5,16 @@
     "continue": "Continue",
     "save": "Save"
   },
+  "branding": {
+    "privacy_policy": {
+      "alt": "Link to the service privacy policy",
+      "link": "Privacy Policy"
+    },
+    "terms_and_conditions": {
+      "alt": "Link to the service terms and conditions",
+      "link": "Terms & Conditions"
+    }
+  },
   "common": {
     "add": "Add",
     "error": "Error",

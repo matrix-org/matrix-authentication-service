@@ -40,7 +40,7 @@ use mas_policy::{InstantiateError, Policy, PolicyFactory};
 use mas_router::{SimpleRoute, UrlBuilder};
 use mas_storage::{clock::MockClock, BoxClock, BoxRepository, BoxRng, Repository};
 use mas_storage_pg::{DatabaseError, PgRepository};
-use mas_templates::Templates;
+use mas_templates::{SiteBranding, Templates};
 use rand::SeedableRng;
 use rand_chacha::ChaChaRng;
 use serde::{de::DeserializeOwned, Serialize};
@@ -116,11 +116,14 @@ impl TestState {
 
         let url_builder = UrlBuilder::new("https://example.com/".parse()?, None, None);
 
+        let site_branding = SiteBranding::new("example.com").with_service_name("Example");
+
         let templates = Templates::load(
             workspace_root.join("templates"),
             url_builder.clone(),
             workspace_root.join("frontend/dist/manifest.json"),
             workspace_root.join("translations"),
+            site_branding,
         )
         .await?;
 
