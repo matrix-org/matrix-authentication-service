@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { H6, Body, Badge } from "@vector-im/compound-web";
-import { ReactNode } from "react";
+import { H6, Text, Badge } from "@vector-im/compound-web";
 import { Trans, useTranslation } from "react-i18next";
 
+import { Route, Link } from "../../routing";
 import { DeviceType } from "../../utils/parseUserAgent";
 import Block from "../Block";
 import DateTime from "../DateTime";
@@ -25,13 +25,13 @@ import DeviceTypeIcon from "./DeviceTypeIcon";
 import LastActive from "./LastActive";
 import styles from "./Session.module.css";
 
-const SessionMetadata: React.FC<React.ComponentProps<typeof Body>> = (
+const SessionMetadata: React.FC<React.ComponentProps<typeof Text>> = (
   props,
-) => <Body {...props} size="sm" className={styles.sessionMetadata} />;
+) => <Text {...props} size="sm" className={styles.sessionMetadata} />;
 
 type SessionProps = {
   id: string;
-  name?: string | ReactNode;
+  name?: string;
   createdAt: Date;
   finishedAt?: Date;
   clientName?: string;
@@ -40,7 +40,9 @@ type SessionProps = {
   deviceType?: DeviceType;
   lastActiveIp?: string;
   lastActiveAt?: Date;
+  link?: Route;
 };
+
 const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
   id,
   name,
@@ -53,6 +55,7 @@ const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
   isCurrent,
   children,
   deviceType,
+  link,
 }) => {
   const { t } = useTranslation();
 
@@ -64,18 +67,20 @@ const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
           <Badge kind="success">{t("frontend.session.current_badge")}</Badge>
         )}
         <H6 className={styles.sessionName} title={id}>
-          {name || id}
+          {link ? <Link route={link}>{name || id}</Link> : name || id}
         </H6>
         <SessionMetadata weight="semibold">
-          <Trans i18nKey="frontend.session.signed_in_date">
-            Signed in <DateTime datetime={createdAt} />
-          </Trans>
+          <Trans
+            i18nKey="frontend.session.signed_in_date"
+            components={{ datetime: <DateTime datetime={createdAt} /> }}
+          />
         </SessionMetadata>
         {!!finishedAt && (
           <SessionMetadata weight="semibold" data-finished={true}>
-            <Trans i18nKey="frontend.session.finished_date">
-              Finished <DateTime datetime={finishedAt} />
-            </Trans>
+            <Trans
+              i18nKey="frontend.session.finished_date"
+              components={{ datetime: <DateTime datetime={finishedAt} /> }}
+            />
           </SessionMetadata>
         )}
         {!!lastActiveAt && (

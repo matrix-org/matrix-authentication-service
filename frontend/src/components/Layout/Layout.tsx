@@ -63,7 +63,7 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
         </>
       )}
 
-      <main>{children}</main>
+      {children}
 
       <Footer
         imprint={appConfig.branding?.imprint}

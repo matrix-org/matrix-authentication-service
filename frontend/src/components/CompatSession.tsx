@@ -18,7 +18,6 @@ import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
 
 import { FragmentType, graphql, useFragment } from "../gql";
-import { Link } from "../routing";
 
 import { Session } from "./Session";
 import EndSessionButton from "./Session/EndSessionButton";
@@ -93,10 +92,6 @@ const CompatSession: React.FC<{
     await endCompatSession();
   };
 
-  const sessionName = (
-    <Link route={{ type: "session", id: data.deviceId }}>{data.deviceId}</Link>
-  );
-
   const clientName = data.ssoLogin?.redirectUri
     ? simplifyUrl(data.ssoLogin.redirectUri)
     : undefined;
@@ -110,12 +105,13 @@ const CompatSession: React.FC<{
   return (
     <Session
       id={data.id}
-      name={sessionName}
+      name={data.deviceId}
       createdAt={createdAt}
       finishedAt={finishedAt}
       clientName={clientName}
       lastActiveIp={data.lastActiveIp || undefined}
       lastActiveAt={lastActiveAt}
+      link={{ type: "session", id: data.deviceId }}
     >
       {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
     </Session>

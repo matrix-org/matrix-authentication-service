@@ -99,8 +99,8 @@
     },
     "session": {
       "current_badge": "Current",
-      "finished_date": "Finished <1/>",
-      "signed_in_date": "Signed in <1/>"
+      "finished_date": "Finished <datetime/>",
+      "signed_in_date": "Signed in <datetime/>"
     },
     "session_detail": {
       "alert": {
@@ -141,12 +141,20 @@
       "heading": "Where you're signed in"
     },
     "verify_email": {
+      "code_field_error": "Code not recognised",
       "code_field_label": "6-digit code",
-      "enter_code_prompt": "Enter the 6-digit code sent to <2>{{email}}</2>",
+      "code_field_wrong_shape": "Code must be 6 digits",
+      "email_sent_alert": {
+        "description": "Enter the new code below.",
+        "title": "New code sent"
+      },
+      "enter_code_prompt": "Enter the 6-digit code sent to: <email>{{email}}</email>",
       "heading": "Verify your email",
-      "invalid_code_alert": "Invalid code",
-      "resend_email": "Resend email",
-      "sent": "Sent!",
+      "invalid_code_alert": {
+        "description": "Check the code sent to your email and update the fields below to continue.",
+        "title": "You entered the wrong code"
+      },
+      "resend_code": "Resend code",
       "unknown_email": "Unknown email"
     }
   }

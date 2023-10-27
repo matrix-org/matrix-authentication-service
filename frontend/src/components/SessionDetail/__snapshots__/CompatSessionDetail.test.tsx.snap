@@ -108,7 +108,7 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
             <span
               title="Sat, 29 Jul 2023, 03:35"
             >
-              Active Sat, 29 Jul 2023, 03:35
+              Inactive for 90+ days
             </span>
           </p>
         </li>
@@ -305,7 +305,7 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
             <span
               title="Sat, 29 Jul 2023, 03:35"
             >
-              Active Sat, 29 Jul 2023, 03:35
+              Inactive for 90+ days
             </span>
           </p>
         </li>
