@@ -21,7 +21,7 @@ use std::{
     collections::{BTreeSet, HashMap},
     fmt::Formatter,
     str::FromStr,
-    sync::Arc,
+    sync::{atomic::AtomicUsize, Arc},
 };
 
 use camino::Utf8Path;
@@ -49,6 +49,7 @@ pub fn register(
     env.add_filter("add_slashes", filter_add_slashes);
     env.add_filter("split", filter_split);
     env.add_function("add_params_to_url", function_add_params_to_url);
+    env.add_function("counter", || Ok(Value::from_object(Counter::default())));
     env.add_global(
         "include_asset",
         Value::from_object(IncludeAsset {
@@ -375,5 +376,47 @@ impl Object for IncludeAsset {
         let tags: Vec<String> = preloads.chain(assets).collect();
 
         Ok(Value::from_safe_string(tags.join("\n")))
+    }
+}
+
+#[derive(Debug, Default)]
+struct Counter {
+    count: AtomicUsize,
+}
+
+impl std::fmt::Display for Counter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.count.load(std::sync::atomic::Ordering::Relaxed)
+        )
+    }
+}
+
+impl Object for Counter {
+    fn call_method(&self, _state: &State, name: &str, args: &[Value]) -> Result<Value, Error> {
+        // None of the methods take any arguments
+        from_args::<()>(args)?;
+
+        match name {
+            "reset" => {
+                self.count.store(0, std::sync::atomic::Ordering::Relaxed);
+                Ok(Value::UNDEFINED)
+            }
+            "next" => {
+                let old = self
+                    .count
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                Ok(Value::from(old))
+            }
+            "peek" => Ok(Value::from(
+                self.count.load(std::sync::atomic::Ordering::Relaxed),
+            )),
+            _ => Err(Error::new(
+                ErrorKind::InvalidOperation,
+                "Invalid method on counter",
+            )),
+        }
     }
 }

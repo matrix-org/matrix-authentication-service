@@ -17,11 +17,17 @@
 @import "@fontsource/inter/500.css";
 @import "@fontsource/inter/600.css";
 @import "@fontsource/inter/700.css";
+@import "@fontsource/inconsolata/400.css";
+@import "@fontsource/inconsolata/700.css";
 @import "@vector-im/compound-design-tokens/assets/web/css/compound-design-tokens.css";
 @import "@vector-im/compound-web/dist/style.css";
+
 @import "./styles/cpd-button.css";
 @import "./styles/cpd-form.css";
 @import "./styles/cpd-link.css";
+@import "./styles/cpd-text-control.css";
+@import "./styles/cpd-mfa-control.css";
+@import "./styles/cpd-checkbox-control.css";
 
 @import "./components/Layout/Layout.module.css";
 @import "./components/Footer/Footer.module.css";
@@ -139,5 +145,65 @@
     font: var(--cpd-font-body-md-regular);
     letter-spacing: var(--cpd-font-letter-spacing-body-md);
     color: var(--cpd-color-text-primary);
+  }
+}
+
+.page-heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cpd-space-4x);
+
+  /* Layout already has 6x padding, and we need 10x */
+  margin-block-start: var(--cpd-space-4x);
+
+  & .icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    align-self: center;
+    height: var(--cpd-space-16x);
+    width: var(--cpd-space-16x);
+    padding: var(--cpd-space-2x);
+    background-color: var(--cpd-color-bg-subtle-secondary);
+    border-radius: var(--cpd-space-2x);
+
+    &.invalid {
+      background-color: var(--cpd-color-bg-critical-subtle);
+
+      & svg {
+        color: var(--cpd-color-icon-critical-primary);
+      }
+    }
+
+    & svg {
+      height: var(--cpd-space-10x);
+      width: var(--cpd-space-10x);
+      color: var(--cpd-color-icon-secondary);
+    }
+  }
+
+  & .header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--cpd-space-2x);
+    text-align: center;
+
+    & .title {
+      font: var(--cpd-font-heading-lg-semibold);
+      letter-spacing: var(--cpd-font-letter-spacing-heading-xl);
+      color: var(--cpd-color-text-primary);
+    }
+
+    & .text {
+      font: var(--cpd-font-body-lg-regular);
+      letter-spacing: var(--cpd-font-letter-spacing-body-lg);
+      color: var(--cpd-color-text-secondary);
+
+      & em {
+        font-style: normal;
+        color: var(--cpd-color-text-primary);
+      }
+    }
   }
 }

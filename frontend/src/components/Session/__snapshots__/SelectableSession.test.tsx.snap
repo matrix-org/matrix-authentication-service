@@ -6,18 +6,19 @@ exports[`<SelectableSession /> > renders an unselected session 1`] = `
     class="_selectableSession_3b8f53"
   >
     <div
-      class="_checkbox_1q844_17 _checkbox_3b8f53"
-      data-kind="primary"
+      class="_container_1jek6_18 _checkbox_3b8f53"
     >
       <input
         aria-label="Select session"
+        class="_input_1jek6_26"
         type="checkbox"
       />
       <div
-        class="_checkbox-ui_1q844_37"
+        class="_ui_1jek6_27"
       >
         <svg
           aria-hidden="true"
+          class="cpd-icon"
           fill="none"
           height="1em"
           viewBox="0 0 24 24"

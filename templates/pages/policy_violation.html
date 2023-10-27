@@ -17,9 +17,18 @@ limitations under the License.
 {% extends "base.html" %}
 
 {% block content %}
-  <section class="flex-1 flex flex-col gap-10 justify-center">
-    <h1 class="cpd-text-heading-xl-semibold">{{ _("mas.policy_violation.heading") }}</h1>
-    <p>{{ _("mas.policy_violation.description") }}</p>
+  <header class="page-heading">
+    <div class="icon invalid">
+      {{ icon.error() }}
+    </div>
+
+    <div class="header">
+      <h1 class="title">{{ _("mas.policy_violation.heading") }}</h1>
+      <p class="text">{{ _("mas.policy_violation.description") }}</p>
+    </div>
+  </header>
+
+  <main class="flex flex-col gap-10">
     <div class="flex items-center justify-center gap-4">
       <div class="bg-white rounded w-16 h-16 overflow-hidden">
         {% if client.logo_uri %}
@@ -29,8 +38,8 @@ limitations under the License.
       <a target="_blank" href="{{ client.client_uri }}" class="cpd-link" data-kind="primary">{{ client.client_name | default(client.client_id) }}</a>
     </div>
 
-    <div class="flex gap-4 justify-center items-center">
-      <p>
+    <div class="flex gap-1 justify-center items-center">
+      <p class="cpd-text-secondary cpd-text-body-md-regular">
         {{ _("mas.policy_violation.logged_as", username=current_session.user.username) }}
       </p>
 
@@ -44,6 +53,6 @@ limitations under the License.
       mode=grant.response_mode,
       params=dict(error="access_denied", state=grant.state)
     ) }}
-  </section>
+  </main>
 {% endblock content %}
 

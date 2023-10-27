@@ -17,58 +17,123 @@ limitations under the License.
 {% extends "base.html" %}
 
 {% block content %}
-  <section class="flex-1 flex flex-col justify-center gap-6">
-    <h1 class="cpd-text-heading-xl-semibold text-center">
-      {% if force_localpart %}
-        {{ _("mas.upstream_oauth2.register.create_account") }}
-      {% else %}
-        {{ _("mas.upstream_oauth2.register.choose_username") }}
-      {% endif %}
-    </h1>
+  {% if force_localpart %}
+    <header class="page-heading">
+      <div class="icon">
+        {{ icon.download() }}
+      </div>
 
-    <form method="POST" class="flex flex-col gap-6">
-      <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-      <input type="hidden" name="action" value="register" />
-      {% if force_localpart %}
-        <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-4">
-          <div class="font-medium"> {{ _("mas.upstream_oauth2.register.forced_localpart") }}</div>
-          <div class="font-mono">{{ suggested_localpart }}</div>
+      <div class="header">
+        <h1 class="title">
+          {{ _("mas.upstream_oauth2.register.import_data.heading") }}
+        </h1>
+        <p class="text">
+          {{ _("mas.upstream_oauth2.register.import_data.description", server_name=branding.server_name) }}
+        </p>
+      </div>
+    </header>
+  {% else %}
+    <header class="page-heading">
+      <div class="icon">
+        {{ icon.mention() }}
+      </div>
+
+      <div class="header">
+        <h1 class="title">
+          {{ _("mas.upstream_oauth2.register.choose_username.heading") }}
+        </h1>
+        <p class="text">
+          {{ _("mas.upstream_oauth2.register.choose_username.description") }}
+        </p>
+      </div>
+    </header>
+  {% endif %}
+
+  <form method="POST" class="cpd-form-root">
+    <input type="hidden" name="csrf" value="{{ csrf_token }}" />
+    <input type="hidden" name="action" value="register" />
+
+    {% if force_localpart %}
+      {% call(f) field.field(label=_("common.mxid"), name="mxid") %}
+        <input {{ field.attributes(f) }} class="cpd-text-control" type="text" value="@{{ suggested_localpart }}:{{ branding.server_name }}" readonly aria-describedby="{{ f.id }}-help" />
+
+        <div class="cpd-form-message cpd-form-help-message" id="{{ f.id }}-help">
+          {{ _("mas.upstream_oauth2.register.enforced_by_policy") }}
         </div>
-      {% else %}
-        {{ field.input(label=_("common.username"), name="username", autocomplete="username", autocorrect="off", autocapitalize="none") }}
-      {% endif %}
+      {% endcall %}
+    {% else %}
+      {% call(f) field.field(label=_("common.username"), name="username") %}
+        <input {{ field.attributes(f) }} class="cpd-text-control" type="text" autocomplete="username" autocorrect="off" autocapitalize="none" value="{{ suggested_localpart or '' }}" aria-describedby="{{ f.id }}-help" />
 
-      {% if suggested_email %}
-        <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-4">
-          <div class="font-medium">
-            {% if force_email %}
-              {{ _("mas.upstream_oauth2.register.forced_email") }}
-            {% else %}
-              <input type="checkbox" name="import_email" id="import_email" checked="checked" />
-              <label for="import_email">{{ _("mas.upstream_oauth2.register.suggested_email") }}</label>
-            {% endif %}
+        <div class="cpd-form-message cpd-form-help-message" id="{{ f.id }}-help">
+          @{{ suggested_localpart or (_("common.username") | lower) }}:{{ branding.server_name }}
+        </div>
+      {% endcall %}
+    {% endif %}
+
+    {% if suggested_email %}
+      <div class="flex gap-6 items-center">
+        {% call(f) field.field(label=_("common.email_address"), name="email", class="flex-1") %}
+          <input {{ field.attributes(f) }} class="cpd-text-control" type="email" value="{{ suggested_email }}" readonly aria-describedby="{{ f.id }}-help" />
+
+          <div class="cpd-form-message cpd-form-help-message" id="{{ f.id }}-help">
+            {{ _("mas.upstream_oauth2.register.imported_from_upstream") }}
           </div>
-          <div class="font-mono">{{ suggested_email }}</div>
-        </div>
-      {% endif %}
+        {% endcall %}
 
-      {% if suggested_display_name %}
-        <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-4">
-          <div class="font-medium">
-            {% if force_display_name %}
-              {{ _("mas.upstream_oauth2.register.forced_display_name") }}
-            {% else %}
-            <input type="checkbox" name="import_display_name" id="import_display_name" checked="checked" />
-            <label for="import_display_name">{{ _("mas.upstream_oauth2.register.suggested_display_name") }}</label>
-            {% endif %}
+        {% if not force_email %}
+          <div class="cpd-form-inline-field">
+            <div class="cpd-form-inline-field-control">
+              <div class="cpd-checkbox-container">
+                <input class="cpd-checkbox-input" type="checkbox" name="import_email" id="import_email" checked="checked" />
+                <div class="cpd-checkbox-ui">
+                  {{ icon.check() }}
+                </div>
+              </div>
+            </div>
+            <label class="cpd-form-label" for="import_email">
+              {{- _("mas.upstream_oauth2.register.use") -}}
+            </label>
           </div>
-          <div class="font-mono">{{ suggested_display_name }}</div>
-        </div>
-      {% endif %}
+        {% endif %}
+      </div>
+    {% endif %}
 
-      {{ button.button(text=_("action.create_account")) }}
-    </form>
+    {% if suggested_display_name %}
+      <div class="flex gap-6 items-center">
+        {% call(f) field.field(label=_("common.display_name"), name="display_name", class="flex-1") %}
+          <input {{ field.attributes(f) }} class="cpd-text-control" type="text" value="{{ suggested_display_name }}" readonly />
+
+          <div class="cpd-form-message cpd-form-help-message">
+            {{ _("mas.upstream_oauth2.register.imported_from_upstream") }}
+          </div>
+        {% endcall %}
+
+        {% if not force_display_name %}
+          <div class="cpd-form-inline-field">
+            <div class="cpd-form-inline-field-control">
+              <div class="cpd-checkbox-container">
+                <input class="cpd-checkbox-input" type="checkbox" name="import_display_name" id="import_display_name" checked="checked" />
+                <div class="cpd-checkbox-ui">
+                  {{ icon.check() }}
+                </div>
+              </div>
+            </div>
+            <div class="cpd-form-inline-field-body">
+              <label class="cpd-form-label" for="import_display_name">
+                {{- _("mas.upstream_oauth2.register.use") -}}
+              </label>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {{ button.button(text=_("action.create_account")) }}
+  </form>
+
+  {# Leave this for now as we don't have that fully designed yet
     {{ field.separator() }}
     {{ button.link_outline(text=_("mas.upstream_oauth2.register.link_existing"), href=login_link) }}
-  </section>
+  #}
 {% endblock content %}

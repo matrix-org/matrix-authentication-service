@@ -18,9 +18,17 @@
   display: flex;
   flex-direction: column;
 
-  max-width: calc(420px + var(--cpd-space-6x) * 2);
+  max-width: calc(420px + var(--cpd-space-5x) * 2);
   min-height: 100vh;
   margin: 0 auto;
-  padding: var(--cpd-space-6x);
-  gap: var(--cpd-space-6x);
+  padding-inline: var(--cpd-space-5x);
+  padding-block: var(--cpd-space-12x);
+  gap: var(--cpd-space-8x);
+}
+
+@media screen and (min-width: 768px) {
+  .layout-container {
+    padding-block-start: var(--cpd-space-20x);
+    padding-block-end: var(--cpd-space-10x);
+  }
 }

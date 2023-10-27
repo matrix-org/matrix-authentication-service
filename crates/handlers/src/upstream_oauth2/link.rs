@@ -111,8 +111,8 @@ impl IntoResponse for RouteError {
                     .with_details(details);
                 FancyError::new(ctx).into_response()
             }
-            Self::Internal(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
-            e => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+            Self::Internal(e) => FancyError::from(e).into_response(),
+            e => FancyError::from(e).into_response(),
         };
 
         (SentryEventID::from(event_id), response).into_response()
