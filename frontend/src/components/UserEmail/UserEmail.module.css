@@ -14,68 +14,47 @@
  */
 
 .user-email {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--cpd-space-2x);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--cpd-space-2x);
 }
 
 .user-email-line {
-    display: flex;
-    align-self: stretch;
-    gap: var(--cpd-space-2x);
-}
-
-.user-email-field {
-    border: 1px solid var(--cpd-color-border-interactive-primary);
-    background: var(--cpd-color-bg-canvas-default);
-    border-radius: 0.5rem;
-    padding: var(--cpd-space-3x) var(--cpd-space-4x);
-    box-sizing: border-box;
-    flex: 1;
-}
-
-.user-email-delete {
-    box-sizing: border-box;
-    height: var(--cpd-space-12x);
-    width: var(--cpd-space-12x);
-    border-radius: 50%;
-    color: var(--cpd-color-icon-critical-primary);
-    padding: var(--cpd-space-2x);
-}
-
-.user-email-delete:hover:not([disabled]) {
-    background-color: var(--cpd-color-red-300);
-}
-
-.user-email-delete[disabled] {
-    color: var(--cpd-color-icon-disabled);
+  display: flex;
+  align-self: stretch;
+  gap: var(--cpd-space-2x);
 }
 
 .user-email-delete-icon {
-    display: block;
-    height: var(--cpd-space-8x);
-    width: var(--cpd-space-8x);
+  color: var(--cpd-color-icon-critical-primary);
+}
+
+button[disabled] .user-email-delete-icon {
+  color: var(--cpd-color-icon-disabled);
+}
+
+.user-email-field {
+  flex: 1;
 }
 
 .user-email-unverified {
-    color: var(--cpd-color-text-critical-primary);
+  color: var(--cpd-color-text-critical-primary);
 }
 
 .link {
-    display: inline-block;
-    text-decoration: underline;
-    color: var(--cpd-color-text-primary);
-    font-weight: var(--cpd-font-weight-medium);
-    border-radius: var(--cpd-radius-pill-effect);
-    padding-inline: 0.25rem;
+  display: inline-block;
+  text-decoration: underline;
+  color: var(--cpd-color-text-primary);
+  font-weight: var(--cpd-font-weight-medium);
+  border-radius: var(--cpd-radius-pill-effect);
+  padding-inline: 0.25rem;
 }
 
 .link:hover {
-    background: var(--cpd-color-gray-300);
+  background: var(--cpd-color-gray-300);
 }
 
 .link:active {
-    color: var(--cpd-color-text-on-solid-primary);
+  color: var(--cpd-color-text-on-solid-primary);
 }
-

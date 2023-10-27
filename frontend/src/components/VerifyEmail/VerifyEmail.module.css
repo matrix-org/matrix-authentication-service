@@ -13,41 +13,28 @@
  * limitations under the License.
  */
 
-.block {
-    display: flex;
-    flex-direction: column;
-    margin-top: var(--cpd-space-10x);
-    gap: var(--cpd-space-10x);
-}
-
 .header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--cpd-space-2x);
-    text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--cpd-space-2x);
+  text-align: center;
 }
 
 .tagline {
-    color: var(--cpd-color-text-secondary);
+  color: var(--cpd-color-text-secondary);
+
+  & > span {
+    color: var(--cpd-color-text-primary);
+  }
 }
 
 .icon {
-    height: var(--cpd-space-16x);
-    width: var(--cpd-space-16x);
-    color: var(--cpd-color-icon-secondary);
-    background: var(--cpd-color-bg-subtle-secondary);
-    padding: var(--cpd-space-2x);
-    border-radius: var(--cpd-space-2x);
-    margin-bottom: var(--cpd-space-2x);
-}
-
-.form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--cpd-space-6x);
-}
-
-.submit-button {
-    display: block;
+  height: var(--cpd-space-16x);
+  width: var(--cpd-space-16x);
+  color: var(--cpd-color-icon-secondary);
+  background: var(--cpd-color-bg-subtle-secondary);
+  padding: var(--cpd-space-2x);
+  border-radius: var(--cpd-space-2x);
+  margin-bottom: var(--cpd-space-2x);
 }

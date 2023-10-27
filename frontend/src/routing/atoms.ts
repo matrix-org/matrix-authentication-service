@@ -21,9 +21,10 @@ import appConfig, { AppConfig } from "../config";
 import { Location, pathToRoute, Route, routeToPath } from "./routes";
 
 /* Use memory history for testing */
-export const history = import.meta.vitest
-  ? createMemoryHistory()
-  : createBrowserHistory();
+export const history =
+  import.meta.vitest || typeof document === "undefined"
+    ? createMemoryHistory()
+    : createBrowserHistory();
 
 export const appConfigAtom = atom<AppConfig>(appConfig);
 

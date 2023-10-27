@@ -12,18 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {
-  Alert,
-  Control,
-  Field,
-  Label,
-  Root,
-  Button,
-} from "@vector-im/compound-web";
-import { useAtomValue, useAtom, useSetAtom, atom } from "jotai";
+import { Alert, Button, Form } from "@vector-im/compound-web";
+import { useAtom, atom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
-import { useState, useEffect, ChangeEventHandler } from "react";
+import { useState, ChangeEventHandler } from "react";
 import { useTranslation } from "react-i18next";
 
 import { graphql } from "../../gql";
@@ -72,34 +65,30 @@ const getErrorMessage = (result: {
 };
 
 const UserName: React.FC<{ userId: string }> = ({ userId }) => {
-  const result = useAtomValue(userGreetingFamily(userId));
+  const [userGreeting, refreshUserGreeting] = useAtom(
+    userGreetingFamily(userId),
+  );
+  const displayName = userGreeting.data?.user?.matrix.displayName || "";
 
   const [setDisplayNameResult, setDisplayName] = useAtom(
     setDisplayNameFamily(userId),
   );
   const [inProgress, setInProgress] = useState(false);
 
-  const user = result.data?.user;
-  const displayName = user?.matrix.displayName || "";
-  const [fieldValue, setFieldValue] = useState(displayName);
+  const [hasChanges, setHasChanges] = useState(false);
 
-  const userGreeting = useSetAtom(userGreetingFamily(userId));
   const { t } = useTranslation();
 
-  useEffect(() => {
-    setFieldValue(displayName);
-  }, [displayName]);
-
-  const hasChanges = fieldValue !== displayName;
-
   const onChange: ChangeEventHandler<HTMLInputElement> = (event): void => {
-    setFieldValue(event.target.value);
+    setHasChanges(event.target.value !== displayName);
   };
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
 
-    let newDisplayName = fieldValue || null;
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    let newDisplayName = formData.get("displayname") as string | null;
 
     // set null to remove an existing username
     if (newDisplayName === "") {
@@ -117,13 +106,15 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
         console.error("Failed to set display name", result.error);
       } else if (result.data.setDisplayName.status === "SET") {
         // refresh the user greeting after changing the display name
-        userGreeting({
+        refreshUserGreeting({
           requestPolicy: "network-only",
         });
       } else if (result.data.setDisplayName.status === "INVALID") {
         // reset to current saved display name
-        setFieldValue(displayName);
+        form.reset();
       }
+
+      setHasChanges(false);
       setInProgress(false);
     });
   };
@@ -131,16 +122,21 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
   const errorMessage = getErrorMessage(setDisplayNameResult);
 
   return (
-    <Root onSubmit={onSubmit} className={styles.form}>
-      <Field name="displayname">
-        <Label>{t("frontend.user_name.display_name_field_label")}</Label>
-        <Control
-          value={fieldValue}
+    <Form.Root onSubmit={onSubmit} className={styles.form}>
+      <Form.Field
+        name="displayname"
+        serverInvalid={!inProgress && !!errorMessage}
+      >
+        <Form.Label>
+          {t("frontend.user_name.display_name_field_label")}
+        </Form.Label>
+        <Form.TextControl
+          defaultValue={displayName}
           onChange={onChange}
           inputMode="text"
           max={250}
         />
-      </Field>
+      </Form.Field>
       {!inProgress && errorMessage && (
         <Alert type="critical" title={t("common.error")}>
           {errorMessage}
@@ -148,7 +144,7 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
       )}
 
       <Button
-        className={styles.saveButton}
+        className="self-start"
         disabled={inProgress || !hasChanges}
         kind="primary"
         size="sm"
@@ -157,7 +153,7 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
         {!!inProgress && <LoadingSpinner inline />}
         {t("action.save")}
       </Button>
-    </Root>
+    </Form.Root>
   );
 };
 

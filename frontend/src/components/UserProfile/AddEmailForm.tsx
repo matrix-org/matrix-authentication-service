@@ -12,14 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {
-  Alert,
-  Control,
-  Field,
-  Label,
-  Root,
-  Submit,
-} from "@vector-im/compound-web";
+import { Alert, Form } from "@vector-im/compound-web";
 import { useAtom } from "jotai";
 import { atomWithMutation } from "jotai-urql";
 import { useRef, useTransition } from "react";
@@ -61,8 +54,6 @@ const AddEmailForm: React.FC<{
       addEmail({ userId, email }).then((result) => {
         // Don't clear the form if the email was invalid or already exists
         if (result.data?.addEmail.status !== "ADDED") {
-          fieldRef.current?.focus();
-          fieldRef.current?.select();
           return;
         }
 
@@ -87,7 +78,7 @@ const AddEmailForm: React.FC<{
 
   return (
     <>
-      <Root ref={formRef} onSubmit={handleSubmit}>
+      <Form.Root ref={formRef} onSubmit={handleSubmit}>
         {emailExists && (
           <Alert
             type="info"
@@ -120,14 +111,25 @@ const AddEmailForm: React.FC<{
           </Alert>
         )}
 
-        <Field name="email" className="my-2">
-          <Label>{t("frontend.add_email_form.email_field_label")}</Label>
-          <Control disabled={pending} inputMode="email" ref={fieldRef} />
-        </Field>
-        <Submit size="sm" disabled={pending}>
+        <Form.Field
+          name="email"
+          serverInvalid={emailInvalid || emailExists || emailDenied}
+        >
+          <Form.Label>
+            {t("frontend.add_email_form.email_field_label")}
+          </Form.Label>
+          <Form.TextControl
+            disabled={pending}
+            type="email"
+            autoComplete="email"
+            ref={fieldRef}
+          />
+        </Form.Field>
+
+        <Form.Submit size="sm" disabled={pending} className="self-start">
           {t("common.add")}
-        </Submit>
-      </Root>
+        </Form.Submit>
+      </Form.Root>
     </>
   );
 };

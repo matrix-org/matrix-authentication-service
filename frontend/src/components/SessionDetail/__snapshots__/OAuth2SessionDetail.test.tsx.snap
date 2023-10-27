@@ -108,7 +108,7 @@ exports[`<OAuth2SessionDetail> > renders session details 1`] = `
             <span
               title="Sat, 29 Jul 2023, 03:35"
             >
-              Active Sat, 29 Jul 2023, 03:35
+              Inactive for 90+ days
             </span>
           </p>
         </li>

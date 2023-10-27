@@ -20,7 +20,6 @@ import { useCallback } from "react";
 
 import { currentBrowserSessionIdAtom, currentUserIdAtom } from "../atoms";
 import { FragmentType, graphql, useFragment } from "../gql";
-import Link from "../routing/Link";
 import {
   parseUserAgent,
   sessionNameFromDeviceInformation,
@@ -114,19 +113,17 @@ const BrowserSession: React.FC<Props> = ({ session }) => {
   const sessionName =
     sessionNameFromDeviceInformation(deviceInformation) || "Browser session";
 
-  const name = (
-    <Link route={{ type: "browser-session", id: data.id }}>{sessionName}</Link>
-  );
   return (
     <Session
       id={data.id}
-      name={name}
+      name={sessionName}
       createdAt={createdAt}
       finishedAt={finishedAt}
       isCurrent={isCurrent}
       deviceType={deviceInformation?.deviceType}
       lastActiveIp={data.lastActiveIp || undefined}
       lastActiveAt={lastActiveAt}
+      link={{ type: "browser-session", id: data.id }}
     >
       {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
     </Session>

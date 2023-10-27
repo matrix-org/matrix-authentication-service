@@ -12,14 +12,3 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-.form {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--cpd-space-2x);
-}
-
-.save-button {
-    align-self: flex-start;
-}

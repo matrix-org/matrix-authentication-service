@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import IconDelete from "@vector-im/compound-design-tokens/icons/delete.svg?react";
-import { Body } from "@vector-im/compound-web";
+import { Form, IconButton, Text, Tooltip } from "@vector-im/compound-web";
 import { atom, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
@@ -93,14 +93,17 @@ const DeleteButton: React.FC<{ disabled?: boolean; onClick?: () => void }> = ({
 }) => (
   <Translation>
     {(t): ReactNode => (
-      <button
-        disabled={disabled}
-        onClick={onClick}
-        className={styles.userEmailDelete}
-        title={t("frontend.user_email.delete_button_title")}
-      >
-        <IconDelete className={styles.userEmailDeleteIcon} />
-      </button>
+      <Tooltip label={t("frontend.user_email.delete_button_title")}>
+        <IconButton
+          type="button"
+          disabled={disabled}
+          className="m-2"
+          onClick={onClick}
+          size="var(--cpd-space-8x)"
+        >
+          <IconDelete className={styles.userEmailDeleteIcon} />
+        </IconButton>
+      </Tooltip>
     )}
   </Translation>
 );
@@ -123,9 +126,9 @@ const DeleteButtonWithConfirmation: React.FC<
         onDeny={onDeny}
         onConfirm={onConfirm}
       >
-        <Body>
+        <Text>
           {t("frontend.user_email.delete_button_confirmation_modal.body")}
-        </Body>
+        </Text>
       </ConfirmationModal>
     </>
   );
@@ -163,41 +166,50 @@ const UserEmail: React.FC<{
   };
 
   return (
-    <div className={styles.userEmail}>
-      {isPrimary ? (
-        <Body>{t("frontend.user_email.primary_email")}</Body>
-      ) : (
-        <Body>{t("frontend.user_email.email")}</Body>
-      )}
-
-      <div className={styles.userEmailLine}>
-        <div className={styles.userEmailField}>{data.email}</div>
-        <DeleteButtonWithConfirmation
-          disabled={isPrimary || pending}
-          onClick={onRemoveClick}
-        />
-      </div>
-      {data.confirmedAt && !isPrimary && (
-        <button
-          className={styles.link}
-          disabled={pending}
-          onClick={onSetPrimaryClick}
-        >
-          {t("frontend.user_email.make_primary_button")}
-        </button>
-      )}
-      {!data.confirmedAt && (
-        <div>
-          <span className={styles.userEmailUnverified}>
-            {t("frontend.user_email.unverified")}
-          </span>{" "}
-          |{" "}
-          <Link kind="button" route={{ type: "verify-email", id: data.id }}>
-            {t("frontend.user_email.retry_button")}
-          </Link>
+    <Form.Root>
+      <Form.Field name="email">
+        <Form.Label>
+          {isPrimary
+            ? t("frontend.user_email.primary_email")
+            : t("frontend.user_email.email")}
+        </Form.Label>
+        <div className="flex">
+          <Form.TextControl
+            type="email"
+            readOnly
+            value={data.email}
+            className={styles.userEmailField}
+          />
+          <DeleteButtonWithConfirmation
+            disabled={isPrimary || pending}
+            onClick={onRemoveClick}
+          />
         </div>
-      )}
-    </div>
+
+        <Form.HelpMessage>
+          {data.confirmedAt && !isPrimary && (
+            <button
+              className={styles.link}
+              disabled={pending}
+              onClick={onSetPrimaryClick}
+            >
+              {t("frontend.user_email.make_primary_button")}
+            </button>
+          )}
+          {!data.confirmedAt && (
+            <>
+              <span className={styles.userEmailUnverified}>
+                {t("frontend.user_email.unverified")}
+              </span>{" "}
+              |{" "}
+              <Link kind="button" route={{ type: "verify-email", id: data.id }}>
+                {t("frontend.user_email.retry_button")}
+              </Link>
+            </>
+          )}
+        </Form.HelpMessage>
+      </Form.Field>
+    </Form.Root>
   );
 };
 

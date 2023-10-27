@@ -19,7 +19,6 @@ import { atomWithMutation } from "jotai-urql";
 
 import { FragmentType, graphql, useFragment } from "../gql";
 import { Oauth2ApplicationType } from "../gql/graphql";
-import { Link } from "../routing";
 import { getDeviceIdFromScope } from "../utils/deviceIdFromScope";
 import { DeviceType } from "../utils/parseUserAgent";
 
@@ -94,9 +93,9 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
 
   const deviceId = getDeviceIdFromScope(data.scope);
 
-  const name = deviceId && (
-    <Link route={{ type: "session", id: deviceId }}>{deviceId}</Link>
-  );
+  const link = deviceId
+    ? { type: "session" as const, id: deviceId }
+    : undefined;
 
   const createdAt = parseISO(data.createdAt);
   const finishedAt = data.finishedAt ? parseISO(data.finishedAt) : undefined;
@@ -111,7 +110,7 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
   return (
     <Session
       id={data.id}
-      name={name}
+      name={deviceId}
       createdAt={createdAt}
       finishedAt={finishedAt}
       clientName={data.client.clientName || data.client.clientId || undefined}
@@ -119,6 +118,7 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
       deviceType={deviceType}
       lastActiveIp={data.lastActiveIp || undefined}
       lastActiveAt={lastActiveAt}
+      link={link}
     >
       {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
     </Session>
