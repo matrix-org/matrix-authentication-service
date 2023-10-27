@@ -17,20 +17,26 @@ limitations under the License.
 {% extends "base.html" %}
 
 {% block content %}
-  <section class="flex-1 flex flex-col gap-6 justify-center">
-      <h1 class="cpd-text-heading-xl-semibold text-center">
-        {{ _("mas.upstream_oauth2.suggest_link.heading") }}
-      </h1>
+  <header class="page-heading">
+    <div class="icon">
+      {{ icon.link() }}
+    </div>
 
-      <form method="POST" class="flex">
-        <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-        <input type="hidden" name="action" value="link" />
+    <div class="header">
+      <h1 class="title">{{ _("mas.upstream_oauth2.suggest_link.heading") }}</h1>
+    </div>
+  </header>
 
-        {{ button.button(text=_("mas.upstream_oauth2.suggest_link.action"), class="flex-1") }}
-      </form>
+  <section class="flex flex-col gap-6 justify-center">
+    <form method="POST" class="cpd-form-root">
+      <input type="hidden" name="csrf" value="{{ csrf_token }}" />
+      <input type="hidden" name="action" value="link" />
 
-      {{ field.separator() }}
+      {{ button.button(text=_("mas.upstream_oauth2.suggest_link.action")) }}
+    </form>
 
-      {{ logout.button(text=_("action.sign_out"), csrf_token=csrf_token, post_logout_action=post_logout_action) }}
+    {{ field.separator() }}
+
+    {{ logout.button(text=_("action.sign_out"), csrf_token=csrf_token, post_logout_action=post_logout_action) }}
   </section>
 {% endblock content %}

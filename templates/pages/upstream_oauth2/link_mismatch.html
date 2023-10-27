@@ -17,11 +17,17 @@ limitations under the License.
 {% extends "base.html" %}
 
 {% block content %}
-  <section class="flex-1 flex flex-col gap-6 justify-center">
-    <h1 class="cpd-text-heading-xl-semibold text-center">
-      {{ _("mas.upstream_oauth2.link_mismatch.heading") }}
-    </h1>
+  <header class="page-heading">
+    <div class="icon invalid">
+      {{ icon.warning() }}
+    </div>
 
-    {{ logout.button(text=_("action.sign_out"), csrf_token=csrf_token) }}
-  </section>
+    <div class="header">
+      <h1 class="title">
+        {{ _("mas.upstream_oauth2.link_mismatch.heading") }}
+      </h1>
+    </div>
+  </header>
+
+  {{ logout.button(text=_("action.sign_out"), csrf_token=csrf_token) }}
 {% endblock content %}

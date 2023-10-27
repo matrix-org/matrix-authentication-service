@@ -20,23 +20,32 @@ limitations under the License.
 {% extends "base.html" %}
 
 {% block content %}
-  <main class="flex flex-col gap-2">
-    <h1 class="text-xl font-semibold">{{ _("error.unexpected") }}</h1>
-    {% if code %}
-    <p class="font-semibold font-mono">
-      {{ code }}
-    </p>
-    {% endif %}
-    {% if description %}
-    <p>
-      {{ description }}
-    </p>
-    {% endif %}
+  <main class="flex flex-col gap-6">
+    <header class="page-heading">
+      <div class="icon invalid">
+        {{ icon.error() }}
+      </div>
+
+      <div class="header">
+        <h1 class="title">{{ _("error.unexpected") }}</h1>
+        {% if code %}
+          <p class="text font-semibold font-mono">
+            {{ code }}
+          </p>
+        {% endif %}
+        {% if description %}
+          <p class="text">
+            {{ description }}
+          </p>
+        {% endif %}
+      </div>
+    </header>
+
     {% if details %}
       <hr />
-      <code>
-        <pre class="font-mono whitespace-pre-wrap break-all">{{ details }}</pre>
-      </code>
+      <pre>
+        <code class="font-mono whitespace-pre-wrap break-all">{{ details }}</code>
+      </pre>
     {% endif %}
   </main>
 {% endblock %}

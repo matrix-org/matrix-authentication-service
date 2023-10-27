@@ -17,21 +17,27 @@ limitations under the License.
 {% extends "base.html" %}
 
 {% block content %}
-  <div class="flex-1 flex flex-col gap-6 justify-center">
+  <main class="flex flex-col gap-6">
     {% if not password_disabled %}
-      {% if next and next.kind == "link_upstream" %}
-        <div class="text-center">
-          <h1 class="text-lg text-center font-medium">{{ _("mas.login.link.headline") }}</h1>
-          <p class="text-sm">{{ _("mas.login.link.description", provider=next.provider.issuer) }}</p>
+      <header class="page-heading">
+        <div class="icon">
+          {{ icon.user_profile_solid() }}
         </div>
-      {% else %}
-        <div class="text-center">
-          <h1 class="text-lg text-center font-medium">{{ _("mas.login.headline") }}</h1>
-          <p>{{ _("mas.login.description") }}</p>
-        </div>
-      {% endif %}
 
-      <form method="POST" class="flex flex-col gap-6">
+        {% if next and next.kind == "link_upstream" %}
+          <div class="header">
+            <h1 class="title">{{ _("mas.login.link.headline") }}</h1>
+            <p class="text">{{ _("mas.login.link.description", provider=next.provider.issuer) }}</p>
+          </div>
+        {% else %}
+          <div class="header">
+            <h1 class="title">{{ _("mas.login.headline") }}</h1>
+            <p class="text">{{ _("mas.login.description") }}</p>
+          </div>
+        {% endif %}
+      </header>
+
+      <form method="POST" class="cpd-form-root">
         {% if form.errors is not empty %}
           {% for error in form.errors %}
             <div class="text-critical font-medium">
@@ -41,14 +47,24 @@ limitations under the License.
         {% endif %}
 
         <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-        {{ field.input(label=_("common.username"), name="username", form_state=form, autocomplete="username", autocorrect="off", autocapitalize="none") }}
-        {{ field.input(label=_("common.password"), name="password", type="password", form_state=form, autocomplete="password") }}
+
+        {% call(f) field.field(label=_("common.username"), name="username", form_state=form) %}
+          <input {{ field.attributes(f) }} class="cpd-text-control" type="text" autocomplete="username" autocorrect="off" autocapitalize="off" required />
+        {% endcall %}
+
+        {% call(f) field.field(label=_("common.password"), name="password", form_state=form) %}
+          <input {{ field.attributes(f) }} class="cpd-text-control" type="password" autocomplete="password" required />
+        {% endcall %}
+
         {{ button.button(text=_("action.continue")) }}
       </form>
 
       {% if not next or next.kind != "link_upstream" %}
-        <div class="text-center mt-4">
-          {{ _("mas.login.call_to_register") }}
+        <div class="flex gap-1 justify-center items-center cpd-text-body-md-regular">
+          <p class="cpd-text-secondary">
+            {{ _("mas.login.call_to_register") }}
+          </p>
+
           {% set params = next["params"] | default({}) | to_params(prefix="?") %}
           {{ button.link_text(text=_("action.create_account"), href="/register" ~ params) }}
         </div>
@@ -60,9 +76,11 @@ limitations under the License.
         {{ field.separator() }}
       {% endif %}
 
+      {% set params = next["params"] | default({}) | to_params(prefix="?") %}
       {% for provider in providers %}
-        {% set params = next["params"] | default({}) | to_params(prefix="?") %}
-        <a class="cpd-button" data-kind="secondary" data-size="lg" href="{{ ('/upstream/authorize/' ~ provider.id ~ params) | prefix_url }}">{{ _("mas.login.continue_with_provider", provider=provider.issuer | simplify_url) }}</a>
+        <a class="cpd-button" data-kind="secondary" data-size="lg" href="{{ ('/upstream/authorize/' ~ provider.id ~ params) | prefix_url }}">
+          {{ _("mas.login.continue_with_provider", provider=provider.issuer | simplify_url) }}
+        </a>
       {% endfor %}
     {% endif %}
 
@@ -81,5 +99,5 @@ limitations under the License.
         params=dict(error="access_denied", state=next.grant.state)
       ) }}
     {% endif %}
-  </div>
+  </main>
 {% endblock content %}

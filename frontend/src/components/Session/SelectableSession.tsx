@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Checkbox } from "@vector-im/compound-web";
+import { CheckboxInput } from "@vector-im/compound-web";
 import { useTranslation } from "react-i18next";
 
 import styles from "./SelectableSession.module.css";
@@ -33,9 +33,8 @@ const SelectableSession: React.FC<React.PropsWithChildren<Props>> = ({
   const { t } = useTranslation();
   return (
     <div className={styles.selectableSession}>
-      <Checkbox
+      <CheckboxInput
         className={styles.checkbox}
-        kind="primary"
         onChange={onSelect}
         aria-label={t("frontend.selectable_session.label")}
         checked={isSelected}
