@@ -12,8 +12,20 @@
     "name": "matrix-authentication-service",
     "technical_description": "Document de découverte OpenID Connect : <a class=\"cpd-link\" data-kind=\"primary\" href=\"%(discovery_url)s\">%(discovery_url)s</a>"
   },
+  "branding": {
+    "privacy_policy": {
+      "alt": "Lien vers la politique de confidentialité",
+      "link": "Politique de confidentialité"
+    },
+    "terms_and_conditions": {
+      "alt": "Lien vers les conditions d'utilisation",
+      "link": "Conditions d'utilisation"
+    }
+  },
   "common": {
+    "display_name": "Pseudonyme",
     "email_address": "Adresse e-mail",
+    "mxid": "Matrix ID",
     "password": "Mot de passe",
     "password_confirm": "Confirmer le mot de passe",
     "username": "Nom d’utilisateur"
@@ -23,6 +35,7 @@
   },
   "mas": {
     "add_email": {
+      "description": "Entrez une adresse e-mail qui sera utilisée pour récupérer votre compte au cas où vous perdriez l'accès à celui-ci.",
       "heading": "Ajouter une adresse e-mail"
     },
     "back_to_homepage": "Retourner sur la page d'accueil",
@@ -30,6 +43,7 @@
       "change": "Changer de mot de passe",
       "confirm": "Confirmer le mot de passe",
       "current": "Mot de passe actuel",
+      "description": "Cela modifiera le mot de passe de votre compte.",
       "heading": "Modifier mon mot de passe",
       "new": "Nouveau mot de passe"
     },
@@ -100,12 +114,19 @@
       "register": {
         "choose_username": "Choisissez votre nom d'utilisateur",
         "create_account": "Créer un nouveau compte",
+        "enforced_by_policy": "Importé selon la politique du serveur",
         "forced_display_name": "Utilisera le pseudonyme suivant",
         "forced_email": "Utilisera l’adresse e-mail suivante",
         "forced_localpart": "Utilisera le nom d'utilisateur suivant",
+        "import_data": {
+          "description": "Confirmez les informations qui seront associées à votre nouveau compte %(server_name)s.",
+          "heading": "Importez vos données"
+        },
+        "imported_from_upstream": "Importé de votre compte en amont",
         "link_existing": "Associer un compte existant",
         "suggested_display_name": "Importer le pseudonyme",
-        "suggested_email": "Importer l’adresse email"
+        "suggested_email": "Importer l’adresse email",
+        "use": "Importer"
       },
       "suggest_link": {
         "action": "Associer",
@@ -113,9 +134,10 @@
       }
     },
     "verify_email": {
+      "6_digit_code": "Code à 6 chiffres",
       "code": "Code",
-      "description": "Veuillez saisir le code à 6 chiffres envoyé à : <span class=\"font-semibold\">%(email)s </span>",
-      "headline": "Vérification d'adresse email"
+      "description": "Veuillez saisir le code à 6 chiffres envoyé à : <em>%(email)s</em>",
+      "headline": "Vérifiez votre adresse e-mail"
     }
   }
 }
