@@ -118,10 +118,10 @@ fn filter_to_params(params: &Value, kwargs: Kwargs) -> Result<String, Error> {
 }
 
 /// Filter which simplifies a URL to its domain name for HTTP(S) URLs
-fn filter_simplify_url(url: &str) -> String {
+fn filter_simplify_url(url: &str, kwargs: Kwargs) -> Result<String, minijinja::Error> {
     // Do nothing if the URL is not valid
     let Ok(mut url) = Url::from_str(url) else {
-        return url.to_owned();
+        return Ok(url.to_owned());
     };
 
     // Always at least remove the query parameters and fragment
@@ -130,15 +130,26 @@ fn filter_simplify_url(url: &str) -> String {
 
     // Do nothing else for non-HTTPS URLs
     if url.scheme() != "https" {
-        return url.to_string();
+        return Ok(url.to_string());
     }
+
+    let keep_path = kwargs.get::<Option<bool>>("keep_path")?.unwrap_or_default();
+    kwargs.assert_all_used()?;
 
     // Only return the domain name
     let Some(domain) = url.domain() else {
-        return url.to_string();
+        return Ok(url.to_string());
     };
 
-    domain.to_owned()
+    if keep_path {
+        Ok(format!(
+            "{domain}{path}",
+            domain = domain,
+            path = url.path(),
+        ))
+    } else {
+        Ok(domain.to_owned())
+    }
 }
 
 enum ParamsWhere {

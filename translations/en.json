@@ -193,7 +193,7 @@
       },
       "continue_with_provider": "Continue with %(provider)s",
       "@continue_with_provider": {
-        "context": "pages/login.html:82:13-91",
+        "context": "pages/login.html:82:13-107",
         "description": "Button to log in with an upstream provider"
       },
       "description": "Please sign in to continue:",
