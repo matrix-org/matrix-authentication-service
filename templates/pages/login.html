@@ -79,7 +79,7 @@ limitations under the License.
       {% set params = next["params"] | default({}) | to_params(prefix="?") %}
       {% for provider in providers %}
         <a class="cpd-button" data-kind="secondary" data-size="lg" href="{{ ('/upstream/authorize/' ~ provider.id ~ params) | prefix_url }}">
-          {{ _("mas.login.continue_with_provider", provider=provider.issuer | simplify_url) }}
+          {{ _("mas.login.continue_with_provider", provider=provider.issuer | simplify_url(keep_path=True)) }}
         </a>
       {% endfor %}
     {% endif %}
