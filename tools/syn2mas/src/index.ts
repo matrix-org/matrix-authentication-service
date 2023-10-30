@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // Copyright 2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");

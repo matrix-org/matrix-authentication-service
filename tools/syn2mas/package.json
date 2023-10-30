@@ -4,6 +4,14 @@
   "license": "Apache-2.0",
   "author": "Matrix.org",
   "type": "module",
+  "bin": "dist/index.js",
+  "files": [
+    "src",
+    "dist",
+    "package.json",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "ts-node --esm src/index.ts",

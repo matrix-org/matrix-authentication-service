@@ -335,3 +335,28 @@ jobs:
             mas-cli-x86_64-linux.tar.gz
             mas-cli-x86_64-macos.tar.gz
           draft: true
+
+  release-npm:
+    name: Release NPM
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4.1.0
+
+      - name: Install Node
+        uses: actions/setup-node@v3.8.1
+        with:
+          node-version-file: ./tools/syn2mas/.nvmrc
+
+      - name: Install Node dependencies
+        working-directory: ./tools/syn2mas
+        run: npm ci
+
+      - name: Build
+        working-directory: ./tools/syn2mas
+        run: npm run build
+
+      # - name: Publish
+      #   working-directory: ./tools/syn2mas
+      #   run: npm run build
