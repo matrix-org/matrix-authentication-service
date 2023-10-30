@@ -5,6 +5,16 @@
     "continue": "Continuer",
     "save": "Enregistrer"
   },
+  "branding": {
+    "privacy_policy": {
+      "alt": "Lien vers la politique de confidentialité",
+      "link": "Politique de confidentialité"
+    },
+    "terms_and_conditions": {
+      "alt": "Lien vers les conditions d'utilisation",
+      "link": "Conditions d'utilisation"
+    }
+  },
   "common": {
     "add": "Ajouter",
     "error": "Erreur",
@@ -89,8 +99,8 @@
     },
     "session": {
       "current_badge": "Cet appareil",
-      "finished_date": "Terminé <1/>",
-      "signed_in_date": "Connecté <1/>"
+      "finished_date": "Terminé <datetime/>",
+      "signed_in_date": "Connecté <datetime/>"
     },
     "session_detail": {
       "alert": {
@@ -131,10 +141,17 @@
       "heading": "Où vous êtes connecté"
     },
     "verify_email": {
+      "code_field_error": "Code non reconnu",
       "code_field_label": "Code à 6 chiffres",
-      "enter_code_prompt": "Entrez le code à 6 chiffres envoyé à <2>{{email}}</2>",
+      "code_field_wrong_shape": "Le code doit être composé de 6 chiffres",
+      "email_sent_alert": {
+        "description": "Saisissez le nouveau code ci-dessous.",
+        "title": "Nouveau code envoyé"
+      },
+      "enter_code_prompt": "Entrez le code à 6 chiffres envoyé à : <email>{{email}}</email>",
       "heading": "Vérification de votre adresse e-mail",
       "invalid_code_alert": "Code invalide",
+      "resend_code": "Renvoyer un code",
       "resend_email": "Renvoyer l’e-mail",
       "sent": "Envoyé !",
       "unknown_email": "Adresse e-mail inconnue"
