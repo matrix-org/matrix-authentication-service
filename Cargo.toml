@@ -4,7 +4,7 @@ members = ["crates/*"]
 resolver = "2"
 
 # Updated in the CI with a `sed` command
-package.version = "0.4.1"
+package.version = "0.5.0-rc.0"
 package.license = "Apache-2.0"
 package.authors = ["Quentin Gliech <quenting@element.io>"]
 package.edition = "2021"
