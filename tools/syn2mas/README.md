@@ -12,5 +12,5 @@ The tool has two modes of operation:
 Pre-migration advisor:
 
 ```sh
-npm run dev -- advisor --synapseConfigFile homeserver.yaml
+npx @matrix-org/syn2mas --command=advisor --synapseConfigFile homeserver.yaml
 ```
