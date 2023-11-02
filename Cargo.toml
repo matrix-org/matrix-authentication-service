@@ -3,13 +3,13 @@ default-members = ["crates/cli"]
 members = ["crates/*"]
 resolver = "2"
 
-[workspace.package]
-version = "0.4.1"
-license = "Apache-2.0"
-authors = ["Quentin Gliech <quenting@element.io>"]
-edition = "2021"
-homepage = "https://matrix-org.github.io/matrix-authentication-service/"
-repository = "https://github.com/matrix-org/matrix-authentication-service/"
+# Updated in the CI with a `sed` command
+package.version = "0.4.1"
+package.license = "Apache-2.0"
+package.authors = ["Quentin Gliech <quenting@element.io>"]
+package.edition = "2021"
+package.homepage = "https://matrix-org.github.io/matrix-authentication-service/"
+package.repository = "https://github.com/matrix-org/matrix-authentication-service/"
 
 [workspace.dependencies]
 
