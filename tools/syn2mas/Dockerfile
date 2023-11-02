@@ -1,28 +1,48 @@
 
 # Build Node.js app
-FROM --platform=${BUILDPLATFORM} node:18-alpine AS builder
+FROM --platform=${BUILDPLATFORM} docker.io/library/node:18-bookworm AS builder
 
 WORKDIR /syn2mas
 
-COPY ./package.json ./package-lock.json ./
+COPY ./package.json ./package-lock.json ./tsconfig.json ./
+COPY ./src ./src
 RUN --network=default \
   npm ci
 
-COPY ./tsconfig.json ./
-COPY ./src ./src/
+# Install the production dependencies for each architecture we support
+FROM --platform=${BUILDPLATFORM} docker.io/library/node:18-bookworm AS deps
 
-RUN --network=none \
-  npm run build
-
-# Put together a runtime image
-FROM --platform=${BUILDPLATFORM} node:18-alpine
-
-WORKDIR /syn2mas
+WORKDIR /deps/arm64
 
 COPY ./package.json ./package-lock.json ./
+# Remove the "prepare" script to avoid compiling typescript
+RUN sed -i '/"prepare"/d' package.json
 RUN --network=default \
-  npm ci --omit=dev
+  npm ci \
+    --target_arch=amd64 \
+    --target_platform=linux \
+    --omit=dev
 
+WORKDIR /deps/amd64
+
+COPY ./package.json ./package-lock.json ./
+# Remove the "prepare" script to avoid compiling typescript
+RUN sed -i '/"prepare"/d' package.json
+RUN --network=default \
+  npm ci \
+    --target_arch=x64 \
+    --target_platform=linux \
+    --omit=dev
+
+
+# Runtime stage
+FROM --platform=${TARGETPLATFORM} gcr.io/distroless/nodejs18-debian12:debug-nonroot
+
+WORKDIR /syn2mas
+COPY ./package.json ./package-lock.json ./
 COPY --from=builder /syn2mas/dist ./dist
 
-ENTRYPOINT ["node", "dist/index.js"]
+ARG TARGETARCH
+COPY --from=deps /deps/${TARGETARCH}/node_modules ./node_modules
+
+ENTRYPOINT ["/nodejs/bin/node", "dist/index.js"]
