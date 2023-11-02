@@ -5,6 +5,10 @@
   "license": "Apache-2.0",
   "author": "Matrix.org",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/matrix-org/matrix-authentication-service"
+  },
   "bin": {
     "syn2mas": "dist/index.js"
   },
