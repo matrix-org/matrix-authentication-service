@@ -47,6 +47,24 @@ interface MigrationOptions {
   help?: boolean;
 }
 
+// Parses a string that is either a UUID or a ULID
+// Returns [uuid, ulid] in canonical format
+const parseUuidOrUlid = (input: string): [string, string] => {
+  let bytes: Uint8Array;
+  if (id128.Ulid.isCanonical(input)) {
+    bytes = id128.Ulid.fromCanonicalTrusted(input).bytes;
+  } else if (id128.Uuid.isCanonical(input)) {
+    bytes = id128.Uuid.fromCanonicalTrusted(input).bytes;
+  } else {
+    bytes = id128.Uuid.fromRaw(input).bytes;
+  }
+
+  return [
+    id128.Uuid.construct(bytes).toCanonical(),
+    id128.Ulid.construct(bytes).toCanonical(),
+  ];
+};
+
 export async function migrate(): Promise<void> {
   const args = parse<MigrationOptions>(
     {
@@ -135,22 +153,26 @@ export async function migrate(): Promise<void> {
 
     if (
       !id128.Uuid.isRaw(masProviderId) &&
-      !id128.Uuid.isCanonical(masProviderId)
+      !id128.Uuid.isCanonical(masProviderId) &&
+      !id128.Ulid.isCanonical(masProviderId)
     ) {
       throw new Error(
-        `Upstream provider mapping UUID is not in correct format. It should be a UUID: ${masProviderId}`,
+        `Upstream provider mapping is not in correct format. It should be a UUID or a ULID: ${masProviderId}`,
       );
     }
+
+    const [masProviderUuid, masProviderUlid] = parseUuidOrUlid(masProviderId);
+
     log.info(
-      `Loading existing upstream provider ${masProviderId} from MAS database as ${providerId}`,
+      `Loading existing upstream provider ${masProviderUlid} from MAS database as ${providerId}`,
     );
     const existingProvider = await mas("upstream_oauth_providers")
       .select("*")
-      .where({ upstream_oauth_provider_id: masProviderId })
+      .where({ upstream_oauth_provider_id: masProviderUuid })
       .first();
     if (!existingProvider) {
       throw new Error(
-        `Could not find upstream provider ${masProviderId} in MAS database`,
+        `Could not find upstream provider ${masProviderUlid} in MAS database`,
       );
     }
     upstreamProviders.set(providerId, existingProvider);
