@@ -34,7 +34,7 @@
     "history": "^5.3.0",
     "i18next": "^23.6.0",
     "i18next-browser-languagedetector": "^7.1.0",
-    "i18next-http-backend": "^2.2.2",
+    "i18next-http-backend": "^2.3.1",
     "jotai": "^2.5.0",
     "jotai-devtools": "^0.7.0",
     "jotai-location": "^0.5.2",
