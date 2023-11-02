@@ -256,6 +256,10 @@ jobs:
   syn2mas:
     name: Release syn2mas on NPM
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
     steps:
       - name: Checkout the code
         uses: actions/checkout@v4.1.0
