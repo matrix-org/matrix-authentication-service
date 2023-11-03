@@ -119,9 +119,9 @@ export async function migrate(): Promise<void> {
     fatals += 1;
   }
 
-  function makeUuid<T>(): UUID<T> {
-    return id128.Uuid4.fromRaw(
-      id128.UlidMonotonic.generate().toRaw(),
+  function makeUuid<T>(time: Date): UUID<T> {
+    return id128.Uuid.construct(
+      id128.Ulid.generate({ time }).bytes,
     ).toCanonical();
   }
 
@@ -209,26 +209,24 @@ export async function migrate(): Promise<void> {
     let warningsForUser = 0;
     const executions: Execution[] = [];
 
-    if (user.deactivated === 1) {
-      fatal(`Migration of deactivated users is not supported: ${user.name}`);
-    }
-
     if (user.is_guest === 1) {
       fatal(`Migration of guest users is not supported: ${user.name}`);
     }
 
     // users => users
+    const userCreatedAt = new Date(parseInt(`${user.creation_ts}`) * 1000);
     const masUser = {
-      user_id: makeUuid(),
+      user_id: makeUuid(userCreatedAt),
       username: localpart,
-      created_at: new Date(parseInt(`${user.creation_ts}`) * 1000),
+      created_at: userCreatedAt,
+      locked_at: user.deactivated === 1 ? userCreatedAt : null,
     };
     executions.push(() => mas.insert(masUser!).into("users"));
     log.debug(`${stringifyAndRedact(user)} => ${stringifyAndRedact(masUser)}`);
     // users.password_hash => user_passwords
     if (user.password_hash) {
       const masUserPassword: MUserPassword = {
-        user_password_id: makeUuid(),
+        user_password_id: makeUuid(userCreatedAt),
         user_id: masUser.user_id,
         hashed_password: user.password_hash,
         created_at: masUser.created_at, // TODO: should we use now() instead of created_at?
@@ -257,11 +255,14 @@ export async function migrate(): Promise<void> {
         );
         continue;
       }
+      const threePidCreatedAt = new Date(
+        parseInt(`${threePid.added_at}`) * 1000,
+      );
       const masUserEmail: MUserEmail = {
-        user_email_id: makeUuid(),
+        user_email_id: makeUuid(threePidCreatedAt),
         user_id: masUser.user_id,
         email: threePid.address.toLowerCase(),
-        created_at: new Date(parseInt(`${threePid.added_at}`) * 1000),
+        created_at: threePidCreatedAt,
       };
 
       if (threePid.validated_at) {
@@ -305,7 +306,7 @@ export async function migrate(): Promise<void> {
         }
         const provider = upstreamProviders.get(externalId.auth_provider)!;
         const masUpstreamOauthLink: MUpstreamOauthLink = {
-          upstream_oauth_link_id: makeUuid(),
+          upstream_oauth_link_id: makeUuid(userCreatedAt),
           user_id: masUser.user_id,
           upstream_oauth_provider_id: provider.upstream_oauth_provider_id,
           subject: externalId.external_id,
@@ -328,80 +329,89 @@ export async function migrate(): Promise<void> {
       }
     }
 
-    // access_tokens,refresh_tokens => compat_sessions,compat_access_tokens
-    const synapseAccessTokens = await synapse
-      .select("*")
-      .from<SAccessToken>("access_tokens")
-      .where({ user_id: user.name });
-    for (const accessToken of synapseAccessTokens) {
-      if (!accessToken.device_id) {
-        warningsForUser += 1;
-        warn(
-          `Skipping access token ${accessToken.token} for user ${user.name} with no device_id`,
-        );
-        continue;
-      }
-
-      const masCompatSession: MCompatSession = {
-        compat_session_id: makeUuid(),
-        user_id: masUser.user_id,
-        device_id: accessToken.device_id,
-        created_at: accessToken.last_validated
-          ? new Date(parseInt(`${accessToken.last_validated}`))
-          : masUser.created_at,
-        is_synapse_admin: user.admin === 1,
-      };
-      log.debug(
-        `${stringifyAndRedact(accessToken)} => ${stringifyAndRedact(
-          masCompatSession,
-        )}`,
+    // We only import access tokens for active users
+    if (user.deactivated === 1) {
+      log.info(
+        `Skipping access tokens import for deactivated user ${user.name}`,
       );
-      executions.push(() =>
-        mas.insert(masCompatSession).into("compat_sessions"),
-      );
-
-      const masCompatAccessToken: MCompatAccessToken = {
-        compat_access_token_id: makeUuid(),
-        compat_session_id: masCompatSession.compat_session_id,
-        access_token: accessToken.token,
-        created_at: masCompatSession.created_at,
-      };
-      log.debug(
-        `Access token ${accessToken.id} => ${stringifyAndRedact(
-          masCompatAccessToken,
-        )}`,
-      );
-      executions.push(() =>
-        mas.insert(masCompatAccessToken).into("compat_access_tokens"),
-      );
-
-      if (accessToken.refresh_token_id) {
-        const synapseRefreshToken = await synapse
-          .select("*")
-          .from<SRefreshToken>("refresh_tokens")
-          .where({ id: accessToken.refresh_token_id })
-          .first();
-        if (synapseRefreshToken) {
-          const masCompatRefreshToken: MCompatRefreshToken = {
-            compat_refresh_token_id: makeUuid(),
-            compat_session_id: masCompatSession.compat_session_id,
-            compat_access_token_id: masCompatAccessToken.compat_access_token_id,
-            refresh_token: synapseRefreshToken.token,
-            created_at: masCompatSession.created_at,
-          };
-          log.debug(
-            `Refresh token ${synapseRefreshToken.id} => ${stringifyAndRedact(
-              masCompatRefreshToken,
-            )}`,
-          );
-          executions.push(() =>
-            mas.insert(masCompatRefreshToken).into("compat_refresh_tokens"),
-          );
-        } else {
+    } else {
+      // access_tokens,refresh_tokens => compat_sessions,compat_access_tokens
+      const synapseAccessTokens = await synapse
+        .select("*")
+        .from<SAccessToken>("access_tokens")
+        .where({ user_id: user.name });
+      for (const accessToken of synapseAccessTokens) {
+        if (!accessToken.device_id) {
           warningsForUser += 1;
           warn(
-            `Unable to locate refresh token ${accessToken.refresh_token_id} for user ${user.name}`,
+            `Skipping access token ${accessToken.token} for user ${user.name} with no device_id`,
           );
+          continue;
+        }
+
+        const tokenCreatedAt = accessToken.last_validated
+          ? new Date(parseInt(`${accessToken.last_validated}`))
+          : masUser.created_at;
+        const masCompatSession: MCompatSession = {
+          compat_session_id: makeUuid(tokenCreatedAt),
+          user_id: masUser.user_id,
+          device_id: accessToken.device_id,
+          created_at: tokenCreatedAt,
+          is_synapse_admin: user.admin === 1,
+        };
+        log.debug(
+          `${stringifyAndRedact(accessToken)} => ${stringifyAndRedact(
+            masCompatSession,
+          )}`,
+        );
+        executions.push(() =>
+          mas.insert(masCompatSession).into("compat_sessions"),
+        );
+
+        const masCompatAccessToken: MCompatAccessToken = {
+          compat_access_token_id: makeUuid(tokenCreatedAt),
+          compat_session_id: masCompatSession.compat_session_id,
+          access_token: accessToken.token,
+          created_at: tokenCreatedAt,
+        };
+        log.debug(
+          `Access token ${accessToken.id} => ${stringifyAndRedact(
+            masCompatAccessToken,
+          )}`,
+        );
+        executions.push(() =>
+          mas.insert(masCompatAccessToken).into("compat_access_tokens"),
+        );
+
+        if (accessToken.refresh_token_id) {
+          const synapseRefreshToken = await synapse
+            .select("*")
+            .from<SRefreshToken>("refresh_tokens")
+            .where({ id: accessToken.refresh_token_id })
+            .first();
+          if (synapseRefreshToken) {
+            const masCompatRefreshToken: MCompatRefreshToken = {
+              compat_refresh_token_id: makeUuid(tokenCreatedAt),
+              compat_session_id: masCompatSession.compat_session_id,
+              compat_access_token_id:
+                masCompatAccessToken.compat_access_token_id,
+              refresh_token: synapseRefreshToken.token,
+              created_at: tokenCreatedAt,
+            };
+            log.debug(
+              `Refresh token ${synapseRefreshToken.id} => ${stringifyAndRedact(
+                masCompatRefreshToken,
+              )}`,
+            );
+            executions.push(() =>
+              mas.insert(masCompatRefreshToken).into("compat_refresh_tokens"),
+            );
+          } else {
+            warningsForUser += 1;
+            warn(
+              `Unable to locate refresh token ${accessToken.refresh_token_id} for user ${user.name}`,
+            );
+          }
         }
       }
     }

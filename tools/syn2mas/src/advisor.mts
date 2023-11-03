@@ -152,15 +152,6 @@ export async function advisor(): Promise<void> {
     );
   }
 
-  const deactivatedUsers = await count(
-    synapse.count("*").from<SUser>("users").where({ deactivated: 1 }),
-  );
-  if (deactivatedUsers > 0) {
-    error(
-      `Synapse database contains ${deactivatedUsers} deactivated users which aren't supported during migration`,
-    );
-  }
-
   const accessTokensWithoutDeviceId = await count(
     synapse
       .count("*")
