@@ -72,7 +72,7 @@ limitations under the License.
             {% elif error.kind == "exists" and field.name == "username" %}
               {{ _("mas.errors.username_taken") }}
             {% elif error.kind == "policy" %}
-              {{ _("mas.errors.denied_policy", message=error.message) }}
+              {{ _("mas.errors.denied_policy", policy=error.message) }}
             {% else %}
               {{ error.kind }}
             {% endif %}
