@@ -32,7 +32,7 @@ use ulid::Ulid;
 use url::Url;
 
 pub use self::branding::SiteBranding;
-use crate::{FormField, FormState};
+use crate::{FieldError, FormField, FormState};
 
 /// Helper trait to construct context wrappers
 pub trait TemplateContext: Serialize {
@@ -404,6 +404,26 @@ impl TemplateContext for LoginContext {
             },
             LoginContext {
                 form: FormState::default(),
+                next: None,
+                password_disabled: false,
+                providers: Vec::new(),
+            },
+            LoginContext {
+                form: FormState::default()
+                    .with_error_on_field(LoginFormField::Username, FieldError::Required)
+                    .with_error_on_field(
+                        LoginFormField::Password,
+                        FieldError::Policy {
+                            message: "password too short".to_owned(),
+                        },
+                    ),
+                next: None,
+                password_disabled: false,
+                providers: Vec::new(),
+            },
+            LoginContext {
+                form: FormState::default()
+                    .with_error_on_field(LoginFormField::Username, FieldError::Exists),
                 next: None,
                 password_disabled: false,
                 providers: Vec::new(),

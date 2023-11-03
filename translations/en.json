@@ -6,7 +6,7 @@
     },
     "continue": "Continue",
     "@continue": {
-      "context": "pages/account/emails/add.html:45:26-46, pages/account/emails/verify.html:60:26-46, pages/consent.html:60:28-48, pages/login.html:59:30-50, pages/reauth.html:40:28-48, pages/register.html:59:28-48, pages/sso.html:43:28-48"
+      "context": "pages/account/emails/add.html:45:26-46, pages/account/emails/verify.html:60:26-46, pages/consent.html:60:28-48, pages/login.html:59:30-50, pages/reauth.html:40:28-48, pages/register.html:59:28-48, pages/sso.html:45:28-48"
     },
     "create_account": "Create Account",
     "@create_account": {
@@ -18,7 +18,7 @@
     },
     "sign_out": "Sign out",
     "@sign_out": {
-      "context": "pages/consent.html:68:28-48, pages/index.html:36:28-48, pages/policy_violation.html:46:28-48, pages/sso.html:51:28-48, pages/upstream_oauth2/link_mismatch.html:32:24-44, pages/upstream_oauth2/suggest_link.html:40:26-46"
+      "context": "pages/consent.html:68:28-48, pages/index.html:36:28-48, pages/policy_violation.html:46:28-48, pages/sso.html:53:28-48, pages/upstream_oauth2/link_mismatch.html:32:24-44, pages/upstream_oauth2/suggest_link.html:40:26-46"
     }
   },
   "app": {
@@ -167,7 +167,7 @@
     "errors": {
       "denied_policy": "Denied by policy: %(policy)s",
       "@denied_policy": {
-        "context": "components/field.html:75:17-69"
+        "context": "components/field.html:75:17-68"
       },
       "field_required": "This field is required",
       "@field_required": {
@@ -246,7 +246,7 @@
     },
     "not_you": "Not %(username)s?",
     "@not_you": {
-      "context": "pages/consent.html:65:11-67, pages/sso.html:48:11-67",
+      "context": "pages/consent.html:65:11-67, pages/sso.html:50:11-67",
       "description": "Suggestions for the user to log in as a different user"
     },
     "or_separator": "Or",
