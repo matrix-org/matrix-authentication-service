@@ -1797,9 +1797,9 @@ dependencies = [
 
 [[package]]
 name = "futures-lite"
-version = "2.0.0"
+version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c1155db57329dca6d018b61e76b1488ce9a2e5e44028cac420a5898f4fcef63"
+checksum = "d3831c2651acb5177cbd83943f3d9c8912c5ad03c76afcc0e9511ba568ec5ebb"
 dependencies = [
  "fastrand 2.0.1",
  "futures-core",
@@ -1807,7 +1807,6 @@ dependencies = [
  "memchr",
  "parking",
  "pin-project-lite",
- "waker-fn",
 ]
 
 [[package]]
@@ -3329,7 +3328,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "event-listener 3.0.1",
- "futures-lite 2.0.0",
+ "futures-lite 2.0.1",
  "mas-data-model",
  "mas-email",
  "mas-i18n",
