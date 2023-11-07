@@ -21,7 +21,8 @@ env:
 jobs:
   opa-lint:
     name: Lint and test OPA policies
-    runs-on: ubuntu-latest
+    runs-on: cpu-m
+    container: ubuntu:latest
 
     permissions:
       contents: read
@@ -45,7 +46,8 @@ jobs:
 
   frontend-lint:
     name: Check frontend style
-    runs-on: ubuntu-latest
+    runs-on: cpu-m
+    container: ubuntu:latest
 
     permissions:
       contents: read
@@ -70,7 +72,8 @@ jobs:
 
   frontend-test:
     name: Run the frontend test suite
-    runs-on: ubuntu-latest
+    runs-on: cpu-m
+    container: ubuntu:latest
 
     permissions:
       contents: read
@@ -95,7 +98,8 @@ jobs:
 
   rustfmt:
     name: Check Rust style
-    runs-on: ubuntu-latest
+    runs-on: cpu-m
+    container: ubuntu:latest
 
     permissions:
       contents: read
@@ -116,7 +120,8 @@ jobs:
 
   cargo-deny:
     name: Run `cargo deny` checks
-    runs-on: ubuntu-latest
+    runs-on: cpu-m
+    container: ubuntu:latest
 
     env:
       # We need to remove the sccache wrapper because we don't install it in this job
@@ -135,7 +140,8 @@ jobs:
   
   check-schema:
     name: Check schema
-    runs-on: ubuntu-latest
+    runs-on: cpu-m
+    container: ubuntu:latest
 
     permissions:
       contents: read
