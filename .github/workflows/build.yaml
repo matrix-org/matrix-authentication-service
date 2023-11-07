@@ -30,7 +30,7 @@ env:
 jobs:
   build-binaries:
     name: Build binaries
-    runs-on: myarc
+    runs-on: gvarc
     container: docker.io/library/buildpack-deps:bookworm
 
     env:
