@@ -20,7 +20,6 @@ use hyper::StatusCode;
 use mas_axum_utils::{
     cookies::CookieJar, http_client_factory::HttpClientFactory, sentry::SentryEventID,
 };
-use mas_jose::claims::ClaimError;
 use mas_keystore::{Encrypter, Keystore};
 use mas_oidc_client::requests::{
     authorization_code::AuthorizationValidationData, jose::JwtVerificationData,
@@ -83,8 +82,11 @@ pub(crate) enum RouteError {
     #[error("Missing ID token")]
     MissingIDToken,
 
-    #[error("Invalid ID token")]
-    InvalidIdToken(#[from] ClaimError),
+    #[error("Could not extract subject from ID token")]
+    ExtractSubject(#[source] minijinja::Error),
+
+    #[error("Subject is empty")]
+    EmptySubject,
 
     #[error("Error from the provider: {error}")]
     ClientError {
@@ -236,10 +238,27 @@ pub(crate) async fn get(
         )
         .await?;
 
-    let (_header, mut id_token) = id_token.ok_or(RouteError::MissingIDToken)?.into_parts();
+    let (_header, id_token) = id_token.ok_or(RouteError::MissingIDToken)?.into_parts();
 
-    // Extract the subject from the id_token
-    let subject = mas_jose::claims::SUB.extract_required(&mut id_token)?;
+    let env = {
+        let mut env = minijinja::Environment::new();
+        env.add_global("user", minijinja::Value::from_serializable(&id_token));
+        env
+    };
+
+    let template = provider
+        .claims_imports
+        .subject
+        .template
+        .as_deref()
+        .unwrap_or("{{ user.sub }}");
+    let subject = env
+        .render_str(template, ())
+        .map_err(RouteError::ExtractSubject)?;
+
+    if subject.is_empty() {
+        return Err(RouteError::EmptySubject);
+    }
 
     // Look for an existing link
     let maybe_link = repo

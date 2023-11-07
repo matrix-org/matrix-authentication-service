@@ -57,6 +57,7 @@ psl = "2.1.4"
 time = "0.3.30"
 url.workspace = true
 mime = "0.3.17"
+minijinja.workspace = true
 rand.workspace = true
 rand_chacha = "0.3.1"
 headers = "0.3.9"

@@ -96,10 +96,10 @@ pub enum ImportAction {
     Require,
 }
 
-/// What should be done with a claim
+/// What should be done with a attribute
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, JsonSchema)]
 pub struct ImportPreference {
-    /// How to handle the claim
+    /// How to handle the attribute
     #[serde(default)]
     pub action: ImportAction,
 }
@@ -120,12 +120,56 @@ pub enum SetEmailVerification {
     Import,
 }
 
-/// What should be done with the email claim
+/// What should be done for the subject attribute
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, JsonSchema)]
+pub struct SubjectImportPreference {
+    /// The Jinja2 template to use for the subject attribute
+    ///
+    /// If not provided, the default template is `{{ user.sub }}`
+    #[serde(default)]
+    pub template: Option<String>,
+}
+
+/// What should be done for the localpart attribute
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, JsonSchema)]
+pub struct LocalpartImportPreference {
+    /// How to handle the attribute
+    #[serde(default)]
+    pub action: ImportAction,
+
+    /// The Jinja2 template to use for the localpart attribute
+    ///
+    /// If not provided, the default template is `{{ user.preferred_username }}`
+    #[serde(default)]
+    pub template: Option<String>,
+}
+
+/// What should be done for the displayname attribute
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, JsonSchema)]
+pub struct DisplaynameImportPreference {
+    /// How to handle the attribute
+    #[serde(default)]
+    pub action: ImportAction,
+
+    /// The Jinja2 template to use for the displayname attribute
+    ///
+    /// If not provided, the default template is `{{ user.name }}`
+    #[serde(default)]
+    pub template: Option<String>,
+}
+
+/// What should be done with the email attribute
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, JsonSchema)]
 pub struct EmailImportPreference {
     /// How to handle the claim
     #[serde(default)]
     pub action: ImportAction,
+
+    /// The Jinja2 template to use for the email address attribute
+    ///
+    /// If not provided, the default template is `{{ user.email }}`
+    #[serde(default)]
+    pub template: Option<String>,
 
     /// Should the email address be marked as verified
     #[serde(default)]
@@ -135,18 +179,22 @@ pub struct EmailImportPreference {
 /// How claims should be imported
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, JsonSchema)]
 pub struct ClaimsImports {
-    /// Import the localpart of the MXID based on the `preferred_username` claim
+    /// How to determine the subject of the user
     #[serde(default)]
-    pub localpart: Option<ImportPreference>,
+    pub subject: SubjectImportPreference,
 
-    /// Import the displayname of the user based on the `name` claim
+    /// Import the localpart of the MXID
     #[serde(default)]
-    pub displayname: Option<ImportPreference>,
+    pub localpart: LocalpartImportPreference,
+
+    /// Import the displayname of the user.
+    #[serde(default)]
+    pub displayname: DisplaynameImportPreference,
 
     /// Import the email address of the user based on the `email` and
     /// `email_verified` claims
     #[serde(default)]
-    pub email: Option<EmailImportPreference>,
+    pub email: EmailImportPreference,
 }
 
 #[skip_serializing_none]

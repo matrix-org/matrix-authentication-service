@@ -348,17 +348,24 @@
       "type": "object",
       "properties": {
         "displayname": {
-          "description": "Import the displayname of the user based on the `name` claim",
-          "default": null,
+          "description": "Import the displayname of the user.",
+          "default": {
+            "action": "ignore",
+            "template": null
+          },
           "allOf": [
             {
-              "$ref": "#/definitions/ImportPreference"
+              "$ref": "#/definitions/DisplaynameImportPreference"
             }
           ]
         },
         "email": {
           "description": "Import the email address of the user based on the `email` and `email_verified` claims",
-          "default": null,
+          "default": {
+            "action": "ignore",
+            "set_email_verification": "import",
+            "template": null
+          },
           "allOf": [
             {
               "$ref": "#/definitions/EmailImportPreference"
@@ -366,11 +373,25 @@
           ]
         },
         "localpart": {
-          "description": "Import the localpart of the MXID based on the `preferred_username` claim",
-          "default": null,
+          "description": "Import the localpart of the MXID",
+          "default": {
+            "action": "ignore",
+            "template": null
+          },
           "allOf": [
             {
-              "$ref": "#/definitions/ImportPreference"
+              "$ref": "#/definitions/LocalpartImportPreference"
+            }
+          ]
+        },
+        "subject": {
+          "description": "How to determine the subject of the user",
+          "default": {
+            "template": null
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/SubjectImportPreference"
             }
           ]
         }
@@ -612,6 +633,26 @@
         }
       }
     },
+    "DisplaynameImportPreference": {
+      "description": "What should be done for the displayname attribute",
+      "type": "object",
+      "properties": {
+        "action": {
+          "description": "How to handle the attribute",
+          "default": "ignore",
+          "allOf": [
+            {
+              "$ref": "#/definitions/ImportAction"
+            }
+          ]
+        },
+        "template": {
+          "description": "The Jinja2 template to use for the displayname attribute\n\nIf not provided, the default template is `{{ user.name }}`",
+          "default": null,
+          "type": "string"
+        }
+      }
+    },
     "EmailConfig": {
       "description": "Configuration related to sending emails",
       "type": "object",
@@ -728,7 +769,7 @@
       }
     },
     "EmailImportPreference": {
-      "description": "What should be done with the email claim",
+      "description": "What should be done with the email attribute",
       "type": "object",
       "properties": {
         "action": {
@@ -748,6 +789,11 @@
               "$ref": "#/definitions/SetEmailVerification"
             }
           ]
+        },
+        "template": {
+          "description": "The Jinja2 template to use for the email address attribute\n\nIf not provided, the default template is `{{ user.email }}`",
+          "default": null,
+          "type": "string"
         }
       }
     },
@@ -941,21 +987,6 @@
           ]
         }
       ]
-    },
-    "ImportPreference": {
-      "description": "What should be done with a claim",
-      "type": "object",
-      "properties": {
-        "action": {
-          "description": "How to handle the claim",
-          "default": "ignore",
-          "allOf": [
-            {
-              "$ref": "#/definitions/ImportAction"
-            }
-          ]
-        }
-      }
     },
     "IpNetwork": {
       "oneOf": [
@@ -1345,6 +1376,26 @@
               "$ref": "#/definitions/TlsConfig"
             }
           ]
+        }
+      }
+    },
+    "LocalpartImportPreference": {
+      "description": "What should be done for the localpart attribute",
+      "type": "object",
+      "properties": {
+        "action": {
+          "description": "How to handle the attribute",
+          "default": "ignore",
+          "allOf": [
+            {
+              "$ref": "#/definitions/ImportAction"
+            }
+          ]
+        },
+        "template": {
+          "description": "The Jinja2 template to use for the localpart attribute\n\nIf not provided, the default template is `{{ user.preferred_username }}`",
+          "default": null,
+          "type": "string"
         }
       }
     },
@@ -1913,6 +1964,17 @@
           ]
         }
       ]
+    },
+    "SubjectImportPreference": {
+      "description": "What should be done for the subject attribute",
+      "type": "object",
+      "properties": {
+        "template": {
+          "description": "The Jinja2 template to use for the subject attribute\n\nIf not provided, the default template is `{{ user.sub }}`",
+          "default": null,
+          "type": "string"
+        }
+      }
     },
     "TelemetryConfig": {
       "description": "Configuration related to sending monitoring data",
