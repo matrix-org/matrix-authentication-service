@@ -49,7 +49,7 @@ pub use self::{
         UpsreamOAuthProviderSetEmailVerification, UpstreamOAuthAuthorizationSession,
         UpstreamOAuthAuthorizationSessionState, UpstreamOAuthLink, UpstreamOAuthProvider,
         UpstreamOAuthProviderClaimsImports, UpstreamOAuthProviderImportAction,
-        UpstreamOAuthProviderImportPreference,
+        UpstreamOAuthProviderImportPreference, UpstreamOAuthProviderSubjectPreference,
     },
     users::{
         Authentication, AuthenticationMethod, BrowserSession, Password, User, UserEmail,

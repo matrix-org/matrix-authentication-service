@@ -22,7 +22,8 @@ pub use self::{
         ClaimsImports as UpstreamOAuthProviderClaimsImports,
         ImportAction as UpstreamOAuthProviderImportAction,
         ImportPreference as UpstreamOAuthProviderImportPreference,
-        SetEmailVerification as UpsreamOAuthProviderSetEmailVerification, UpstreamOAuthProvider,
+        SetEmailVerification as UpsreamOAuthProviderSetEmailVerification,
+        SubjectPreference as UpstreamOAuthProviderSubjectPreference, UpstreamOAuthProvider,
     },
     session::{UpstreamOAuthAuthorizationSession, UpstreamOAuthAuthorizationSessionState},
 };

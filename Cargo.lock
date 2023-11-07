@@ -2972,6 +2972,7 @@ dependencies = [
  "mas-storage-pg",
  "mas-templates",
  "mime",
+ "minijinja",
  "oauth2-types",
  "opentelemetry",
  "opentelemetry-semantic-conventions",

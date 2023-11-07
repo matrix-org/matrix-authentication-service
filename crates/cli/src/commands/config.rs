@@ -45,51 +45,36 @@ fn map_import_action(
     }
 }
 
-fn map_import_preference(
-    config: &mas_config::UpstreamOAuth2ImportPreference,
-) -> mas_data_model::UpstreamOAuthProviderImportPreference {
-    mas_data_model::UpstreamOAuthProviderImportPreference {
-        action: map_import_action(&config.action),
-    }
-}
-
 fn map_claims_imports(
     config: &mas_config::UpstreamOAuth2ClaimsImports,
 ) -> mas_data_model::UpstreamOAuthProviderClaimsImports {
     mas_data_model::UpstreamOAuthProviderClaimsImports {
-        localpart: config
-            .localpart
-            .as_ref()
-            .map(map_import_preference)
-            .unwrap_or_default(),
-        displayname: config
-            .displayname
-            .as_ref()
-            .map(map_import_preference)
-            .unwrap_or_default(),
-        email: config
-            .email
-            .as_ref()
-            .map(|c| mas_data_model::UpstreamOAuthProviderImportPreference {
-                action: map_import_action(&c.action),
-            })
-            .unwrap_or_default(),
-        // XXX: this is a bit ugly
-        verify_email: config
-            .email
-            .as_ref()
-            .map(|c| match c.set_email_verification {
-                mas_config::UpstreamOAuth2SetEmailVerification::Always => {
-                    mas_data_model::UpsreamOAuthProviderSetEmailVerification::Always
-                }
-                mas_config::UpstreamOAuth2SetEmailVerification::Never => {
-                    mas_data_model::UpsreamOAuthProviderSetEmailVerification::Never
-                }
-                mas_config::UpstreamOAuth2SetEmailVerification::Import => {
-                    mas_data_model::UpsreamOAuthProviderSetEmailVerification::Import
-                }
-            })
-            .unwrap_or_default(),
+        subject: mas_data_model::UpstreamOAuthProviderSubjectPreference {
+            template: config.subject.template.clone(),
+        },
+        localpart: mas_data_model::UpstreamOAuthProviderImportPreference {
+            action: map_import_action(&config.localpart.action),
+            template: config.localpart.template.clone(),
+        },
+        displayname: mas_data_model::UpstreamOAuthProviderImportPreference {
+            action: map_import_action(&config.displayname.action),
+            template: config.displayname.template.clone(),
+        },
+        email: mas_data_model::UpstreamOAuthProviderImportPreference {
+            action: map_import_action(&config.email.action),
+            template: config.email.template.clone(),
+        },
+        verify_email: match config.email.set_email_verification {
+            mas_config::UpstreamOAuth2SetEmailVerification::Always => {
+                mas_data_model::UpsreamOAuthProviderSetEmailVerification::Always
+            }
+            mas_config::UpstreamOAuth2SetEmailVerification::Never => {
+                mas_data_model::UpsreamOAuthProviderSetEmailVerification::Never
+            }
+            mas_config::UpstreamOAuth2SetEmailVerification::Import => {
+                mas_data_model::UpsreamOAuthProviderSetEmailVerification::Import
+            }
+        },
     }
 }
 

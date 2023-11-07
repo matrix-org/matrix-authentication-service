@@ -60,6 +60,9 @@ impl SetEmailVerification {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct ClaimsImports {
     #[serde(default)]
+    pub subject: SubjectPreference,
+
+    #[serde(default)]
     pub localpart: ImportPreference,
 
     #[serde(default)]
@@ -73,9 +76,18 @@ pub struct ClaimsImports {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct SubjectPreference {
+    #[serde(default)]
+    pub template: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct ImportPreference {
     #[serde(default)]
     pub action: ImportAction,
+
+    #[serde(default)]
+    pub template: Option<String>,
 }
 
 impl std::ops::Deref for ImportPreference {

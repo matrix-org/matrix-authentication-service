@@ -24,7 +24,7 @@ use mas_axum_utils::{
     sentry::SentryEventID,
     FancyError, SessionInfoExt,
 };
-use mas_data_model::{UpstreamOAuthProviderImportPreference, User};
+use mas_data_model::{UpstreamOAuthProviderImportAction, User};
 use mas_jose::jwt::Jwt;
 use mas_policy::Policy;
 use mas_router::UrlBuilder;
@@ -38,6 +38,7 @@ use mas_templates::{
     ErrorContext, TemplateContext, Templates, UpstreamExistingLinkContext, UpstreamRegister,
     UpstreamSuggestLink,
 };
+use minijinja::Environment;
 use serde::Deserialize;
 use thiserror::Error;
 use ulid::Ulid;
@@ -64,8 +65,13 @@ pub(crate) enum RouteError {
     ProviderNotFound,
 
     /// Required claim was missing in id_token
-    #[error("Required claim {0:?} missing from the upstream provider's response")]
-    RequiredClaimMissing(&'static str),
+    #[error("Template {template:?} could not be rendered from the upstream provider's response for required claim")]
+    RequiredAttributeRender {
+        template: String,
+
+        #[source]
+        source: minijinja::Error,
+    },
 
     /// Session was already consumed
     #[error("Session already consumed")]
@@ -119,15 +125,6 @@ impl IntoResponse for RouteError {
     }
 }
 
-#[derive(Deserialize, Default)]
-struct StandardClaims {
-    name: Option<String>,
-    email: Option<String>,
-    #[serde(default)]
-    email_verified: bool,
-    preferred_username: Option<String>,
-}
-
 /// Utility function to import a claim from the upstream provider's response,
 /// based on the preference for that attribute.
 ///
@@ -144,23 +141,31 @@ struct StandardClaims {
 ///
 /// Returns an error if the claim is required but missing.
 fn import_claim(
-    name: &'static str,
-    value: Option<String>,
-    preference: &UpstreamOAuthProviderImportPreference,
+    environment: &Environment,
+    template: &str,
+    action: &UpstreamOAuthProviderImportAction,
     mut run: impl FnMut(String, bool),
 ) -> Result<(), RouteError> {
     // If this claim is ignored, we don't need to do anything.
-    if preference.ignore() {
+    if action.ignore() {
         return Ok(());
     }
 
-    // If this claim is required and missing, we can't continue.
-    if value.is_none() && preference.is_required() {
-        return Err(RouteError::RequiredClaimMissing(name));
-    }
+    match environment.render_str(template, ()) {
+        Ok(value) if value.is_empty() => { /* Do nothing on empty strings */ }
 
-    if let Some(value) = value {
-        run(value, preference.is_forced());
+        Ok(value) => run(value, action.is_forced()),
+
+        Err(source) => {
+            if action.is_required() {
+                return Err(RouteError::RequiredAttributeRender {
+                    template: template.to_owned(),
+                    source,
+                });
+            }
+
+            tracing::warn!(error = &source as &dyn std::error::Error, %template, "Error while rendering template");
+        }
     }
 
     Ok(())
@@ -321,7 +326,7 @@ pub(crate) async fn get(
             // account or logging in an existing user
             let id_token = upstream_session
                 .id_token()
-                .map(Jwt::<'_, StandardClaims>::try_from)
+                .map(Jwt::<'_, minijinja::Value>::try_from)
                 .transpose()?;
 
             let provider = repo
@@ -336,9 +341,20 @@ pub(crate) async fn get(
 
             let mut ctx = UpstreamRegister::new(&link);
 
+            let env = {
+                let mut e = Environment::new();
+                e.add_global("user", payload);
+                e
+            };
+
             import_claim(
-                "name",
-                payload.name,
+                &env,
+                provider
+                    .claims_imports
+                    .displayname
+                    .template
+                    .as_deref()
+                    .unwrap_or("{{ user.name }}"),
                 &provider.claims_imports.displayname,
                 |value, force| {
                     ctx.set_display_name(value, force);
@@ -346,8 +362,13 @@ pub(crate) async fn get(
             )?;
 
             import_claim(
-                "email",
-                payload.email,
+                &env,
+                provider
+                    .claims_imports
+                    .email
+                    .template
+                    .as_deref()
+                    .unwrap_or("{{ user.email }}"),
                 &provider.claims_imports.email,
                 |value, force| {
                     ctx.set_email(value, force);
@@ -355,8 +376,13 @@ pub(crate) async fn get(
             )?;
 
             import_claim(
-                "preferred_username",
-                payload.preferred_username,
+                &env,
+                provider
+                    .claims_imports
+                    .localpart
+                    .template
+                    .as_deref()
+                    .unwrap_or("{{ user.preferred_username }}"),
                 &provider.claims_imports.localpart,
                 |value, force| {
                     ctx.set_localpart(value, force);
@@ -450,7 +476,7 @@ pub(crate) async fn post(
 
             let id_token = upstream_session
                 .id_token()
-                .map(Jwt::<'_, StandardClaims>::try_from)
+                .map(Jwt::<'_, minijinja::Value>::try_from)
                 .transpose()?;
 
             let provider = repo
@@ -463,12 +489,28 @@ pub(crate) async fn post(
                 .map(|id_token| id_token.into_parts().1)
                 .unwrap_or_default();
 
+            let provider_email_verified = payload
+                .get_item(&minijinja::Value::from("email_verified"))
+                .map(|v| v.is_true())
+                .unwrap_or(false);
+
             // Let's try to import the claims from the ID token
+
+            let env = {
+                let mut e = Environment::new();
+                e.add_global("user", payload);
+                e
+            };
 
             let mut name = None;
             import_claim(
-                "name",
-                payload.name,
+                &env,
+                provider
+                    .claims_imports
+                    .displayname
+                    .template
+                    .as_deref()
+                    .unwrap_or("{{ user.name }}"),
                 &provider.claims_imports.displayname,
                 |value, force| {
                     // Import the display name if it is either forced or the user has requested it
@@ -480,8 +522,13 @@ pub(crate) async fn post(
 
             let mut email = None;
             import_claim(
-                "email",
-                payload.email,
+                &env,
+                provider
+                    .claims_imports
+                    .email
+                    .template
+                    .as_deref()
+                    .unwrap_or("{{ user.email }}"),
                 &provider.claims_imports.email,
                 |value, force| {
                     // Import the email if it is either forced or the user has requested it
@@ -493,8 +540,13 @@ pub(crate) async fn post(
 
             let mut username = username;
             import_claim(
-                "preferred_username",
-                payload.preferred_username,
+                &env,
+                provider
+                    .claims_imports
+                    .localpart
+                    .template
+                    .as_deref()
+                    .unwrap_or("{{ user.preferred_username }}"),
                 &provider.claims_imports.localpart,
                 |value, force| {
                     // If the username is forced, override whatever was in the form
@@ -535,13 +587,12 @@ pub(crate) async fn post(
                     .user_email()
                     .add(&mut rng, &clock, &user, email)
                     .await?;
-
                 // Mark the email as verified according to the policy and whether the provider
                 // claims it is, and make it the primary email.
                 if provider
                     .claims_imports
                     .verify_email
-                    .should_mark_as_verified(payload.email_verified)
+                    .should_mark_as_verified(provider_email_verified)
                 {
                     let user_email = repo
                         .user_email()
