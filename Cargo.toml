@@ -63,6 +63,16 @@ version = "0.1.40"
 [workspace.dependencies.tracing-subscriber]
 version = "0.3.17"
 
+# OpenTelemetry
+[workspace.dependencies.opentelemetry]
+version = "0.21.0"
+features = ["trace", "metrics"]
+[workspace.dependencies.opentelemetry-semantic-conventions]
+version = "0.13.0"
+[workspace.dependencies.tracing-opentelemetry]
+version = "0.22.0"
+default-features = false
+
 # URL manipulation
 [workspace.dependencies.url]
 version = "2.4.1"

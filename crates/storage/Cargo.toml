@@ -14,12 +14,12 @@ thiserror.workspace = true
 futures-util = "0.3.28"
 
 apalis-core = { version = "0.4.5", features = ["tokio-comp"] }
-opentelemetry = "0.20.0"
+opentelemetry.workspace = true
 rand_core = "0.6.4"
 serde.workspace = true
 serde_json.workspace = true
 tracing.workspace = true
-tracing-opentelemetry = "0.22.0"
+tracing-opentelemetry.workspace = true
 url.workspace = true
 ulid.workspace = true
 
