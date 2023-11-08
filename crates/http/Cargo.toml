@@ -28,7 +28,7 @@ tokio = { version = "1.33.0", features = ["sync", "parking_lot"], optional = tru
 tower = { version = "0.4.13", features = [] }
 tower-http = { version = "0.4.4", features = ["cors"] }
 tracing.workspace = true
-tracing-opentelemetry = "0.21.0"
+tracing-opentelemetry = "0.22.0"
 webpki-roots = { version = "0.25.2", optional = true }
 
 mas-tower = { path = "../tower" }
