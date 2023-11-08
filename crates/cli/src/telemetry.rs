@@ -20,24 +20,20 @@ use mas_config::{
     JaegerExporterProtocolConfig, MetricsExporterConfig, Propagator, TelemetryConfig,
     TracingExporterConfig,
 };
-use opentelemetry::{
-    global,
-    propagation::TextMapPropagator,
-    sdk::{
-        self,
-        metrics::{
-            reader::{DefaultAggregationSelector, DefaultTemporalitySelector},
-            ManualReader, MeterProvider, PeriodicReader,
-        },
-        propagation::{BaggagePropagator, TextMapCompositePropagator, TraceContextPropagator},
-        trace::{Sampler, Tracer, TracerProvider},
-        Resource,
-    },
-    trace::TracerProvider as _,
-};
+use opentelemetry::{global, propagation::TextMapPropagator, trace::TracerProvider as _};
 use opentelemetry_jaeger::Propagator as JaegerPropagator;
 use opentelemetry_otlp::MetricsExporterBuilder;
 use opentelemetry_prometheus::PrometheusExporter;
+use opentelemetry_sdk::{
+    self,
+    metrics::{
+        reader::{DefaultAggregationSelector, DefaultTemporalitySelector},
+        ManualReader, MeterProvider, PeriodicReader,
+    },
+    propagation::{BaggagePropagator, TextMapCompositePropagator, TraceContextPropagator},
+    trace::{Sampler, Tracer, TracerProvider},
+    Resource,
+};
 use opentelemetry_semantic_conventions as semcov;
 use opentelemetry_zipkin::{B3Encoding, Propagator as ZipkinPropagator};
 use prometheus::Registry;
@@ -118,7 +114,7 @@ fn otlp_tracer(endpoint: Option<&Url>) -> anyhow::Result<Tracer> {
         .tracing()
         .with_exporter(exporter)
         .with_trace_config(trace_config())
-        .install_batch(opentelemetry::runtime::Tokio)
+        .install_batch(opentelemetry_sdk::runtime::Tokio)
         .context("Failed to configure OTLP trace exporter")?;
 
     Ok(tracer)
@@ -128,10 +124,10 @@ fn jaeger_agent_tracer_provider(host: &str, port: u16) -> anyhow::Result<TracerP
     let pipeline = opentelemetry_jaeger::new_agent_pipeline()
         .with_service_name(env!("CARGO_PKG_NAME"))
         .with_trace_config(trace_config())
-        .with_endpoint((host, port));
+        .with_endpoint(format!("{host}:{port}"));
 
     let tracer_provider = pipeline
-        .build_batch(opentelemetry::runtime::Tokio)
+        .build_batch(opentelemetry_sdk::runtime::Tokio)
         .context("Failed to configure Jaeger agent exporter")?;
 
     Ok(tracer_provider)
@@ -158,7 +154,7 @@ async fn jaeger_collector_tracer_provider(
     }
 
     let tracer_provider = pipeline
-        .build_batch(opentelemetry::runtime::Tokio)
+        .build_batch(opentelemetry_sdk::runtime::Tokio)
         .context("Failed to configure Jaeger collector exporter")?;
 
     Ok(tracer_provider)
@@ -177,7 +173,7 @@ async fn zipkin_tracer(collector_endpoint: &Option<Url>) -> anyhow::Result<Trace
     }
 
     let tracer = pipeline
-        .install_batch(opentelemetry::runtime::Tokio)
+        .install_batch(opentelemetry_sdk::runtime::Tokio)
         .context("Failed to configure Zipkin exporter")?;
 
     Ok(tracer)
@@ -233,47 +229,50 @@ fn otlp_metric_reader(endpoint: Option<&url::Url>) -> anyhow::Result<PeriodicRea
         Box::new(DefaultAggregationSelector::new()),
     )?;
 
-    Ok(PeriodicReader::builder(exporter, opentelemetry::runtime::Tokio).build())
+    Ok(PeriodicReader::builder(exporter, opentelemetry_sdk::runtime::Tokio).build())
 }
 
 fn stdout_metric_reader() -> PeriodicReader {
     let exporter = opentelemetry_stdout::MetricsExporter::default();
-    PeriodicReader::builder(exporter, opentelemetry::runtime::Tokio).build()
+    PeriodicReader::builder(exporter, opentelemetry_sdk::runtime::Tokio).build()
 }
 
-pub fn prometheus_service<T>() -> tower::util::ServiceFn<
-    impl FnMut(T) -> std::future::Ready<Result<Response<Body>, std::convert::Infallible>> + Clone,
-> {
+type PromServiceFuture = std::future::Ready<Result<Response<Body>, std::convert::Infallible>>;
+
+#[allow(clippy::needless_pass_by_value)]
+fn prometheus_service_fn<T>(_req: T) -> PromServiceFuture {
     use prometheus::{Encoder, TextEncoder};
 
+    let response = if let Some(registry) = PROMETHEUS_REGISTRY.get() {
+        let mut buffer = vec![];
+        let encoder = TextEncoder::new();
+        let metric_families = registry.gather();
+
+        // That shouldn't panic, unless we're constructing invalid labels
+        encoder.encode(&metric_families, &mut buffer).unwrap();
+
+        Response::builder()
+            .status(200)
+            .header(CONTENT_TYPE, encoder.format_type())
+            .body(Body::from(buffer))
+            .unwrap()
+    } else {
+        Response::builder()
+            .status(500)
+            .header(CONTENT_TYPE, "text/plain")
+            .body(Body::from("Prometheus exporter was not enabled in config"))
+            .unwrap()
+    };
+
+    std::future::ready(Ok(response))
+}
+
+pub fn prometheus_service<T>() -> tower::util::ServiceFn<fn(T) -> PromServiceFuture> {
     if !PROMETHEUS_REGISTRY.initialized() {
         tracing::warn!("A Prometheus resource was mounted on a listener, but the Prometheus exporter was not setup in the config");
     }
 
-    tower::service_fn(move |_req| {
-        let response = if let Some(registry) = PROMETHEUS_REGISTRY.get() {
-            let mut buffer = vec![];
-            let encoder = TextEncoder::new();
-            let metric_families = registry.gather();
-
-            // That shouldn't panic, unless we're constructing invalid labels
-            encoder.encode(&metric_families, &mut buffer).unwrap();
-
-            Response::builder()
-                .status(200)
-                .header(CONTENT_TYPE, encoder.format_type())
-                .body(Body::from(buffer))
-                .unwrap()
-        } else {
-            Response::builder()
-                .status(500)
-                .header(CONTENT_TYPE, "text/plain")
-                .body(Body::from("Prometheus exporter was not enabled in config"))
-                .unwrap()
-        };
-
-        std::future::ready(Ok(response))
-    })
+    tower::service_fn(prometheus_service_fn as _)
 }
 
 fn prometheus_metric_reader() -> anyhow::Result<PrometheusExporter> {
@@ -309,8 +308,8 @@ fn init_meter(config: &MetricsExporterConfig) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn trace_config() -> sdk::trace::Config {
-    sdk::trace::config()
+fn trace_config() -> opentelemetry_sdk::trace::Config {
+    opentelemetry_sdk::trace::config()
         .with_resource(resource())
         .with_sampler(Sampler::AlwaysOn)
 }
@@ -324,10 +323,10 @@ fn resource() -> Resource {
     let detected = Resource::from_detectors(
         Duration::from_secs(5),
         vec![
-            Box::new(sdk::resource::EnvResourceDetector::new()),
-            Box::new(sdk::resource::OsResourceDetector),
-            Box::new(sdk::resource::ProcessResourceDetector),
-            Box::new(sdk::resource::TelemetryResourceDetector),
+            Box::new(opentelemetry_sdk::resource::EnvResourceDetector::new()),
+            Box::new(opentelemetry_sdk::resource::OsResourceDetector),
+            Box::new(opentelemetry_sdk::resource::ProcessResourceDetector),
+            Box::new(opentelemetry_sdk::resource::TelemetryResourceDetector),
         ],
     );
 

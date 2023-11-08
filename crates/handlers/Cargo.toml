@@ -14,8 +14,8 @@ futures-util = "0.3.28"
 
 # Logging and tracing
 tracing.workspace = true
-opentelemetry = "0.20.0"
-opentelemetry-semantic-conventions = "0.13.0"
+opentelemetry.workspace = true
+opentelemetry-semantic-conventions.workspace = true
 
 # Error management
 thiserror.workspace = true

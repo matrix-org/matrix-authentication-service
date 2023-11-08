@@ -109,7 +109,6 @@ async fn try_main() -> anyhow::Result<()> {
         tracing_opentelemetry::layer()
             .with_tracer(tracer)
             .with_tracked_inactivity(false)
-            .with_exception_fields(true)
             .with_filter(LevelFilter::INFO)
     });
 
