@@ -10,7 +10,7 @@
     },
     "create_account": "Create Account",
     "@create_account": {
-      "context": "pages/login.html:69:35-61, pages/upstream_oauth2/do_register.html:132:26-52"
+      "context": "pages/login.html:69:35-61, pages/upstream_oauth2/do_register.html:143:26-52"
     },
     "sign_in": "Sign in",
     "@sign_in": {
@@ -63,15 +63,15 @@
   "common": {
     "display_name": "Display Name",
     "@display_name": {
-      "context": "pages/upstream_oauth2/do_register.html:104:37-61"
+      "context": "pages/upstream_oauth2/do_register.html:115:37-61"
     },
     "email_address": "Email address",
     "@email_address": {
-      "context": "pages/account/emails/add.html:41:33-58, pages/register.html:47:35-60, pages/upstream_oauth2/do_register.html:76:37-62"
+      "context": "pages/account/emails/add.html:41:33-58, pages/register.html:47:35-60, pages/upstream_oauth2/do_register.html:87:37-62"
     },
     "mxid": "Matrix ID",
     "@mxid": {
-      "context": "pages/upstream_oauth2/do_register.html:57:35-51"
+      "context": "pages/upstream_oauth2/do_register.html:66:35-51"
     },
     "password": "Password",
     "@password": {
@@ -83,7 +83,7 @@
     },
     "username": "Username",
     "@username": {
-      "context": "pages/login.html:51:37-57, pages/register.html:43:35-55, pages/upstream_oauth2/do_register.html:65:35-55, pages/upstream_oauth2/do_register.html:69:38-58"
+      "context": "pages/login.html:51:37-57, pages/register.html:43:35-55, pages/upstream_oauth2/do_register.html:74:35-55, pages/upstream_oauth2/do_register.html:79:39-59"
     }
   },
   "error": {
@@ -167,11 +167,11 @@
     "errors": {
       "denied_policy": "Denied by policy: %(policy)s",
       "@denied_policy": {
-        "context": "components/field.html:75:17-68"
+        "context": "components/errors.html:23:7-58, components/field.html:60:17-68"
       },
       "field_required": "This field is required",
       "@field_required": {
-        "context": "components/field.html:71:17-47"
+        "context": "components/field.html:56:17-47"
       },
       "invalid_credentials": "Invalid credentials",
       "@invalid_credentials": {
@@ -183,7 +183,7 @@
       },
       "username_taken": "This username is already taken",
       "@username_taken": {
-        "context": "components/field.html:73:17-47"
+        "context": "components/field.html:58:17-47"
       }
     },
     "login": {
@@ -251,7 +251,7 @@
     },
     "or_separator": "Or",
     "@or_separator": {
-      "context": "components/field.html:90:10-31",
+      "context": "components/field.html:75:10-31",
       "description": "Separator between the login methods"
     },
     "policy_violation": {
@@ -353,7 +353,7 @@
         },
         "enforced_by_policy": "Enforced by server policy",
         "@enforced_by_policy": {
-          "context": "pages/upstream_oauth2/do_register.html:61:13-65"
+          "context": "pages/upstream_oauth2/do_register.html:70:14-66"
         },
         "forced_display_name": "Will use the following display name",
         "@forced_display_name": {
@@ -379,7 +379,7 @@
         },
         "imported_from_upstream": "Imported from your upstream account",
         "@imported_from_upstream": {
-          "context": "pages/upstream_oauth2/do_register.html:108:15-71, pages/upstream_oauth2/do_register.html:80:15-71"
+          "context": "pages/upstream_oauth2/do_register.html:119:16-72, pages/upstream_oauth2/do_register.html:91:16-72"
         },
         "link_existing": "Link to an existing account",
         "@link_existing": {
@@ -395,7 +395,7 @@
         },
         "use": "Use",
         "@use": {
-          "context": "pages/upstream_oauth2/do_register.html:124:20-57, pages/upstream_oauth2/do_register.html:95:18-55"
+          "context": "pages/upstream_oauth2/do_register.html:106:18-55, pages/upstream_oauth2/do_register.html:135:20-57"
         }
       },
       "suggest_link": {

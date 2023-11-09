@@ -20,27 +20,12 @@ limitations under the License.
   form-{{- cnt.next() -}}
 {%- endmacro %}
 
-{% macro attributes(field) -%}
+{% macro attributes(field, default_value=None) -%}
+  {%- set value = field.value | default(default_value) -%}
   name="{{ field.name }}" id="{{ field.id }}"
   {%- if field.errors is not empty %} data-invalid{% endif %}
-  {%- if field.value %} value="{{ field.value }}" {% endif %}
+  {%- if value %} value="{{ value }}" {% endif %}
 {%- endmacro %}
-
-{% macro input(label, name, type="text", form_state=false, autocomplete=false, class="", inputmode="text", autocorrect=false, autocapitalize=false, disabled=false, required=false, readonly=false) %}
-  {% call(field) field(label=label, name=name, form_state=form_state, class=class) %}
-    <input {{ attributes(field) }}
-      class="cpd-text-control"
-      type="{{ type }}"
-      inputmode="{{ inputmode }}"
-      {% if required %} required {% endif %}
-      {% if disabled %} disabled {% endif %}
-      {% if autocomplete %} autocomplete="{{ autocomplete }}" {% endif %} 
-      {% if autocorrect %} autocorrect="{{ autocorrect }}" {% endif %}
-      {% if autocapitalize %} autocapitalize="{{ autocapitalize }}" {% endif %}
-      {% if readonly %} readonly {% endif %}
-      />
-  {% endcall %}
-{% endmacro %}
 
 {% macro field(label, name, form_state=false, class="") %}
   {% set field_id = new_id() %}
@@ -66,7 +51,7 @@ limitations under the License.
     {% if field.errors is not empty %}
       {% for error in field.errors %}
         {% if error.kind != "unspecified" %}
-          <div class="cpd-form-error-message">
+          <div class="cpd-form-message cpd-form-error-message">
             {% if error.kind == "required" %}
               {{ _("mas.errors.field_required") }}
             {% elif error.kind == "exists" and field.name == "username" %}

@@ -25,7 +25,7 @@ use mas_data_model::{
     UpstreamOAuthLink, UpstreamOAuthProvider, User, UserEmail, UserEmailVerification,
 };
 use mas_i18n::DataLocale;
-use mas_router::{Account, GraphQL, PostAuthAction, Route, UrlBuilder};
+use mas_router::{Account, GraphQL, PostAuthAction, UrlBuilder};
 use rand::Rng;
 use serde::{ser::SerializeStruct, Deserialize, Serialize};
 use ulid::Ulid;
@@ -918,68 +918,78 @@ impl TemplateContext for UpstreamSuggestLink {
     }
 }
 
+/// User-editeable fields of the upstream account link form
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum UpstreamRegisterFormField {
+    /// The username field
+    Username,
+}
+
+impl FormField for UpstreamRegisterFormField {
+    fn keep(&self) -> bool {
+        match self {
+            Self::Username => true,
+        }
+    }
+}
+
 /// Context used by the `pages/upstream_oauth2/do_register.html`
 /// templates
-#[derive(Serialize)]
+#[derive(Serialize, Default)]
 pub struct UpstreamRegister {
-    login_link: String,
-    suggested_localpart: Option<String>,
+    imported_localpart: Option<String>,
     force_localpart: bool,
-    suggested_display_name: Option<String>,
+    imported_display_name: Option<String>,
     force_display_name: bool,
-    suggested_email: Option<String>,
+    imported_email: Option<String>,
     force_email: bool,
+    form_state: FormState<UpstreamRegisterFormField>,
 }
 
 impl UpstreamRegister {
     /// Constructs a new context with an existing linked user
     #[must_use]
-    pub fn new(link: &UpstreamOAuthLink) -> Self {
-        Self::for_link_id(link.id)
+    pub fn new() -> Self {
+        Self::default()
     }
 
     /// Set the suggested localpart
     pub fn set_localpart(&mut self, localpart: String, force: bool) {
-        self.suggested_localpart = Some(localpart);
+        self.imported_localpart = Some(localpart);
         self.force_localpart = force;
     }
 
     /// Set the suggested display name
     pub fn set_display_name(&mut self, display_name: String, force: bool) {
-        self.suggested_display_name = Some(display_name);
+        self.imported_display_name = Some(display_name);
         self.force_display_name = force;
     }
 
     /// Set the suggested email
     pub fn set_email(&mut self, email: String, force: bool) {
-        self.suggested_email = Some(email);
+        self.imported_email = Some(email);
         self.force_email = force;
     }
 
-    fn for_link_id(id: Ulid) -> Self {
-        let login_link = mas_router::Login::and_link_upstream(id)
-            .path_and_query()
-            .into();
+    /// Set the form state
+    pub fn set_form_state(&mut self, form_state: FormState<UpstreamRegisterFormField>) {
+        self.form_state = form_state;
+    }
 
-        Self {
-            login_link,
-            suggested_localpart: None,
-            force_localpart: false,
-            suggested_display_name: None,
-            force_display_name: false,
-            suggested_email: None,
-            force_email: false,
-        }
+    /// Set the form state
+    #[must_use]
+    pub fn with_form_state(self, form_state: FormState<UpstreamRegisterFormField>) -> Self {
+        Self { form_state, ..self }
     }
 }
 
 impl TemplateContext for UpstreamRegister {
-    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
-        let id = Ulid::from_datetime_with_source(now.into(), rng);
-        vec![Self::for_link_id(id)]
+        vec![Self::new()]
     }
 }
 
