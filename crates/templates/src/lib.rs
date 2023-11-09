@@ -54,7 +54,8 @@ pub use self::{
         LoginContext, LoginFormField, NotFoundContext, PolicyViolationContext, PostAuthContext,
         PostAuthContextInner, ReauthContext, ReauthFormField, RegisterContext, RegisterFormField,
         SiteBranding, TemplateContext, UpstreamExistingLinkContext, UpstreamRegister,
-        UpstreamSuggestLink, WithCsrf, WithLanguage, WithOptionalSession, WithSession,
+        UpstreamRegisterFormField, UpstreamSuggestLink, WithCsrf, WithLanguage,
+        WithOptionalSession, WithSession,
     },
     forms::{FieldError, FormError, FormField, FormState, ToFormState},
 };

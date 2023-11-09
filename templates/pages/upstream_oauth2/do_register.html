@@ -53,31 +53,42 @@ limitations under the License.
     <input type="hidden" name="csrf" value="{{ csrf_token }}" />
     <input type="hidden" name="action" value="register" />
 
+    {% if form_state.errors is not empty %}
+      {% for error in form_state.errors %}
+        <div class="text-critical font-medium">
+          {{- errors.form_error_message(error=error) -}}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+
     {% if force_localpart %}
       {% call(f) field.field(label=_("common.mxid"), name="mxid") %}
-        <input {{ field.attributes(f) }} class="cpd-text-control" type="text" value="@{{ suggested_localpart }}:{{ branding.server_name }}" readonly aria-describedby="{{ f.id }}-help" />
+        <input {{ field.attributes(f) }} class="cpd-text-control" type="text" value="@{{ imported_localpart }}:{{ branding.server_name }}" readonly aria-describedby="{{ f.id }}-help" />
 
         <div class="cpd-form-message cpd-form-help-message" id="{{ f.id }}-help">
-          {{ _("mas.upstream_oauth2.register.enforced_by_policy") }}
+          {{- _("mas.upstream_oauth2.register.enforced_by_policy") -}}
         </div>
       {% endcall %}
     {% else %}
-      {% call(f) field.field(label=_("common.username"), name="username") %}
-        <input {{ field.attributes(f) }} class="cpd-text-control" type="text" autocomplete="username" autocorrect="off" autocapitalize="none" value="{{ suggested_localpart or '' }}" aria-describedby="{{ f.id }}-help" />
+      {% call(f) field.field(label=_("common.username"), name="username", form_state=form_state) %}
+        <input {{ field.attributes(f) }} class="cpd-text-control" type="text" autocomplete="username" autocorrect="off" autocapitalize="none" value="{{ imported_localpart or '' }}" aria-describedby="{{ f.id }}-help" />
 
-        <div class="cpd-form-message cpd-form-help-message" id="{{ f.id }}-help">
-          @{{ suggested_localpart or (_("common.username") | lower) }}:{{ branding.server_name }}
-        </div>
+        {% if f.errors is empty %}
+          <div class="cpd-form-message cpd-form-help-message" id="{{ f.id }}-help">
+            @{{ imported_localpart or (_("common.username") | lower) }}:{{ branding.server_name }}
+          </div>
+        {% endif %}
       {% endcall %}
     {% endif %}
 
-    {% if suggested_email %}
+    {% if imported_email %}
       <div class="flex gap-6 items-center">
         {% call(f) field.field(label=_("common.email_address"), name="email", class="flex-1") %}
-          <input {{ field.attributes(f) }} class="cpd-text-control" type="email" value="{{ suggested_email }}" readonly aria-describedby="{{ f.id }}-help" />
+          <input {{ field.attributes(f) }} class="cpd-text-control" type="email" value="{{ imported_email }}" readonly aria-describedby="{{ f.id }}-help" />
 
           <div class="cpd-form-message cpd-form-help-message" id="{{ f.id }}-help">
-            {{ _("mas.upstream_oauth2.register.imported_from_upstream") }}
+            {{- _("mas.upstream_oauth2.register.imported_from_upstream") -}}
           </div>
         {% endcall %}
 
@@ -99,13 +110,13 @@ limitations under the License.
       </div>
     {% endif %}
 
-    {% if suggested_display_name %}
+    {% if imported_display_name %}
       <div class="flex gap-6 items-center">
         {% call(f) field.field(label=_("common.display_name"), name="display_name", class="flex-1") %}
-          <input {{ field.attributes(f) }} class="cpd-text-control" type="text" value="{{ suggested_display_name }}" readonly />
+          <input {{ field.attributes(f) }} class="cpd-text-control" type="text" value="{{ imported_display_name }}" readonly />
 
           <div class="cpd-form-message cpd-form-help-message">
-            {{ _("mas.upstream_oauth2.register.imported_from_upstream") }}
+            {{- _("mas.upstream_oauth2.register.imported_from_upstream") -}}
           </div>
         {% endcall %}
 
