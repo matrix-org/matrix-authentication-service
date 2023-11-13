@@ -130,4 +130,13 @@ impl ImportAction {
     pub fn is_required(&self) -> bool {
         matches!(self, Self::Require)
     }
+
+    #[must_use]
+    pub fn should_import(&self, user_preference: bool) -> bool {
+        match self {
+            Self::Ignore => false,
+            Self::Suggest => user_preference,
+            Self::Force | Self::Require => true,
+        }
+    }
 }

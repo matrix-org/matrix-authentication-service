@@ -55,6 +55,22 @@ impl CookieManager {
         let key = Key::derive_from(key);
         Self::new(base_url, key)
     }
+
+    #[must_use]
+    pub fn cookie_jar(&self) -> CookieJar {
+        let inner = PrivateCookieJar::new(self.key.clone());
+        let options = self.options.clone();
+
+        CookieJar { inner, options }
+    }
+
+    #[must_use]
+    pub fn cookie_jar_from_headers(&self, headers: &http::HeaderMap) -> CookieJar {
+        let inner = PrivateCookieJar::from_headers(headers, self.key.clone());
+        let options = self.options.clone();
+
+        CookieJar { inner, options }
+    }
 }
 
 #[async_trait]
@@ -67,10 +83,7 @@ where
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let cookie_manager = CookieManager::from_ref(state);
-        let inner = PrivateCookieJar::from_headers(&parts.headers, cookie_manager.key.clone());
-        let options = cookie_manager.options.clone();
-
-        Ok(CookieJar { inner, options })
+        Ok(cookie_manager.cookie_jar_from_headers(&parts.headers))
     }
 }
 

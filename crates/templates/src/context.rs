@@ -954,22 +954,52 @@ impl UpstreamRegister {
         Self::default()
     }
 
-    /// Set the suggested localpart
+    /// Set the imported localpart
     pub fn set_localpart(&mut self, localpart: String, force: bool) {
         self.imported_localpart = Some(localpart);
         self.force_localpart = force;
     }
 
-    /// Set the suggested display name
+    /// Set the imported localpart
+    #[must_use]
+    pub fn with_localpart(self, localpart: String, force: bool) -> Self {
+        Self {
+            imported_localpart: Some(localpart),
+            force_localpart: force,
+            ..self
+        }
+    }
+
+    /// Set the imported display name
     pub fn set_display_name(&mut self, display_name: String, force: bool) {
         self.imported_display_name = Some(display_name);
         self.force_display_name = force;
     }
 
-    /// Set the suggested email
+    /// Set the imported display name
+    #[must_use]
+    pub fn with_display_name(self, display_name: String, force: bool) -> Self {
+        Self {
+            imported_display_name: Some(display_name),
+            force_display_name: force,
+            ..self
+        }
+    }
+
+    /// Set the imported email
     pub fn set_email(&mut self, email: String, force: bool) {
         self.imported_email = Some(email);
         self.force_email = force;
+    }
+
+    /// Set the imported email
+    #[must_use]
+    pub fn with_email(self, email: String, force: bool) -> Self {
+        Self {
+            imported_email: Some(email),
+            force_email: force,
+            ..self
+        }
     }
 
     /// Set the form state

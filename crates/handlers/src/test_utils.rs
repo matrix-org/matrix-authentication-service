@@ -22,6 +22,7 @@ use axum::{
     async_trait,
     body::{Bytes, HttpBody},
     extract::{FromRef, FromRequestParts},
+    response::{IntoResponse, IntoResponseParts},
 };
 use cookie_store::{CookieStore, RawCookie};
 use futures_util::future::BoxFuture;
@@ -31,7 +32,9 @@ use hyper::{
     Request, Response, StatusCode,
 };
 use mas_axum_utils::{
-    cookies::CookieManager, http_client_factory::HttpClientFactory, ErrorWrapper,
+    cookies::{CookieJar, CookieManager},
+    http_client_factory::HttpClientFactory,
+    ErrorWrapper,
 };
 use mas_i18n::Translator;
 use mas_keystore::{Encrypter, JsonWebKey, JsonWebKeySet, Keystore, PrivateKey};
@@ -263,6 +266,11 @@ impl TestState {
             StatusCode::UNAUTHORIZED => false,
             _ => panic!("Unexpected status code: {}", response.status()),
         }
+    }
+
+    /// Get an empty cookie jar
+    pub fn cookie_jar(&self) -> CookieJar {
+        self.cookie_manager.cookie_jar()
     }
 }
 
@@ -630,6 +638,11 @@ impl CookieHelper {
                 }),
             &url,
         );
+    }
+
+    pub fn import(&self, res: impl IntoResponseParts) {
+        let response = (res, "").into_response();
+        self.save_cookies(&response);
     }
 }
 
