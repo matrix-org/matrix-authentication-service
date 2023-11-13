@@ -185,7 +185,7 @@ impl Worker {
         let duration_ms = duration.as_millis().try_into().unwrap_or(u64::MAX);
 
         match res {
-            Ok(_) => {
+            Ok(()) => {
                 self.flush_time_histogram
                     .record(duration_ms, &[RESULT.string("success")]);
             }
