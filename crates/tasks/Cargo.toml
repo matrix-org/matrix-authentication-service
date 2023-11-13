@@ -9,8 +9,8 @@ repository.workspace = true
 
 [dependencies]
 anyhow.workspace = true
-apalis-core = { version = "0.4.5", features = ["extensions", "tokio-comp", "storage"] }
-apalis-cron = "0.4.5"
+apalis-core = { version = "0.4.6", features = ["extensions", "tokio-comp", "storage"] }
+apalis-cron = "0.4.6"
 async-stream = "0.3.5"
 async-trait = "0.1.74"
 chrono.workspace = true

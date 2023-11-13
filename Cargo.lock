@@ -161,9 +161,9 @@ checksum = "a4668cab20f66d8d020e1fbc0ebe47217433c1b6c8f2040faf858554e394ace6"
 
 [[package]]
 name = "apalis-core"
-version = "0.4.5"
+version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af556741a1b045fcd872fcd3aff18242a6ab0a410ca45a53c8e8799bcfc573e9"
+checksum = "4918875ace74d1077df19820d0168588546ff7690a2d060e59f04653eeb39308"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -184,9 +184,9 @@ dependencies = [
 
 [[package]]
 name = "apalis-cron"
-version = "0.4.5"
+version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c33e327ddea67cc44e46017b46840b04e6f9df471575935c68a16635dd02f78d"
+checksum = "eac3684dc2a18c592c9b2173180f68196957bdf94ab5ab08e4d110dc3bb57369"
 dependencies = [
  "apalis-core",
  "async-stream",
