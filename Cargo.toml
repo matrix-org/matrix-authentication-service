@@ -61,7 +61,7 @@ version = "1.0.50"
 [workspace.dependencies.tracing]
 version = "0.1.40"
 [workspace.dependencies.tracing-subscriber]
-version = "0.3.17"
+version = "0.3.18"
 
 # OpenTelemetry
 [workspace.dependencies.opentelemetry]
