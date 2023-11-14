@@ -35,7 +35,7 @@ describe("<Layout />", () => {
 
   it("renders app navigation correctly", async () => {
     const component = render(
-      <WithLocation path="/account">
+      <WithLocation path="/">
         <Layout />
       </WithLocation>,
     );
