@@ -30,13 +30,13 @@ exports[`<Session /> > renders a finished session 1`] = `
     className="_container_634806"
   >
     <h6
-      className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
+      className="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64 _sessionName_634806"
       title="session-id"
     >
       session-id
     </h6>
     <p
-      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
     >
       Signed in 
       <time
@@ -46,7 +46,7 @@ exports[`<Session /> > renders a finished session 1`] = `
       </time>
     </p>
     <p
-      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
       data-finished={true}
     >
       Finished 
@@ -90,13 +90,13 @@ exports[`<Session /> > renders an active session 1`] = `
     className="_container_634806"
   >
     <h6
-      className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
+      className="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64 _sessionName_634806"
       title="session-id"
     >
       session-id
     </h6>
     <p
-      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
     >
       Signed in 
       <time
@@ -139,13 +139,13 @@ exports[`<Session /> > renders ip address 1`] = `
     className="_container_634806"
   >
     <h6
-      className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
+      className="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64 _sessionName_634806"
       title="session-id"
     >
       session-id
     </h6>
     <p
-      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
     >
       Signed in 
       <time
@@ -155,7 +155,7 @@ exports[`<Session /> > renders ip address 1`] = `
       </time>
     </p>
     <p
-      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
       data-finished={true}
     >
       Finished 
@@ -166,16 +166,16 @@ exports[`<Session /> > renders ip address 1`] = `
       </time>
     </p>
     <p
-      className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _sessionMetadata_634806"
     >
       127.0.0.1
     </p>
     <p
-      className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _sessionMetadata_634806"
     >
        
       <span
-        className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+        className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
       >
         Element
       </span>
@@ -214,13 +214,13 @@ exports[`<Session /> > uses client name when truthy 1`] = `
     className="_container_634806"
   >
     <h6
-      className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
+      className="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64 _sessionName_634806"
       title="session-id"
     >
       session-id
     </h6>
     <p
-      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
     >
       Signed in 
       <time
@@ -230,7 +230,7 @@ exports[`<Session /> > uses client name when truthy 1`] = `
       </time>
     </p>
     <p
-      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
       data-finished={true}
     >
       Finished 
@@ -241,7 +241,7 @@ exports[`<Session /> > uses client name when truthy 1`] = `
       </time>
     </p>
     <p
-      className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _sessionMetadata_634806"
     >
       <img
         alt="Element"
@@ -256,7 +256,7 @@ exports[`<Session /> > uses client name when truthy 1`] = `
       />
        
       <span
-        className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+        className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
       >
         Element
       </span>
@@ -295,13 +295,13 @@ exports[`<Session /> > uses session name when truthy 1`] = `
     className="_container_634806"
   >
     <h6
-      className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
+      className="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64 _sessionName_634806"
       title="session-id"
     >
       test session name
     </h6>
     <p
-      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
     >
       Signed in 
       <time
@@ -311,7 +311,7 @@ exports[`<Session /> > uses session name when truthy 1`] = `
       </time>
     </p>
     <p
-      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
       data-finished={true}
     >
       Finished 

@@ -9,12 +9,12 @@ exports[`BrowserSessionsOverview > renders with no browser sessions 1`] = `
       class="_sessionListBlockInfo_c5c17e"
     >
       <h5
-        class="_font-body-lg-semibold_1jx6b_83"
+        class="_typography_yh5dq_162 _font-body-lg-semibold_yh5dq_83"
       >
         Browsers
       </h5>
       <p
-        class="_font-body-md-regular_1jx6b_59"
+        class="_typography_yh5dq_162 _font-body-md-regular_yh5dq_59"
       >
         0 active sessions
       </p>
@@ -38,12 +38,12 @@ exports[`BrowserSessionsOverview > renders with sessions 1`] = `
       class="_sessionListBlockInfo_c5c17e"
     >
       <h5
-        class="_font-body-lg-semibold_1jx6b_83"
+        class="_typography_yh5dq_162 _font-body-lg-semibold_yh5dq_83"
       >
         Browsers
       </h5>
       <p
-        class="_font-body-md-regular_1jx6b_59"
+        class="_typography_yh5dq_162 _font-body-md-regular_yh5dq_59"
       >
         2 active sessions
       </p>

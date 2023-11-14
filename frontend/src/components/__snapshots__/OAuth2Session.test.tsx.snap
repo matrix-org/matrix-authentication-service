@@ -22,7 +22,7 @@ exports[`<OAuth2Session /> > renders a finished session 1`] = `
     className="_container_634806"
   >
     <h6
-      className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
+      className="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64 _sessionName_634806"
       title="session-id"
     >
       <a
@@ -34,7 +34,7 @@ exports[`<OAuth2Session /> > renders a finished session 1`] = `
       </a>
     </h6>
     <p
-      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
     >
       Signed in 
       <time
@@ -44,7 +44,7 @@ exports[`<OAuth2Session /> > renders a finished session 1`] = `
       </time>
     </p>
     <p
-      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
       data-finished={true}
     >
       Finished 
@@ -55,16 +55,16 @@ exports[`<OAuth2Session /> > renders a finished session 1`] = `
       </time>
     </p>
     <p
-      className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _sessionMetadata_634806"
     >
       1.2.3.4
     </p>
     <p
-      className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _sessionMetadata_634806"
     >
        
       <span
-        className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+        className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
       >
         Element
       </span>
@@ -95,7 +95,7 @@ exports[`<OAuth2Session /> > renders an active session 1`] = `
     className="_container_634806"
   >
     <h6
-      className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
+      className="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64 _sessionName_634806"
       title="session-id"
     >
       <a
@@ -107,7 +107,7 @@ exports[`<OAuth2Session /> > renders an active session 1`] = `
       </a>
     </h6>
     <p
-      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
     >
       Signed in 
       <time
@@ -117,16 +117,16 @@ exports[`<OAuth2Session /> > renders an active session 1`] = `
       </time>
     </p>
     <p
-      className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _sessionMetadata_634806"
     >
       1.2.3.4
     </p>
     <p
-      className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _sessionMetadata_634806"
     >
        
       <span
-        className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+        className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
       >
         Element
       </span>
@@ -177,7 +177,7 @@ exports[`<OAuth2Session /> > renders correct icon for a native session 1`] = `
     className="_container_634806"
   >
     <h6
-      className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
+      className="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64 _sessionName_634806"
       title="session-id"
     >
       <a
@@ -189,7 +189,7 @@ exports[`<OAuth2Session /> > renders correct icon for a native session 1`] = `
       </a>
     </h6>
     <p
-      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
     >
       Signed in 
       <time
@@ -199,7 +199,7 @@ exports[`<OAuth2Session /> > renders correct icon for a native session 1`] = `
       </time>
     </p>
     <p
-      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
       data-finished={true}
     >
       Finished 
@@ -210,16 +210,16 @@ exports[`<OAuth2Session /> > renders correct icon for a native session 1`] = `
       </time>
     </p>
     <p
-      className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _sessionMetadata_634806"
     >
       1.2.3.4
     </p>
     <p
-      className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
+      className="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _sessionMetadata_634806"
     >
        
       <span
-        className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+        className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
       >
         Element
       </span>
