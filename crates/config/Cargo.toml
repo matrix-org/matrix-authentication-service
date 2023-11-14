@@ -28,7 +28,7 @@ serde_with = { version = "3.4.0", features = ["hex", "chrono"] }
 serde_json.workspace = true
 
 pem-rfc7468 = "0.7.0"
-rustls-pemfile = "1.0.3"
+rustls-pemfile = "1.0.4"
 rand.workspace = true
 rand_chacha = "0.3.1"
 
