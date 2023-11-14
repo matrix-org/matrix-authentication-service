@@ -18,6 +18,7 @@ updates:
       opentelemetry:
         patterns:
           - "opentelemetry"
+          - "opentelemetry_sdk"
           - "opentelemetry-*"
           - "tracing-opentelemetry"
       sentry:
