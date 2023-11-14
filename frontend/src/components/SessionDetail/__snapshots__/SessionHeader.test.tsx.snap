@@ -25,7 +25,7 @@ exports[`<SessionHeader /> > renders a session header 1`] = `
       </svg>
     </button>
     <h3
-      class="_font-heading-md-semibold_1jx6b_121"
+      class="_typography_yh5dq_162 _font-heading-md-semibold_yh5dq_121"
     >
       Chrome on iOS
     </h3>

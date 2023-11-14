@@ -9,7 +9,7 @@ exports[`<SessionListHeader /> > renders a basic header 1`] = `
       class="_sessionListHeader_5d8138"
     >
       <h5
-        class="_font-body-lg-semibold_1jx6b_83 _title_5d8138"
+        class="_typography_yh5dq_162 _font-body-lg-semibold_yh5dq_83 _title_5d8138"
       >
         Apps
       </h5>
@@ -27,7 +27,7 @@ exports[`<SessionListHeader /> > renders a header with actions 1`] = `
       class="_sessionListHeader_5d8138"
     >
       <h5
-        class="_font-body-lg-semibold_1jx6b_83 _title_5d8138"
+        class="_typography_yh5dq_162 _font-body-lg-semibold_yh5dq_83 _title_5d8138"
       >
         Apps
       </h5>

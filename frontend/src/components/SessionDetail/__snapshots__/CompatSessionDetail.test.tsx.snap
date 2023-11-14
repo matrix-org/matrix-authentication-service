@@ -28,7 +28,7 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
         </svg>
       </button>
       <h3
-        class="_font-heading-md-semibold_1jx6b_121"
+        class="_typography_yh5dq_162 _font-heading-md-semibold_yh5dq_121"
       >
         abcd1234
       </h3>
@@ -37,7 +37,7 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
       class="_block_17898c"
     >
       <h6
-        class="_font-body-md-semibold_1jx6b_64"
+        class="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64"
       >
         Session
       </h6>
@@ -48,12 +48,12 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
           class="_detailRow_040867"
         >
           <p
-            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
           >
             ID
           </p>
           <p
-            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
           >
             <code>
               session-id
@@ -64,12 +64,12 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
           class="_detailRow_040867"
         >
           <p
-            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
           >
             Device ID
           </p>
           <p
-            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
           >
             <code>
               abcd1234
@@ -80,12 +80,12 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
           class="_detailRow_040867"
         >
           <p
-            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
           >
             Signed in
           </p>
           <p
-            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
           >
             <time
               datetime="2023-06-29T03:35:17Z"
@@ -98,12 +98,12 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
           class="_detailRow_040867"
         >
           <p
-            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
           >
             Last Active
           </p>
           <p
-            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
           >
             <span
               title="Sat, 29 Jul 2023, 03:35"
@@ -116,12 +116,12 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
           class="_detailRow_040867"
         >
           <p
-            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
           >
             IP Address
           </p>
           <p
-            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
           >
             <code>
               1.2.3.4
@@ -134,7 +134,7 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
       class="_block_17898c"
     >
       <h6
-        class="_font-body-md-semibold_1jx6b_64"
+        class="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64"
       >
         Client
       </h6>
@@ -145,12 +145,12 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
           class="_detailRow_040867"
         >
           <p
-            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
           >
             Name
           </p>
           <p
-            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
           >
             element.io
           </p>
@@ -159,12 +159,12 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
           class="_detailRow_040867"
         >
           <p
-            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
           >
             Uri
           </p>
           <p
-            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
           >
             <a
               class="_link_1mzip_17 _externalLink_a97355"
@@ -225,7 +225,7 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
         </svg>
       </button>
       <h3
-        class="_font-heading-md-semibold_1jx6b_121"
+        class="_typography_yh5dq_162 _font-heading-md-semibold_yh5dq_121"
       >
         abcd1234
       </h3>
@@ -234,7 +234,7 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
       class="_block_17898c"
     >
       <h6
-        class="_font-body-md-semibold_1jx6b_64"
+        class="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64"
       >
         Session
       </h6>
@@ -245,12 +245,12 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
           class="_detailRow_040867"
         >
           <p
-            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
           >
             ID
           </p>
           <p
-            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
           >
             <code>
               session-id
@@ -261,12 +261,12 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
           class="_detailRow_040867"
         >
           <p
-            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
           >
             Device ID
           </p>
           <p
-            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
           >
             <code>
               abcd1234
@@ -277,12 +277,12 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
           class="_detailRow_040867"
         >
           <p
-            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
           >
             Signed in
           </p>
           <p
-            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
           >
             <time
               datetime="2023-06-29T03:35:17Z"
@@ -295,12 +295,12 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
           class="_detailRow_040867"
         >
           <p
-            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
           >
             Last Active
           </p>
           <p
-            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
           >
             <span
               title="Sat, 29 Jul 2023, 03:35"
@@ -313,12 +313,12 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
           class="_detailRow_040867"
         >
           <p
-            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
           >
             IP Address
           </p>
           <p
-            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
           >
             <code>
               1.2.3.4
