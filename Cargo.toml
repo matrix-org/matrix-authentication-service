@@ -34,7 +34,7 @@ features = ["derive"]
 
 # HTTP request/response
 [workspace.dependencies.http]
-version = "0.2.9"
+version = "0.2.11"
 
 # Templates
 [workspace.dependencies.minijinja]
