@@ -1,4 +1,4 @@
-# syntax = docker/dockerfile:1.4
+# syntax = docker/dockerfile:1.6
 
 # Builds a minimal image with the binary only. It is multi-arch capable,
 # cross-building to aarch64 and x86_64. When cross-compiling, Docker sets two
@@ -6,17 +6,17 @@
 # being the platform being built.
 
 # The Debian version and version name must be in sync
-ARG DEBIAN_VERSION=11
-ARG DEBIAN_VERSION_NAME=bullseye
-ARG RUSTC_VERSION=1.72.0
+ARG DEBIAN_VERSION=12
+ARG DEBIAN_VERSION_NAME=bookworm
+ARG RUSTC_VERSION=1.73.0
 # XXX: Upgrade to 0.10.0 blocked by https://github.com/ziglang/zig/issues/10915#issuecomment-1354548110
 # XXX: Upgrade to 0.11.0 blocked by https://github.com/rust-cross/cargo-zigbuild/issues/162
 ARG ZIG_VERSION=0.9.1
-ARG NODEJS_VERSION=18.17.1
-ARG OPA_VERSION=0.55.0
+ARG NODEJS_VERSION=20.9.0
+ARG OPA_VERSION=0.58.0
 ARG CARGO_AUDITABLE_VERSION=0.6.1
 ARG CARGO_CHEF_VERSION=0.1.62
-ARG CARGO_ZIGBUILD_VERSION=0.17.3
+ARG CARGO_ZIGBUILD_VERSION=0.17.5
 
 ##########################################
 ## Build stage that builds the frontend ##

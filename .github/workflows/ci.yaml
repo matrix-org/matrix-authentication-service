@@ -33,7 +33,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.1.0
         with:
-          version: 0.55.0
+          version: 0.58.0
 
       - name: Lint policies
         working-directory: ./policies
@@ -202,7 +202,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.1.0
         with:
-          version: 0.55.0
+          version: 0.58.0
 
       - name: Compile OPA policies
         working-directory: ./policies
@@ -264,7 +264,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.1.0
         with:
-          version: 0.55.0
+          version: 0.58.0
 
       - name: Compile OPA policies
         working-directory: ./policies
