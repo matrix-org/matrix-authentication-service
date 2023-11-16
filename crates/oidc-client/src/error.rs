@@ -93,6 +93,10 @@ pub enum DiscoveryError {
     /// An error occurred sending the request.
     #[error(transparent)]
     Service(BoxError),
+
+    /// Discovery is disabled for this provider.
+    #[error("Discovery is disabled for this provider")]
+    Disabled,
 }
 
 impl<S> From<json_response::Error<S>> for DiscoveryError

@@ -14,7 +14,10 @@
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use mas_data_model::{UpstreamOAuthProvider, UpstreamOAuthProviderClaimsImports};
+use mas_data_model::{
+    UpstreamOAuthProvider, UpstreamOAuthProviderClaimsImports, UpstreamOAuthProviderDiscoveryMode,
+    UpstreamOAuthProviderPkceMode,
+};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use mas_storage::{
     upstream_oauth2::{UpstreamOAuthProviderFilter, UpstreamOAuthProviderRepository},
@@ -99,6 +102,13 @@ impl TryFrom<ProviderLookup> for UpstreamOAuthProvider {
             token_endpoint_signing_alg,
             created_at: value.created_at,
             claims_imports: value.claims_imports.0,
+
+            // TODO
+            authorization_endpoint_override: None,
+            token_endpoint_override: None,
+            jwks_uri_override: None,
+            discovery_mode: UpstreamOAuthProviderDiscoveryMode::default(),
+            pkce_mode: UpstreamOAuthProviderPkceMode::default(),
         })
     }
 }
@@ -213,6 +223,13 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
             token_endpoint_auth_method,
             created_at,
             claims_imports,
+
+            // TODO
+            authorization_endpoint_override: None,
+            token_endpoint_override: None,
+            jwks_uri_override: None,
+            discovery_mode: UpstreamOAuthProviderDiscoveryMode::default(),
+            pkce_mode: UpstreamOAuthProviderPkceMode::default(),
         })
     }
 
@@ -357,6 +374,13 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
             token_endpoint_auth_method,
             created_at,
             claims_imports,
+
+            // TODO
+            authorization_endpoint_override: None,
+            token_endpoint_override: None,
+            jwks_uri_override: None,
+            discovery_mode: UpstreamOAuthProviderDiscoveryMode::default(),
+            pkce_mode: UpstreamOAuthProviderPkceMode::default(),
         })
     }
 
