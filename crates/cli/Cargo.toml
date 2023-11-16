@@ -28,7 +28,7 @@ tokio = { version = "1.34.0", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.4.4", features = ["fs"] }
 url.workspace = true
-zeroize = "1.6.0"
+zeroize = "1.7.0"
 
 tracing.workspace = true
 tracing-appender = "0.2.3"

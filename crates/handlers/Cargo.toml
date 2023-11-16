@@ -48,7 +48,7 @@ serde_urlencoded = "0.7.1"
 argon2 = { version = "0.5.2", features = ["password-hash", "std"] }
 bcrypt = "0.15.0"
 pbkdf2 = { version = "0.12.2", features = ["password-hash", "std", "simple", "parallel"] }
-zeroize = "1.6.0"
+zeroize = "1.7.0"
 
 # Various data types and utilities
 base64ct = "1.6.0"
