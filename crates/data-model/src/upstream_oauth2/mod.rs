@@ -20,8 +20,10 @@ pub use self::{
     link::UpstreamOAuthLink,
     provider::{
         ClaimsImports as UpstreamOAuthProviderClaimsImports,
+        DiscoveryMode as UpstreamOAuthProviderDiscoveryMode,
         ImportAction as UpstreamOAuthProviderImportAction,
         ImportPreference as UpstreamOAuthProviderImportPreference,
+        PkceMode as UpstreamOAuthProviderPkceMode,
         SetEmailVerification as UpsreamOAuthProviderSetEmailVerification,
         SubjectPreference as UpstreamOAuthProviderSubjectPreference, UpstreamOAuthProvider,
     },

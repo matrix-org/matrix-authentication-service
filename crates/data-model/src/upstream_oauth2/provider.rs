@@ -17,11 +17,45 @@ use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod
 use oauth2_types::scope::Scope;
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
+use url::Url;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum DiscoveryMode {
+    /// Use OIDC discovery to fetch and verify the provider metadata
+    #[default]
+    Oidc,
+
+    /// Use OIDC discovery to fetch the provider metadata, but don't verify it
+    Insecure,
+
+    /// Don't fetch the provider metadata
+    Disabled,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum PkceMode {
+    /// Use PKCE if the provider supports it
+    #[default]
+    Auto,
+
+    /// Always use PKCE with the S256 method
+    S256,
+
+    /// Don't use PKCE
+    Disabled,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct UpstreamOAuthProvider {
     pub id: Ulid,
     pub issuer: String,
+    pub discovery_mode: DiscoveryMode,
+    pub pkce_mode: PkceMode,
+    pub jwks_uri_override: Option<Url>,
+    pub authorization_endpoint_override: Option<Url>,
+    pub token_endpoint_override: Option<Url>,
     pub scope: Scope,
     pub client_id: String,
     pub encrypted_client_secret: Option<String>,

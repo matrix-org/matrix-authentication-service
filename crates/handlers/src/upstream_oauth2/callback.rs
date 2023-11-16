@@ -37,7 +37,7 @@ use serde::Deserialize;
 use thiserror::Error;
 use ulid::Ulid;
 
-use super::{client_credentials_for_provider, UpstreamSessionsCookie};
+use super::{cache::LazyProviderInfos, client_credentials_for_provider, UpstreamSessionsCookie};
 use crate::{impl_from_error_for_route, upstream_oauth2::cache::MetadataCache};
 
 #[derive(Deserialize)]
@@ -191,18 +191,17 @@ pub(crate) async fn get(
     };
 
     let http_service = http_client_factory.http_service("upstream_oauth2.callback");
-
-    // Discover the provider
-    let metadata = metadata_cache.get(&http_service, &provider.issuer).await?;
+    let mut lazy_metadata = LazyProviderInfos::new(&metadata_cache, &provider, &http_service);
 
     // Fetch the JWKS
     let jwks =
-        mas_oidc_client::requests::jose::fetch_jwks(&http_service, metadata.jwks_uri()).await?;
+        mas_oidc_client::requests::jose::fetch_jwks(&http_service, lazy_metadata.jwks_uri().await?)
+            .await?;
 
     // Figure out the client credentials
     let client_credentials = client_credentials_for_provider(
         &provider,
-        metadata.token_endpoint(),
+        lazy_metadata.token_endpoint().await?,
         &keystore,
         &encrypter,
     )?;
@@ -229,7 +228,7 @@ pub(crate) async fn get(
         mas_oidc_client::requests::authorization_code::access_token_with_authorization_code(
             &http_service,
             client_credentials,
-            metadata.token_endpoint(),
+            lazy_metadata.token_endpoint().await?,
             code,
             validation_data,
             Some(id_token_verification_data),
