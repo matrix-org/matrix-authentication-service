@@ -21,7 +21,7 @@
     "@fontsource/inter": "^5.0.15",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@types/ua-parser-js": "^0.7.39",
-    "@urql/core": "^4.1.4",
+    "@urql/core": "^4.2.0",
     "@urql/devtools": "^2.0.3",
     "@urql/exchange-graphcache": "^6.3.3",
     "@urql/exchange-refocus": "^1.0.2",
