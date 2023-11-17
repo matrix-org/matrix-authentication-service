@@ -80,7 +80,7 @@
     "typescript": "5.2.2",
     "vite": "^4.5.0",
     "vite-plugin-compression": "^0.5.1",
-    "vite-plugin-graphql-codegen": "^3.3.1",
+    "vite-plugin-graphql-codegen": "^3.3.3",
     "vite-plugin-manifest-sri": "^0.1.0",
     "vite-plugin-svgr": "^4.1.0",
     "vitest": "^0.34.6"
