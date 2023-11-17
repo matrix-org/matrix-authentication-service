@@ -17,12 +17,13 @@ use std::collections::HashSet;
 use clap::Parser;
 use mas_config::{ConfigurationSection, RootConfig, SyncConfig};
 use mas_storage::{
-    upstream_oauth2::UpstreamOAuthProviderRepository, RepositoryAccess, SystemClock,
+    upstream_oauth2::{UpstreamOAuthProviderParams, UpstreamOAuthProviderRepository},
+    RepositoryAccess, SystemClock,
 };
 use mas_storage_pg::PgRepository;
 use rand::SeedableRng;
 use sqlx::{postgres::PgAdvisoryLock, Acquire};
-use tracing::{info, info_span, warn};
+use tracing::{error, info, info_span, warn};
 
 use crate::util::database_connection_from_config;
 
@@ -204,10 +205,11 @@ async fn sync(root: &super::Options, prune: bool, dry_run: bool) -> anyhow::Resu
         }
 
         for provider in config.upstream_oauth2.providers {
+            let _span = info_span!("provider", %provider.id).entered();
             if existing_ids.contains(&provider.id) {
-                info!(%provider.id, "Updating provider");
+                info!("Updating provider");
             } else {
-                info!(%provider.id, "Adding provider");
+                info!("Adding provider");
             }
 
             if dry_run {
@@ -218,20 +220,65 @@ async fn sync(root: &super::Options, prune: bool, dry_run: bool) -> anyhow::Resu
                 .client_secret()
                 .map(|client_secret| encrypter.encrypt_to_string(client_secret.as_bytes()))
                 .transpose()?;
-            let client_auth_method = provider.client_auth_method();
-            let client_auth_signing_alg = provider.client_auth_signing_alg();
+            let token_endpoint_auth_method = provider.client_auth_method();
+            let token_endpoint_signing_alg = provider.client_auth_signing_alg();
+
+            let discovery_mode = match provider.discovery_mode {
+                mas_config::UpstreamOAuth2DiscoveryMode::Oidc => {
+                    mas_data_model::UpstreamOAuthProviderDiscoveryMode::Oidc
+                }
+                mas_config::UpstreamOAuth2DiscoveryMode::Insecure => {
+                    mas_data_model::UpstreamOAuthProviderDiscoveryMode::Insecure
+                }
+                mas_config::UpstreamOAuth2DiscoveryMode::Disabled => {
+                    mas_data_model::UpstreamOAuthProviderDiscoveryMode::Disabled
+                }
+            };
+
+            if discovery_mode.is_disabled() {
+                if provider.authorization_endpoint.is_none() {
+                    error!("Provider has discovery disabled but no authorization endpoint set");
+                }
+
+                if provider.token_endpoint.is_none() {
+                    error!("Provider has discovery disabled but no token endpoint set");
+                }
+
+                if provider.jwks_uri.is_none() {
+                    error!("Provider has discovery disabled but no JWKS URI set");
+                }
+            }
+
+            let pkce_mode = match provider.pkce_method {
+                mas_config::UpstreamOAuth2PkceMethod::Auto => {
+                    mas_data_model::UpstreamOAuthProviderPkceMode::Auto
+                }
+                mas_config::UpstreamOAuth2PkceMethod::Always => {
+                    mas_data_model::UpstreamOAuthProviderPkceMode::S256
+                }
+                mas_config::UpstreamOAuth2PkceMethod::Never => {
+                    mas_data_model::UpstreamOAuthProviderPkceMode::Disabled
+                }
+            };
 
             repo.upstream_oauth_provider()
                 .upsert(
                     &clock,
                     provider.id,
-                    provider.issuer,
-                    provider.scope.parse()?,
-                    client_auth_method,
-                    client_auth_signing_alg,
-                    provider.client_id,
-                    encrypted_client_secret,
-                    map_claims_imports(&provider.claims_imports),
+                    UpstreamOAuthProviderParams {
+                        issuer: provider.issuer,
+                        scope: provider.scope.parse()?,
+                        token_endpoint_auth_method,
+                        token_endpoint_signing_alg,
+                        client_id: provider.client_id,
+                        encrypted_client_secret,
+                        claims_imports: map_claims_imports(&provider.claims_imports),
+                        token_endpoint_override: provider.token_endpoint,
+                        authorization_endpoint_override: provider.authorization_endpoint,
+                        jwks_uri_override: provider.jwks_uri,
+                        discovery_mode,
+                        pkce_mode,
+                    },
                 )
                 .await?;
         }
@@ -268,10 +315,11 @@ async fn sync(root: &super::Options, prune: bool, dry_run: bool) -> anyhow::Resu
         }
 
         for client in config.clients.iter() {
+            let _span = info_span!("client", client.id = %client.client_id).entered();
             if existing_ids.contains(&client.client_id) {
-                info!(client.id = %client.client_id, "Updating client");
+                info!("Updating client");
             } else {
-                info!(client.id = %client.client_id, "Adding client");
+                info!("Adding client");
             }
 
             if dry_run {

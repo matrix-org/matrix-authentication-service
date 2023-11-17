@@ -103,6 +103,11 @@ pub enum UpstreamOAuthProviders {
     TokenEndpointAuthMethod,
     CreatedAt,
     ClaimsImports,
+    DiscoveryMode,
+    PkceMode,
+    JwksUriOverride,
+    TokenEndpointOverride,
+    AuthorizationEndpointOverride,
 }
 
 #[derive(sea_query::Iden)]

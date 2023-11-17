@@ -15,13 +15,60 @@
 use std::marker::PhantomData;
 
 use async_trait::async_trait;
-use mas_data_model::{UpstreamOAuthProvider, UpstreamOAuthProviderClaimsImports};
+use mas_data_model::{
+    UpstreamOAuthProvider, UpstreamOAuthProviderClaimsImports, UpstreamOAuthProviderDiscoveryMode,
+    UpstreamOAuthProviderPkceMode,
+};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use oauth2_types::scope::Scope;
 use rand_core::RngCore;
 use ulid::Ulid;
+use url::Url;
 
 use crate::{pagination::Page, repository_impl, Clock, Pagination};
+
+/// Structure which holds parameters when inserting or updating an upstream
+/// OAuth 2.0 provider
+pub struct UpstreamOAuthProviderParams {
+    /// The OIDC issuer of the provider
+    pub issuer: String,
+
+    /// The scope to request during the authorization flow
+    pub scope: Scope,
+
+    /// The token endpoint authentication method
+    pub token_endpoint_auth_method: OAuthClientAuthenticationMethod,
+
+    /// The JWT signing algorithm to use when then `client_secret_jwt` or
+    /// `private_key_jwt` authentication methods are used
+    pub token_endpoint_signing_alg: Option<JsonWebSignatureAlg>,
+
+    /// The client ID to use when authenticating to the upstream
+    pub client_id: String,
+
+    /// The encrypted client secret to use when authenticating to the upstream
+    pub encrypted_client_secret: Option<String>,
+
+    /// How claims should be imported from the upstream provider
+    pub claims_imports: UpstreamOAuthProviderClaimsImports,
+
+    /// The URL to use as the authorization endpoint. If `None`, the URL will be
+    /// discovered
+    pub authorization_endpoint_override: Option<Url>,
+
+    /// The URL to use as the token endpoint. If `None`, the URL will be
+    /// discovered
+    pub token_endpoint_override: Option<Url>,
+
+    /// The URL to use when fetching JWKS. If `None`, the URL will be discovered
+    pub jwks_uri_override: Option<Url>,
+
+    /// How the provider metadata should be discovered
+    pub discovery_mode: UpstreamOAuthProviderDiscoveryMode,
+
+    /// How should PKCE be used
+    pub pkce_mode: UpstreamOAuthProviderPkceMode,
+}
 
 /// Filter parameters for listing upstream OAuth 2.0 providers
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
@@ -65,33 +112,16 @@ pub trait UpstreamOAuthProviderRepository: Send + Sync {
     ///
     /// * `rng`: A random number generator
     /// * `clock`: The clock used to generate timestamps
-    /// * `issuer`: The OIDC issuer of the provider
-    /// * `scope`: The scope to request during the authorization flow
-    /// * `token_endpoint_auth_method`: The token endpoint authentication method
-    /// * `token_endpoint_auth_signing_alg`: The JWT signing algorithm to use
-    ///   when then `client_secret_jwt` or `private_key_jwt` authentication
-    ///   methods are used
-    /// * `client_id`: The client ID to use when authenticating to the upstream
-    /// * `encrypted_client_secret`: The encrypted client secret to use when
-    ///   authenticating to the upstream
-    /// * `claims_imports`: How claims should be imported from the upstream
-    ///   provider
+    /// * `params`: The parameters of the provider to add
     ///
     /// # Errors
     ///
     /// Returns [`Self::Error`] if the underlying repository fails
-    #[allow(clippy::too_many_arguments)]
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
-        issuer: String,
-        scope: Scope,
-        token_endpoint_auth_method: OAuthClientAuthenticationMethod,
-        token_endpoint_signing_alg: Option<JsonWebSignatureAlg>,
-        client_id: String,
-        encrypted_client_secret: Option<String>,
-        claims_imports: UpstreamOAuthProviderClaimsImports,
+        params: UpstreamOAuthProviderParams,
     ) -> Result<UpstreamOAuthProvider, Self::Error>;
 
     /// Delete an upstream OAuth provider
@@ -124,33 +154,16 @@ pub trait UpstreamOAuthProviderRepository: Send + Sync {
     ///
     /// * `clock`: The clock used to generate timestamps
     /// * `id`: The ID of the provider to update
-    /// * `issuer`: The OIDC issuer of the provider
-    /// * `scope`: The scope to request during the authorization flow
-    /// * `token_endpoint_auth_method`: The token endpoint authentication method
-    /// * `token_endpoint_auth_signing_alg`: The JWT signing algorithm to use
-    ///   when then `client_secret_jwt` or `private_key_jwt` authentication
-    ///   methods are used
-    /// * `client_id`: The client ID to use when authenticating to the upstream
-    /// * `encrypted_client_secret`: The encrypted client secret to use when
-    ///   authenticating to the upstream
-    /// * `claims_imports`: How claims should be imported from the upstream
-    ///   provider
+    /// * `params`: The parameters of the provider to update
     ///
     /// # Errors
     ///
     /// Returns [`Self::Error`] if the underlying repository fails
-    #[allow(clippy::too_many_arguments)]
     async fn upsert(
         &mut self,
         clock: &dyn Clock,
         id: Ulid,
-        issuer: String,
-        scope: Scope,
-        token_endpoint_auth_method: OAuthClientAuthenticationMethod,
-        token_endpoint_signing_alg: Option<JsonWebSignatureAlg>,
-        client_id: String,
-        encrypted_client_secret: Option<String>,
-        claims_imports: UpstreamOAuthProviderClaimsImports,
+        params: UpstreamOAuthProviderParams,
     ) -> Result<UpstreamOAuthProvider, Self::Error>;
 
     /// List [`UpstreamOAuthProvider`] with the given filter and pagination
@@ -198,26 +211,14 @@ repository_impl!(UpstreamOAuthProviderRepository:
         &mut self,
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
-        issuer: String,
-        scope: Scope,
-        token_endpoint_auth_method: OAuthClientAuthenticationMethod,
-        token_endpoint_signing_alg: Option<JsonWebSignatureAlg>,
-        client_id: String,
-        encrypted_client_secret: Option<String>,
-        claims_imports: UpstreamOAuthProviderClaimsImports
+        params: UpstreamOAuthProviderParams
     ) -> Result<UpstreamOAuthProvider, Self::Error>;
 
     async fn upsert(
         &mut self,
         clock: &dyn Clock,
         id: Ulid,
-        issuer: String,
-        scope: Scope,
-        token_endpoint_auth_method: OAuthClientAuthenticationMethod,
-        token_endpoint_signing_alg: Option<JsonWebSignatureAlg>,
-        client_id: String,
-        encrypted_client_secret: Option<String>,
-        claims_imports: UpstreamOAuthProviderClaimsImports,
+        params: UpstreamOAuthProviderParams
     ) -> Result<UpstreamOAuthProvider, Self::Error>;
 
     async fn delete(&mut self, provider: UpstreamOAuthProvider) -> Result<(), Self::Error>;

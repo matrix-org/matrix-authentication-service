@@ -21,6 +21,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use ulid::Ulid;
+use url::Url;
 
 use crate::ConfigurationSection;
 
@@ -197,6 +198,39 @@ pub struct ClaimsImports {
     pub email: EmailImportPreference,
 }
 
+/// How to discover the provider's configuration
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum DiscoveryMode {
+    /// Use OIDC discovery with strict metadata verification
+    #[default]
+    Oidc,
+
+    /// Use OIDC discovery with relaxed metadata verification
+    Insecure,
+
+    /// Use a static configuration
+    Disabled,
+}
+
+/// Whether to use proof key for code exchange (PKCE) when requesting and
+/// exchanging the token.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum PkceMethod {
+    /// Use PKCE if the provider supports it
+    ///
+    /// Defaults to no PKCE if provider discovery is disabled
+    #[default]
+    Auto,
+
+    /// Always use PKCE with the S256 challenge method
+    Always,
+
+    /// Never use PKCE
+    Never,
+}
+
 #[skip_serializing_none]
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Provider {
@@ -219,6 +253,34 @@ pub struct Provider {
 
     #[serde(flatten)]
     pub token_auth_method: TokenAuthMethod,
+
+    /// How to discover the provider's configuration
+    ///
+    /// Defaults to use OIDC discovery with strict metadata verification
+    #[serde(default)]
+    pub discovery_mode: DiscoveryMode,
+
+    /// Whether to use proof key for code exchange (PKCE) when requesting and
+    /// exchanging the token.
+    ///
+    /// Defaults to `auto`, which uses PKCE if the provider supports it.
+    #[serde(default)]
+    pub pkce_method: PkceMethod,
+
+    /// The URL to use for the provider's authorization endpoint
+    ///
+    /// Defaults to the `authorization_endpoint` provided through discovery
+    pub authorization_endpoint: Option<Url>,
+
+    /// The URL to use for the provider's token endpoint
+    ///
+    /// Defaults to the `token_endpoint` provided through discovery
+    pub token_endpoint: Option<Url>,
+
+    /// The URL to use for getting the provider's public keys
+    ///
+    /// Defaults to the `jwks_uri` provided through discovery
+    pub jwks_uri: Option<Url>,
 
     /// How claims should be imported from the `id_token` provided by the
     /// provider

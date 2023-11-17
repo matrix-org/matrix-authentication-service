@@ -311,7 +311,10 @@ mod test {
     use mas_data_model::UpstreamOAuthProviderClaimsImports;
     use mas_iana::oauth::OAuthClientAuthenticationMethod;
     use mas_router::Route;
-    use mas_storage::{upstream_oauth2::UpstreamOAuthProviderRepository, RepositoryAccess};
+    use mas_storage::{
+        upstream_oauth2::{UpstreamOAuthProviderParams, UpstreamOAuthProviderRepository},
+        RepositoryAccess,
+    };
     use mas_templates::escape_html;
     use oauth2_types::scope::OPENID;
     use sqlx::PgPool;
@@ -346,13 +349,20 @@ mod test {
             .add(
                 &mut rng,
                 &state.clock,
-                "https://first.com/".into(),
-                [OPENID].into_iter().collect(),
-                OAuthClientAuthenticationMethod::None,
-                None,
-                "first_client".into(),
-                None,
-                UpstreamOAuthProviderClaimsImports::default(),
+                UpstreamOAuthProviderParams {
+                    issuer: "https://first.com/".to_owned(),
+                    scope: [OPENID].into_iter().collect(),
+                    token_endpoint_auth_method: OAuthClientAuthenticationMethod::None,
+                    token_endpoint_signing_alg: None,
+                    client_id: "client".to_owned(),
+                    encrypted_client_secret: None,
+                    claims_imports: UpstreamOAuthProviderClaimsImports::default(),
+                    authorization_endpoint_override: None,
+                    token_endpoint_override: None,
+                    jwks_uri_override: None,
+                    discovery_mode: mas_data_model::UpstreamOAuthProviderDiscoveryMode::Oidc,
+                    pkce_mode: mas_data_model::UpstreamOAuthProviderPkceMode::Auto,
+                },
             )
             .await
             .unwrap();
@@ -371,13 +381,20 @@ mod test {
             .add(
                 &mut rng,
                 &state.clock,
-                "https://second.com/".into(),
-                [OPENID].into_iter().collect(),
-                OAuthClientAuthenticationMethod::None,
-                None,
-                "second_client".into(),
-                None,
-                UpstreamOAuthProviderClaimsImports::default(),
+                UpstreamOAuthProviderParams {
+                    issuer: "https://second.com/".to_owned(),
+                    scope: [OPENID].into_iter().collect(),
+                    token_endpoint_auth_method: OAuthClientAuthenticationMethod::None,
+                    token_endpoint_signing_alg: None,
+                    client_id: "client".to_owned(),
+                    encrypted_client_secret: None,
+                    claims_imports: UpstreamOAuthProviderClaimsImports::default(),
+                    authorization_endpoint_override: None,
+                    token_endpoint_override: None,
+                    jwks_uri_override: None,
+                    discovery_mode: mas_data_model::UpstreamOAuthProviderDiscoveryMode::Oidc,
+                    pkce_mode: mas_data_model::UpstreamOAuthProviderPkceMode::Auto,
+                },
             )
             .await
             .unwrap();

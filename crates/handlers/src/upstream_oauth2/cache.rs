@@ -292,9 +292,8 @@ mod tests {
     use tower::BoxError;
     use ulid::Ulid;
 
-    use crate::test_utils::init_tracing;
-
     use super::*;
+    use crate::test_utils::init_tracing;
 
     #[tokio::test]
     async fn test_metadata_cache() {
