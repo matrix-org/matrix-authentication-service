@@ -22,7 +22,14 @@ const config: UserConfig = {
     ts: [
       {
         lexer: "JavascriptLexer",
-        functions: ["t", "translatedError"],
+        functions: ["t"],
+        namespaceFunctions: ["useTranslation", "withTranslation"],
+      },
+    ],
+    tsx: [
+      {
+        lexer: "JsxLexer",
+        functions: ["t"],
         namespaceFunctions: ["useTranslation", "withTranslation"],
       },
     ],
