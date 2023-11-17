@@ -803,6 +803,7 @@ mod tests {
     use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
     use mas_jose::jwt::{JsonWebSignatureHeader, Jwt};
     use mas_router::Route;
+    use mas_storage::upstream_oauth2::UpstreamOAuthProviderParams;
     use oauth2_types::scope::{Scope, OPENID};
     use sqlx::PgPool;
 
@@ -858,13 +859,20 @@ mod tests {
             .add(
                 &mut rng,
                 &state.clock,
-                "https://example.com/".to_owned(),
-                Scope::from_iter([OPENID]),
-                OAuthClientAuthenticationMethod::None,
-                None,
-                "client".to_owned(),
-                None,
-                claims_imports,
+                UpstreamOAuthProviderParams {
+                    issuer: "https://example.com/".to_owned(),
+                    scope: Scope::from_iter([OPENID]),
+                    token_endpoint_auth_method: OAuthClientAuthenticationMethod::None,
+                    token_endpoint_signing_alg: None,
+                    client_id: "client".to_owned(),
+                    encrypted_client_secret: None,
+                    claims_imports,
+                    authorization_endpoint_override: None,
+                    token_endpoint_override: None,
+                    jwks_uri_override: None,
+                    discovery_mode: mas_data_model::UpstreamOAuthProviderDiscoveryMode::Oidc,
+                    pkce_mode: mas_data_model::UpstreamOAuthProviderPkceMode::Auto,
+                },
             )
             .await
             .unwrap();

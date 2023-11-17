@@ -633,6 +633,32 @@
         }
       }
     },
+    "DiscoveryMode": {
+      "description": "How to discover the provider's configuration",
+      "oneOf": [
+        {
+          "description": "Use OIDC discovery with strict metadata verification",
+          "type": "string",
+          "enum": [
+            "oidc"
+          ]
+        },
+        {
+          "description": "Use OIDC discovery with relaxed metadata verification",
+          "type": "string",
+          "enum": [
+            "insecure"
+          ]
+        },
+        {
+          "description": "Use a static configuration",
+          "type": "string",
+          "enum": [
+            "disabled"
+          ]
+        }
+      ]
+    },
     "DisplaynameImportPreference": {
       "description": "What should be done for the displayname attribute",
       "type": "object",
@@ -1520,6 +1546,32 @@
         }
       }
     },
+    "PkceMethod": {
+      "description": "Whether to use proof key for code exchange (PKCE) when requesting and exchanging the token.",
+      "oneOf": [
+        {
+          "description": "Use PKCE if the provider supports it\n\nDefaults to no PKCE if provider discovery is disabled",
+          "type": "string",
+          "enum": [
+            "auto"
+          ]
+        },
+        {
+          "description": "Always use PKCE with the S256 challenge method",
+          "type": "string",
+          "enum": [
+            "always"
+          ]
+        },
+        {
+          "description": "Never use PKCE",
+          "type": "string",
+          "enum": [
+            "never"
+          ]
+        }
+      ]
+    },
     "PolicyConfig": {
       "description": "Application secrets",
       "type": "object",
@@ -1706,6 +1758,11 @@
         "scope"
       ],
       "properties": {
+        "authorization_endpoint": {
+          "description": "The URL to use for the provider's authorization endpoint\n\nDefaults to the `authorization_endpoint` provided through discovery",
+          "type": "string",
+          "format": "uri"
+        },
         "claims_imports": {
           "description": "How claims should be imported from the `id_token` provided by the provider",
           "allOf": [
@@ -1718,6 +1775,15 @@
           "description": "The client ID to use when authenticating with the provider",
           "type": "string"
         },
+        "discovery_mode": {
+          "description": "How to discover the provider's configuration\n\nDefaults to use OIDC discovery with strict metadata verification",
+          "default": "oidc",
+          "allOf": [
+            {
+              "$ref": "#/definitions/DiscoveryMode"
+            }
+          ]
+        },
         "id": {
           "description": "A ULID as per https://github.com/ulid/spec",
           "type": "string",
@@ -1727,9 +1793,28 @@
           "description": "The OIDC issuer URL",
           "type": "string"
         },
+        "jwks_uri": {
+          "description": "The URL to use for getting the provider's public keys\n\nDefaults to the `jwks_uri` provided through discovery",
+          "type": "string",
+          "format": "uri"
+        },
+        "pkce_method": {
+          "description": "Whether to use proof key for code exchange (PKCE) when requesting and exchanging the token.\n\nDefaults to `auto`, which uses PKCE if the provider supports it.",
+          "default": "auto",
+          "allOf": [
+            {
+              "$ref": "#/definitions/PkceMethod"
+            }
+          ]
+        },
         "scope": {
           "description": "The scopes to request from the provider",
           "type": "string"
+        },
+        "token_endpoint": {
+          "description": "The URL to use for the provider's token endpoint\n\nDefaults to the `token_endpoint` provided through discovery",
+          "type": "string",
+          "format": "uri"
         }
       }
     },

@@ -16,6 +16,7 @@ use chrono::{DateTime, Utc};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use oauth2_types::scope::Scope;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 use ulid::Ulid;
 use url::Url;
 
@@ -33,6 +34,48 @@ pub enum DiscoveryMode {
     Disabled,
 }
 
+impl DiscoveryMode {
+    /// Returns `true` if discovery is disabled
+    #[must_use]
+    pub fn is_disabled(&self) -> bool {
+        matches!(self, DiscoveryMode::Disabled)
+    }
+}
+
+#[derive(Debug, Clone, Error)]
+#[error("Invalid discovery mode {0:?}")]
+pub struct InvalidDiscoveryModeError(String);
+
+impl std::str::FromStr for DiscoveryMode {
+    type Err = InvalidDiscoveryModeError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "oidc" => Ok(Self::Oidc),
+            "insecure" => Ok(Self::Insecure),
+            "disabled" => Ok(Self::Disabled),
+            s => Err(InvalidDiscoveryModeError(s.to_owned())),
+        }
+    }
+}
+
+impl DiscoveryMode {
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Oidc => "oidc",
+            Self::Insecure => "insecure",
+            Self::Disabled => "disabled",
+        }
+    }
+}
+
+impl std::fmt::Display for DiscoveryMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum PkceMode {
@@ -45,6 +88,40 @@ pub enum PkceMode {
 
     /// Don't use PKCE
     Disabled,
+}
+
+#[derive(Debug, Clone, Error)]
+#[error("Invalid PKCE mode {0:?}")]
+pub struct InvalidPkceModeError(String);
+
+impl std::str::FromStr for PkceMode {
+    type Err = InvalidPkceModeError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "auto" => Ok(Self::Auto),
+            "s256" => Ok(Self::S256),
+            "disabled" => Ok(Self::Disabled),
+            s => Err(InvalidPkceModeError(s.to_owned())),
+        }
+    }
+}
+
+impl PkceMode {
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Auto => "auto",
+            Self::S256 => "s256",
+            Self::Disabled => "disabled",
+        }
+    }
+}
+
+impl std::fmt::Display for PkceMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]

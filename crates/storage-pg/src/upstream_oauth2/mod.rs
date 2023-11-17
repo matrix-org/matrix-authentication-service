@@ -32,7 +32,8 @@ mod tests {
         clock::MockClock,
         upstream_oauth2::{
             UpstreamOAuthLinkFilter, UpstreamOAuthLinkRepository, UpstreamOAuthProviderFilter,
-            UpstreamOAuthProviderRepository, UpstreamOAuthSessionRepository,
+            UpstreamOAuthProviderParams, UpstreamOAuthProviderRepository,
+            UpstreamOAuthSessionRepository,
         },
         user::UserRepository,
         Pagination, RepositoryAccess,
@@ -59,13 +60,21 @@ mod tests {
             .add(
                 &mut rng,
                 &clock,
-                "https://example.com/".to_owned(),
-                Scope::from_iter([OPENID]),
-                mas_iana::oauth::OAuthClientAuthenticationMethod::None,
-                None,
-                "client-id".to_owned(),
-                None,
-                UpstreamOAuthProviderClaimsImports::default(),
+                UpstreamOAuthProviderParams {
+                    issuer: "https://example.com/".to_owned(),
+                    scope: Scope::from_iter([OPENID]),
+                    token_endpoint_auth_method:
+                        mas_iana::oauth::OAuthClientAuthenticationMethod::None,
+                    token_endpoint_signing_alg: None,
+                    client_id: "client-id".to_owned(),
+                    encrypted_client_secret: None,
+                    claims_imports: UpstreamOAuthProviderClaimsImports::default(),
+                    token_endpoint_override: None,
+                    authorization_endpoint_override: None,
+                    jwks_uri_override: None,
+                    discovery_mode: mas_data_model::UpstreamOAuthProviderDiscoveryMode::Oidc,
+                    pkce_mode: mas_data_model::UpstreamOAuthProviderPkceMode::Auto,
+                },
             )
             .await
             .unwrap();
@@ -232,13 +241,21 @@ mod tests {
                 .add(
                     &mut rng,
                     &clock,
-                    ISSUER.to_owned(),
-                    scope.clone(),
-                    mas_iana::oauth::OAuthClientAuthenticationMethod::None,
-                    None,
-                    client_id,
-                    None,
-                    UpstreamOAuthProviderClaimsImports::default(),
+                    UpstreamOAuthProviderParams {
+                        issuer: ISSUER.to_owned(),
+                        scope: scope.clone(),
+                        token_endpoint_auth_method:
+                            mas_iana::oauth::OAuthClientAuthenticationMethod::None,
+                        token_endpoint_signing_alg: None,
+                        client_id,
+                        encrypted_client_secret: None,
+                        claims_imports: UpstreamOAuthProviderClaimsImports::default(),
+                        token_endpoint_override: None,
+                        authorization_endpoint_override: None,
+                        jwks_uri_override: None,
+                        discovery_mode: mas_data_model::UpstreamOAuthProviderDiscoveryMode::Oidc,
+                        pkce_mode: mas_data_model::UpstreamOAuthProviderPkceMode::Auto,
+                    },
                 )
                 .await
                 .unwrap();
