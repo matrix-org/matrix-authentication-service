@@ -245,6 +245,22 @@ pub struct Provider {
     /// The OIDC issuer URL
     pub issuer: String,
 
+    /// A human-readable name for the provider, that will be shown to users
+    pub human_name: Option<String>,
+
+    /// A brand identifier used to customise the UI, e.g. `apple`, `google`,
+    /// `github`, etc.
+    ///
+    /// Values supported by the default template are:
+    ///
+    ///  - `apple`
+    ///  - `google`
+    ///  - `facebook`
+    ///  - `github`
+    ///  - `gitlab`
+    ///  - `twitter`
+    pub brand_name: Option<String>,
+
     /// The client ID to use when authenticating with the provider
     pub client_id: String,
 

@@ -491,6 +491,8 @@ mod tests {
         let provider = UpstreamOAuthProvider {
             id: Ulid::nil(),
             issuer: "https://valid.example.com/".to_owned(),
+            human_name: Some("Example Ltd.".to_owned()),
+            brand_name: None,
             discovery_mode: UpstreamOAuthProviderDiscoveryMode::Oidc,
             pkce_mode: UpstreamOAuthProviderPkceMode::Auto,
             jwks_uri_override: None,

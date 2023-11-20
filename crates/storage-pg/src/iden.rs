@@ -96,6 +96,8 @@ pub enum UpstreamOAuthProviders {
     #[iden = "upstream_oauth_provider_id"]
     UpstreamOAuthProviderId,
     Issuer,
+    HumanName,
+    BrandName,
     Scope,
     ClientId,
     EncryptedClientSecret,

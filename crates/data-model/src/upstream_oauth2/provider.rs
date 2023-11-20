@@ -128,6 +128,8 @@ impl std::fmt::Display for PkceMode {
 pub struct UpstreamOAuthProvider {
     pub id: Ulid,
     pub issuer: String,
+    pub human_name: Option<String>,
+    pub brand_name: Option<String>,
     pub discovery_mode: DiscoveryMode,
     pub pkce_mode: PkceMode,
     pub jwks_uri_override: Option<Url>,

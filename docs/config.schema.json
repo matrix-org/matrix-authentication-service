@@ -1763,6 +1763,10 @@
           "type": "string",
           "format": "uri"
         },
+        "brand_name": {
+          "description": "A brand identifier used to customise the UI, e.g. `apple`, `google`, `github`, etc.\n\nValues supported by the default template are:\n\n- `apple` - `google` - `facebook` - `github` - `gitlab` - `twitter`",
+          "type": "string"
+        },
         "claims_imports": {
           "description": "How claims should be imported from the `id_token` provided by the provider",
           "allOf": [
@@ -1783,6 +1787,10 @@
               "$ref": "#/definitions/DiscoveryMode"
             }
           ]
+        },
+        "human_name": {
+          "description": "A human-readable name for the provider, that will be shown to users",
+          "type": "string"
         },
         "id": {
           "description": "A ULID as per https://github.com/ulid/spec",
