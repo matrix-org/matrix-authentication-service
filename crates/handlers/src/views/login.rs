@@ -351,6 +351,8 @@ mod test {
                 &state.clock,
                 UpstreamOAuthProviderParams {
                     issuer: "https://first.com/".to_owned(),
+                    human_name: Some("First Ltd.".to_owned()),
+                    brand_name: None,
                     scope: [OPENID].into_iter().collect(),
                     token_endpoint_auth_method: OAuthClientAuthenticationMethod::None,
                     token_endpoint_signing_alg: None,
@@ -383,6 +385,8 @@ mod test {
                 &state.clock,
                 UpstreamOAuthProviderParams {
                     issuer: "https://second.com/".to_owned(),
+                    human_name: Some("Second Ltd.".to_owned()),
+                    brand_name: None,
                     scope: [OPENID].into_iter().collect(),
                     token_endpoint_auth_method: OAuthClientAuthenticationMethod::None,
                     token_endpoint_signing_alg: None,
@@ -405,11 +409,11 @@ mod test {
         let response = state.request(Request::get("/login").empty()).await;
         response.assert_status(StatusCode::OK);
         response.assert_header_value(CONTENT_TYPE, "text/html; charset=utf-8");
-        assert!(response.body().contains(&escape_html("first.com/")));
+        assert!(response.body().contains(&escape_html("First Ltd.")));
         assert!(response
             .body()
             .contains(&escape_html(&first_provider_login.path_and_query())));
-        assert!(response.body().contains(&escape_html("second.com/")));
+        assert!(response.body().contains(&escape_html("Second Ltd.")));
         assert!(response
             .body()
             .contains(&escape_html(&second_provider_login.path_and_query())));

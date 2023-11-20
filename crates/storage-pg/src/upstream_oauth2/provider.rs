@@ -53,6 +53,8 @@ impl<'c> PgUpstreamOAuthProviderRepository<'c> {
 struct ProviderLookup {
     upstream_oauth_provider_id: Uuid,
     issuer: String,
+    human_name: Option<String>,
+    brand_name: Option<String>,
     scope: String,
     client_id: String,
     encrypted_client_secret: Option<String>,
@@ -144,6 +146,8 @@ impl TryFrom<ProviderLookup> for UpstreamOAuthProvider {
         Ok(UpstreamOAuthProvider {
             id,
             issuer: value.issuer,
+            human_name: value.human_name,
+            brand_name: value.brand_name,
             scope,
             client_id: value.client_id,
             encrypted_client_secret: value.encrypted_client_secret,
@@ -180,6 +184,8 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                 SELECT
                     upstream_oauth_provider_id,
                     issuer,
+                    human_name,
+                    brand_name,
                     scope,
                     client_id,
                     encrypted_client_secret,
@@ -235,6 +241,8 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
             INSERT INTO upstream_oauth_providers (
                 upstream_oauth_provider_id,
                 issuer,
+                human_name,
+                brand_name,
                 scope,
                 token_endpoint_auth_method,
                 token_endpoint_signing_alg,
@@ -248,10 +256,12 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                 pkce_mode,
                 created_at
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,
-                      $10, $11, $12, $13, $14)
+                      $10, $11, $12, $13, $14, $15, $16)
         "#,
             Uuid::from(id),
             &params.issuer,
+            params.human_name.as_deref(),
+            params.brand_name.as_deref(),
             params.scope.to_string(),
             params.token_endpoint_auth_method.to_string(),
             params
@@ -281,6 +291,8 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
         Ok(UpstreamOAuthProvider {
             id,
             issuer: params.issuer,
+            human_name: params.human_name,
+            brand_name: params.brand_name,
             scope: params.scope,
             client_id: params.client_id,
             encrypted_client_secret: params.encrypted_client_secret,
@@ -386,6 +398,8 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                 INSERT INTO upstream_oauth_providers (
                     upstream_oauth_provider_id,
                     issuer,
+                    human_name,
+                    brand_name,
                     scope,
                     token_endpoint_auth_method,
                     token_endpoint_signing_alg,
@@ -399,11 +413,13 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                     pkce_mode,
                     created_at
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,
-                          $10, $11, $12, $13, $14)
+                          $10, $11, $12, $13, $14, $15, $16)
                 ON CONFLICT (upstream_oauth_provider_id) 
                     DO UPDATE
                     SET
                         issuer = EXCLUDED.issuer,
+                        human_name = EXCLUDED.human_name,
+                        brand_name = EXCLUDED.brand_name,
                         scope = EXCLUDED.scope,
                         token_endpoint_auth_method = EXCLUDED.token_endpoint_auth_method,
                         token_endpoint_signing_alg = EXCLUDED.token_endpoint_signing_alg,
@@ -419,6 +435,8 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
             "#,
             Uuid::from(id),
             &params.issuer,
+            params.human_name.as_deref(),
+            params.brand_name.as_deref(),
             params.scope.to_string(),
             params.token_endpoint_auth_method.to_string(),
             params
@@ -448,6 +466,8 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
         Ok(UpstreamOAuthProvider {
             id,
             issuer: params.issuer,
+            human_name: params.human_name,
+            brand_name: params.brand_name,
             scope: params.scope,
             client_id: params.client_id,
             encrypted_client_secret: params.encrypted_client_secret,
@@ -491,6 +511,20 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                     UpstreamOAuthProviders::Issuer,
                 )),
                 ProviderLookupIden::Issuer,
+            )
+            .expr_as(
+                Expr::col((
+                    UpstreamOAuthProviders::Table,
+                    UpstreamOAuthProviders::HumanName,
+                )),
+                ProviderLookupIden::HumanName,
+            )
+            .expr_as(
+                Expr::col((
+                    UpstreamOAuthProviders::Table,
+                    UpstreamOAuthProviders::BrandName,
+                )),
+                ProviderLookupIden::BrandName,
             )
             .expr_as(
                 Expr::col((UpstreamOAuthProviders::Table, UpstreamOAuthProviders::Scope)),
@@ -644,6 +678,8 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                 SELECT
                     upstream_oauth_provider_id,
                     issuer,
+                    human_name,
+                    brand_name,
                     scope,
                     client_id,
                     encrypted_client_secret,

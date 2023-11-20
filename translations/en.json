@@ -2,15 +2,15 @@
   "action": {
     "cancel": "Cancel",
     "@cancel": {
-      "context": "pages/consent.html:72:11-29, pages/login.html:95:13-31, pages/policy_violation.html:50:11-29, pages/register.html:64:13-31"
+      "context": "pages/consent.html:72:11-29, pages/login.html:100:13-31, pages/policy_violation.html:50:11-29, pages/register.html:64:13-31"
     },
     "continue": "Continue",
     "@continue": {
-      "context": "pages/account/emails/add.html:45:26-46, pages/account/emails/verify.html:60:26-46, pages/consent.html:60:28-48, pages/login.html:59:30-50, pages/reauth.html:40:28-48, pages/register.html:59:28-48, pages/sso.html:45:28-48"
+      "context": "pages/account/emails/add.html:45:26-46, pages/account/emails/verify.html:60:26-46, pages/consent.html:60:28-48, pages/login.html:62:30-50, pages/reauth.html:40:28-48, pages/register.html:59:28-48, pages/sso.html:45:28-48"
     },
     "create_account": "Create Account",
     "@create_account": {
-      "context": "pages/login.html:69:35-61, pages/upstream_oauth2/do_register.html:143:26-52"
+      "context": "pages/login.html:72:35-61, pages/upstream_oauth2/do_register.html:143:26-52"
     },
     "sign_in": "Sign in",
     "@sign_in": {
@@ -75,7 +75,7 @@
     },
     "password": "Password",
     "@password": {
-      "context": "pages/login.html:55:37-57, pages/reauth.html:36:35-55, pages/register.html:51:35-55"
+      "context": "pages/login.html:58:37-57, pages/reauth.html:36:35-55, pages/register.html:51:35-55"
     },
     "password_confirm": "Confirm password",
     "@password_confirm": {
@@ -83,7 +83,7 @@
     },
     "username": "Username",
     "@username": {
-      "context": "pages/login.html:51:37-57, pages/register.html:43:35-55, pages/upstream_oauth2/do_register.html:74:35-55, pages/upstream_oauth2/do_register.html:79:39-59"
+      "context": "pages/login.html:54:37-57, pages/register.html:43:35-55, pages/upstream_oauth2/do_register.html:74:35-55, pages/upstream_oauth2/do_register.html:79:39-59"
     }
   },
   "error": {
@@ -189,34 +189,34 @@
     "login": {
       "call_to_register": "Don't have an account yet?",
       "@call_to_register": {
-        "context": "pages/login.html:65:15-46"
+        "context": "pages/login.html:68:15-46"
       },
       "continue_with_provider": "Continue with %(provider)s",
       "@continue_with_provider": {
-        "context": "pages/login.html:82:13-107",
+        "context": "pages/login.html:87:13-65",
         "description": "Button to log in with an upstream provider"
       },
       "description": "Please sign in to continue:",
       "@description": {
-        "context": "pages/login.html:35:31-57"
+        "context": "pages/login.html:38:31-57"
       },
       "headline": "Sign in",
       "@headline": {
-        "context": "pages/login.html:34:33-56"
+        "context": "pages/login.html:37:33-56"
       },
       "link": {
         "description": "Linking your <span class=\"break-keep text-links\">%(provider)s</span> account",
         "@description": {
-          "context": "pages/login.html:30:31-93"
+          "context": "pages/login.html:33:31-77"
         },
         "headline": "Sign in to link",
         "@headline": {
-          "context": "pages/login.html:29:33-61"
+          "context": "pages/login.html:31:33-61"
         }
       },
       "no_login_methods": "No login methods available.",
       "@no_login_methods": {
-        "context": "pages/login.html:89:11-42"
+        "context": "pages/login.html:94:11-42"
       }
     },
     "navbar": {

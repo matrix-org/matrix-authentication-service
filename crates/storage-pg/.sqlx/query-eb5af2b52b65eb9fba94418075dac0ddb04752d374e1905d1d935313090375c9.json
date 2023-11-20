@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                SELECT\n                    upstream_oauth_provider_id,\n                    issuer,\n                    scope,\n                    client_id,\n                    encrypted_client_secret,\n                    token_endpoint_signing_alg,\n                    token_endpoint_auth_method,\n                    created_at,\n                    claims_imports as \"claims_imports: Json<UpstreamOAuthProviderClaimsImports>\",\n                    jwks_uri_override,\n                    authorization_endpoint_override,\n                    token_endpoint_override,\n                    discovery_mode,\n                    pkce_mode\n                FROM upstream_oauth_providers\n                WHERE upstream_oauth_provider_id = $1\n            ",
+  "query": "\n                SELECT\n                    upstream_oauth_provider_id,\n                    issuer,\n                    human_name,\n                    brand_name,\n                    scope,\n                    client_id,\n                    encrypted_client_secret,\n                    token_endpoint_signing_alg,\n                    token_endpoint_auth_method,\n                    created_at,\n                    claims_imports as \"claims_imports: Json<UpstreamOAuthProviderClaimsImports>\",\n                    jwks_uri_override,\n                    authorization_endpoint_override,\n                    token_endpoint_override,\n                    discovery_mode,\n                    pkce_mode\n                FROM upstream_oauth_providers\n                WHERE upstream_oauth_provider_id = $1\n            ",
   "describe": {
     "columns": [
       {
@@ -15,61 +15,71 @@
       },
       {
         "ordinal": 2,
-        "name": "scope",
+        "name": "human_name",
         "type_info": "Text"
       },
       {
         "ordinal": 3,
-        "name": "client_id",
+        "name": "brand_name",
         "type_info": "Text"
       },
       {
         "ordinal": 4,
-        "name": "encrypted_client_secret",
+        "name": "scope",
         "type_info": "Text"
       },
       {
         "ordinal": 5,
-        "name": "token_endpoint_signing_alg",
+        "name": "client_id",
         "type_info": "Text"
       },
       {
         "ordinal": 6,
-        "name": "token_endpoint_auth_method",
+        "name": "encrypted_client_secret",
         "type_info": "Text"
       },
       {
         "ordinal": 7,
+        "name": "token_endpoint_signing_alg",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "token_endpoint_auth_method",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 8,
+        "ordinal": 10,
         "name": "claims_imports: Json<UpstreamOAuthProviderClaimsImports>",
         "type_info": "Jsonb"
       },
       {
-        "ordinal": 9,
+        "ordinal": 11,
         "name": "jwks_uri_override",
         "type_info": "Text"
       },
       {
-        "ordinal": 10,
+        "ordinal": 12,
         "name": "authorization_endpoint_override",
         "type_info": "Text"
       },
       {
-        "ordinal": 11,
+        "ordinal": 13,
         "name": "token_endpoint_override",
         "type_info": "Text"
       },
       {
-        "ordinal": 12,
+        "ordinal": 14,
         "name": "discovery_mode",
         "type_info": "Text"
       },
       {
-        "ordinal": 13,
+        "ordinal": 15,
         "name": "pkce_mode",
         "type_info": "Text"
       }
@@ -82,6 +92,8 @@
     "nullable": [
       false,
       false,
+      true,
+      true,
       false,
       false,
       true,
@@ -96,5 +108,5 @@
       false
     ]
   },
-  "hash": "e1759a6bda20a09a423e9dcb3a7544dbf259fea54e7cdaa714455f05814f39f6"
+  "hash": "eb5af2b52b65eb9fba94418075dac0ddb04752d374e1905d1d935313090375c9"
 }

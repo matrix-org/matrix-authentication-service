@@ -62,6 +62,8 @@ mod tests {
                 &clock,
                 UpstreamOAuthProviderParams {
                     issuer: "https://example.com/".to_owned(),
+                    human_name: None,
+                    brand_name: None,
                     scope: Scope::from_iter([OPENID]),
                     token_endpoint_auth_method:
                         mas_iana::oauth::OAuthClientAuthenticationMethod::None,
@@ -243,6 +245,8 @@ mod tests {
                     &clock,
                     UpstreamOAuthProviderParams {
                         issuer: ISSUER.to_owned(),
+                        human_name: None,
+                        brand_name: None,
                         scope: scope.clone(),
                         token_endpoint_auth_method:
                             mas_iana::oauth::OAuthClientAuthenticationMethod::None,

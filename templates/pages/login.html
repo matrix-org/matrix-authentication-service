@@ -16,6 +16,8 @@ limitations under the License.
 
 {% extends "base.html" %}
 
+{% from "components/idp_brand.html" import logo %}
+
 {% block content %}
   <main class="flex flex-col gap-6">
     {% if not password_disabled %}
@@ -27,7 +29,8 @@ limitations under the License.
         {% if next and next.kind == "link_upstream" %}
           <div class="header">
             <h1 class="title">{{ _("mas.login.link.headline") }}</h1>
-            <p class="text">{{ _("mas.login.link.description", provider=next.provider.issuer) }}</p>
+            {% set name = provider.human_name | default(provider.issuer | simplify_url(keep_path=True)) | default(provider.id) %}
+            <p class="text">{{ _("mas.login.link.description", provider=name) }}</p>
           </div>
         {% else %}
           <div class="header">
@@ -78,8 +81,10 @@ limitations under the License.
 
       {% set params = next["params"] | default({}) | to_params(prefix="?") %}
       {% for provider in providers %}
-        <a class="cpd-button" data-kind="secondary" data-size="lg" href="{{ ('/upstream/authorize/' ~ provider.id ~ params) | prefix_url }}">
-          {{ _("mas.login.continue_with_provider", provider=provider.issuer | simplify_url(keep_path=True)) }}
+        {% set name = provider.human_name | default(provider.issuer | simplify_url(keep_path=True)) | default(provider.id) %}
+        <a class="cpd-button {%- if provider.brand_name %} has-icon {%- endif %}" data-kind="secondary" data-size="lg" href="{{ ('/upstream/authorize/' ~ provider.id ~ params) | prefix_url }}">
+          {{ logo(provider.brand_name) }}
+          {{ _("mas.login.continue_with_provider", provider=name) }}
         </a>
       {% endfor %}
     {% endif %}

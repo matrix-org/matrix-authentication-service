@@ -267,6 +267,8 @@ async fn sync(root: &super::Options, prune: bool, dry_run: bool) -> anyhow::Resu
                     provider.id,
                     UpstreamOAuthProviderParams {
                         issuer: provider.issuer,
+                        human_name: provider.human_name,
+                        brand_name: provider.brand_name,
                         scope: provider.scope.parse()?,
                         token_endpoint_auth_method,
                         token_endpoint_signing_alg,

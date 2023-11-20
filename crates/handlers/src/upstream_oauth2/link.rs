@@ -861,6 +861,8 @@ mod tests {
                 &state.clock,
                 UpstreamOAuthProviderParams {
                     issuer: "https://example.com/".to_owned(),
+                    human_name: Some("Example Ltd.".to_owned()),
+                    brand_name: None,
                     scope: Scope::from_iter([OPENID]),
                     token_endpoint_auth_method: OAuthClientAuthenticationMethod::None,
                     token_endpoint_signing_alg: None,

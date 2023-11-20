@@ -33,6 +33,12 @@ pub struct UpstreamOAuthProviderParams {
     /// The OIDC issuer of the provider
     pub issuer: String,
 
+    /// A human-readable name for the provider
+    pub human_name: Option<String>,
+
+    /// A brand identifier, e.g. "apple" or "google"
+    pub brand_name: Option<String>,
+
     /// The scope to request during the authorization flow
     pub scope: Scope,
 
