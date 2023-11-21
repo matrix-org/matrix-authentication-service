@@ -150,7 +150,10 @@
       },
       "enter_code_prompt": "Entrez le code à 6 chiffres envoyé à : <email>{{email}}</email>",
       "heading": "Vérification de votre adresse e-mail",
-      "invalid_code_alert": "Code invalide",
+      "invalid_code_alert": {
+        "description": "Vérifiez le code envoyé à votre adresse e-mail et entrez le dans le champ ci-dessous pour continuer.",
+        "title": "Vous avez saisi un code erroné"
+      },
       "resend_code": "Renvoyer un code",
       "resend_email": "Renvoyer l’e-mail",
       "sent": "Envoyé !",
