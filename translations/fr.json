@@ -112,7 +112,10 @@
         "heading": "Ce compte est déjà associé à un autre compte."
       },
       "register": {
-        "choose_username": "Choisissez votre nom d'utilisateur",
+        "choose_username": {
+          "description": "Cela ne peut pas être modifié ultérieurement.",
+          "heading": "Choisissez votre nom d'utilisateur"
+        },
         "create_account": "Créer un nouveau compte",
         "enforced_by_policy": "Importé selon la politique du serveur",
         "forced_display_name": "Utilisera le pseudonyme suivant",
