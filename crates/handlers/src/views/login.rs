@@ -385,7 +385,7 @@ mod test {
                 &state.clock,
                 UpstreamOAuthProviderParams {
                     issuer: "https://second.com/".to_owned(),
-                    human_name: Some("Second Ltd.".to_owned()),
+                    human_name: None,
                     brand_name: None,
                     scope: [OPENID].into_iter().collect(),
                     token_endpoint_auth_method: OAuthClientAuthenticationMethod::None,
@@ -413,7 +413,7 @@ mod test {
         assert!(response
             .body()
             .contains(&escape_html(&first_provider_login.path_and_query())));
-        assert!(response.body().contains(&escape_html("Second Ltd.")));
+        assert!(response.body().contains(&escape_html("second.com")));
         assert!(response
             .body()
             .contains(&escape_html(&second_provider_login.path_and_query())));
