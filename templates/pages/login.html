@@ -29,7 +29,7 @@ limitations under the License.
         {% if next and next.kind == "link_upstream" %}
           <div class="header">
             <h1 class="title">{{ _("mas.login.link.headline") }}</h1>
-            {% set name = provider.human_name | default(provider.issuer | simplify_url(keep_path=True)) | default(provider.id) %}
+            {% set name = provider.human_name or (provider.issuer | simplify_url(keep_path=True)) or provider.id %}
             <p class="text">{{ _("mas.login.link.description", provider=name) }}</p>
           </div>
         {% else %}
@@ -81,7 +81,7 @@ limitations under the License.
 
       {% set params = next["params"] | default({}) | to_params(prefix="?") %}
       {% for provider in providers %}
-        {% set name = provider.human_name | default(provider.issuer | simplify_url(keep_path=True)) | default(provider.id) %}
+        {% set name = provider.human_name or (provider.issuer | simplify_url(keep_path=True)) or provider.id %}
         <a class="cpd-button {%- if provider.brand_name %} has-icon {%- endif %}" data-kind="secondary" data-size="lg" href="{{ ('/upstream/authorize/' ~ provider.id ~ params) | prefix_url }}">
           {{ logo(provider.brand_name) }}
           {{ _("mas.login.continue_with_provider", provider=name) }}
