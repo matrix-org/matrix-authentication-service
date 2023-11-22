@@ -99,6 +99,19 @@ export enum AddUserStatus {
   Invalid = "INVALID",
 }
 
+/** The input for the `allowUserCrossSigningReset` mutation. */
+export type AllowUserCrossSigningResetInput = {
+  /** The ID of the user to update. */
+  userId: Scalars["ID"]["input"];
+};
+
+/** The payload for the `allowUserCrossSigningReset` mutation. */
+export type AllowUserCrossSigningResetPayload = {
+  __typename?: "AllowUserCrossSigningResetPayload";
+  /** The user that was updated. */
+  user?: Maybe<User>;
+};
+
 export type Anonymous = Node & {
   __typename?: "Anonymous";
   id: Scalars["ID"]["output"];
@@ -421,6 +434,8 @@ export type Mutation = {
   addEmail: AddEmailPayload;
   /** Add a user. This is only available to administrators. */
   addUser: AddUserPayload;
+  /** Temporarily allow user to reset their cross-signing keys. */
+  allowUserCrossSigningReset: AllowUserCrossSigningResetPayload;
   /**
    * Create a new arbitrary OAuth 2.0 Session.
    *
@@ -457,6 +472,11 @@ export type MutationAddEmailArgs = {
 /** The mutations root of the GraphQL interface. */
 export type MutationAddUserArgs = {
   input: AddUserInput;
+};
+
+/** The mutations root of the GraphQL interface. */
+export type MutationAllowUserCrossSigningResetArgs = {
+  input: AllowUserCrossSigningResetInput;
 };
 
 /** The mutations root of the GraphQL interface. */

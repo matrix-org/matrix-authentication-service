@@ -88,6 +88,22 @@ export default {
       },
       {
         kind: "OBJECT",
+        name: "AllowUserCrossSigningResetPayload",
+        fields: [
+          {
+            name: "user",
+            type: {
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
+        kind: "OBJECT",
         name: "Anonymous",
         fields: [
           {
@@ -1084,6 +1100,29 @@ export default {
               ofType: {
                 kind: "OBJECT",
                 name: "AddUserPayload",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
+          },
+          {
+            name: "allowUserCrossSigningReset",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "AllowUserCrossSigningResetPayload",
                 ofType: null,
               },
             },
