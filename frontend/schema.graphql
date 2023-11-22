@@ -106,6 +106,26 @@ enum AddUserStatus {
   INVALID
 }
 
+"""
+The input for the `allowUserCrossSigningReset` mutation.
+"""
+input AllowUserCrossSigningResetInput {
+  """
+  The ID of the user to update.
+  """
+  userId: ID!
+}
+
+"""
+The payload for the `allowUserCrossSigningReset` mutation.
+"""
+type AllowUserCrossSigningResetPayload {
+  """
+  The user that was updated.
+  """
+  user: User
+}
+
 type Anonymous implements Node {
   id: ID!
 }
@@ -649,6 +669,12 @@ type Mutation {
   setCanRequestAdmin(
     input: SetCanRequestAdminInput!
   ): SetCanRequestAdminPayload!
+  """
+  Temporarily allow user to reset their cross-signing keys.
+  """
+  allowUserCrossSigningReset(
+    input: AllowUserCrossSigningResetInput!
+  ): AllowUserCrossSigningResetPayload!
   """
   Create a new arbitrary OAuth 2.0 Session.
 

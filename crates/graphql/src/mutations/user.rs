@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use anyhow::Context as _;
 use async_graphql::{Context, Description, Enum, InputObject, Object, ID};
 use mas_storage::{
     job::{DeactivateUserJob, JobRepositoryExt, ProvisionUserJob},
@@ -22,6 +23,7 @@ use tracing::info;
 use crate::{
     model::{NodeType, User},
     state::ContextExt,
+    UserId,
 };
 
 #[derive(Default)]
@@ -152,6 +154,34 @@ impl SetCanRequestAdminPayload {
     async fn user(&self) -> Option<User> {
         match self {
             Self::Updated(user) => Some(User(user.clone())),
+            Self::NotFound => None,
+        }
+    }
+}
+
+/// The input for the `allowUserCrossSigningReset` mutation.
+#[derive(InputObject)]
+struct AllowUserCrossSigningResetInput {
+    /// The ID of the user to update.
+    user_id: ID,
+}
+
+/// The payload for the `allowUserCrossSigningReset` mutation.
+#[derive(Description)]
+enum AllowUserCrossSigningResetPayload {
+    /// The user was updated.
+    Allowed(mas_data_model::User),
+
+    /// The user was not found.
+    NotFound,
+}
+
+#[Object(use_type_description)]
+impl AllowUserCrossSigningResetPayload {
+    /// The user that was updated.
+    async fn user(&self) -> Option<User> {
+        match self {
+            Self::Allowed(user) => Some(User(user.clone())),
             Self::NotFound => None,
         }
     }
@@ -295,5 +325,37 @@ impl UserMutations {
         repo.save().await?;
 
         Ok(SetCanRequestAdminPayload::Updated(user))
+    }
+
+    /// Temporarily allow user to reset their cross-signing keys.
+    async fn allow_user_cross_signing_reset(
+        &self,
+        ctx: &Context<'_>,
+        input: AllowUserCrossSigningResetInput,
+    ) -> Result<AllowUserCrossSigningResetPayload, async_graphql::Error> {
+        let state = ctx.state();
+        let user_id = NodeType::User.extract_ulid(&input.user_id)?;
+        let requester = ctx.requester();
+
+        if !requester.is_owner_or_admin(&UserId(user_id)) {
+            return Err(async_graphql::Error::new("Unauthorized"));
+        }
+
+        let mut repo = state.repository().await?;
+        let user = repo.user().lookup(user_id).await?;
+        repo.cancel().await?;
+
+        let Some(user) = user else {
+            return Ok(AllowUserCrossSigningResetPayload::NotFound);
+        };
+
+        let conn = state.homeserver_connection();
+        let mxid = conn.mxid(&user.username);
+
+        conn.allow_cross_signing_reset(&mxid)
+            .await
+            .context("Failed to allow cross-signing reset")?;
+
+        Ok(AllowUserCrossSigningResetPayload::Allowed(user))
     }
 }
