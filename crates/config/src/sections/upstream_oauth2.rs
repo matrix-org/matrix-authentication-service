@@ -300,6 +300,7 @@ pub struct Provider {
 
     /// How claims should be imported from the `id_token` provided by the
     /// provider
+    #[serde(default)]
     pub claims_imports: ClaimsImports,
 }
 

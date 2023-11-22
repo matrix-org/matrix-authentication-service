@@ -1751,7 +1751,6 @@
         }
       ],
       "required": [
-        "claims_imports",
         "client_id",
         "id",
         "issuer",
@@ -1769,6 +1768,24 @@
         },
         "claims_imports": {
           "description": "How claims should be imported from the `id_token` provided by the provider",
+          "default": {
+            "displayname": {
+              "action": "ignore",
+              "template": null
+            },
+            "email": {
+              "action": "ignore",
+              "set_email_verification": "import",
+              "template": null
+            },
+            "localpart": {
+              "action": "ignore",
+              "template": null
+            },
+            "subject": {
+              "template": null
+            }
+          },
           "allOf": [
             {
               "$ref": "#/definitions/ClaimsImports"
