@@ -26,6 +26,7 @@ struct MockUser {
     displayname: Option<String>,
     devices: HashSet<String>,
     emails: Option<Vec<String>>,
+    cross_signing_reset_allowed: bool,
 }
 
 /// A mock implementation of a [`HomeserverConnection`], which never fails and
@@ -74,6 +75,7 @@ impl crate::HomeserverConnection for HomeserverConnection {
             displayname: None,
             devices: HashSet::new(),
             emails: None,
+            cross_signing_reset_allowed: false,
         });
 
         anyhow::ensure!(
@@ -134,6 +136,13 @@ impl crate::HomeserverConnection for HomeserverConnection {
         let mut users = self.users.write().await;
         let user = users.get_mut(mxid).context("User not found")?;
         user.displayname = None;
+        Ok(())
+    }
+
+    async fn allow_cross_signing_reset(&self, mxid: &str) -> Result<(), Self::Error> {
+        let mut users = self.users.write().await;
+        let user = users.get_mut(mxid).context("User not found")?;
+        user.cross_signing_reset_allowed = true;
         Ok(())
     }
 }
