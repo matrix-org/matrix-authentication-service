@@ -13,6 +13,8 @@ A deployment which requires SAML or LDAP-based authentication should use a servi
 Configuration of upstream providers is done in the `upstream_oauth2` section of the configuration file, which has a `providers` list.
 This section needs to be synced with the database every time it changes, using the [`mas-cli config sync`](../usage/cli/config.md#config-sync---prune---dry-run) command.
 
+**An exhaustive list of all the parameters is available in the [configuration file reference](../usage/configuration.md#upstream_oauth2).**
+
 The general configuration usually goes as follows:
 
  - determine a unique `id` for the provider, which will be used as stable identifier between the configuration file and the database. This `id` must be a ULID, and can be generated using online tools like <https://www.ulidtools.com>
@@ -29,7 +31,6 @@ The general configuration usually goes as follows:
      - `issuer`: the issuer URL of the provider
      - `scope`: the scope to request from the provider. `openid` is usually required, and `profile` and `email` are recommended to import a few user attributes.
  - setup user attributes mapping to automatically fill the user profile with data from the provider. See the [user attributes mapping](#user-attributes-mapping) section for more details.
-
 
 ## User attributes mapping
 
