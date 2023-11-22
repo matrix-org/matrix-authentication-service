@@ -52,12 +52,12 @@ A Jinja2 template is used as mapping for each attribute. The template currently 
 The following default templates are used:
 
  - `localpart`: `{{ user.preferred_username }}`
- - `display_name`: `{{ user.name }}`
+ - `displayname`: `{{ user.name }}`
  - `email`: `{{ user.email }}`
 
 ## Multiple providers behaviour
 
-Mutiple authentication methods can be configured at the same time, in which case the authentication service will let the user choose which one to use.
+Multiple authentication methods can be configured at the same time, in which case the authentication service will let the user choose which one to use.
 This is true if both the local password database and an upstream provider are configured, or if multiple upstream providers are configured.
 In such cases, the `human_name` parameter of the provider configuration is used to display a human-readable name for the provider, and the `brand_name` parameter is used to show a logo for well-known providers.
 
@@ -93,7 +93,7 @@ upstream_oauth2:
         localpart:
           action: require
           template: "{{ user.preferred_username }}"
-        display_name:
+        displayname:
           action: suggest
           template: "{{ user.name }}"
         email:
@@ -144,7 +144,7 @@ upstream_oauth2:
 ```
 
 
-## GitLab
+### GitLab
 
 1. Create a [new application](https://gitlab.com/profile/applications).
 2. Add the `openid` scope. Optionally add the `profile` and `email` scope if you want to import the user's name and email.
@@ -288,7 +288,7 @@ upstream_oauth2:
         localpart:
           action: require
           template: "{{ (user.preferred_username | split('@'))[0] }}"
-        display_name:
+        displayname:
           action: suggest
           template: "{{ user.name }}"
         email:

@@ -78,7 +78,7 @@ http:
 
 The following additional resources are available, although it is recommended to serve them on a separate listener, not exposed to the public internet:
 
-- `name: prometheus`: serves the a Prometheus-compatible metrics endpoint on `/metrics`, if the Prometheus exporter is enabled in `telemetry.metrics.exporter`.
+- `name: prometheus`: serves a Prometheus-compatible metrics endpoint on `/metrics`, if the Prometheus exporter is enabled in `telemetry.metrics.exporter`.
 - `name: health`: serves the health check endpoint on `/health`.
 
 ## `database`
