@@ -161,16 +161,16 @@ checksum = "a4668cab20f66d8d020e1fbc0ebe47217433c1b6c8f2040faf858554e394ace6"
 
 [[package]]
 name = "apalis-core"
-version = "0.4.6"
+version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4918875ace74d1077df19820d0168588546ff7690a2d060e59f04653eeb39308"
+checksum = "5dbe998f2a77a65433e3e893f7ffba5b0c4835a9601ccab02aa868d1d3ed71eb"
 dependencies = [
  "async-stream",
  "async-trait",
  "chrono",
  "futures",
  "graceful-shutdown",
- "http",
+ "http 1.0.0",
  "log",
  "pin-project-lite",
  "serde",
@@ -184,9 +184,9 @@ dependencies = [
 
 [[package]]
 name = "apalis-cron"
-version = "0.4.6"
+version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eac3684dc2a18c592c9b2173180f68196957bdf94ab5ab08e4d110dc3bb57369"
+checksum = "9fc57450bd6a857d2370bb5504cf3d7f2a1fb85c7b68bdb7f92f50aac0e26aac"
 dependencies = [
  "apalis-core",
  "async-stream",
@@ -307,7 +307,7 @@ dependencies = [
  "fnv",
  "futures-util",
  "handlebars",
- "http",
+ "http 0.2.11",
  "indexmap 2.1.0",
  "mime",
  "multer",
@@ -559,7 +559,7 @@ dependencies = [
  "bytes",
  "futures-util",
  "headers",
- "http",
+ "http 0.2.11",
  "http-body",
  "hyper",
  "itoa",
@@ -589,7 +589,7 @@ dependencies = [
  "async-trait",
  "bytes",
  "futures-util",
- "http",
+ "http 0.2.11",
  "http-body",
  "mime",
  "rustversion",
@@ -608,7 +608,7 @@ dependencies = [
  "bytes",
  "cookie",
  "futures-util",
- "http",
+ "http 0.2.11",
  "http-body",
  "mime",
  "pin-project-lite",
@@ -1983,7 +1983,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "futures-util",
- "http",
+ "http 0.2.11",
  "indexmap 1.9.3",
  "slab",
  "tokio",
@@ -2058,7 +2058,7 @@ dependencies = [
  "base64 0.21.5",
  "bytes",
  "headers-core",
- "http",
+ "http 0.2.11",
  "httpdate",
  "mime",
  "sha1",
@@ -2070,7 +2070,7 @@ version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e7f66481bfee273957b1f20485a4ff3362987f85b2c236580d81b4eb7a326429"
 dependencies = [
- "http",
+ "http 0.2.11",
 ]
 
 [[package]]
@@ -2144,13 +2144,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "http"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b32afd38673a8016f7c9ae69e5af41a58f81b1d31689040f2f1959594ce194ea"
+dependencies = [
+ "bytes",
+ "fnv",
+ "itoa",
+]
+
+[[package]]
 name = "http-body"
 version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d5f38f16d184e36f2408a55281cd658ecbd3ca05cce6d6510a176eca393e26d1"
 dependencies = [
  "bytes",
- "http",
+ "http 0.2.11",
  "pin-project-lite",
 ]
 
@@ -2170,7 +2181,7 @@ dependencies = [
  "async-channel",
  "base64 0.13.1",
  "futures-lite 1.13.0",
- "http",
+ "http 0.2.11",
  "infer",
  "pin-project-lite",
  "rand 0.7.3",
@@ -2204,7 +2215,7 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2",
- "http",
+ "http 0.2.11",
  "http-body",
  "httparse",
  "httpdate",
@@ -2224,7 +2235,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec3efd23720e2049821a693cbc7e65ea87c72f1c58ff2f9522ff332b1491e590"
 dependencies = [
  "futures-util",
- "http",
+ "http 0.2.11",
  "hyper",
  "rustls",
  "rustls-native-certs",
@@ -2764,7 +2775,7 @@ dependencies = [
  "data-encoding",
  "futures-util",
  "headers",
- "http",
+ "http 0.2.11",
  "http-body",
  "icu_locid",
  "mas-data-model",
@@ -3008,7 +3019,7 @@ dependencies = [
  "bytes",
  "futures-util",
  "headers",
- "http",
+ "http 0.2.11",
  "http-body",
  "hyper",
  "hyper-rustls",
@@ -3177,7 +3188,7 @@ version = "0.6.1"
 dependencies = [
  "anyhow",
  "async-trait",
- "http",
+ "http 0.2.11",
  "serde",
  "tokio",
  "url",
@@ -3189,7 +3200,7 @@ version = "0.6.1"
 dependencies = [
  "anyhow",
  "async-trait",
- "http",
+ "http 0.2.11",
  "mas-axum-utils",
  "mas-http",
  "mas-matrix",
@@ -3212,7 +3223,7 @@ dependencies = [
  "futures",
  "futures-util",
  "headers",
- "http",
+ "http 0.2.11",
  "http-body",
  "hyper",
  "hyper-rustls",
@@ -3369,7 +3380,7 @@ dependencies = [
  "arc-swap",
  "camino",
  "chrono",
- "http",
+ "http 0.2.11",
  "mas-data-model",
  "mas-i18n",
  "mas-router",
@@ -3393,7 +3404,7 @@ dependencies = [
 name = "mas-tower"
 version = "0.6.1"
 dependencies = [
- "http",
+ "http 0.2.11",
  "opentelemetry",
  "opentelemetry-http",
  "opentelemetry-semantic-conventions",
@@ -3529,7 +3540,7 @@ dependencies = [
  "bytes",
  "encoding_rs",
  "futures-util",
- "http",
+ "http 0.2.11",
  "httparse",
  "log",
  "memchr",
@@ -3623,7 +3634,7 @@ dependencies = [
  "assert_matches",
  "chrono",
  "data-encoding",
- "http",
+ "http 0.2.11",
  "language-tags",
  "mas-iana",
  "mas-jose",
@@ -3724,7 +3735,7 @@ checksum = "7f51189ce8be654f9b5f7e70e49967ed894e84a06fc35c6c042e64ac1fc5399e"
 dependencies = [
  "async-trait",
  "bytes",
- "http",
+ "http 0.2.11",
  "hyper",
  "opentelemetry",
  "tokio",
@@ -3739,7 +3750,7 @@ dependencies = [
  "async-trait",
  "futures-core",
  "futures-util",
- "http",
+ "http 0.2.11",
  "opentelemetry",
  "opentelemetry-http",
  "opentelemetry-semantic-conventions",
@@ -3756,7 +3767,7 @@ checksum = "f24cda83b20ed2433c68241f918d0f6fdec8b1d43b7a9590ab4420c5095ca930"
 dependencies = [
  "async-trait",
  "futures-core",
- "http",
+ "http 0.2.11",
  "opentelemetry",
  "opentelemetry-proto",
  "opentelemetry-semantic-conventions",
@@ -3825,7 +3836,7 @@ checksum = "9c2bee3ec1be4d0088378e0eb1dd54c113cbd7ec5622cc4f26181debf1d4d7b5"
 dependencies = [
  "async-trait",
  "futures-core",
- "http",
+ "http 0.2.11",
  "once_cell",
  "opentelemetry",
  "opentelemetry-http",
@@ -5037,7 +5048,7 @@ version = "0.31.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "88e782e369edac4adfc5bf528b27577270bc3e7023c388ebad9db08e1d56b30b"
 dependencies = [
- "http",
+ "http 0.2.11",
  "pin-project",
  "sentry-core",
  "tower-layer",
@@ -5935,7 +5946,7 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2",
- "http",
+ "http 0.2.11",
  "http-body",
  "hyper",
  "hyper-timeout",
@@ -5981,7 +5992,7 @@ dependencies = [
  "bytes",
  "futures-core",
  "futures-util",
- "http",
+ "http 0.2.11",
  "http-body",
  "http-range-header",
  "httpdate",
