@@ -1438,6 +1438,18 @@ export type AddEmailMutation = {
   };
 };
 
+export type AllowCrossSigningResetMutationVariables = Exact<{
+  userId: Scalars["ID"]["input"];
+}>;
+
+export type AllowCrossSigningResetMutation = {
+  __typename?: "Mutation";
+  allowUserCrossSigningReset: {
+    __typename?: "AllowUserCrossSigningResetPayload";
+    user?: { __typename?: "User"; id: string } | null;
+  };
+};
+
 export type UserEmailListQueryQueryVariables = Exact<{
   userId: Scalars["ID"]["input"];
   first?: InputMaybe<Scalars["Int"]["input"]>;
@@ -3168,6 +3180,75 @@ export const AddEmailDocument = {
     },
   ],
 } as unknown as DocumentNode<AddEmailMutation, AddEmailMutationVariables>;
+export const AllowCrossSigningResetDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "AllowCrossSigningReset" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "userId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "allowUserCrossSigningReset" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "userId" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "userId" },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "user" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  AllowCrossSigningResetMutation,
+  AllowCrossSigningResetMutationVariables
+>;
 export const UserEmailListQueryDocument = {
   kind: "Document",
   definitions: [
