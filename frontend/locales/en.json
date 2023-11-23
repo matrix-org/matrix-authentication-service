@@ -94,6 +94,19 @@
     "pagination_controls": {
       "total": "Total: {{totalCount}}"
     },
+    "reset_cross_signing": {
+      "button": "Allow cross-signing reset",
+      "description": "If you have lost access to all your verified devices and your security key, you can reset your cross-signing keys. Deleting cross-signing keys is permanent, but will allow you to go through the verification process again and set up new keys.",
+      "failure": {
+        "description": "This might be a temporary problem, so please try again later. If the problem persists, please contact your server administrator.",
+        "title": "Failed to allow cross-signing"
+      },
+      "heading": "Cross-signing reset",
+      "success": {
+        "description": "A client can now temporarily reset your account cross-signing keys. Follow the instructions in your client to complete the process.",
+        "title": "Cross-signing reset temporarily allowed"
+      }
+    },
     "selectable_session": {
       "label": "Select session"
     },
