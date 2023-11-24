@@ -9,8 +9,8 @@ repository.workspace = true
 
 [dependencies]
 anyhow.workspace = true
-apalis-core = { version = "0.4.6", features = ["extensions", "tokio-comp", "storage"] }
-apalis-cron = "0.4.6"
+apalis-core = { version = "0.4.7", features = ["extensions", "tokio-comp", "storage"] }
+apalis-cron = "0.4.7"
 async-stream = "0.3.5"
 async-trait = "0.1.74"
 chrono.workspace = true
@@ -18,7 +18,7 @@ event-listener = "3.1.0"
 futures-lite = "2.0.1"
 rand.workspace = true
 rand_chacha = "0.3.1"
-sqlx = { version = "0.7.2", features = ["runtime-tokio-rustls", "postgres"] }
+sqlx = { version = "0.7.3", features = ["runtime-tokio-rustls", "postgres"] }
 thiserror.workspace = true
 tokio = { version = "1.34.0", features = ["rt"] }
 tower = "0.4.13"

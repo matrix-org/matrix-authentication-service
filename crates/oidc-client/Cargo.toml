@@ -23,9 +23,9 @@ keystore = ["dep:mas-keystore"]
 base64ct = { version = "1.6.0", features = ["std"] }
 bytes = "1.5.0"
 chrono.workspace = true
-form_urlencoded = "1.2.0"
-futures = "0.3.28"
-futures-util = "0.3.28"
+form_urlencoded = "1.2.1"
+futures = "0.3.29"
+futures-util = "0.3.29"
 headers = "0.3.9"
 http.workspace = true
 language-tags = "0.3.2"
@@ -50,9 +50,9 @@ oauth2-types = { path = "../oauth2-types" }
 
 # Default http service
 http-body = { version = "0.4.5", optional = true }
-rustls = {version = "0.21.8", optional = true }
+rustls = {version = "0.21.9", optional = true }
 [dependencies.hyper-rustls]
-version = "0.24.1"
+version = "0.24.2"
 features = ["http1", "http2", "rustls-native-certs"]
 default-features = false
 optional = true
@@ -70,4 +70,4 @@ assert_matches = "1.5.0"
 bitflags = "2.4.1"
 mas-keystore = { path = "../keystore" }
 rand_chacha = "0.3.1"
-wiremock = "0.5.19"
+wiremock = "0.5.21"

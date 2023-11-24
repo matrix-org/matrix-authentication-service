@@ -13,7 +13,7 @@ async-trait = "0.1.74"
 camino.workspace = true
 convert_case = "0.6.0"
 csv = "1.3.0"
-futures-util = "0.3.28"
+futures-util = "0.3.29"
 hyper = { version = "0.14.27", features = ["tcp", "client", "http1"] }
 serde.workspace = true
 tokio = { version = "1.34.0", features = ["macros", "rt-multi-thread", "fs", "io-util"] }
