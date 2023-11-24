@@ -11,9 +11,9 @@ repository.workspace = true
 async-trait = "0.1.74"
 chrono.workspace = true
 thiserror.workspace = true
-futures-util = "0.3.28"
+futures-util = "0.3.29"
 
-apalis-core = { version = "0.4.6", features = ["tokio-comp"] }
+apalis-core = { version = "0.4.7", features = ["tokio-comp"] }
 opentelemetry.workspace = true
 rand_core = "0.6.4"
 serde.workspace = true

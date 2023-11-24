@@ -56,7 +56,7 @@ deny = [
 multiple-versions = "deny"
 
 skip = [
-    { name = "webpki-roots", version = "0.24.0" }, # sqlx depends on an old version
+    { name = "memoffset", version = "0.7.1" }, # sqlx depends on this old version
     { name = "spin", version = "0.5.2" }, # lazy_static and ring depends on the old version
     { name = "event-listener", version = "2.5.3" }, # async-channel (wiremock) and sqlx-core depend on the old version
     { name = "regex-syntax", version = "0.6.29" }, # tracing-subscriber[env-filter] -> matchers depends on the old version
@@ -64,10 +64,10 @@ skip = [
     { name = "ordered-float", version = "2.10.0" }, # opentelemetry-jaeger -> thrift depends on the old version
     { name = "itertools", version = "0.10.5" }, # wasmtime & others depends on the old version
     { name = "bitflags", version = "1.3.2" }, # axum depends on an old version
+    { name = "hashbrown" }, # Too many versions :(
 ]
 
 skip-tree = [
-    { name = "hashbrown", depth = 2 }, # Too many versions :(
     # Let's ignore wiremock for now, we want to get rid of it
     { name = "wiremock", depth = 3 },
     { name = "darling", version = "0.14.4", depth = 2 }, # sea-query-attr depends on an old version

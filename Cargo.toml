@@ -5,6 +5,7 @@ resolver = "2"
 
 # Updated in the CI with a `sed` command
 package.version = "0.6.1"
+
 package.license = "Apache-2.0"
 package.authors = ["Quentin Gliech <quenting@element.io>"]
 package.edition = "2021"
@@ -46,7 +47,7 @@ version = "0.8.5"
 
 # Serialization and deserialization
 [workspace.dependencies.serde]
-version = "1.0.192"
+version = "1.0.193"
 features = ["derive"] # Most of the time, if we need serde, we need derive
 
 # JSON serialization and deserialization
@@ -75,7 +76,7 @@ default-features = false
 
 # URL manipulation
 [workspace.dependencies.url]
-version = "2.4.1"
+version = "2.5.0"
 features = ["serde"]
 
 # ULID support
