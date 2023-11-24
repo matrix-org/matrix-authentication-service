@@ -14,6 +14,7 @@
 
 use std::collections::HashSet;
 
+use camino::Utf8PathBuf;
 use clap::Parser;
 use mas_config::{ConfigurationSection, RootConfig, SyncConfig};
 use mas_storage::{
@@ -23,6 +24,7 @@ use mas_storage::{
 use mas_storage_pg::PgRepository;
 use rand::SeedableRng;
 use sqlx::{postgres::PgAdvisoryLock, Acquire};
+use tokio::io::AsyncWriteExt;
 use tracing::{error, info, info_span, warn};
 
 use crate::util::database_connection_from_config;
@@ -94,7 +96,13 @@ enum Subcommand {
     Check,
 
     /// Generate a new config file
-    Generate,
+    Generate {
+        /// The path to the config file to generate
+        ///
+        /// If not specified, the config will be written to stdout
+        #[clap(short, long)]
+        output: Option<Utf8PathBuf>,
+    },
 
     /// Sync the clients and providers from the config file to the database
     Sync {
@@ -128,14 +136,22 @@ impl Options {
                 info!(path = ?root.config, "Configuration file looks good");
             }
 
-            SC::Generate => {
+            SC::Generate { output } => {
                 let _span = info_span!("cli.config.generate").entered();
 
                 // XXX: we should disallow SeedableRng::from_entropy
                 let rng = rand_chacha::ChaChaRng::from_entropy();
                 let config = RootConfig::load_and_generate(rng).await?;
+                let config = serde_yaml::to_string(&config)?;
 
-                serde_yaml::to_writer(std::io::stdout(), &config)?;
+                if let Some(output) = output {
+                    info!("Writing configuration to {output:?}");
+                    let mut file = tokio::fs::File::create(output).await?;
+                    file.write_all(config.as_bytes()).await?;
+                } else {
+                    info!("Writing configuration to standard output");
+                    tokio::io::stdout().write_all(config.as_bytes()).await?;
+                }
             }
 
             SC::Sync { prune, dry_run } => {
