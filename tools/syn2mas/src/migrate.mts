@@ -255,9 +255,7 @@ export async function migrate(): Promise<void> {
         );
         continue;
       }
-      const threePidCreatedAt = new Date(
-        parseInt(`${threePid.added_at}`) * 1000,
-      );
+      const threePidCreatedAt = new Date(parseInt(`${threePid.added_at}`));
       const masUserEmail: MUserEmail = {
         user_email_id: makeUuid(threePidCreatedAt),
         user_id: masUser.user_id,
@@ -267,7 +265,7 @@ export async function migrate(): Promise<void> {
 
       if (threePid.validated_at) {
         masUserEmail.confirmed_at = new Date(
-          parseInt(`${threePid.validated_at}`) * 1000,
+          parseInt(`${threePid.validated_at}`),
         );
       }
 
