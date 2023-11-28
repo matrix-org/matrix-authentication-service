@@ -16,6 +16,10 @@ ignore = [
     # `wasmtime` depends on `mach`
     # PR to migrate to `mach2`: https://github.com/bytecodealliance/wasmtime/pull/6164
     "RUSTSEC-2020-0168",
+
+    # RSA key extraction "Marvin Attack". This is only relevant when using
+    # PKCS#1 v1.5 encryption, which we don't
+    "RUSTSEC-2023-0071"
 ]
 
 [licenses]
