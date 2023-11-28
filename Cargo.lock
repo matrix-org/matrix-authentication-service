@@ -1648,6 +1648,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "event-listener"
+version = "4.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "770d968249b5d99410d61f5bf89057f3199a077a04d087092f58e7d10692baae"
+dependencies = [
+ "concurrent-queue",
+ "parking",
+ "pin-project-lite",
+]
+
+[[package]]
 name = "event-listener-strategy"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3189,6 +3200,7 @@ version = "0.6.1"
 dependencies = [
  "anyhow",
  "bytes",
+ "event-listener 4.0.0",
  "futures-util",
  "http-body",
  "hyper",
@@ -3371,7 +3383,7 @@ dependencies = [
  "async-stream",
  "async-trait",
  "chrono",
- "event-listener 3.1.0",
+ "event-listener 4.0.0",
  "futures-lite 2.0.1",
  "mas-data-model",
  "mas-email",

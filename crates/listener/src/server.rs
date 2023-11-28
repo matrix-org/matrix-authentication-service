@@ -20,6 +20,7 @@ use std::{
     time::Duration,
 };
 
+use event_listener::{Event, EventListener};
 use futures_util::{stream::SelectAll, Stream, StreamExt};
 use http_body::Body;
 use hyper::{body::HttpBody, server::conn::Connection, Request, Response};
@@ -29,6 +30,7 @@ use tokio::io::{AsyncRead, AsyncWrite};
 use tokio_rustls::rustls::ServerConfig;
 use tower_http::add_extension::AddExtension;
 use tower_service::Service;
+use tracing::Instrument;
 
 use crate::{
     maybe_tls::{MaybeTlsAcceptor, MaybeTlsStream, TlsStreamInfo},
@@ -153,6 +155,17 @@ impl AcceptError {
 /// Returns an error if the proxy protocol or TLS handshake failed.
 /// Returns the connection, which should be used to spawn a task to serve the
 /// connection.
+#[allow(clippy::type_complexity)]
+#[tracing::instrument(
+    name = "accept",
+    skip_all,
+    fields(
+        network.protocol.name = "http",
+        network.peer.address,
+        network.peer.port,
+    ),
+    err,
+)]
 async fn accept<S, B>(
     maybe_proxy_acceptor: &MaybeProxyAcceptor,
     maybe_tls_acceptor: &MaybeTlsAcceptor,
@@ -171,6 +184,18 @@ where
     B::Data: Send + 'static,
     B::Error: std::error::Error + Send + Sync + 'static,
 {
+    let span = tracing::Span::current();
+
+    match peer_addr {
+        SocketAddr::Net(addr) => {
+            span.record("network.peer.address", tracing::field::display(addr.ip()));
+            span.record("network.peer.port", addr.port());
+        }
+        SocketAddr::Unix(ref addr) => {
+            span.record("network.peer.address", tracing::field::debug(addr));
+        }
+    }
+
     // Wrap the connection acceptation logic in a timeout
     tokio::time::timeout(HANDSHAKE_TIMEOUT, async move {
         let (proxy, stream) = maybe_proxy_acceptor
@@ -209,6 +234,7 @@ where
 
         Ok(conn)
     })
+    .instrument(span)
     .await
     .map_err(AcceptError::handshake_timeout)?
 }
@@ -220,19 +246,28 @@ pin_project! {
     /// signal is received, the boolean is set to true. The connection will then check the
     /// boolean before polling the underlying connection, and if it's true, it will start a
     /// graceful shutdown.
+    ///
+    /// We also use an event listener to wake up the connection when the shutdown signal is
+    /// received, because the connection needs to be polled again to start the graceful shutdown.
     struct AbortableConnection<C> {
         #[pin]
         connection: C,
+        #[pin]
+        shutdown_listener: EventListener,
+        shutdown_event: Arc<Event>,
         shutdown_in_progress: Arc<AtomicBool>,
         did_start_shutdown: bool,
     }
 }
 
 impl<C> AbortableConnection<C> {
-    fn new(connection: C, shutdown_in_progress: &Arc<AtomicBool>) -> Self {
+    fn new(connection: C, shutdown_in_progress: &Arc<AtomicBool>, event: &Arc<Event>) -> Self {
+        let shutdown_listener = EventListener::new();
         Self {
             connection,
+            shutdown_listener,
             shutdown_in_progress: Arc::clone(shutdown_in_progress),
+            shutdown_event: Arc::clone(event),
             did_start_shutdown: false,
         }
     }
@@ -254,10 +289,20 @@ where
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let mut this = self.project();
 
-        // XXX: This assumes the task will be polled again after the shutdown signal is
-        // received. I *think* that internally `graceful_shutdown` is only
-        // setting a bunch of flags anyway, so I expect it should be fine to not have a
-        // waker here.
+        // If we aren't listening for the shutdown signal, start listening
+        if !this.shutdown_listener.is_listening() {
+            // XXX: it feels like we should setup the listener when we create it, but it
+            // needs a `Pin<&mut EventListener>` to do so, and I can't figure out
+            // how to get one outside of the `poll` method.
+            this.shutdown_listener.as_mut().listen(this.shutdown_event);
+        }
+
+        // Poll the shutdown signal, so that wakers get registered.
+        // XXX: I don't think we care about the result of this poll, since it's only
+        // really to register wakers. But I'm not sure if it's safe to
+        // ignore the result.
+        let _ = this.shutdown_listener.poll(cx);
+
         if !*this.did_start_shutdown
             && this
                 .shutdown_in_progress
@@ -312,6 +357,7 @@ where
 
     // A shared atomic boolean to tell all connections to shutdown
     let shutdown_in_progress = Arc::new(AtomicBool::new(false));
+    let shutdown_event = Arc::new(Event::new());
 
     loop {
         tokio::select! {
@@ -330,10 +376,10 @@ where
                 match res {
                     Some(Ok(Ok(connection))) => {
                         tracing::trace!("Accepted connection");
-                        let conn = AbortableConnection::new(connection, &shutdown_in_progress);
+                        let conn = AbortableConnection::new(connection, &shutdown_in_progress, &shutdown_event);
                         connection_tasks.spawn(conn);
                     },
-                    Some(Ok(Err(e))) => tracing::error!("Connection did not finish handshake: {e}"),
+                    Some(Ok(Err(_e))) => { /* Connection did not finish handshake, error should be logged in `accept` */ },
                     Some(Err(e)) => tracing::error!("Join error: {e}"),
                     None => tracing::error!("Join set was polled even though it was empty"),
                 }
@@ -368,6 +414,7 @@ where
 
     // Tell the active connections to shutdown
     shutdown_in_progress.store(true, std::sync::atomic::Ordering::Relaxed);
+    shutdown_event.notify(usize::MAX);
 
     // Wait for connections to cleanup
     if !accept_tasks.is_empty() || !connection_tasks.is_empty() {
@@ -386,10 +433,10 @@ where
                     match res {
                         Some(Ok(Ok(connection))) => {
                             tracing::trace!("Accepted connection");
-                            let conn = AbortableConnection::new(connection, &shutdown_in_progress);
+                            let conn = AbortableConnection::new(connection, &shutdown_in_progress, &shutdown_event);
                             connection_tasks.spawn(conn);
                         }
-                        Some(Ok(Err(e))) => tracing::error!("Connection did not finish handshake: {e}"),
+                        Some(Ok(Err(_e))) => { /* Connection did not finish handshake, error should be logged in `accept` */ },
                         Some(Err(e)) => tracing::error!("Join error: {e}"),
                         None => tracing::error!("Join set was polled even though it was empty"),
                     }
