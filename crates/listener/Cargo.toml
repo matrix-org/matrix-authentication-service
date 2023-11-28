@@ -9,9 +9,11 @@ repository.workspace = true
 
 [dependencies]
 bytes = "1.5.0"
+event-listener = "4.0.0"
 futures-util = "0.3.29"
 http-body = "0.4.5"
 hyper = { version = "0.14.27", features = ["server", "http1", "http2", "tcp"] }
+libc = "0.2.150"
 pin-project-lite = "0.2.13"
 socket2 = "0.5.5"
 thiserror.workspace = true
@@ -20,7 +22,6 @@ tokio-rustls = "0.24.1"
 tower-http = { version = "0.4.4", features = ["add-extension"] }
 tower-service = "0.3.2"
 tracing.workspace = true
-libc = "0.2.150"
 
 [dev-dependencies]
 anyhow.workspace = true
