@@ -223,9 +223,10 @@ exports[`<OAuth2SessionDetail> > renders session details 1`] = `
     </div>
     <button
       aria-controls="radix-:r0:"
+      aria-disabled="false"
       aria-expanded="false"
       aria-haspopup="dialog"
-      class="_button_1t47t_17"
+      class="_button_1ahdh_17"
       data-kind="destructive"
       data-size="sm"
       data-state="closed"
