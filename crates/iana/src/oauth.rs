@@ -32,6 +32,9 @@ pub enum OAuthAccessTokenType {
     /// `PoP`
     PoP,
 
+    /// `DPoP`
+    DPoP,
+
     /// An unknown value.
     Unknown(String),
 }
@@ -42,6 +45,7 @@ impl core::fmt::Display for OAuthAccessTokenType {
             Self::Bearer => write!(f, "Bearer"),
             Self::Na => write!(f, "N_A"),
             Self::PoP => write!(f, "PoP"),
+            Self::DPoP => write!(f, "DPoP"),
             Self::Unknown(value) => write!(f, "{value}"),
         }
     }
@@ -55,6 +59,7 @@ impl core::str::FromStr for OAuthAccessTokenType {
             "Bearer" => Ok(Self::Bearer),
             "N_A" => Ok(Self::Na),
             "PoP" => Ok(Self::PoP),
+            "DPoP" => Ok(Self::DPoP),
             value => Ok(Self::Unknown(value.to_owned())),
         }
     }
@@ -108,9 +113,15 @@ impl schemars::JsonSchema for OAuthAccessTokenType {
                 ..Default::default()
             }
             .into(),
+            // ---
+            schemars::schema::SchemaObject {
+                const_value: Some("DPoP".into()),
+                ..Default::default()
+            }
+            .into(),
         ];
 
-        let description = r#"OAuth Access Token Type"#;
+        let description = r"OAuth Access Token Type";
         schemars::schema::SchemaObject {
             metadata: Some(Box::new(schemars::schema::Metadata {
                 description: Some(description.to_owned()),
@@ -269,7 +280,7 @@ impl schemars::JsonSchema for OAuthAuthorizationEndpointResponseType {
             .into(),
         ];
 
-        let description = r#"OAuth Authorization Endpoint Response Type"#;
+        let description = r"OAuth Authorization Endpoint Response Type";
         schemars::schema::SchemaObject {
             metadata: Some(Box::new(schemars::schema::Metadata {
                 description: Some(description.to_owned()),
@@ -378,7 +389,7 @@ impl schemars::JsonSchema for OAuthTokenTypeHint {
             .into(),
         ];
 
-        let description = r#"OAuth Token Type Hint"#;
+        let description = r"OAuth Token Type Hint";
         schemars::schema::SchemaObject {
             metadata: Some(Box::new(schemars::schema::Metadata {
                 description: Some(description.to_owned()),
@@ -531,7 +542,7 @@ impl schemars::JsonSchema for OAuthClientAuthenticationMethod {
             .into(),
         ];
 
-        let description = r#"OAuth Token Endpoint Authentication Method"#;
+        let description = r"OAuth Token Endpoint Authentication Method";
         schemars::schema::SchemaObject {
             metadata: Some(Box::new(schemars::schema::Metadata {
                 description: Some(description.to_owned()),
@@ -629,7 +640,7 @@ impl schemars::JsonSchema for PkceCodeChallengeMethod {
             .into(),
         ];
 
-        let description = r#"PKCE Code Challenge Method"#;
+        let description = r"PKCE Code Challenge Method";
         schemars::schema::SchemaObject {
             metadata: Some(Box::new(schemars::schema::Metadata {
                 description: Some(description.to_owned()),

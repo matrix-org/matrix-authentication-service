@@ -248,10 +248,10 @@ impl Options {
                     .context("User not found")?;
 
                 let compat_sessions_ids: Vec<Uuid> = sqlx::query_scalar(
-                    r#"
+                    r"
                         SELECT compat_session_id FROM compat_sessions
                         WHERE user_id = $1 AND finished_at IS NULL
-                    "#,
+                    ",
                 )
                 .bind(Uuid::from(user.id))
                 .fetch_all(&mut **repo)
@@ -276,12 +276,12 @@ impl Options {
                 }
 
                 let oauth2_sessions_ids: Vec<Uuid> = sqlx::query_scalar(
-                    r#"
+                    r"
                         SELECT oauth2_sessions.oauth2_session_id 
                         FROM oauth2_sessions
                         INNER JOIN user_sessions USING (user_session_id)
                         WHERE user_sessions.user_id = $1 AND oauth2_sessions.finished_at IS NULL
-                    "#,
+                    ",
                 )
                 .bind(Uuid::from(user.id))
                 .fetch_all(&mut **repo)
@@ -313,10 +313,10 @@ impl Options {
                 }
 
                 let user_sessions_ids: Vec<Uuid> = sqlx::query_scalar(
-                    r#"
+                    r"
                         SELECT user_session_id FROM user_sessions
                         WHERE user_id = $1 AND finished_at IS NULL
-                    "#,
+                    ",
                 )
                 .bind(Uuid::from(user.id))
                 .fetch_all(&mut **repo)

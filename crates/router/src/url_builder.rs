@@ -200,13 +200,13 @@ impl UrlBuilder {
 #[cfg(test)]
 mod tests {
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "base URL must be HTTP/HTTPS")]
     fn test_invalid_base_url_scheme() {
         let _ = super::UrlBuilder::new(url::Url::parse("file:///tmp/").unwrap(), None, None);
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "base URL must not contain a query")]
     fn test_invalid_base_url_query() {
         let _ = super::UrlBuilder::new(
             url::Url::parse("https://example.com/?foo=bar").unwrap(),
@@ -216,7 +216,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "base URL must not contain a fragment")]
     fn test_invalid_base_url_fragment() {
         let _ = super::UrlBuilder::new(
             url::Url::parse("https://example.com/#foo").unwrap(),
@@ -226,7 +226,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "base URL must not contain credentials")]
     fn test_invalid_base_url_credentials() {
         let _ = super::UrlBuilder::new(
             url::Url::parse("https://foo@example.com/").unwrap(),
