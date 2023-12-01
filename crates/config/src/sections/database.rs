@@ -173,10 +173,10 @@ mod tests {
         Jail::expect_with(|jail| {
             jail.create_file(
                 "config.yaml",
-                r#"
+                r"
                     database:
                       uri: postgresql://user:password@host/database
-                "#,
+                ",
             )?;
 
             let config = DatabaseConfig::load_from_file("config.yaml")?;

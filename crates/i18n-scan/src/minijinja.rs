@@ -323,7 +323,7 @@ mod tests {
     fn test_invalid_key_not_string() {
         // This is invalid because the key is not a string
         let mut context = Context::new("t".to_owned());
-        let ast = parse(r#"{{ t(5) }}"#, "invalid.txt").unwrap();
+        let ast = parse(r"{{ t(5) }}", "invalid.txt").unwrap();
 
         let res = find_in_stmt(&mut context, &ast);
         assert!(res.is_err());
@@ -343,7 +343,7 @@ mod tests {
     fn test_invalid_key_missing() {
         // This is invalid because the key argument is missing
         let mut context = Context::new("t".to_owned());
-        let ast = parse(r#"{{ t() }}"#, "invalid.txt").unwrap();
+        let ast = parse(r"{{ t() }}", "invalid.txt").unwrap();
 
         let res = find_in_stmt(&mut context, &ast);
         assert!(res.is_err());
