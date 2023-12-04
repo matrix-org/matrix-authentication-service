@@ -69,18 +69,18 @@ mas-cli config sync
 ```
 
 By default, this will only add new clients and upstream OAuth providers, and will not remove entries that were removed from the configuration file.
-To do so, use the `--purge` option:
+To do so, use the `--prune` option:
 
 ```sh
-mas-cli config sync --purge
+mas-cli config sync --prune
 ```
 
 Before synchronizing the configuration file, it is *recommended* to do it in with the `--dry-run` option to see what will be changed, without committing the changes to the database:
 
 ```sh
 mas-cli config sync --dry-run
-# with the --purge option
-mas-cli config sync --dry-run --purge
+# with the --prune option
+mas-cli config sync --dry-run --prune
 ```
 
 ## Next step
