@@ -33,6 +33,11 @@ pub struct InvalidAlgorithm {
 }
 
 impl SymmetricKey {
+    /// Create a new symmetric key for the given algorithm with the given key.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the algorithm is not supported.
     pub fn new_for_alg(key: Vec<u8>, alg: &JsonWebSignatureAlg) -> Result<Self, InvalidAlgorithm> {
         match alg {
             JsonWebSignatureAlg::Hs256 => Ok(Self::hs256(key)),
@@ -45,16 +50,19 @@ impl SymmetricKey {
         }
     }
 
+    /// Create a new symmetric key using the HS256 algorithm with the given key.
     #[must_use]
     pub const fn hs256(key: Vec<u8>) -> Self {
         Self::Hs256(super::Hs256Key::new(key))
     }
 
+    /// Create a new symmetric key using the HS384 algorithm with the given key.
     #[must_use]
     pub const fn hs384(key: Vec<u8>) -> Self {
         Self::Hs384(super::Hs384Key::new(key))
     }
 
+    /// Create a new symmetric key using the HS512 algorithm with the given key.
     #[must_use]
     pub const fn hs512(key: Vec<u8>) -> Self {
         Self::Hs512(super::Hs512Key::new(key))

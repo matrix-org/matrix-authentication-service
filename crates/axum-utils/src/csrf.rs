@@ -80,6 +80,10 @@ impl CsrfToken {
     }
 
     /// Verifies that the value got from an HTML form matches this token
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value in the form does not match this token
     pub fn verify_form_value(&self, form_value: &str) -> Result<(), CsrfError> {
         let form_value = BASE64URL_NOPAD.decode(form_value.as_bytes())?;
         if self.token[..] == form_value {
@@ -108,10 +112,20 @@ pub struct ProtectedForm<T> {
 }
 
 pub trait CsrfExt {
+    /// Get the current CSRF token out of the cookie jar, generating a new one
+    /// if necessary
     fn csrf_token<C, R>(self, clock: &C, rng: R) -> (CsrfToken, Self)
     where
         R: RngCore,
         C: Clock;
+
+    /// Verify that the given CSRF-protected form is valid, returning the inner
+    /// value
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the CSRF cookie is missing or if the value in the
+    /// form is invalid
     fn verify_form<C, T>(&self, clock: &C, form: ProtectedForm<T>) -> Result<T, CsrfError>
     where
         C: Clock;

@@ -7,6 +7,9 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 arc-swap = "1.6.0"
 tracing.workspace = true

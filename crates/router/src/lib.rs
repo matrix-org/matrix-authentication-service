@@ -12,14 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![forbid(unsafe_code)]
-#![deny(
-    clippy::all,
-    clippy::pedantic,
-    clippy::str_to_string,
-    rustdoc::broken_intra_doc_links
-)]
-
 pub(crate) mod endpoints;
 pub(crate) mod traits;
 mod url_builder;

@@ -14,14 +14,7 @@
 
 //! Helps sending emails to users, with different email backends
 
-#![forbid(unsafe_code)]
-#![deny(
-    clippy::all,
-    clippy::str_to_string,
-    missing_docs,
-    rustdoc::broken_intra_doc_links
-)]
-#![warn(clippy::pedantic)]
+#![deny(missing_docs)]
 
 mod mailer;
 mod transport;

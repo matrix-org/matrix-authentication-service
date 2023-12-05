@@ -12,10 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![forbid(unsafe_code)]
-#![deny(clippy::all, clippy::str_to_string, rustdoc::broken_intra_doc_links)]
-#![warn(clippy::pedantic)]
-
 use http::{header::AUTHORIZATION, request::Builder, Method, Request, StatusCode};
 use mas_axum_utils::http_client_factory::HttpClientFactory;
 use mas_http::{EmptyBody, HttpServiceExt};

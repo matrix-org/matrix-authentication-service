@@ -164,15 +164,7 @@
 //! [`Ulid`]: ulid::Ulid
 //! [`Uuid`]: uuid::Uuid
 
-#![forbid(unsafe_code)]
-#![deny(
-    clippy::all,
-    clippy::str_to_string,
-    clippy::future_not_send,
-    rustdoc::broken_intra_doc_links,
-    missing_docs
-)]
-#![warn(clippy::pedantic)]
+#![deny(clippy::future_not_send, missing_docs)]
 #![allow(clippy::module_name_repetitions)]
 
 use sqlx::migrate::Migrator;

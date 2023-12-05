@@ -39,6 +39,7 @@ impl User {
 }
 
 impl User {
+    #[doc(hidden)]
     #[must_use]
     pub fn samples(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self> {
         vec![User {
@@ -175,6 +176,7 @@ impl Deref for UserEmailVerification {
 }
 
 impl UserEmailVerification {
+    #[doc(hidden)]
     #[must_use]
     pub fn samples(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self> {
         let states = [

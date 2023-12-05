@@ -84,6 +84,12 @@ impl Credentials {
         }
     }
 
+    /// Fetch the client from the database
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the client could not be found or if the underlying
+    /// repository errored.
     pub async fn fetch<E>(
         &self,
         repo: &mut impl RepositoryAccess<Error = E>,
@@ -98,6 +104,11 @@ impl Credentials {
         repo.oauth2_client().find_by_client_id(client_id).await
     }
 
+    /// Verify credentials presented by the client for authentication
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the credentials are invalid.
     #[tracing::instrument(skip_all, err)]
     pub async fn verify(
         &self,

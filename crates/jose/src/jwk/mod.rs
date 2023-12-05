@@ -106,6 +106,7 @@ impl TryFrom<PrivateJsonWebKey> for PublicJsonWebKey {
 }
 
 impl<P> JsonWebKey<P> {
+    /// Create a new [`JsonWebKey`] with the given parameters.
     #[must_use]
     pub const fn new(parameters: P) -> Self {
         Self {
@@ -121,6 +122,12 @@ impl<P> JsonWebKey<P> {
         }
     }
 
+    /// Map the parameters of this [`JsonWebKey`] to a new type, with a fallible
+    /// mapper, consuming the original key.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the mapper returns an error.
     pub fn try_map<M, O, E>(self, mapper: M) -> Result<JsonWebKey<O>, E>
     where
         M: FnOnce(P) -> Result<O, E>,
@@ -138,6 +145,8 @@ impl<P> JsonWebKey<P> {
         })
     }
 
+    /// Map the parameters of this [`JsonWebKey`] to a new type, consuming the
+    /// original key.
     pub fn map<M, O>(self, mapper: M) -> JsonWebKey<O>
     where
         M: FnOnce(P) -> O,
@@ -155,6 +164,12 @@ impl<P> JsonWebKey<P> {
         }
     }
 
+    /// Map the parameters of this [`JsonWebKey`] to a new type, with a fallible
+    /// mapper, cloning the other fields.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the mapper returns an error.
     pub fn try_cloned_map<M, O, E>(&self, mapper: M) -> Result<JsonWebKey<O>, E>
     where
         M: FnOnce(&P) -> Result<O, E>,
@@ -172,6 +187,8 @@ impl<P> JsonWebKey<P> {
         })
     }
 
+    /// Map the parameters of this [`JsonWebKey`] to a new type, cloning the
+    /// other fields.
     pub fn cloned_map<M, O>(&self, mapper: M) -> JsonWebKey<O>
     where
         M: FnOnce(&P) -> O,
@@ -189,35 +206,41 @@ impl<P> JsonWebKey<P> {
         }
     }
 
+    /// Set the `use` field of this [`JsonWebKey`].
     #[must_use]
     pub fn with_use(mut self, value: JsonWebKeyUse) -> Self {
         self.r#use = Some(value);
         self
     }
 
+    /// Set the `key_ops` field of this [`JsonWebKey`].
     #[must_use]
     pub fn with_key_ops(mut self, key_ops: Vec<JsonWebKeyOperation>) -> Self {
         self.key_ops = Some(key_ops);
         self
     }
 
+    /// Set the `alg` field of this [`JsonWebKey`].
     #[must_use]
     pub fn with_alg(mut self, alg: JsonWebSignatureAlg) -> Self {
         self.alg = Some(alg);
         self
     }
 
+    /// Set the `kid` field of this [`JsonWebKey`].
     #[must_use]
     pub fn with_kid(mut self, kid: impl Into<String>) -> Self {
         self.kid = Some(kid.into());
         self
     }
 
+    /// Get the `kid` field of this [`JsonWebKey`], if set.
     #[must_use]
     pub const fn alg(&self) -> Option<&JsonWebSignatureAlg> {
         self.alg.as_ref()
     }
 
+    /// Get the inner parameters of this [`JsonWebKey`].
     #[must_use]
     pub const fn params(&self) -> &P {
         &self.parameters

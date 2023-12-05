@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![deny(clippy::all)]
-#![warn(clippy::pedantic)]
-
 use std::fs::File;
 
 use camino::Utf8PathBuf;

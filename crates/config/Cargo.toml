@@ -7,6 +7,9 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 tokio = { version = "1.34.0", features = ["fs", "rt"] }
 tracing.workspace = true
@@ -44,3 +47,4 @@ dist = []
 
 [[bin]]
 name = "schema"
+doc = false

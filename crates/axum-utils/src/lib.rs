@@ -12,15 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![forbid(unsafe_code)]
-#![deny(
-    clippy::all,
-    clippy::str_to_string,
-    rustdoc::broken_intra_doc_links,
-    clippy::future_not_send
-)]
-#![warn(clippy::pedantic)]
-#![allow(clippy::module_name_repetitions, clippy::missing_errors_doc)]
+#![deny(clippy::future_not_send)]
+#![allow(clippy::module_name_repetitions)]
 
 pub mod client_authorization;
 pub mod cookies;

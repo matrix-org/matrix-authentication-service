@@ -146,6 +146,13 @@ impl CookieJar {
         self
     }
 
+    /// Load and deserialize a cookie from the jar
+    ///
+    /// Returns `None` if the cookie is not present
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the cookie cannot be deserialized
     pub fn load<T: DeserializeOwned>(&self, key: &str) -> Result<Option<T>, CookieDecodeError> {
         let Some(cookie) = self.inner.get(key) else {
             return Ok(None);

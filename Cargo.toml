@@ -12,6 +12,18 @@ package.edition = "2021"
 package.homepage = "https://matrix-org.github.io/matrix-authentication-service/"
 package.repository = "https://github.com/matrix-org/matrix-authentication-service/"
 
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = "deny"
+pedantic = "warn"
+
+str_to_string = "deny"
+
+[workspace.lints.rustdoc]
+broken_intra_doc_links = "deny"
+
 [workspace.dependencies]
 
 # High-level error handling

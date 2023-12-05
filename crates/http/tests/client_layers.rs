@@ -136,7 +136,7 @@ async fn test_urlencoded_request_body() {
         }
 
         let bytes = hyper::body::to_bytes(request.into_body()).await?;
-        assert_eq!(bytes.to_vec(), br#"hello=world"#.to_vec());
+        assert_eq!(bytes.to_vec(), br"hello=world".to_vec());
 
         let res = Response::new(hyper::Body::empty());
         Ok(res)

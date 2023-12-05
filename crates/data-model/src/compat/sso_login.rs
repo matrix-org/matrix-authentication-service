@@ -36,7 +36,7 @@ pub enum CompatSsoLoginState {
 }
 
 impl CompatSsoLoginState {
-    /// Returns `true` if the compat sso login state is [`Pending`].
+    /// Returns `true` if the compat SSO login state is [`Pending`].
     ///
     /// [`Pending`]: CompatSsoLoginState::Pending
     #[must_use]
@@ -44,7 +44,7 @@ impl CompatSsoLoginState {
         matches!(self, Self::Pending)
     }
 
-    /// Returns `true` if the compat sso login state is [`Fulfilled`].
+    /// Returns `true` if the compat SSO login state is [`Fulfilled`].
     ///
     /// [`Fulfilled`]: CompatSsoLoginState::Fulfilled
     #[must_use]
@@ -52,7 +52,7 @@ impl CompatSsoLoginState {
         matches!(self, Self::Fulfilled { .. })
     }
 
-    /// Returns `true` if the compat sso login state is [`Exchanged`].
+    /// Returns `true` if the compat SSO login state is [`Exchanged`].
     ///
     /// [`Exchanged`]: CompatSsoLoginState::Exchanged
     #[must_use]
@@ -60,6 +60,11 @@ impl CompatSsoLoginState {
         matches!(self, Self::Exchanged { .. })
     }
 
+    /// Get the time at which the login was fulfilled.
+    ///
+    /// Returns `None` if the compat SSO login state is [`Pending`].
+    ///
+    /// [`Pending`]: CompatSsoLoginState::Pending
     #[must_use]
     pub fn fulfilled_at(&self) -> Option<DateTime<Utc>> {
         match self {
@@ -70,6 +75,11 @@ impl CompatSsoLoginState {
         }
     }
 
+    /// Get the time at which the login was exchanged.
+    ///
+    /// Returns `None` if the compat SSO login state is not [`Exchanged`].
+    ///
+    /// [`Exchanged`]: CompatSsoLoginState::Exchanged
     #[must_use]
     pub fn exchanged_at(&self) -> Option<DateTime<Utc>> {
         match self {
@@ -78,6 +88,11 @@ impl CompatSsoLoginState {
         }
     }
 
+    /// Get the session ID associated with the login.
+    ///
+    /// Returns `None` if the compat SSO login state is [`Pending`].
+    ///
+    /// [`Pending`]: CompatSsoLoginState::Pending
     #[must_use]
     pub fn session_id(&self) -> Option<Ulid> {
         match self {
@@ -88,6 +103,14 @@ impl CompatSsoLoginState {
         }
     }
 
+    /// Transition the compat SSO login state from [`Pending`] to [`Fulfilled`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the compat SSO login state is not [`Pending`].
+    ///
+    /// [`Pending`]: CompatSsoLoginState::Pending
+    /// [`Fulfilled`]: CompatSsoLoginState::Fulfilled
     pub fn fulfill(
         self,
         fulfilled_at: DateTime<Utc>,
@@ -102,6 +125,15 @@ impl CompatSsoLoginState {
         }
     }
 
+    /// Transition the compat SSO login state from [`Fulfilled`] to
+    /// [`Exchanged`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the compat SSO login state is not [`Fulfilled`].
+    ///
+    /// [`Fulfilled`]: CompatSsoLoginState::Fulfilled
+    /// [`Exchanged`]: CompatSsoLoginState::Exchanged
     pub fn exchange(self, exchanged_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
         match self {
             Self::Fulfilled {
@@ -135,6 +167,15 @@ impl std::ops::Deref for CompatSsoLogin {
 }
 
 impl CompatSsoLogin {
+    /// Transition the compat SSO login from a [`Pending`] state to
+    /// [`Fulfilled`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the compat SSO login state is not [`Pending`].
+    ///
+    /// [`Pending`]: CompatSsoLoginState::Pending
+    /// [`Fulfilled`]: CompatSsoLoginState::Fulfilled
     pub fn fulfill(
         mut self,
         fulfilled_at: DateTime<Utc>,
@@ -144,6 +185,15 @@ impl CompatSsoLogin {
         Ok(self)
     }
 
+    /// Transition the compat SSO login from a [`Fulfilled`] state to
+    /// [`Exchanged`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the compat SSO login state is not [`Fulfilled`].
+    ///
+    /// [`Fulfilled`]: CompatSsoLoginState::Fulfilled
+    /// [`Exchanged`]: CompatSsoLoginState::Exchanged
     pub fn exchange(mut self, exchanged_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
         self.state = self.state.exchange(exchanged_at)?;
         Ok(self)
