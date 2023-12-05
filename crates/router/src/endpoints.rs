@@ -429,11 +429,26 @@ impl AccountAddEmail {
 
 /// Actions parameters as defined by MSC2965
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case", tag = "action")]
+#[serde(tag = "action")]
 pub enum AccountAction {
+    #[serde(rename = "org.matrix.profile")]
+    OrgMatrixProfile,
+    #[serde(rename = "profile")]
     Profile,
+
+    #[serde(rename = "org.matrix.sessions_list")]
+    OrgMatrixSessionsList,
+    #[serde(rename = "sessions_list")]
     SessionsList,
+
+    #[serde(rename = "org.matrix.session_view")]
+    OrgMatrixSessionView { device_id: String },
+    #[serde(rename = "session_view")]
     SessionView { device_id: String },
+
+    #[serde(rename = "org.matrix.session_end")]
+    OrgMatrixSessionEnd { device_id: String },
+    #[serde(rename = "session_end")]
     SessionEnd { device_id: String },
 }
 

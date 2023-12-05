@@ -195,6 +195,12 @@ impl UrlBuilder {
     pub fn upstream_oauth_authorize(&self, id: Ulid) -> Url {
         self.absolute_url_for(&crate::endpoints::UpstreamOAuth2Authorize::new(id))
     }
+
+    /// Account management URI
+    #[must_use]
+    pub fn account_management_uri(&self) -> Url {
+        self.absolute_url_for(&crate::endpoints::Account::default())
+    }
 }
 
 #[cfg(test)]
