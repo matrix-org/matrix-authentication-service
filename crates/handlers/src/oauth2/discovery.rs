@@ -34,6 +34,10 @@ struct DiscoveryResponse {
 
     #[serde(rename = "org.matrix.matrix-authentication-service.graphql_endpoint")]
     graphql_endpoint: url::Url,
+
+    // As per MSC2965
+    account_management_uri: url::Url,
+    account_management_actions_supported: Vec<String>,
 }
 
 #[tracing::instrument(name = "handlers.oauth2.discovery.get", skip_all)]
@@ -168,6 +172,15 @@ pub(crate) async fn get(
     Json(DiscoveryResponse {
         standard,
         graphql_endpoint: url_builder.graphql_endpoint(),
+        account_management_uri: url_builder.account_management_uri(),
+        // This needs to be kept in sync with what is supported in the frontend,
+        // see frontend/src/routing/actions.ts
+        account_management_actions_supported: vec![
+            "org.matrix.profile".to_owned(),
+            "org.matrix.sessions_list".to_owned(),
+            "org.matrix.session_view".to_owned(),
+            "org.matrix.session_end".to_owned(),
+        ],
     })
 }
 
