@@ -42,6 +42,11 @@ impl SessionInfo {
     }
 
     /// Load the [`BrowserSession`] from database
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the session is not found or if the session is not
+    /// active anymore
     pub async fn load_session<E>(
         &self,
         repo: &mut impl RepositoryAccess<Error = E>,

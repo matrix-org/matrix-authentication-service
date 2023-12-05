@@ -149,7 +149,7 @@ fn pass_full_authorization_url() {
 async fn pass_pushed_authorization_request() {
     let (http_service, mock_server, issuer) = init_test().await;
     let client_credentials =
-        client_credentials(OAuthClientAuthenticationMethod::None, &issuer, None);
+        client_credentials(&OAuthClientAuthenticationMethod::None, &issuer, None);
     let authorization_endpoint = issuer.join("authorize").unwrap();
     let par_endpoint = issuer.join("par").unwrap();
     let redirect_uri = Url::parse(REDIRECT_URI).unwrap();
@@ -225,7 +225,7 @@ async fn pass_pushed_authorization_request() {
 async fn fail_pushed_authorization_request_404() {
     let (http_service, _, issuer) = init_test().await;
     let client_credentials =
-        client_credentials(OAuthClientAuthenticationMethod::None, &issuer, None);
+        client_credentials(&OAuthClientAuthenticationMethod::None, &issuer, None);
     let authorization_endpoint = issuer.join("authorize").unwrap();
     let par_endpoint = issuer.join("par").unwrap();
     let redirect_uri = Url::parse(REDIRECT_URI).unwrap();
@@ -251,7 +251,7 @@ async fn fail_pushed_authorization_request_404() {
     assert_matches!(
         error,
         AuthorizationError::PushedAuthorization(PushedAuthorizationError::Http(_))
-    )
+    );
 }
 
 /// Check if the given request to the token endpoint is valid.
@@ -303,7 +303,7 @@ fn is_valid_token_endpoint_request(req: &Request) -> bool {
 async fn pass_access_token_with_authorization_code() {
     let (http_service, mock_server, issuer) = init_test().await;
     let client_credentials =
-        client_credentials(OAuthClientAuthenticationMethod::None, &issuer, None);
+        client_credentials(&OAuthClientAuthenticationMethod::None, &issuer, None);
     let token_endpoint = issuer.join("token").unwrap();
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(42);
 
@@ -362,7 +362,7 @@ async fn pass_access_token_with_authorization_code() {
 async fn fail_access_token_with_authorization_code_wrong_nonce() {
     let (http_service, mock_server, issuer) = init_test().await;
     let client_credentials =
-        client_credentials(OAuthClientAuthenticationMethod::None, &issuer, None);
+        client_credentials(&OAuthClientAuthenticationMethod::None, &issuer, None);
     let token_endpoint = issuer.join("token").unwrap();
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(42);
 
@@ -424,7 +424,7 @@ async fn fail_access_token_with_authorization_code_wrong_nonce() {
 async fn fail_access_token_with_authorization_code_no_id_token() {
     let (http_service, mock_server, issuer) = init_test().await;
     let client_credentials =
-        client_credentials(OAuthClientAuthenticationMethod::None, &issuer, None);
+        client_credentials(&OAuthClientAuthenticationMethod::None, &issuer, None);
     let token_endpoint = issuer.join("token").unwrap();
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(42);
 

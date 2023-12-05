@@ -12,15 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![forbid(unsafe_code)]
-#![deny(
-    clippy::all,
-    clippy::str_to_string,
-    missing_docs,
-    rustdoc::broken_intra_doc_links
-)]
-#![warn(clippy::pedantic)]
-#![allow(clippy::module_name_repetitions, clippy::missing_errors_doc)]
+#![deny(missing_docs)]
+#![allow(clippy::module_name_repetitions)]
 
 //! Templates rendering
 
@@ -37,7 +30,7 @@ use rand::Rng;
 use serde::Serialize;
 use thiserror::Error;
 use tokio::task::JoinError;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 use walkdir::DirEntry;
 
 mod context;
@@ -377,6 +370,10 @@ register_templates! {
 impl Templates {
     /// Render all templates with the generated samples to check if they render
     /// properly
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any of the templates fails to render
     pub fn check_render(
         &self,
         now: chrono::DateTime<chrono::Utc>,

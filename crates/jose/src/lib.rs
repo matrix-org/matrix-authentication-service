@@ -12,10 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![forbid(unsafe_code)]
-#![deny(clippy::all, clippy::str_to_string, rustdoc::broken_intra_doc_links)]
-#![warn(clippy::pedantic)]
-#![allow(clippy::missing_errors_doc, clippy::module_name_repetitions)]
+#![deny(rustdoc::broken_intra_doc_links)]
+#![allow(clippy::module_name_repetitions)]
 
 mod base64;
 pub mod claims;

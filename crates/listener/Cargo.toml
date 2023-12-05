@@ -7,6 +7,9 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 bytes = "1.5.0"
 event-listener = "4.0.0"

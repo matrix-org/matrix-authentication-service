@@ -54,6 +54,10 @@ macro_rules! register_templates {
         impl Templates {
             $(
                 $(#[$attr])?
+                ///
+                /// # Errors
+                ///
+                /// Returns an error if the template fails to render.
                 pub fn $name
                     $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
                     (&self, context: &$param)
@@ -75,6 +79,10 @@ macro_rules! register_templates {
 
             $(
                 #[doc = concat!("Render the `", $template, "` template with sample contexts")]
+                ///
+                /// # Errors
+                ///
+                /// Returns an error if the template fails to render with any of the sample.
                 pub fn $name
                     $(< $( $lt $( : $clt $(+ $dlt )* + TemplateContext )? ),+ >)?
                     (templates: &Templates, now: chrono::DateTime<chrono::Utc>, rng: &mut impl rand::Rng)

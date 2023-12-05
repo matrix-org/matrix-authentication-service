@@ -32,7 +32,7 @@ use crate::{client_credentials, init_test, now, ACCESS_TOKEN, CLIENT_ID, SUBJECT
 async fn pass_introspect_token() {
     let (http_service, mock_server, issuer) = init_test().await;
     let client_credentials =
-        client_credentials(OAuthClientAuthenticationMethod::None, &issuer, None);
+        client_credentials(&OAuthClientAuthenticationMethod::None, &issuer, None);
     let introspection_endpoint = issuer.join("introspect").unwrap();
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(42);
 

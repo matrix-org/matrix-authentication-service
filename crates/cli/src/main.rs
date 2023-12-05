@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![forbid(unsafe_code)]
-#![deny(clippy::all, clippy::str_to_string)]
-#![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 
 use std::{io::IsTerminal, sync::Arc};

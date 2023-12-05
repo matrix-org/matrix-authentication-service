@@ -7,6 +7,9 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 async-trait = "0.1.74"
 sqlx = { version = "0.7.3", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "json", "uuid", "ipnetwork"] }

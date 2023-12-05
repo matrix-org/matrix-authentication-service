@@ -57,21 +57,29 @@ pub enum AsymmetricSigningKey {
 }
 
 impl AsymmetricSigningKey {
+    /// Create a new signing key with the RS256 algorithm from the given RSA
+    /// private key.
     #[must_use]
     pub fn rs256(key: rsa::RsaPrivateKey) -> Self {
         Self::Rs256(rsa::pkcs1v15::SigningKey::new(key))
     }
 
+    /// Create a new signing key with the RS384 algorithm from the given RSA
+    /// private key.
     #[must_use]
     pub fn rs384(key: rsa::RsaPrivateKey) -> Self {
         Self::Rs384(rsa::pkcs1v15::SigningKey::new(key))
     }
 
+    /// Create a new signing key with the RS512 algorithm from the given RSA
+    /// private key.
     #[must_use]
     pub fn rs512(key: rsa::RsaPrivateKey) -> Self {
         Self::Rs512(rsa::pkcs1v15::SigningKey::new(key))
     }
 
+    /// Create a new signing key with the PS256 algorithm from the given RSA
+    /// private key.
     #[must_use]
     pub fn ps256(key: rsa::RsaPrivateKey) -> Self {
         Self::Ps256(rsa::pss::SigningKey::new_with_salt_len(
@@ -80,6 +88,8 @@ impl AsymmetricSigningKey {
         ))
     }
 
+    /// Create a new signing key with the PS384 algorithm from the given RSA
+    /// private key.
     #[must_use]
     pub fn ps384(key: rsa::RsaPrivateKey) -> Self {
         Self::Ps384(rsa::pss::SigningKey::new_with_salt_len(
@@ -88,6 +98,8 @@ impl AsymmetricSigningKey {
         ))
     }
 
+    /// Create a new signing key with the PS512 algorithm from the given RSA
+    /// private key.
     #[must_use]
     pub fn ps512(key: rsa::RsaPrivateKey) -> Self {
         Self::Ps512(rsa::pss::SigningKey::new_with_salt_len(
@@ -96,21 +108,34 @@ impl AsymmetricSigningKey {
         ))
     }
 
+    /// Create a new signing key with the ES256 algorithm from the given ECDSA
+    /// private key.
     #[must_use]
     pub fn es256(key: elliptic_curve::SecretKey<p256::NistP256>) -> Self {
         Self::Es256(ecdsa::SigningKey::from(key))
     }
 
+    /// Create a new signing key with the ES384 algorithm from the given ECDSA
+    /// private key.
     #[must_use]
     pub fn es384(key: elliptic_curve::SecretKey<p384::NistP384>) -> Self {
         Self::Es384(ecdsa::SigningKey::from(key))
     }
 
+    /// Create a new signing key with the ES256K algorithm from the given ECDSA
+    /// private key.
     #[must_use]
     pub fn es256k(key: elliptic_curve::SecretKey<k256::Secp256k1>) -> Self {
         Self::Es256K(ecdsa::SigningKey::from(key))
     }
 
+    /// Create a new signing key for the given algorithm from the given private
+    /// JWK parameters.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the key parameters are not suitable for the given
+    /// algorithm.
     pub fn from_jwk_and_alg(
         params: &JsonWebKeyPrivateParameters,
         alg: &JsonWebSignatureAlg,
@@ -275,51 +300,76 @@ pub enum AsymmetricVerifyingKey {
 }
 
 impl AsymmetricVerifyingKey {
+    /// Create a new verifying key with the RS256 algorithm from the given RSA
+    /// public key.
     #[must_use]
     pub fn rs256(key: rsa::RsaPublicKey) -> Self {
         Self::Rs256(rsa::pkcs1v15::VerifyingKey::new(key))
     }
 
+    /// Create a new verifying key with the RS384 algorithm from the given RSA
+    /// public key.
     #[must_use]
     pub fn rs384(key: rsa::RsaPublicKey) -> Self {
         Self::Rs384(rsa::pkcs1v15::VerifyingKey::new(key))
     }
 
+    /// Create a new verifying key with the RS512 algorithm from the given RSA
+    /// public key.
     #[must_use]
     pub fn rs512(key: rsa::RsaPublicKey) -> Self {
         Self::Rs512(rsa::pkcs1v15::VerifyingKey::new(key))
     }
 
+    /// Create a new verifying key with the PS256 algorithm from the given RSA
+    /// public key.
     #[must_use]
     pub fn ps256(key: rsa::RsaPublicKey) -> Self {
         Self::Ps256(rsa::pss::VerifyingKey::new(key))
     }
 
+    /// Create a new verifying key with the PS384 algorithm from the given RSA
+    /// public key.
     #[must_use]
     pub fn ps384(key: rsa::RsaPublicKey) -> Self {
         Self::Ps384(rsa::pss::VerifyingKey::new(key))
     }
 
+    /// Create a new verifying key with the PS512 algorithm from the given RSA
+    /// public key.
     #[must_use]
     pub fn ps512(key: rsa::RsaPublicKey) -> Self {
         Self::Ps512(rsa::pss::VerifyingKey::new(key))
     }
 
+    /// Create a new verifying key with the ES256 algorithm from the given ECDSA
+    /// public key.
     #[must_use]
     pub fn es256(key: elliptic_curve::PublicKey<p256::NistP256>) -> Self {
         Self::Es256(ecdsa::VerifyingKey::from(key))
     }
 
+    /// Create a new verifying key with the ES384 algorithm from the given ECDSA
+    /// public key.
     #[must_use]
     pub fn es384(key: elliptic_curve::PublicKey<p384::NistP384>) -> Self {
         Self::Es384(ecdsa::VerifyingKey::from(key))
     }
 
+    /// Create a new verifying key with the ES256K algorithm from the given
+    /// ECDSA public key.
     #[must_use]
     pub fn es256k(key: elliptic_curve::PublicKey<k256::Secp256k1>) -> Self {
         Self::Es256K(ecdsa::VerifyingKey::from(key))
     }
 
+    /// Create a new verifying key for the given algorithm from the given public
+    /// JWK parameters.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the key parameters are not suitable for the given
+    /// algorithm.
     pub fn from_jwk_and_alg(
         params: &JsonWebKeyPublicParameters,
         alg: &JsonWebSignatureAlg,
