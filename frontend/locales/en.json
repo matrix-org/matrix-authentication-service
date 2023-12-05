@@ -95,16 +95,16 @@
       "total": "Total: {{totalCount}}"
     },
     "reset_cross_signing": {
-      "button": "Allow cross-signing reset",
-      "description": "If you have lost access to all your verified devices and your security key, you can reset your cross-signing keys. Deleting cross-signing keys is permanent, but will allow you to go through the verification process again and set up new keys.",
+      "button": "Allow crypto identity reset",
+      "description": "If you are not signed in anywhere else, and have forgotten or lost all recovery options you’ll need to reset your crypto identity. This means you will lose your existing message history, other users will see that you have reset your identity and you will need to verify your existing devices again.",
       "failure": {
         "description": "This might be a temporary problem, so please try again later. If the problem persists, please contact your server administrator.",
-        "title": "Failed to allow cross-signing"
+        "title": "Failed to allow crypto identity"
       },
-      "heading": "Cross-signing reset",
+      "heading": "Reset crypto identity",
       "success": {
-        "description": "A client can now temporarily reset your account cross-signing keys. Follow the instructions in your client to complete the process.",
-        "title": "Cross-signing reset temporarily allowed"
+        "description": "A client can now temporarily reset your account crypto identity. Follow the instructions in your client to complete the process.",
+        "title": "Crypto identity reset temporarily allowed"
       }
     },
     "selectable_session": {
