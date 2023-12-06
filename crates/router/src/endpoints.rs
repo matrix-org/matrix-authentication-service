@@ -689,6 +689,23 @@ impl Route for UpstreamOAuth2Link {
     }
 }
 
+/// `GET|POST /link`
+#[derive(Default, Serialize, Deserialize, Debug, Clone)]
+pub struct DeviceCodeLink {
+    code: Option<String>,
+}
+
+impl Route for DeviceCodeLink {
+    type Query = DeviceCodeLink;
+    fn route() -> &'static str {
+        "/link"
+    }
+
+    fn query(&self) -> Option<&Self::Query> {
+        Some(self)
+    }
+}
+
 /// `GET /assets`
 pub struct StaticAsset {
     path: String,

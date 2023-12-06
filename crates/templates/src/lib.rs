@@ -42,13 +42,13 @@ mod macros;
 
 pub use self::{
     context::{
-        AppContext, CompatSsoContext, ConsentContext, EmailAddContext, EmailVerificationContext,
-        EmailVerificationPageContext, EmptyContext, ErrorContext, FormPostContext, IndexContext,
-        LoginContext, LoginFormField, NotFoundContext, PolicyViolationContext, PostAuthContext,
-        PostAuthContextInner, ReauthContext, ReauthFormField, RegisterContext, RegisterFormField,
-        SiteBranding, TemplateContext, UpstreamExistingLinkContext, UpstreamRegister,
-        UpstreamRegisterFormField, UpstreamSuggestLink, WithCsrf, WithLanguage,
-        WithOptionalSession, WithSession,
+        AppContext, CompatSsoContext, ConsentContext, DeviceLinkContext, DeviceLinkFormField,
+        EmailAddContext, EmailVerificationContext, EmailVerificationPageContext, EmptyContext,
+        ErrorContext, FormPostContext, IndexContext, LoginContext, LoginFormField, NotFoundContext,
+        PolicyViolationContext, PostAuthContext, PostAuthContextInner, ReauthContext,
+        ReauthFormField, RegisterContext, RegisterFormField, SiteBranding, TemplateContext,
+        UpstreamExistingLinkContext, UpstreamRegister, UpstreamRegisterFormField,
+        UpstreamSuggestLink, WithCsrf, WithLanguage, WithOptionalSession, WithSession,
     },
     forms::{FieldError, FormError, FormField, FormState, ToFormState},
 };
@@ -365,6 +365,9 @@ register_templates! {
 
     /// Render the upstream register screen
     pub fn render_upstream_oauth2_do_register(WithLanguage<WithCsrf<UpstreamRegister>>) { "pages/upstream_oauth2/do_register.html" }
+
+    /// Render the device code link page
+    pub fn render_device_link(WithLanguage<WithCsrf<DeviceLinkContext>>) { "pages/device_link.html" }
 }
 
 impl Templates {
