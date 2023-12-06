@@ -404,6 +404,10 @@ where
             mas_router::UpstreamOAuth2Link::route(),
             get(self::upstream_oauth2::link::get).post(self::upstream_oauth2::link::post),
         )
+        .route(
+            mas_router::DeviceCodeLink::route(),
+            get(self::oauth2::device::link::get).post(self::oauth2::device::link::post),
+        )
         .layer(AndThenLayer::new(
             move |response: axum::response::Response| async move {
                 if response.status().is_server_error() {

@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021-2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -104,7 +104,7 @@ impl TemplateContext for () {
 }
 
 /// Context with a specified locale in it
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct WithLanguage<T> {
     lang: String,
 
@@ -143,7 +143,7 @@ impl<T: TemplateContext> TemplateContext for WithLanguage<T> {
 }
 
 /// Context with a CSRF token in it
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct WithCsrf<T> {
     csrf_token: String,
 
@@ -1020,6 +1020,58 @@ impl TemplateContext for UpstreamRegister {
         Self: Sized,
     {
         vec![Self::new()]
+    }
+}
+
+/// Form fields on the device link page
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum DeviceLinkFormField {
+    /// The device code field
+    Code,
+}
+
+impl FormField for DeviceLinkFormField {
+    fn keep(&self) -> bool {
+        match self {
+            Self::Code => true,
+        }
+    }
+}
+
+/// Context used by the `device_link.html` template
+#[derive(Serialize, Default, Debug)]
+pub struct DeviceLinkContext {
+    form_state: FormState<DeviceLinkFormField>,
+}
+
+impl DeviceLinkContext {
+    /// Constructs a new context with an existing linked user
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Set the form state
+    #[must_use]
+    pub fn with_form_state(mut self, form_state: FormState<DeviceLinkFormField>) -> Self {
+        self.form_state = form_state;
+        self
+    }
+}
+
+impl TemplateContext for DeviceLinkContext {
+    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        vec![
+            Self::new(),
+            Self::new().with_form_state(
+                FormState::default()
+                    .with_error_on_field(DeviceLinkFormField::Code, FieldError::Required),
+            ),
+        ]
     }
 }
 

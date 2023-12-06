@@ -32,6 +32,7 @@ use thiserror::Error;
 
 pub mod authorization;
 pub mod consent;
+pub mod device;
 pub mod discovery;
 pub mod introspection;
 pub mod keys;
