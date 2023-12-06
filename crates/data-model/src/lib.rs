@@ -33,8 +33,8 @@ pub use self::{
         CompatSessionState, CompatSsoLogin, CompatSsoLoginState, Device,
     },
     oauth2::{
-        AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, Client,
-        InvalidRedirectUriError, JwksOrJwksUri, Pkce, Session, SessionState,
+        AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, Client, DeviceCodeGrant,
+        DeviceCodeGrantState, InvalidRedirectUriError, JwksOrJwksUri, Pkce, Session, SessionState,
     },
     tokens::{
         AccessToken, AccessTokenState, RefreshToken, RefreshTokenState, TokenFormatError, TokenType,
