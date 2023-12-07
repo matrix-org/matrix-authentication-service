@@ -6,6 +6,7 @@ edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
+publish = false
 
 [lints]
 workspace = true
@@ -21,8 +22,8 @@ tokio = { version = "1.34.0", features = ["io-util", "rt"] }
 tracing.workspace = true
 wasmtime = { version = "15.0.0", default-features = false, features = ["async", "cranelift"] }
 
-mas-data-model = { path = "../data-model" }
-oauth2-types = { path = "../oauth2-types" }
+mas-data-model.workspace = true
+oauth2-types.workspace = true
 
 [dev-dependencies]
 tokio = { version = "1.34.0", features = ["fs", "rt", "macros"] }

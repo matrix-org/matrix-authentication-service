@@ -3256,7 +3256,6 @@ dependencies = [
  "bytes",
  "chrono",
  "form_urlencoded",
- "futures",
  "futures-util",
  "headers",
  "http 0.2.11",

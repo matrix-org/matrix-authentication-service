@@ -6,6 +6,7 @@ edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
+publish = false
 
 [lints]
 workspace = true
@@ -28,8 +29,8 @@ url.workspace = true
 uuid = "1.6.1"
 ulid = { workspace = true, features = ["uuid"] }
 
-oauth2-types = { path = "../oauth2-types" }
-mas-storage = { path = "../storage" }
-mas-data-model = { path = "../data-model" }
-mas-iana = { path = "../iana" }
-mas-jose = { path = "../jose" }
+oauth2-types.workspace = true
+mas-storage.workspace = true
+mas-data-model.workspace = true
+mas-iana.workspace = true
+mas-jose.workspace = true

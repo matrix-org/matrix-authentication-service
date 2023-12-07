@@ -6,6 +6,7 @@ authors.workspace = true
 edition.workspace = true
 homepage.workspace = true
 repository.workspace = true
+publish = false
 
 [lints]
 workspace = true
@@ -19,4 +20,4 @@ tracing-subscriber.workspace = true
 tracing.workspace = true
 walkdir = "2.4.0"
 
-mas-i18n = { path = "../i18n" }
+mas-i18n.workspace = true
