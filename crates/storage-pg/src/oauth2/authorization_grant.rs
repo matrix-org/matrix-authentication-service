@@ -281,6 +281,7 @@ impl<'c> OAuth2AuthorizationGrantRepository for PgOAuth2AuthorizationGrantReposi
             requires_consent,
             created_at,
         )
+        .traced()
         .execute(&mut *self.conn)
         .await?;
 
@@ -340,6 +341,7 @@ impl<'c> OAuth2AuthorizationGrantRepository for PgOAuth2AuthorizationGrantReposi
             "#,
             Uuid::from(id),
         )
+        .traced()
         .fetch_optional(&mut *self.conn)
         .await?;
 
@@ -427,6 +429,7 @@ impl<'c> OAuth2AuthorizationGrantRepository for PgOAuth2AuthorizationGrantReposi
             fulfilled_at,
             Uuid::from(session.id),
         )
+        .traced()
         .execute(&mut *self.conn)
         .await?;
 
@@ -465,6 +468,7 @@ impl<'c> OAuth2AuthorizationGrantRepository for PgOAuth2AuthorizationGrantReposi
             Uuid::from(grant.id),
             exchanged_at,
         )
+        .traced()
         .execute(&mut *self.conn)
         .await?;
 
@@ -501,6 +505,7 @@ impl<'c> OAuth2AuthorizationGrantRepository for PgOAuth2AuthorizationGrantReposi
             "#,
             Uuid::from(grant.id),
         )
+        .traced()
         .execute(&mut *self.conn)
         .await?;
 

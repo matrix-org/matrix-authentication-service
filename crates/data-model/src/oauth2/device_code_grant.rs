@@ -17,7 +17,7 @@ use oauth2_types::scope::Scope;
 use serde::Serialize;
 use ulid::Ulid;
 
-use crate::{BrowserSession, InvalidTransitionError};
+use crate::{BrowserSession, InvalidTransitionError, Session};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case", tag = "state")]
@@ -117,7 +117,7 @@ impl DeviceCodeGrantState {
     /// [`Fulfilled`]: DeviceCodeGrantState::Fulfilled
     pub fn exchange(
         self,
-        session_id: Ulid,
+        session: &Session,
         exchanged_at: DateTime<Utc>,
     ) -> Result<Self, InvalidTransitionError> {
         match self {
@@ -129,7 +129,7 @@ impl DeviceCodeGrantState {
                 browser_session_id,
                 fulfilled_at,
                 exchanged_at,
-                session_id,
+                session_id: session.id,
             }),
             _ => Err(InvalidTransitionError),
         }
@@ -251,11 +251,11 @@ impl DeviceCodeGrant {
     /// [`Fulfilled`]: DeviceCodeGrantState::Fulfilled
     pub fn exchange(
         self,
-        session_id: Ulid,
+        session: &Session,
         exchanged_at: DateTime<Utc>,
     ) -> Result<Self, InvalidTransitionError> {
         Ok(Self {
-            state: self.state.exchange(session_id, exchanged_at)?,
+            state: self.state.exchange(session, exchanged_at)?,
             ..self
         })
     }

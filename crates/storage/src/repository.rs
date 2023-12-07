@@ -24,7 +24,7 @@ use crate::{
     job::JobRepository,
     oauth2::{
         OAuth2AccessTokenRepository, OAuth2AuthorizationGrantRepository, OAuth2ClientRepository,
-        OAuth2RefreshTokenRepository, OAuth2SessionRepository,
+        OAuth2DeviceCodeGrantRepository, OAuth2RefreshTokenRepository, OAuth2SessionRepository,
     },
     upstream_oauth2::{
         UpstreamOAuthLinkRepository, UpstreamOAuthProviderRepository,
@@ -178,6 +178,11 @@ pub trait RepositoryAccess: Send {
         &'c mut self,
     ) -> Box<dyn OAuth2RefreshTokenRepository<Error = Self::Error> + 'c>;
 
+    /// Get an [`OAuth2DeviceCodeGrantRepository`]
+    fn oauth2_device_code_grant<'c>(
+        &'c mut self,
+    ) -> Box<dyn OAuth2DeviceCodeGrantRepository<Error = Self::Error> + 'c>;
+
     /// Get a [`CompatSessionRepository`]
     fn compat_session<'c>(
         &'c mut self,
@@ -217,7 +222,8 @@ mod impls {
         job::JobRepository,
         oauth2::{
             OAuth2AccessTokenRepository, OAuth2AuthorizationGrantRepository,
-            OAuth2ClientRepository, OAuth2RefreshTokenRepository, OAuth2SessionRepository,
+            OAuth2ClientRepository, OAuth2DeviceCodeGrantRepository, OAuth2RefreshTokenRepository,
+            OAuth2SessionRepository,
         },
         upstream_oauth2::{
             UpstreamOAuthLinkRepository, UpstreamOAuthProviderRepository,
@@ -360,6 +366,15 @@ mod impls {
             ))
         }
 
+        fn oauth2_device_code_grant<'c>(
+            &'c mut self,
+        ) -> Box<dyn OAuth2DeviceCodeGrantRepository<Error = Self::Error> + 'c> {
+            Box::new(MapErr::new(
+                self.inner.oauth2_device_code_grant(),
+                &mut self.mapper,
+            ))
+        }
+
         fn compat_session<'c>(
             &'c mut self,
         ) -> Box<dyn CompatSessionRepository<Error = Self::Error> + 'c> {
@@ -470,6 +485,12 @@ mod impls {
             &'c mut self,
         ) -> Box<dyn OAuth2RefreshTokenRepository<Error = Self::Error> + 'c> {
             (**self).oauth2_refresh_token()
+        }
+
+        fn oauth2_device_code_grant<'c>(
+            &'c mut self,
+        ) -> Box<dyn OAuth2DeviceCodeGrantRepository<Error = Self::Error> + 'c> {
+            (**self).oauth2_device_code_grant()
         }
 
         fn compat_session<'c>(
