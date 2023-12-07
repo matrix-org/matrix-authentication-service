@@ -594,7 +594,7 @@ dependencies = [
  "futures-util",
  "headers",
  "http 0.2.11",
- "http-body",
+ "http-body 0.4.5",
  "hyper",
  "itoa",
  "matchit",
@@ -624,7 +624,7 @@ dependencies = [
  "bytes",
  "futures-util",
  "http 0.2.11",
- "http-body",
+ "http-body 0.4.5",
  "mime",
  "rustversion",
  "tower-layer",
@@ -643,7 +643,7 @@ dependencies = [
  "cookie",
  "futures-util",
  "http 0.2.11",
- "http-body",
+ "http-body 0.4.5",
  "mime",
  "pin-project-lite",
  "serde",
@@ -2190,6 +2190,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "http-body"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1cac85db508abc24a2e48553ba12a996e87244a0395ce011e62b37158745d643"
+dependencies = [
+ "bytes",
+ "http 1.0.0",
+]
+
+[[package]]
 name = "http-range-header"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2240,7 +2250,7 @@ dependencies = [
  "futures-util",
  "h2",
  "http 0.2.11",
- "http-body",
+ "http-body 0.4.5",
  "httparse",
  "httpdate",
  "itoa",
@@ -2811,7 +2821,7 @@ dependencies = [
  "futures-util",
  "headers",
  "http 0.2.11",
- "http-body",
+ "http-body 1.0.0",
  "icu_locid",
  "mas-data-model",
  "mas-http",
@@ -3055,7 +3065,7 @@ dependencies = [
  "futures-util",
  "headers",
  "http 0.2.11",
- "http-body",
+ "http-body 1.0.0",
  "hyper",
  "hyper-rustls",
  "mas-tower",
@@ -3202,7 +3212,7 @@ dependencies = [
  "bytes",
  "event-listener 4.0.0",
  "futures-util",
- "http-body",
+ "http-body 1.0.0",
  "hyper",
  "libc",
  "pin-project-lite",
@@ -3259,7 +3269,7 @@ dependencies = [
  "futures-util",
  "headers",
  "http 0.2.11",
- "http-body",
+ "http-body 1.0.0",
  "hyper",
  "hyper-rustls",
  "language-tags",
@@ -5997,7 +6007,7 @@ dependencies = [
  "futures-util",
  "h2",
  "http 0.2.11",
- "http-body",
+ "http-body 0.4.5",
  "hyper",
  "hyper-timeout",
  "percent-encoding",
@@ -6043,7 +6053,7 @@ dependencies = [
  "futures-core",
  "futures-util",
  "http 0.2.11",
- "http-body",
+ "http-body 0.4.5",
  "http-range-header",
  "httpdate",
  "iri-string",
