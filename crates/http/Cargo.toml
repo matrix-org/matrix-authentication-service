@@ -29,7 +29,7 @@ serde_json.workspace = true
 serde_urlencoded = "0.7.1"
 thiserror.workspace = true
 tokio = { version = "1.34.0", features = ["sync", "parking_lot"], optional = true }
-tower = { version = "0.4.13", features = [] }
+tower = { version = "0.4.13", features = ["util"] }
 tower-http = { version = "0.4.4", features = ["cors"] }
 tracing.workspace = true
 tracing-opentelemetry.workspace = true
@@ -40,7 +40,6 @@ mas-tower.workspace = true
 [dev-dependencies]
 anyhow.workspace = true
 tokio = { version = "1.34.0", features = ["macros", "rt"] }
-tower = { version = "0.4.13", features = ["util"] }
 
 [features]
 axum = ["dep:axum"]
