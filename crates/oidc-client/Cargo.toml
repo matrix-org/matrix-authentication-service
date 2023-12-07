@@ -1,5 +1,6 @@
 [package]
 name = "mas-oidc-client"
+description = "OpenID Connect client library used by the Matrix Authentication Service"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true

@@ -1,12 +1,12 @@
 [package]
 name = "mas-jose"
+description = "JSON Object Signing and Encryption (JWT & co) utilities"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
-publish = false
 
 [lints]
 workspace = true
