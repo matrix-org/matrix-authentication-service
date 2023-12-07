@@ -1,5 +1,6 @@
 [package]
 name = "mas-iana"
+description = "IANA registry data for JOSE and OAuth 2.0"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true

@@ -1,5 +1,6 @@
 [package]
 name = "mas-keystore"
+description = "Secret keys store used by the Matrix Authentication Service"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
