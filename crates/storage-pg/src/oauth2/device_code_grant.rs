@@ -353,7 +353,7 @@ impl<'c> OAuth2DeviceCodeGrantRepository for PgOAuth2DeviceCodeGrantRepository<'
     ) -> Result<DeviceCodeGrant, Self::Error> {
         let fulfilled_at = clock.now();
         let device_code_grant = device_code_grant
-            .fulfill(&browser_session, fulfilled_at)
+            .fulfill(browser_session, fulfilled_at)
             .map_err(DatabaseError::to_invalid_operation)?;
 
         let res = sqlx::query!(
@@ -396,7 +396,7 @@ impl<'c> OAuth2DeviceCodeGrantRepository for PgOAuth2DeviceCodeGrantRepository<'
     ) -> Result<DeviceCodeGrant, Self::Error> {
         let fulfilled_at = clock.now();
         let device_code_grant = device_code_grant
-            .reject(&browser_session, fulfilled_at)
+            .reject(browser_session, fulfilled_at)
             .map_err(DatabaseError::to_invalid_operation)?;
 
         let res = sqlx::query!(

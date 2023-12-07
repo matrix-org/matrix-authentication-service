@@ -65,6 +65,7 @@ pub(crate) async fn get(
     let issuer = Some(url_builder.oidc_issuer().into());
     let authorization_endpoint = Some(url_builder.oauth_authorization_endpoint());
     let token_endpoint = Some(url_builder.oauth_token_endpoint());
+    let device_authorization_endpoint = Some(url_builder.oauth_device_authorization_endpoint());
     let jwks_uri = Some(url_builder.jwks_uri());
     let introspection_endpoint = Some(url_builder.oauth_introspection_endpoint());
     let revocation_endpoint = Some(url_builder.oauth_revocation_endpoint());
@@ -166,6 +167,7 @@ pub(crate) async fn get(
         request_parameter_supported,
         request_uri_parameter_supported,
         prompt_values_supported,
+        device_authorization_endpoint,
         ..ProviderMetadata::default()
     };
 
