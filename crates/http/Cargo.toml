@@ -34,7 +34,7 @@ tracing.workspace = true
 tracing-opentelemetry.workspace = true
 webpki-roots = { version = "0.25.3", optional = true }
 
-mas-tower = { path = "../tower" }
+mas-tower.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true

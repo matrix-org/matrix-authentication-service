@@ -6,6 +6,7 @@ edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
+publish = false
 
 [lints]
 workspace = true
@@ -32,8 +33,8 @@ http.workspace = true
 ulid.workspace = true
 rand.workspace = true
 
-oauth2-types = { path = "../oauth2-types" }
-mas-data-model = { path = "../data-model" }
-mas-i18n = { path = "../i18n" }
-mas-router = { path = "../router" }
-mas-spa = { path = "../spa" }
+oauth2-types.workspace = true
+mas-data-model.workspace = true
+mas-i18n.workspace = true
+mas-router.workspace = true
+mas-spa.workspace = true

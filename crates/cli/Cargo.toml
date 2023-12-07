@@ -6,6 +6,7 @@ edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
+publish = false
 
 [lints]
 workspace = true
@@ -51,27 +52,27 @@ sentry = { version = "0.31.8", default-features = false, features = ["backtrace"
 sentry-tracing = "0.31.8"
 sentry-tower = { version = "0.31.8", features = ["http"] }
 
-mas-config = { path = "../config" }
-mas-data-model = { path = "../data-model" }
-mas-email = { path = "../email" }
-mas-graphql = { path = "../graphql" }
-mas-handlers = { path = "../handlers", default-features = false }
-mas-http = { path = "../http", default-features = false, features = ["axum", "client"] }
-mas-i18n = { path = "../i18n" }
-mas-iana = { path = "../iana" }
-mas-keystore = { path = "../keystore" }
-mas-listener = { path = "../listener" }
-mas-matrix = { path = "../matrix" }
-mas-matrix-synapse = { path = "../matrix-synapse" }
-mas-policy = { path = "../policy" }
-mas-router = { path = "../router" }
-mas-spa = { path = "../spa" }
-mas-storage = { path = "../storage" }
-mas-storage-pg = { path = "../storage-pg" }
-mas-tasks = { path = "../tasks" }
-mas-templates = { path = "../templates" }
-mas-tower = { path = "../tower" }
-oauth2-types = { path = "../oauth2-types" }
+mas-config.workspace = true
+mas-data-model.workspace = true
+mas-email.workspace = true
+mas-graphql.workspace = true
+mas-handlers = { workspace = true, default-features = false }
+mas-http = { workspace = true, default-features = false, features = ["axum", "client"] }
+mas-i18n.workspace = true
+mas-iana.workspace = true
+mas-keystore.workspace = true
+mas-listener.workspace = true
+mas-matrix.workspace = true
+mas-matrix-synapse.workspace = true
+mas-policy.workspace = true
+mas-router.workspace = true
+mas-spa.workspace = true
+mas-storage.workspace = true
+mas-storage-pg.workspace = true
+mas-tasks.workspace = true
+mas-templates.workspace = true
+mas-tower.workspace = true
+oauth2-types.workspace = true
 
 [features]
 default = ["webpki-roots", "policy-cache"]

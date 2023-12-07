@@ -6,6 +6,7 @@ edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
+publish = false
 
 [lints]
 workspace = true
@@ -20,6 +21,6 @@ ulid.workspace = true
 rand.workspace = true
 rand_chacha = "0.3.1"
 
-mas-iana = { path = "../iana" }
-mas-jose = { path = "../jose" }
-oauth2-types = { path = "../oauth2-types" }
+mas-iana.workspace = true
+mas-jose.workspace = true
+oauth2-types.workspace = true

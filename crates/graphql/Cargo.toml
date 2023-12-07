@@ -6,6 +6,7 @@ edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
+publish = false
 
 [lints]
 workspace = true
@@ -24,11 +25,11 @@ tower = { version = "0.4.13", features = ["util"] }
 ulid.workspace = true
 url.workspace = true
 
-oauth2-types = { path = "../oauth2-types" }
-mas-data-model = { path = "../data-model" }
-mas-matrix = { path = "../matrix" }
-mas-policy = { path = "../policy" }
-mas-storage = { path = "../storage" }
+oauth2-types.workspace = true
+mas-data-model.workspace = true
+mas-matrix.workspace = true
+mas-policy.workspace = true
+mas-storage.workspace = true
 
 [[bin]]
 name = "schema"

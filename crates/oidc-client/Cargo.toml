@@ -27,7 +27,6 @@ base64ct = { version = "1.6.0", features = ["std"] }
 bytes = "1.5.0"
 chrono.workspace = true
 form_urlencoded = "1.2.1"
-futures = "0.3.29"
 futures-util = "0.3.29"
 headers = "0.3.9"
 http.workspace = true
@@ -45,11 +44,11 @@ tower = { version = "0.4.13", features = ["full"] }
 tracing.workspace = true
 url.workspace = true
 
-mas-http = { path = "../http" }
-mas-iana = { path = "../iana" }
-mas-jose = { path = "../jose" }
-mas-keystore = { path = "../keystore", optional = true }
-oauth2-types = { path = "../oauth2-types" }
+mas-http.workspace = true
+mas-iana.workspace = true
+mas-jose.workspace = true
+mas-keystore = { workspace = true, optional = true }
+oauth2-types.workspace = true
 
 # Default http service
 http-body = { version = "0.4.5", optional = true }
@@ -71,6 +70,6 @@ optional = true
 [dev-dependencies]
 assert_matches = "1.5.0"
 bitflags = "2.4.1"
-mas-keystore = { path = "../keystore" }
+mas-keystore.workspace = true
 rand_chacha = "0.3.1"
 wiremock = "0.5.21"

@@ -6,6 +6,7 @@ edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
+publish = false
 
 [lints]
 workspace = true
@@ -37,9 +38,9 @@ rand_chacha = "0.3.1"
 
 indoc = "2.0.4"
 
-mas-jose = { path = "../jose" }
-mas-keystore = { path = "../keystore" }
-mas-iana = { path = "../iana" }
+mas-jose.workspace = true
+mas-keystore.workspace = true
+mas-iana.workspace = true
 
 [features]
 docker = []
