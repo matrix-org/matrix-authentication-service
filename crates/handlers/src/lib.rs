@@ -225,6 +225,10 @@ where
             mas_router::OAuth2RegistrationEndpoint::route(),
             post(self::oauth2::registration::post),
         )
+        .route(
+            mas_router::OAuth2DeviceAuthorizationEndpoint::route(),
+            post(self::oauth2::device::authorize::post),
+        )
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)

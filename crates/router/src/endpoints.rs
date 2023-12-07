@@ -695,6 +695,13 @@ pub struct DeviceCodeLink {
     code: Option<String>,
 }
 
+impl DeviceCodeLink {
+    #[must_use]
+    pub fn with_code(code: String) -> Self {
+        Self { code: Some(code) }
+    }
+}
+
 impl Route for DeviceCodeLink {
     type Query = DeviceCodeLink;
     fn route() -> &'static str {
@@ -704,6 +711,14 @@ impl Route for DeviceCodeLink {
     fn query(&self) -> Option<&Self::Query> {
         Some(self)
     }
+}
+
+/// `POST /oauth2/device`
+#[derive(Default, Serialize, Deserialize, Debug, Clone)]
+pub struct OAuth2DeviceAuthorizationEndpoint;
+
+impl SimpleRoute for OAuth2DeviceAuthorizationEndpoint {
+    const PATH: &'static str = "/oauth2/device";
 }
 
 /// `GET /assets`
