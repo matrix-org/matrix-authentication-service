@@ -90,6 +90,7 @@ pub(crate) async fn get(
         GrantType::AuthorizationCode,
         GrantType::RefreshToken,
         GrantType::ClientCredentials,
+        GrantType::DeviceCode,
     ]);
 
     let token_endpoint_auth_methods_supported = client_auth_methods_supported.clone();
