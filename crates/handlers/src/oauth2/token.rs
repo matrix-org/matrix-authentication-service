@@ -625,10 +625,10 @@ async fn device_code_grant(
     site_config: &SiteConfig,
     mut repo: BoxRepository,
 ) -> Result<(AccessTokenResponse, BoxRepository), RouteError> {
-    // TODO: Check that the client is allowed to use this grant type
-    //if !client.grant_types.contains(&GrantType::DeviceCode) {
-    //    return Err(RouteError::UnauthorizedClient);
-    //}
+    // Check that the client is allowed to use this grant type
+    if !client.grant_types.contains(&GrantType::DeviceCode) {
+        return Err(RouteError::UnauthorizedClient);
+    }
 
     let grant = repo
         .oauth2_device_code_grant()
