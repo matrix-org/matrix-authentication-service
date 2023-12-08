@@ -155,8 +155,7 @@ pub(crate) async fn post(
         TypedHeader(CacheControl::new().with_no_store()),
         TypedHeader(Pragma::no_cache()),
         Json(response),
-    )
-        .into_response())
+    ))
 }
 
 #[cfg(test)]

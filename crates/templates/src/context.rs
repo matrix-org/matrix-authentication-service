@@ -18,15 +18,20 @@ mod branding;
 
 use std::fmt::Formatter;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use http::{Method, Uri, Version};
 use mas_data_model::{
     AuthorizationGrant, BrowserSession, Client, CompatSsoLogin, CompatSsoLoginState,
-    UpstreamOAuthLink, UpstreamOAuthProvider, User, UserEmail, UserEmailVerification,
+    DeviceCodeGrant, UpstreamOAuthLink, UpstreamOAuthProvider, User, UserEmail,
+    UserEmailVerification,
 };
 use mas_i18n::DataLocale;
 use mas_router::{Account, GraphQL, PostAuthAction, UrlBuilder};
-use rand::Rng;
+use oauth2_types::scope::OPENID;
+use rand::{
+    distributions::{Alphanumeric, DistString},
+    Rng,
+};
 use serde::{ser::SerializeStruct, Deserialize, Serialize};
 use ulid::Ulid;
 use url::Url;
@@ -344,6 +349,12 @@ pub enum PostAuthContextInner {
     ContinueAuthorizationGrant {
         /// The authorization grant that will be continued after authentication
         grant: Box<AuthorizationGrant>,
+    },
+
+    /// Continue a device code grant
+    ContinueDeviceCodeGrant {
+        /// The device code grant that will be continued after authentication
+        grant: Box<DeviceCodeGrant>,
     },
 
     /// Continue legacy login
@@ -1072,6 +1083,45 @@ impl TemplateContext for DeviceLinkContext {
                     .with_error_on_field(DeviceLinkFormField::Code, FieldError::Required),
             ),
         ]
+    }
+}
+
+/// Context used by the `device_consent.html` template
+#[derive(Serialize, Debug)]
+pub struct DeviceConsentContext {
+    grant: DeviceCodeGrant,
+    client: Client,
+}
+
+impl DeviceConsentContext {
+    /// Constructs a new context with an existing linked user
+    #[must_use]
+    pub fn new(grant: DeviceCodeGrant, client: Client) -> Self {
+        Self { grant, client }
+    }
+}
+
+impl TemplateContext for DeviceConsentContext {
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        Client::samples(now, rng)
+            .into_iter()
+            .map(|client| {
+                let grant = DeviceCodeGrant {
+                    id: Ulid::from_datetime_with_source(now.into(), rng),
+                    state: mas_data_model::DeviceCodeGrantState::Pending,
+                    client_id: client.id,
+                    scope: [OPENID].into_iter().collect(),
+                    user_code: Alphanumeric.sample_string(rng, 6).to_uppercase(),
+                    device_code: Alphanumeric.sample_string(rng, 32),
+                    created_at: now - Duration::minutes(5),
+                    expires_at: now + Duration::minutes(25),
+                };
+                Self { grant, client }
+            })
+            .collect()
     }
 }
 

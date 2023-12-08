@@ -14,7 +14,7 @@
 
 use axum::{
     extract::{Query, State},
-    response::IntoResponse,
+    response::{IntoResponse, Response},
     Form,
 };
 use axum_extra::response::Html;
@@ -23,7 +23,8 @@ use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     FancyError,
 };
-use mas_storage::{BoxClock, BoxRng};
+use mas_router::UrlBuilder;
+use mas_storage::{BoxClock, BoxRepository, BoxRng};
 use mas_templates::{
     DeviceLinkContext, DeviceLinkFormField, FieldError, FormState, TemplateContext, Templates,
 };
@@ -76,27 +77,42 @@ pub(crate) async fn get(
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
+    mut repo: BoxRepository,
     PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
+    State(url_builder): State<UrlBuilder>,
     cookie_jar: CookieJar,
     Form(form): Form<ProtectedForm<Params>>,
-) -> Result<impl IntoResponse, FancyError> {
+) -> Result<Response, FancyError> {
     let form = cookie_jar.verify_form(&clock, form)?;
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
 
-    let form_state = FormState::from_form(&form)
-        .with_error_on_field(DeviceLinkFormField::Code, FieldError::Required);
+    let code = form.code.to_uppercase();
+    let grant = repo
+        .oauth2_device_code_grant()
+        .find_by_user_code(&code)
+        .await?
+        // XXX: We should have different error messages for already exchanged and expired
+        .filter(|grant| grant.is_pending())
+        .filter(|grant| grant.expires_at > clock.now());
 
-    // TODO: find the device code grant in the database
-    // and redirect to /oauth2/device/link/:id
-    // That then will trigger a login if we don't have a session
+    let Some(grant) = grant else {
+        let form_state = FormState::from_form(&form)
+            .with_error_on_field(DeviceLinkFormField::Code, FieldError::Invalid);
 
-    let ctx = DeviceLinkContext::new()
-        .with_form_state(form_state)
-        .with_csrf(csrf_token.form_value())
-        .with_language(locale);
+        let ctx = DeviceLinkContext::new()
+            .with_form_state(form_state)
+            .with_csrf(csrf_token.form_value())
+            .with_language(locale);
 
-    let content = templates.render_device_link(&ctx)?;
+        let content = templates.render_device_link(&ctx)?;
 
-    Ok((cookie_jar, Html(content)))
+        return Ok((cookie_jar, Html(content)).into_response());
+    };
+
+    // Redirect to the consent page
+    // This will in turn redirect to the login page if the user is not logged in
+    let destination = url_builder.redirect(&mas_router::DeviceCodeConsent::new(grant.id));
+
+    Ok((cookie_jar, destination).into_response())
 }
