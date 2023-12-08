@@ -55,7 +55,7 @@ pub trait OAuth2DeviceCodeGrantRepository: Send + Sync {
     /// * `rng`: A random number generator
     /// * `clock`: The clock used to generate timestamps
     /// * `params`: The parameters used to create the device code grant. See the
-    ///   fields of [`DeviceCodeGrantParams`]
+    ///   fields of [`OAuth2DeviceCodeGrantParams`]
     ///
     /// # Errors
     ///
@@ -128,7 +128,7 @@ pub trait OAuth2DeviceCodeGrantRepository: Send + Sync {
     /// Returns [`Self::Error`] if the underlying repository fails or if the
     /// device code grant is not in the [`Pending`] state
     ///
-    /// [`Pending`]: DeviceCodeGrantState::Pending
+    /// [`Pending`]: mas_data_model::DeviceCodeGrantState::Pending
     async fn fulfill(
         &mut self,
         clock: &dyn Clock,
@@ -152,7 +152,7 @@ pub trait OAuth2DeviceCodeGrantRepository: Send + Sync {
     /// Returns [`Self::Error`] if the underlying repository fails or if the
     /// device code grant is not in the [`Pending`] state
     ///
-    /// [`Pending`]: DeviceCodeGrantState::Pending
+    /// [`Pending`]: mas_data_model::DeviceCodeGrantState::Pending
     async fn reject(
         &mut self,
         clock: &dyn Clock,
@@ -176,7 +176,7 @@ pub trait OAuth2DeviceCodeGrantRepository: Send + Sync {
     /// Returns [`Self::Error`] if the underlying repository fails or if the
     /// device code grant is not in the [`Fulfilled`] state
     ///
-    /// [`Fulfilled`]: DeviceCodeGrantState::Fulfilled
+    /// [`Fulfilled`]: mas_data_model::DeviceCodeGrantState::Fulfilled
     async fn exchange(
         &mut self,
         clock: &dyn Clock,

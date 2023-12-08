@@ -686,7 +686,8 @@ async fn device_code_grant(
     let mut params =
         AccessTokenResponse::new(access_token.access_token.clone()).with_expires_in(ttl);
 
-    // If the client uses the refresh token grant type, we also generate a refresh token
+    // If the client uses the refresh token grant type, we also generate a refresh
+    // token
     if client.grant_types.contains(&GrantType::RefreshToken) {
         let refresh_token_str = TokenType::RefreshToken.generate(rng);
 
@@ -1263,8 +1264,9 @@ mod tests {
         let ClientError { error, .. } = response.json();
         assert_eq!(error, ClientErrorCode::AuthorizationPending);
 
-        // Let's provision a user and create a browser session for them. This part is hard to
-        // test with just HTTP requests, so we'll use the repository directly.
+        // Let's provision a user and create a browser session for them. This part is
+        // hard to test with just HTTP requests, so we'll use the repository
+        // directly.
         let mut repo = state.repository().await.unwrap();
 
         let user = repo
