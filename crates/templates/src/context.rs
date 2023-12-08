@@ -581,10 +581,19 @@ impl ConsentContext {
     }
 }
 
+#[derive(Serialize)]
+#[serde(tag = "grant_type")]
+enum PolicyViolationGrant {
+    #[serde(rename = "authorization_code")]
+    Authorization(AuthorizationGrant),
+    #[serde(rename = "urn:ietf:params:oauth:grant-type:device_code")]
+    DeviceCode(DeviceCodeGrant),
+}
+
 /// Context used by the `policy_violation.html` template
 #[derive(Serialize)]
 pub struct PolicyViolationContext {
-    grant: AuthorizationGrant,
+    grant: PolicyViolationGrant,
     client: Client,
     action: PostAuthAction,
 }
@@ -596,28 +605,53 @@ impl TemplateContext for PolicyViolationContext {
     {
         Client::samples(now, rng)
             .into_iter()
-            .map(|client| {
+            .flat_map(|client| {
                 let mut grant = AuthorizationGrant::sample(now, rng);
-                let action = PostAuthAction::continue_grant(grant.id);
                 // XXX
                 grant.client_id = client.id;
-                Self {
-                    grant,
+
+                let authorization_grant =
+                    PolicyViolationContext::for_authorization_grant(grant, client.clone());
+                let device_code_grant = PolicyViolationContext::for_device_code_grant(
+                    DeviceCodeGrant {
+                        id: Ulid::from_datetime_with_source(now.into(), rng),
+                        state: mas_data_model::DeviceCodeGrantState::Pending,
+                        client_id: client.id,
+                        scope: [OPENID].into_iter().collect(),
+                        user_code: Alphanumeric.sample_string(rng, 6).to_uppercase(),
+                        device_code: Alphanumeric.sample_string(rng, 32),
+                        created_at: now - Duration::minutes(5),
+                        expires_at: now + Duration::minutes(25),
+                    },
                     client,
-                    action,
-                }
+                );
+
+                [authorization_grant, device_code_grant]
             })
             .collect()
     }
 }
 
 impl PolicyViolationContext {
-    /// Constructs a context for the policy violation page
+    /// Constructs a context for the policy violation page for an authorization
+    /// grant
     #[must_use]
-    pub const fn new(grant: AuthorizationGrant, client: Client) -> Self {
+    pub const fn for_authorization_grant(grant: AuthorizationGrant, client: Client) -> Self {
         let action = PostAuthAction::continue_grant(grant.id);
         Self {
-            grant,
+            grant: PolicyViolationGrant::Authorization(grant),
+            client,
+            action,
+        }
+    }
+
+    /// Constructs a context for the policy violation page for a device code
+    /// grant
+    #[must_use]
+    pub const fn for_device_code_grant(grant: DeviceCodeGrant, client: Client) -> Self {
+        let action = PostAuthAction::continue_device_code_grant(grant.id);
+        Self {
+            grant: PolicyViolationGrant::DeviceCode(grant),
             client,
             action,
         }

@@ -35,7 +35,7 @@ limitations under the License.
           <img referrerpolicy="no-referrer" class="w-16 h-16" src="{{ client.logo_uri }}" />
         {% endif %}
       </div>
-      <a target="_blank" href="{{ client.client_uri }}" class="cpd-link" data-kind="primary">{{ client.client_name | default(client.client_id) }}</a>
+      <a target="_blank" href="{{ client.client_uri }}" class="cpd-link" data-kind="primary">{{ client.client_name or client.client_id }}</a>
     </div>
 
     <div class="flex gap-1 justify-center items-center">
@@ -46,13 +46,16 @@ limitations under the License.
       {{ logout.button(text=_("action.sign_out"), csrf_token=csrf_token, post_logout_action=action, as_link=True) }}
     </div>
 
-    {{ back_to_client.link(
-      text=_("action.cancel"),
-      kind="destructive",
-      uri=grant.redirect_uri,
-      mode=grant.response_mode,
-      params=dict(error="access_denied", state=grant.state)
-    ) }}
+    {# We only show the cancel button if we're in an authorization code flow, not in the device code flow. #}
+    {% if grant.grant_type == "authorization_code" %}
+      {{ back_to_client.link(
+        text=_("action.cancel"),
+        kind="destructive",
+        uri=grant.redirect_uri,
+        mode=grant.response_mode,
+        params=dict(error="access_denied", state=grant.state)
+      ) }}
+    {% endif %}
   </main>
 {% endblock content %}
 
