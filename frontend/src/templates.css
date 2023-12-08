@@ -176,6 +176,15 @@
       }
     }
 
+    &.success {
+      background-color: var(--cpd-color-bg-success-subtle);
+
+      & svg {
+        color: var(--cpd-color-icon-success-primary);
+      }
+    }
+
+
     & svg {
       height: var(--cpd-space-10x);
       width: var(--cpd-space-10x);

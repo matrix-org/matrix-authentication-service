@@ -63,6 +63,16 @@ impl OptionalPostAuthAction {
                 PostAuthContextInner::ContinueAuthorizationGrant { grant }
             }
 
+            PostAuthAction::ContinueDeviceCodeGrant { id } => {
+                let grant = repo
+                    .oauth2_device_code_grant()
+                    .lookup(id)
+                    .await?
+                    .context("Failed to load device code grant")?;
+                let grant = Box::new(grant);
+                PostAuthContextInner::ContinueDeviceCodeGrant { grant }
+            }
+
             PostAuthAction::ContinueCompatSsoLogin { id } => {
                 let login = repo
                     .compat_sso_login()

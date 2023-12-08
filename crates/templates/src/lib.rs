@@ -42,13 +42,14 @@ mod macros;
 
 pub use self::{
     context::{
-        AppContext, CompatSsoContext, ConsentContext, DeviceLinkContext, DeviceLinkFormField,
-        EmailAddContext, EmailVerificationContext, EmailVerificationPageContext, EmptyContext,
-        ErrorContext, FormPostContext, IndexContext, LoginContext, LoginFormField, NotFoundContext,
-        PolicyViolationContext, PostAuthContext, PostAuthContextInner, ReauthContext,
-        ReauthFormField, RegisterContext, RegisterFormField, SiteBranding, TemplateContext,
-        UpstreamExistingLinkContext, UpstreamRegister, UpstreamRegisterFormField,
-        UpstreamSuggestLink, WithCsrf, WithLanguage, WithOptionalSession, WithSession,
+        AppContext, CompatSsoContext, ConsentContext, DeviceConsentContext, DeviceLinkContext,
+        DeviceLinkFormField, EmailAddContext, EmailVerificationContext,
+        EmailVerificationPageContext, EmptyContext, ErrorContext, FormPostContext, IndexContext,
+        LoginContext, LoginFormField, NotFoundContext, PolicyViolationContext, PostAuthContext,
+        PostAuthContextInner, ReauthContext, ReauthFormField, RegisterContext, RegisterFormField,
+        SiteBranding, TemplateContext, UpstreamExistingLinkContext, UpstreamRegister,
+        UpstreamRegisterFormField, UpstreamSuggestLink, WithCsrf, WithLanguage,
+        WithOptionalSession, WithSession,
     },
     forms::{FieldError, FormError, FormField, FormState, ToFormState},
 };
@@ -368,6 +369,9 @@ register_templates! {
 
     /// Render the device code link page
     pub fn render_device_link(WithLanguage<WithCsrf<DeviceLinkContext>>) { "pages/device_link.html" }
+
+    /// Render the device code consent page
+    pub fn render_device_consent(WithLanguage<WithCsrf<WithSession<DeviceConsentContext>>>) { "pages/device_consent.html" }
 }
 
 impl Templates {
