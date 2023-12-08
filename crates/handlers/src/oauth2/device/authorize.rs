@@ -26,7 +26,7 @@ use mas_router::UrlBuilder;
 use mas_storage::{oauth2::OAuth2DeviceCodeGrantParams, BoxClock, BoxRepository, BoxRng};
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
-    requests::{DeviceAuthorizationRequest, DeviceAuthorizationResponse},
+    requests::{DeviceAuthorizationRequest, DeviceAuthorizationResponse, GrantType},
     scope::ScopeToken,
 };
 use rand::distributions::{Alphanumeric, DistString};
@@ -111,7 +111,9 @@ pub(crate) async fn post(
         .verify(&http_client_factory, &encrypter, method, &client)
         .await?;
 
-    // TODO: check if the client can use the device code grant type
+    if !client.grant_types.contains(&GrantType::DeviceCode) {
+        return Err(RouteError::ClientNotAllowed);
+    }
 
     let scope = client_authorization
         .form
