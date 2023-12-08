@@ -500,7 +500,7 @@ pub struct ClientCredentialsGrant {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct DeviceCodeGrant {
     /// The device verification code, from the device authorization response.
-    pub device_code: Option<Scope>,
+    pub device_code: String,
 }
 
 impl fmt::Debug for DeviceCodeGrant {
@@ -559,6 +559,7 @@ pub enum GrantType {
 /// [Token Endpoint]: https://www.rfc-editor.org/rfc/rfc6749#section-3.2
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(tag = "grant_type", rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum AccessTokenRequest {
     /// A request in the Authorization Code flow.
     AuthorizationCode(AuthorizationCodeGrant),

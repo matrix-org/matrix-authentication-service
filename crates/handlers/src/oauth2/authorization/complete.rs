@@ -280,7 +280,7 @@ pub(crate) async fn complete(
             url_builder,
             &key_store,
             client,
-            &grant,
+            Some(&grant),
             browser_session,
             None,
             Some(&valid_authentication),
