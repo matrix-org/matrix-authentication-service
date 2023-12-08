@@ -24,9 +24,10 @@ use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
 };
+use mas_policy::Policy;
 use mas_router::UrlBuilder;
 use mas_storage::{BoxClock, BoxRepository, BoxRng};
-use mas_templates::{DeviceConsentContext, TemplateContext, Templates};
+use mas_templates::{DeviceConsentContext, PolicyViolationContext, TemplateContext, Templates};
 use serde::Deserialize;
 use tracing::warn;
 use ulid::Ulid;
@@ -52,6 +53,7 @@ pub(crate) async fn get(
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
     mut repo: BoxRepository,
+    mut policy: Policy,
     activity_tracker: BoundActivityTracker,
     cookie_jar: CookieJar,
     Path(grant_id): Path<Ulid>,
@@ -87,6 +89,24 @@ pub(crate) async fn get(
         .await?
         .context("Client not found")?;
 
+    // Evaluate the policy
+    let res = policy
+        .evaluate_device_code_grant(&grant, &client, &session.user)
+        .await?;
+    if !res.valid() {
+        warn!(violation = ?res, "Device code grant for client {} denied by policy", client.id);
+
+        let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
+        let ctx = PolicyViolationContext::for_device_code_grant(grant, client)
+            .with_session(session)
+            .with_csrf(csrf_token.form_value())
+            .with_language(locale);
+
+        let content = templates.render_policy_violation(&ctx)?;
+
+        return Ok((cookie_jar, Html(content)).into_response());
+    }
+
     let ctx = DeviceConsentContext::new(grant, client)
         .with_session(session)
         .with_csrf(csrf_token.form_value())
@@ -106,6 +126,7 @@ pub(crate) async fn post(
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
     mut repo: BoxRepository,
+    mut policy: Policy,
     activity_tracker: BoundActivityTracker,
     cookie_jar: CookieJar,
     Path(grant_id): Path<Ulid>,
@@ -143,7 +164,24 @@ pub(crate) async fn post(
         .await?
         .context("Client not found")?;
 
-    // TODO: run through the policy
+    // Evaluate the policy
+    let res = policy
+        .evaluate_device_code_grant(&grant, &client, &session.user)
+        .await?;
+    if !res.valid() {
+        warn!(violation = ?res, "Device code grant for client {} denied by policy", client.id);
+
+        let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
+        let ctx = PolicyViolationContext::for_device_code_grant(grant, client)
+            .with_session(session)
+            .with_csrf(csrf_token.form_value())
+            .with_language(locale);
+
+        let content = templates.render_policy_violation(&ctx)?;
+
+        return Ok((cookie_jar, Html(content)).into_response());
+    }
+
     let grant = if grant.is_pending() {
         match form.action {
             Action::Consent => {

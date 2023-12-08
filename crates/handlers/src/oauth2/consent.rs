@@ -132,7 +132,7 @@ pub(crate) async fn get(
 
             Ok((cookie_jar, Html(content)).into_response())
         } else {
-            let ctx = PolicyViolationContext::new(grant, client)
+            let ctx = PolicyViolationContext::for_authorization_grant(grant, client)
                 .with_session(session)
                 .with_csrf(csrf_token.form_value())
                 .with_language(locale);
