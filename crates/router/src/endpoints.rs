@@ -738,7 +738,7 @@ impl Route for DeviceCodeLink {
     }
 }
 
-/// `GET|POST /link/:device_code_id`
+/// `GET|POST /device/:device_code_id`
 #[derive(Default, Serialize, Deserialize, Debug, Clone)]
 pub struct DeviceCodeConsent {
     id: Ulid,
@@ -747,11 +747,11 @@ pub struct DeviceCodeConsent {
 impl Route for DeviceCodeConsent {
     type Query = ();
     fn route() -> &'static str {
-        "/link/:device_code_id"
+        "/device/:device_code_id"
     }
 
     fn path(&self) -> std::borrow::Cow<'static, str> {
-        format!("/link/{}", self.id).into()
+        format!("/device/{}", self.id).into()
     }
 }
 
