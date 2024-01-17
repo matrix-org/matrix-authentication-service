@@ -21,6 +21,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use ulid::Ulid;
+use url::Url;
 
 use crate::ConfigurationSection;
 
@@ -96,10 +97,10 @@ pub enum ImportAction {
     Require,
 }
 
-/// What should be done with a claim
+/// What should be done with a attribute
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, JsonSchema)]
 pub struct ImportPreference {
-    /// How to handle the claim
+    /// How to handle the attribute
     #[serde(default)]
     pub action: ImportAction,
 }
@@ -120,12 +121,56 @@ pub enum SetEmailVerification {
     Import,
 }
 
-/// What should be done with the email claim
+/// What should be done for the subject attribute
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, JsonSchema)]
+pub struct SubjectImportPreference {
+    /// The Jinja2 template to use for the subject attribute
+    ///
+    /// If not provided, the default template is `{{ user.sub }}`
+    #[serde(default)]
+    pub template: Option<String>,
+}
+
+/// What should be done for the localpart attribute
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, JsonSchema)]
+pub struct LocalpartImportPreference {
+    /// How to handle the attribute
+    #[serde(default)]
+    pub action: ImportAction,
+
+    /// The Jinja2 template to use for the localpart attribute
+    ///
+    /// If not provided, the default template is `{{ user.preferred_username }}`
+    #[serde(default)]
+    pub template: Option<String>,
+}
+
+/// What should be done for the displayname attribute
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, JsonSchema)]
+pub struct DisplaynameImportPreference {
+    /// How to handle the attribute
+    #[serde(default)]
+    pub action: ImportAction,
+
+    /// The Jinja2 template to use for the displayname attribute
+    ///
+    /// If not provided, the default template is `{{ user.name }}`
+    #[serde(default)]
+    pub template: Option<String>,
+}
+
+/// What should be done with the email attribute
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, JsonSchema)]
 pub struct EmailImportPreference {
     /// How to handle the claim
     #[serde(default)]
     pub action: ImportAction,
+
+    /// The Jinja2 template to use for the email address attribute
+    ///
+    /// If not provided, the default template is `{{ user.email }}`
+    #[serde(default)]
+    pub template: Option<String>,
 
     /// Should the email address be marked as verified
     #[serde(default)]
@@ -135,18 +180,55 @@ pub struct EmailImportPreference {
 /// How claims should be imported
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, JsonSchema)]
 pub struct ClaimsImports {
-    /// Import the localpart of the MXID based on the `preferred_username` claim
+    /// How to determine the subject of the user
     #[serde(default)]
-    pub localpart: Option<ImportPreference>,
+    pub subject: SubjectImportPreference,
 
-    /// Import the displayname of the user based on the `name` claim
+    /// Import the localpart of the MXID
     #[serde(default)]
-    pub displayname: Option<ImportPreference>,
+    pub localpart: LocalpartImportPreference,
+
+    /// Import the displayname of the user.
+    #[serde(default)]
+    pub displayname: DisplaynameImportPreference,
 
     /// Import the email address of the user based on the `email` and
     /// `email_verified` claims
     #[serde(default)]
-    pub email: Option<EmailImportPreference>,
+    pub email: EmailImportPreference,
+}
+
+/// How to discover the provider's configuration
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum DiscoveryMode {
+    /// Use OIDC discovery with strict metadata verification
+    #[default]
+    Oidc,
+
+    /// Use OIDC discovery with relaxed metadata verification
+    Insecure,
+
+    /// Use a static configuration
+    Disabled,
+}
+
+/// Whether to use proof key for code exchange (PKCE) when requesting and
+/// exchanging the token.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum PkceMethod {
+    /// Use PKCE if the provider supports it
+    ///
+    /// Defaults to no PKCE if provider discovery is disabled
+    #[default]
+    Auto,
+
+    /// Always use PKCE with the S256 challenge method
+    Always,
+
+    /// Never use PKCE
+    Never,
 }
 
 #[skip_serializing_none]
@@ -163,6 +245,22 @@ pub struct Provider {
     /// The OIDC issuer URL
     pub issuer: String,
 
+    /// A human-readable name for the provider, that will be shown to users
+    pub human_name: Option<String>,
+
+    /// A brand identifier used to customise the UI, e.g. `apple`, `google`,
+    /// `github`, etc.
+    ///
+    /// Values supported by the default template are:
+    ///
+    ///  - `apple`
+    ///  - `google`
+    ///  - `facebook`
+    ///  - `github`
+    ///  - `gitlab`
+    ///  - `twitter`
+    pub brand_name: Option<String>,
+
     /// The client ID to use when authenticating with the provider
     pub client_id: String,
 
@@ -172,8 +270,37 @@ pub struct Provider {
     #[serde(flatten)]
     pub token_auth_method: TokenAuthMethod,
 
+    /// How to discover the provider's configuration
+    ///
+    /// Defaults to use OIDC discovery with strict metadata verification
+    #[serde(default)]
+    pub discovery_mode: DiscoveryMode,
+
+    /// Whether to use proof key for code exchange (PKCE) when requesting and
+    /// exchanging the token.
+    ///
+    /// Defaults to `auto`, which uses PKCE if the provider supports it.
+    #[serde(default)]
+    pub pkce_method: PkceMethod,
+
+    /// The URL to use for the provider's authorization endpoint
+    ///
+    /// Defaults to the `authorization_endpoint` provided through discovery
+    pub authorization_endpoint: Option<Url>,
+
+    /// The URL to use for the provider's token endpoint
+    ///
+    /// Defaults to the `token_endpoint` provided through discovery
+    pub token_endpoint: Option<Url>,
+
+    /// The URL to use for getting the provider's public keys
+    ///
+    /// Defaults to the `jwks_uri` provided through discovery
+    pub jwks_uri: Option<Url>,
+
     /// How claims should be imported from the `id_token` provided by the
     /// provider
+    #[serde(default)]
     pub claims_imports: ClaimsImports,
 }
 

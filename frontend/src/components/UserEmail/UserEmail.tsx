@@ -13,11 +13,12 @@
 // limitations under the License.
 
 import IconDelete from "@vector-im/compound-design-tokens/icons/delete.svg?react";
-import { Body } from "@vector-im/compound-web";
+import { Form, IconButton, Text, Tooltip } from "@vector-im/compound-web";
 import { atom, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
-import { useTransition, ComponentProps } from "react";
+import { useTransition, ComponentProps, ReactNode } from "react";
+import { Translation, useTranslation } from "react-i18next";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
 import { Link } from "../../routing";
@@ -90,20 +91,27 @@ const DeleteButton: React.FC<{ disabled?: boolean; onClick?: () => void }> = ({
   disabled,
   onClick,
 }) => (
-  <button
-    disabled={disabled}
-    onClick={onClick}
-    className={styles.userEmailDelete}
-    aria-label="Remove email address"
-    title="Remove email address"
-  >
-    <IconDelete className={styles.userEmailDeleteIcon} />
-  </button>
+  <Translation>
+    {(t): ReactNode => (
+      <Tooltip label={t("frontend.user_email.delete_button_title")}>
+        <IconButton
+          type="button"
+          disabled={disabled}
+          className="m-2"
+          onClick={onClick}
+          size="var(--cpd-space-8x)"
+        >
+          <IconDelete className={styles.userEmailDeleteIcon} />
+        </IconButton>
+      </Tooltip>
+    )}
+  </Translation>
 );
 
 const DeleteButtonWithConfirmation: React.FC<
   ComponentProps<typeof DeleteButton>
 > = ({ onClick, ...rest }) => {
+  const { t } = useTranslation();
   const onConfirm = (): void => {
     onClick?.();
   };
@@ -118,7 +126,9 @@ const DeleteButtonWithConfirmation: React.FC<
         onDeny={onDeny}
         onConfirm={onConfirm}
       >
-        <Body>Are you sure you want to remove this email?</Body>
+        <Text>
+          {t("frontend.user_email.delete_button_confirmation_modal.body")}
+        </Text>
       </ConfirmationModal>
     </>
   );
@@ -139,6 +149,7 @@ const UserEmail: React.FC<{
   const data = useFragment(FRAGMENT, email);
   const setPrimaryEmail = useSetAtom(setPrimaryEmailFamily(data.id));
   const removeEmail = useSetAtom(removeEmailFamily(data.id));
+  const { t } = useTranslation();
 
   const onRemoveClick = (): void => {
     startTransition(() => {
@@ -159,36 +170,51 @@ const UserEmail: React.FC<{
   };
 
   return (
-    <div className={styles.userEmail}>
-      {isPrimary ? <Body>Primary email</Body> : <Body>Email</Body>}
-
-      <div className={styles.userEmailLine}>
-        <div className={styles.userEmailField}>{data.email}</div>
-        {!isReadOnly && (
-          <DeleteButtonWithConfirmation
-            disabled={isPrimary || pending}
-            onClick={onRemoveClick}
+    <Form.Root>
+      <Form.Field name="email">
+        <Form.Label>
+          {isPrimary
+            ? t("frontend.user_email.primary_email")
+            : t("frontend.user_email.email")}
+        </Form.Label>
+        <div className="flex">
+          <Form.TextControl
+            type="email"
+            readOnly
+            value={data.email}
+            className={styles.userEmailField}
           />
-        )}
-      </div>
-      {data.confirmedAt && !isPrimary && !isReadOnly && (
-        <button
-          className={styles.link}
-          disabled={pending}
-          onClick={onSetPrimaryClick}
-        >
-          Make primary
-        </button>
-      )}
-      {!data.confirmedAt && (
-        <div>
-          <span className={styles.userEmailUnverified}>Unverified</span> |{" "}
-          <Link kind="button" route={{ type: "verify-email", id: data.id }}>
-            Retry verification
-          </Link>
+          {!isReadOnly && (
+            <DeleteButtonWithConfirmation
+              disabled={isPrimary || pending}
+              onClick={onRemoveClick}
+            />
+          )}
         </div>
-      )}
-    </div>
+        <Form.HelpMessage>
+          {data.confirmedAt && !isPrimary && !isReadOnly && (
+            <button
+              className={styles.link}
+              disabled={pending}
+              onClick={onSetPrimaryClick}
+            >
+              {t("frontend.user_email.make_primary_button")}
+            </button>
+          )}
+          {!data.confirmedAt && (
+            <>
+              <span className={styles.userEmailUnverified}>
+                {t("frontend.user_email.unverified")}
+              </span>{" "}
+              |{" "}
+              <Link kind="button" route={{ type: "verify-email", id: data.id }}>
+                {t("frontend.user_email.retry_button")}
+              </Link>
+            </>
+          )}
+        </Form.HelpMessage>
+      </Form.Field>
+    </Form.Root>
   );
 };
 

@@ -225,7 +225,7 @@ impl ConfigurationSection for SecretsConfig {
             kid: "abcdef".to_owned(),
             password: None,
             key: KeyOrFile::Key(
-                indoc::indoc! {r#"
+                indoc::indoc! {r"
                   -----BEGIN PRIVATE KEY-----
                   MIIBVQIBADANBgkqhkiG9w0BAQEFAASCAT8wggE7AgEAAkEAymS2RkeIZo7pUeEN
                   QUGCG4GLJru5jzxomO9jiNr5D/oRcerhpQVc9aCpBfAAg4l4a1SmYdBzWqX0X5pU
@@ -236,7 +236,7 @@ impl ConfigurationSection for SecretsConfig {
                   tPQniMnrBtiN2NxqFXHCev/8Gpc8gAECIBcaPcF59qVeRmYrfqzKBxFm7LmTwlAl
                   Gh7BNzCeN+D6
                   -----END PRIVATE KEY-----
-                "#}
+                "}
                 .to_owned(),
             ),
         };
@@ -244,13 +244,13 @@ impl ConfigurationSection for SecretsConfig {
             kid: "ghijkl".to_owned(),
             password: None,
             key: KeyOrFile::Key(
-                indoc::indoc! {r#"
+                indoc::indoc! {r"
                   -----BEGIN PRIVATE KEY-----
                   MIGEAgEAMBAGByqGSM49AgEGBSuBBAAKBG0wawIBAQQgqfn5mYO/5Qq/wOOiWgHA
                   NaiDiepgUJ2GI5eq2V8D8nahRANCAARMK9aKUd/H28qaU+0qvS6bSJItzAge1VHn
                   OhBAAUVci1RpmUA+KdCL5sw9nadAEiONeiGr+28RYHZmlB9qXnjC
                   -----END PRIVATE KEY-----
-                "#}
+                "}
                 .to_owned(),
             ),
         };

@@ -27,8 +27,9 @@ use mas_axum_utils::{
     csrf::{CsrfExt, CsrfToken, ProtectedForm},
     FancyError, SessionInfoExt,
 };
+use mas_i18n::DataLocale;
 use mas_policy::Policy;
-use mas_router::Route;
+use mas_router::UrlBuilder;
 use mas_storage::{
     job::{JobRepositoryExt, ProvisionUserJob, VerifyEmailJob},
     user::{BrowserSessionRepository, UserEmailRepository, UserPasswordRepository, UserRepository},
@@ -42,7 +43,7 @@ use serde::{Deserialize, Serialize};
 use zeroize::Zeroizing;
 
 use super::shared::OptionalPostAuthAction;
-use crate::{passwords::PasswordManager, BoundActivityTracker};
+use crate::{passwords::PasswordManager, BoundActivityTracker, PreferredLanguage};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct RegisterForm {
@@ -60,8 +61,10 @@ impl ToFormState for RegisterForm {
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
+    PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
     State(password_manager): State<PasswordManager>,
+    State(url_builder): State<UrlBuilder>,
     mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: CookieJar,
@@ -72,18 +75,19 @@ pub(crate) async fn get(
     let maybe_session = session_info.load_session(&mut repo).await?;
 
     if maybe_session.is_some() {
-        let reply = query.go_next();
+        let reply = query.go_next(&url_builder);
         return Ok((cookie_jar, reply).into_response());
     }
 
     if !password_manager.is_enabled() {
         // If password-based login is disabled, redirect to the login page here
-        return Ok(mas_router::Login::from(query.post_auth_action)
-            .go()
+        return Ok(url_builder
+            .redirect(&mas_router::Login::from(query.post_auth_action))
             .into_response());
     }
 
     let content = render(
+        locale,
         RegisterContext::default(),
         query,
         csrf_token,
@@ -100,8 +104,10 @@ pub(crate) async fn get(
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
+    PreferredLanguage(locale): PreferredLanguage,
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
+    State(url_builder): State<UrlBuilder>,
     mut policy: Policy,
     mut repo: BoxRepository,
     activity_tracker: BoundActivityTracker,
@@ -184,6 +190,7 @@ pub(crate) async fn post(
 
     if !state.is_valid() {
         let content = render(
+            locale,
             RegisterContext::default().with_form_state(state),
             query,
             csrf_token,
@@ -220,7 +227,7 @@ pub(crate) async fn post(
         .await?;
 
     repo.job()
-        .schedule_job(VerifyEmailJob::new(&user_email))
+        .schedule_job(VerifyEmailJob::new(&user_email).with_language(locale.to_string()))
         .await?;
 
     repo.job()
@@ -234,10 +241,11 @@ pub(crate) async fn post(
         .await;
 
     let cookie_jar = cookie_jar.set_session(&session);
-    Ok((cookie_jar, next.go()).into_response())
+    Ok((cookie_jar, url_builder.redirect(&next)).into_response())
 }
 
 async fn render(
+    locale: DataLocale,
     ctx: RegisterContext,
     action: OptionalPostAuthAction,
     csrf_token: CsrfToken,
@@ -250,9 +258,9 @@ async fn render(
     } else {
         ctx
     };
-    let ctx = ctx.with_csrf(csrf_token.form_value());
+    let ctx = ctx.with_csrf(csrf_token.form_value()).with_language(locale);
 
-    let content = templates.render_register(&ctx).await?;
+    let content = templates.render_register(&ctx)?;
     Ok(content)
 }
 
@@ -276,12 +284,12 @@ mod tests {
             state
         };
 
-        let request = Request::get(&*mas_router::Register::default().relative_url()).empty();
+        let request = Request::get(&*mas_router::Register::default().path_and_query()).empty();
         let response = state.request(request).await;
         response.assert_status(StatusCode::SEE_OTHER);
         response.assert_header_value(LOCATION, "/login");
 
-        let request = Request::post(&*mas_router::Register::default().relative_url()).form(
+        let request = Request::post(&*mas_router::Register::default().path_and_query()).form(
             serde_json::json!({
                 "csrf": "abc",
                 "username": "john",

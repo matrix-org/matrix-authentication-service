@@ -17,6 +17,7 @@ use async_graphql::{
     Context, Description, Enum, Object, Union, ID,
 };
 use chrono::{DateTime, Utc};
+use mas_data_model::Device;
 use mas_storage::{
     app_session::AppSessionFilter,
     compat::{CompatSessionFilter, CompatSsoLoginFilter, CompatSsoLoginRepository},
@@ -70,6 +71,11 @@ impl User {
     /// When the user was locked out.
     pub async fn locked_at(&self) -> Option<DateTime<Utc>> {
         self.0.locked_at
+    }
+
+    /// Whether the user can request admin privileges.
+    pub async fn can_request_admin(&self) -> bool {
+        self.0.can_request_admin
     }
 
     /// Access to the user's Matrix account information.
@@ -535,6 +541,9 @@ impl User {
         #[graphql(name = "state", desc = "List only sessions in the given state.")]
         state_param: Option<SessionState>,
 
+        #[graphql(name = "device", desc = "List only sessions for the given device.")]
+        device_param: Option<String>,
+
         #[graphql(desc = "Returns the elements in the list that come after the cursor.")]
         after: Option<String>,
         #[graphql(desc = "Returns the elements in the list that come before the cursor.")]
@@ -563,11 +572,18 @@ impl User {
                     .transpose()?;
                 let pagination = Pagination::try_new(before_id, after_id, first, last)?;
 
+                let device_param = device_param.map(Device::try_from).transpose()?;
+
                 let filter = AppSessionFilter::new().for_user(&self.0);
 
                 let filter = match state_param {
                     Some(SessionState::Active) => filter.active_only(),
                     Some(SessionState::Finished) => filter.finished_only(),
+                    None => filter,
+                };
+
+                let filter = match device_param.as_ref() {
+                    Some(device) => filter.for_device(device),
                     None => filter,
                 };
 

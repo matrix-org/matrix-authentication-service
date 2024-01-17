@@ -20,12 +20,11 @@ use hyper::StatusCode;
 use mas_axum_utils::{
     cookies::CookieJar, http_client_factory::HttpClientFactory, sentry::SentryEventID,
 };
-use mas_jose::claims::ClaimError;
 use mas_keystore::{Encrypter, Keystore};
 use mas_oidc_client::requests::{
     authorization_code::AuthorizationValidationData, jose::JwtVerificationData,
 };
-use mas_router::{Route, UrlBuilder};
+use mas_router::UrlBuilder;
 use mas_storage::{
     upstream_oauth2::{
         UpstreamOAuthLinkRepository, UpstreamOAuthProviderRepository,
@@ -38,7 +37,7 @@ use serde::Deserialize;
 use thiserror::Error;
 use ulid::Ulid;
 
-use super::{client_credentials_for_provider, UpstreamSessionsCookie};
+use super::{cache::LazyProviderInfos, client_credentials_for_provider, UpstreamSessionsCookie};
 use crate::{impl_from_error_for_route, upstream_oauth2::cache::MetadataCache};
 
 #[derive(Deserialize)]
@@ -83,8 +82,11 @@ pub(crate) enum RouteError {
     #[error("Missing ID token")]
     MissingIDToken,
 
-    #[error("Invalid ID token")]
-    InvalidIdToken(#[from] ClaimError),
+    #[error("Could not extract subject from ID token")]
+    ExtractSubject(#[source] minijinja::Error),
+
+    #[error("Subject is empty")]
+    EmptySubject,
 
     #[error("Error from the provider: {error}")]
     ClientError {
@@ -189,18 +191,17 @@ pub(crate) async fn get(
     };
 
     let http_service = http_client_factory.http_service("upstream_oauth2.callback");
-
-    // Discover the provider
-    let metadata = metadata_cache.get(&http_service, &provider.issuer).await?;
+    let mut lazy_metadata = LazyProviderInfos::new(&metadata_cache, &provider, &http_service);
 
     // Fetch the JWKS
     let jwks =
-        mas_oidc_client::requests::jose::fetch_jwks(&http_service, metadata.jwks_uri()).await?;
+        mas_oidc_client::requests::jose::fetch_jwks(&http_service, lazy_metadata.jwks_uri().await?)
+            .await?;
 
     // Figure out the client credentials
     let client_credentials = client_credentials_for_provider(
         &provider,
-        metadata.token_endpoint(),
+        lazy_metadata.token_endpoint().await?,
         &keystore,
         &encrypter,
     )?;
@@ -227,7 +228,7 @@ pub(crate) async fn get(
         mas_oidc_client::requests::authorization_code::access_token_with_authorization_code(
             &http_service,
             client_credentials,
-            metadata.token_endpoint(),
+            lazy_metadata.token_endpoint().await?,
             code,
             validation_data,
             Some(id_token_verification_data),
@@ -236,10 +237,27 @@ pub(crate) async fn get(
         )
         .await?;
 
-    let (_header, mut id_token) = id_token.ok_or(RouteError::MissingIDToken)?.into_parts();
+    let (_header, id_token) = id_token.ok_or(RouteError::MissingIDToken)?.into_parts();
 
-    // Extract the subject from the id_token
-    let subject = mas_jose::claims::SUB.extract_required(&mut id_token)?;
+    let env = {
+        let mut env = minijinja::Environment::new();
+        env.add_global("user", minijinja::Value::from_serializable(&id_token));
+        env
+    };
+
+    let template = provider
+        .claims_imports
+        .subject
+        .template
+        .as_deref()
+        .unwrap_or("{{ user.sub }}");
+    let subject = env
+        .render_str(template, ())
+        .map_err(RouteError::ExtractSubject)?;
+
+    if subject.is_empty() {
+        return Err(RouteError::EmptySubject);
+    }
 
     // Look for an existing link
     let maybe_link = repo
@@ -268,6 +286,6 @@ pub(crate) async fn get(
 
     Ok((
         cookie_jar,
-        mas_router::UpstreamOAuth2Link::new(link.id).go(),
+        url_builder.redirect(&mas_router::UpstreamOAuth2Link::new(link.id)),
     ))
 }

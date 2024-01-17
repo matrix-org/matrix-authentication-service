@@ -449,6 +449,7 @@ impl UserEmailMutations {
                     .mark_as_verified(&state.clock(), user_email)
                     .await?;
             } else {
+                // TODO: figure out the locale
                 repo.job()
                     .schedule_job(VerifyEmailJob::new(&user_email))
                     .await?;
@@ -490,6 +491,7 @@ impl UserEmailMutations {
         // Schedule a job to verify the email address if needed
         let needs_verification = user_email.confirmed_at.is_none();
         if needs_verification {
+            // TODO: figure out the locale
             repo.job()
                 .schedule_job(VerifyEmailJob::new(&user_email))
                 .await?;

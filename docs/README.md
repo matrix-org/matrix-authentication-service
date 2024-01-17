@@ -7,5 +7,5 @@ A hosted version is available at <https://matrix-org.github.io/matrix-authentica
 
 ## Links
 
- - Technical documentation for individual crates: [`rustdoc`](./rustdoc/mas_handlers/index.html)
- - UI components: [`storybook`](./storybook/index.html)
+ - Technical documentation for individual crates: [`rustdoc`](./rustdoc/mas_handlers/)
+ - UI components: [`storybook`](./storybook/)

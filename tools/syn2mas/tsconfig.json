@@ -1,0 +1,12 @@
+{
+  "extends": [
+    "@tsconfig/strictest/tsconfig.json",
+    "@tsconfig/node18/tsconfig.json"
+  ],
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "sourceMap": true,
+    "declaration": false,
+  }
+}

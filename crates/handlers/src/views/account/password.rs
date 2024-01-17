@@ -24,8 +24,9 @@ use mas_axum_utils::{
     FancyError, SessionInfoExt,
 };
 use mas_data_model::BrowserSession;
+use mas_i18n::DataLocale;
 use mas_policy::Policy;
-use mas_router::Route;
+use mas_router::UrlBuilder;
 use mas_storage::{
     user::{BrowserSessionRepository, UserPasswordRepository},
     BoxClock, BoxRepository, BoxRng, Clock,
@@ -35,7 +36,7 @@ use rand::Rng;
 use serde::Deserialize;
 use zeroize::Zeroizing;
 
-use crate::{passwords::PasswordManager, BoundActivityTracker};
+use crate::{passwords::PasswordManager, BoundActivityTracker, PreferredLanguage};
 
 #[derive(Deserialize)]
 pub struct ChangeForm {
@@ -48,15 +49,19 @@ pub struct ChangeForm {
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
+    PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
     State(password_manager): State<PasswordManager>,
     activity_tracker: BoundActivityTracker,
+    State(url_builder): State<UrlBuilder>,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
 ) -> Result<Response, FancyError> {
     // If the password manager is disabled, we can go back to the account page.
     if !password_manager.is_enabled() {
-        return Ok(mas_router::Account::default().go().into_response());
+        return Ok(url_builder
+            .redirect(&mas_router::Account::default())
+            .into_response());
     }
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
@@ -68,16 +73,17 @@ pub(crate) async fn get(
             .record_browser_session(&clock, &session)
             .await;
 
-        render(&mut rng, &clock, templates, session, cookie_jar).await
+        render(&mut rng, &clock, locale, templates, session, cookie_jar).await
     } else {
         let login = mas_router::Login::and_then(mas_router::PostAuthAction::ChangePassword);
-        Ok((cookie_jar, login.go()).into_response())
+        Ok((cookie_jar, url_builder.redirect(&login)).into_response())
     }
 }
 
 async fn render(
     rng: impl Rng + Send,
     clock: &impl Clock,
+    locale: DataLocale,
     templates: Templates,
     session: BrowserSession,
     cookie_jar: CookieJar,
@@ -86,9 +92,10 @@ async fn render(
 
     let ctx = EmptyContext
         .with_session(session)
-        .with_csrf(csrf_token.form_value());
+        .with_csrf(csrf_token.form_value())
+        .with_language(locale);
 
-    let content = templates.render_account_password(&ctx).await?;
+    let content = templates.render_account_password(&ctx)?;
 
     Ok((cookie_jar, Html(content)).into_response())
 }
@@ -97,9 +104,11 @@ async fn render(
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
+    PreferredLanguage(locale): PreferredLanguage,
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
     activity_tracker: BoundActivityTracker,
+    State(url_builder): State<UrlBuilder>,
     mut policy: Policy,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
@@ -118,7 +127,7 @@ pub(crate) async fn post(
 
     let Some(session) = maybe_session else {
         let login = mas_router::Login::and_then(mas_router::PostAuthAction::ChangePassword);
-        return Ok((cookie_jar, login.go()).into_response());
+        return Ok((cookie_jar, url_builder.redirect(&login)).into_response());
     };
 
     let user_password = repo
@@ -172,7 +181,15 @@ pub(crate) async fn post(
         .record_browser_session(&clock, &session)
         .await;
 
-    let reply = render(&mut rng, &clock, templates.clone(), session, cookie_jar).await?;
+    let reply = render(
+        &mut rng,
+        &clock,
+        locale,
+        templates.clone(),
+        session,
+        cookie_jar,
+    )
+    .await?;
 
     repo.save().await?;
 

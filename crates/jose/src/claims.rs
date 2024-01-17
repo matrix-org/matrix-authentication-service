@@ -37,7 +37,14 @@ pub enum ClaimError {
 }
 
 pub trait Validator<T> {
+    /// The associated error type returned by this validator.
     type Error;
+
+    /// Validate a claim value
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value is invalid.
     fn validate(&self, value: &T) -> Result<(), Self::Error>;
 }
 
@@ -68,6 +75,11 @@ where
         }
     }
 
+    /// Insert a claim into the given claims map.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value failed to serialize.
     pub fn insert<I>(
         &self,
         claims: &mut HashMap<String, serde_json::Value>,
@@ -85,6 +97,12 @@ where
         Ok(())
     }
 
+    /// Extract a claim from the given claims map.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value failed to deserialize, if its value is
+    /// invalid or if the claim is missing.
     pub fn extract_required(
         &self,
         claims: &mut HashMap<String, serde_json::Value>,
@@ -98,6 +116,12 @@ where
         self.extract_required_with_options(claims, validator)
     }
 
+    /// Extract a claim from the given claims map, with the given options.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value failed to deserialize, if its value is
+    /// invalid or if the claim is missing.
     pub fn extract_required_with_options<I>(
         &self,
         claims: &mut HashMap<String, serde_json::Value>,
@@ -124,6 +148,12 @@ where
         Ok(res)
     }
 
+    /// Extract a claim from the given claims map, if it exists.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value failed to deserialize or if its value is
+    /// invalid.
     pub fn extract_optional(
         &self,
         claims: &mut HashMap<String, serde_json::Value>,
@@ -137,6 +167,13 @@ where
         self.extract_optional_with_options(claims, validator)
     }
 
+    /// Extract a claim from the given claims map, if it exists, with the given
+    /// options.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the value failed to deserialize or if its value is
+    /// invalid.
     pub fn extract_optional_with_options<I>(
         &self,
         claims: &mut HashMap<String, serde_json::Value>,
@@ -238,7 +275,7 @@ impl From<&TimeOptions> for TimeNotBefore {
 ///
 /// According to the [OpenID Connect Core 1.0 specification].
 ///
-/// # Errors
+/// # Errors
 ///
 /// Returns an error if the algorithm is not supported.
 ///

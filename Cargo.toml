@@ -3,19 +3,66 @@ default-members = ["crates/cli"]
 members = ["crates/*"]
 resolver = "2"
 
-[workspace.package]
-version = "0.2.0"
-license = "Apache-2.0"
-authors = ["Quentin Gliech <quenting@element.io>"]
-edition = "2021"
-homepage = "https://matrix-org.github.io/matrix-authentication-service/"
-repository = "https://github.com/matrix-org/matrix-authentication-service/"
+# Updated in the CI with a `sed` command
+package.version = "0.7.0"
+
+package.license = "Apache-2.0"
+package.authors = ["Quentin Gliech <quenting@element.io>"]
+package.edition = "2021"
+package.homepage = "https://matrix-org.github.io/matrix-authentication-service/"
+package.repository = "https://github.com/matrix-org/matrix-authentication-service/"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = "deny"
+pedantic = "warn"
+
+str_to_string = "deny"
+
+[workspace.lints.rustdoc]
+broken_intra_doc_links = "deny"
 
 [workspace.dependencies]
+
+# Workspace crates
+# TODO: we need to automate the publishing of the workspace crates and version bumps
+mas-axum-utils = { path = "./crates/axum-utils/", version = "=0.7.0" }
+mas-cli = { path = "./crates/cli/", version = "=0.7.0" }
+mas-config = { path = "./crates/config/", version = "=0.7.0" }
+mas-data-model = { path = "./crates/data-model/", version = "=0.7.0" }
+mas-email = { path = "./crates/email/", version = "=0.7.0" }
+mas-graphql = { path = "./crates/graphql/", version = "=0.7.0" }
+mas-handlers = { path = "./crates/handlers/", version = "=0.7.0" }
+mas-http = { path = "./crates/http/", version = "=0.7.0" }
+mas-i18n = { path = "./crates/i18n/", version = "=0.7.0" }
+mas-i18n-scan = { path = "./crates/i18n-scan/", version = "=0.7.0" }
+mas-iana = { path = "./crates/iana/", version = "=0.7.0" }
+mas-iana-codegen = { path = "./crates/iana-codegen/", version = "=0.7.0" }
+mas-jose = { path = "./crates/jose/", version = "=0.7.0" }
+mas-keystore = { path = "./crates/keystore/", version = "=0.7.0" }
+mas-listener = { path = "./crates/listener/", version = "=0.7.0" }
+mas-matrix = { path = "./crates/matrix/", version = "=0.7.0" }
+mas-matrix-synapse = { path = "./crates/matrix-synapse/", version = "=0.7.0" }
+mas-oidc-client = { path = "./crates/oidc-client/", version = "=0.7.0" }
+mas-policy = { path = "./crates/policy/", version = "=0.7.0" }
+mas-router = { path = "./crates/router/", version = "=0.7.0" }
+mas-spa = { path = "./crates/spa/", version = "=0.7.0" }
+mas-storage = { path = "./crates/storage/", version = "=0.7.0" }
+mas-storage-pg = { path = "./crates/storage-pg/", version = "=0.7.0" }
+mas-tasks = { path = "./crates/tasks/", version = "=0.7.0" }
+mas-templates = { path = "./crates/templates/", version = "=0.7.0" }
+mas-tower = { path = "./crates/tower/", version = "=0.7.0" }
+oauth2-types = { path = "./crates/oauth2-types/", version = "=0.7.0" }
 
 # High-level error handling
 [workspace.dependencies.anyhow]
 version = "1.0.75"
+
+# UTF-8 paths
+[workspace.dependencies.camino]
+version = "1.1.6"
 
 # Time utilities
 [workspace.dependencies.chrono]
@@ -23,9 +70,18 @@ version = "0.4.31"
 default-features = false
 features = ["serde", "clock"]
 
+# CLI argument parsing
+[workspace.dependencies.clap]
+version = "4.4.8"
+features = ["derive"]
+
 # HTTP request/response
 [workspace.dependencies.http]
-version = "0.2.9"
+version = "0.2.11"
+
+# Templates
+[workspace.dependencies.minijinja]
+version = "1.0.10"
 
 # Random values
 [workspace.dependencies.rand]
@@ -33,24 +89,36 @@ version = "0.8.5"
 
 # Serialization and deserialization
 [workspace.dependencies.serde]
-version = "1.0.188"
+version = "1.0.193"
 features = ["derive"] # Most of the time, if we need serde, we need derive
 
 # JSON serialization and deserialization
 [workspace.dependencies.serde_json]
-version = "1.0.107"
+version = "1.0.108"
 
 # Custom error types
 [workspace.dependencies.thiserror]
-version = "1.0.48"
+version = "1.0.50"
 
 # Logging and tracing
 [workspace.dependencies.tracing]
-version = "0.1.37"
+version = "0.1.40"
+[workspace.dependencies.tracing-subscriber]
+version = "0.3.18"
+
+# OpenTelemetry
+[workspace.dependencies.opentelemetry]
+version = "0.21.0"
+features = ["trace", "metrics"]
+[workspace.dependencies.opentelemetry-semantic-conventions]
+version = "0.13.0"
+[workspace.dependencies.tracing-opentelemetry]
+version = "0.22.0"
+default-features = false
 
 # URL manipulation
 [workspace.dependencies.url]
-version = "2.4.1"
+version = "2.5.0"
 features = ["serde"]
 
 # ULID support

@@ -6,12 +6,16 @@ edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
+publish = false
+
+[lints]
+workspace = true
 
 [dependencies]
 anyhow.workspace = true
 axum = "0.6.20"
-camino = "1.1.6"
-clap = { version = "4.4.4", features = ["derive"] }
+camino.workspace = true
+clap.workspace = true
 dotenvy = "0.15.7"
 httpdate = "1.0.3"
 hyper = { version = "0.14.27", features = ["full"] }
@@ -20,53 +24,55 @@ itertools = "0.11.0"
 listenfd = "1.0.1"
 rand.workspace = true
 rand_chacha = "0.3.1"
-rustls = "0.21.7"
+rustls = "0.21.9"
 serde_json.workspace = true
-serde_yaml = "0.9.25"
-sqlx = { version = "0.7.1", features = ["runtime-tokio-rustls", "postgres"] }
-tokio = { version = "1.32.0", features = ["full"] }
+serde_yaml = "0.9.27"
+sqlx = { version = "0.7.3", features = ["runtime-tokio-rustls", "postgres"] }
+tokio = { version = "1.34.0", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.4.4", features = ["fs"] }
 url.workspace = true
-zeroize = "1.6.0"
+zeroize = "1.7.0"
 
 tracing.workspace = true
-tracing-appender = "0.2.2"
-tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
-tracing-opentelemetry = "0.21.0"
-opentelemetry = { version = "0.20.0", features = ["trace", "metrics", "rt-tokio"] }
-opentelemetry-http = { version = "0.9.0", features = ["tokio", "hyper"] }
-opentelemetry-jaeger = { version = "0.19.0", features = ["rt-tokio", "collector_client"] }
-opentelemetry-otlp = { version = "0.13.0", features = ["trace", "metrics"] }
-opentelemetry-prometheus = "0.13.0"
-opentelemetry-semantic-conventions = "0.12.0"
-opentelemetry-stdout = { version = "0.1.0", features = ["trace", "metrics"] }
-opentelemetry-zipkin = { version = "0.18.0", default-features = false }
+tracing-appender = "0.2.3"
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+tracing-opentelemetry.workspace = true
+opentelemetry.workspace = true
+opentelemetry-http = { version = "0.10.0", features = ["tokio", "hyper"] }
+opentelemetry-jaeger = { version = "0.20.0", features = ["rt-tokio", "collector_client"] }
+opentelemetry-otlp = { version = "0.14.0", features = ["trace", "metrics"] }
+opentelemetry-prometheus = "0.14.1"
+opentelemetry-semantic-conventions.workspace = true
+opentelemetry-stdout = { version = "0.2.0", features = ["trace", "metrics"] }
+opentelemetry_sdk = { version = "0.21.1", features = ["trace", "metrics", "rt-tokio"] }
+opentelemetry-zipkin = { version = "0.19.0", default-features = false }
 prometheus = "0.13.3"
-sentry = { version = "0.31.7", default-features = false, features = ["backtrace", "contexts", "panic", "tower"] }
-sentry-tracing = "0.31.7"
-sentry-tower = { version = "0.31.7", features = ["http"] }
+sentry = { version = "0.31.8", default-features = false, features = ["backtrace", "contexts", "panic", "tower"] }
+sentry-tracing = "0.31.8"
+sentry-tower = { version = "0.31.8", features = ["http"] }
 
-mas-config = { path = "../config" }
-mas-data-model = { path = "../data-model" }
-mas-email = { path = "../email" }
-mas-graphql = { path = "../graphql" }
-mas-handlers = { path = "../handlers", default-features = false }
-mas-http = { path = "../http", default-features = false, features = ["axum", "client"] }
-mas-iana = { path = "../iana" }
-mas-keystore = { path = "../keystore" }
-mas-listener = { path = "../listener" }
-mas-matrix = { path = "../matrix" }
-mas-matrix-synapse = { path = "../matrix-synapse" }
-mas-policy = { path = "../policy" }
-mas-router = { path = "../router" }
-mas-spa = { path = "../spa" }
-mas-storage = { path = "../storage" }
-mas-storage-pg = { path = "../storage-pg" }
-mas-tasks = { path = "../tasks" }
-mas-templates = { path = "../templates" }
-mas-tower = { path = "../tower" }
-oauth2-types = { path = "../oauth2-types" }
+mas-config.workspace = true
+mas-data-model.workspace = true
+mas-email.workspace = true
+mas-graphql.workspace = true
+mas-handlers = { workspace = true, default-features = false }
+mas-http = { workspace = true, default-features = false, features = ["axum", "client"] }
+mas-i18n.workspace = true
+mas-iana.workspace = true
+mas-keystore.workspace = true
+mas-listener.workspace = true
+mas-matrix.workspace = true
+mas-matrix-synapse.workspace = true
+mas-policy.workspace = true
+mas-router.workspace = true
+mas-spa.workspace = true
+mas-storage.workspace = true
+mas-storage-pg.workspace = true
+mas-tasks.workspace = true
+mas-templates.workspace = true
+mas-tower.workspace = true
+oauth2-types.workspace = true
 
 [features]
 default = ["webpki-roots", "policy-cache"]

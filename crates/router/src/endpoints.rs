@@ -16,9 +16,10 @@ use serde::{Deserialize, Serialize};
 use ulid::Ulid;
 
 pub use crate::traits::*;
+use crate::UrlBuilder;
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-#[serde(rename_all = "snake_case", tag = "next")]
+#[serde(rename_all = "snake_case", tag = "kind")]
 pub enum PostAuthAction {
     ContinueAuthorizationGrant {
         id: Ulid,
@@ -57,16 +58,19 @@ impl PostAuthAction {
         PostAuthAction::ManageAccount { action }
     }
 
-    pub fn go_next(&self) -> axum::response::Redirect {
+    pub fn go_next(&self, url_builder: &UrlBuilder) -> axum::response::Redirect {
         match self {
-            Self::ContinueAuthorizationGrant { id } => ContinueAuthorizationGrant(*id).go(),
-            Self::ContinueCompatSsoLogin { id } => CompatLoginSsoComplete::new(*id, None).go(),
-            Self::ChangePassword => AccountPassword.go(),
-            Self::LinkUpstream { id } => UpstreamOAuth2Link::new(*id).go(),
-            Self::ManageAccount { action } => Account {
-                action: action.clone(),
+            Self::ContinueAuthorizationGrant { id } => {
+                url_builder.redirect(&ContinueAuthorizationGrant(*id))
             }
-            .go(),
+            Self::ContinueCompatSsoLogin { id } => {
+                url_builder.redirect(&CompatLoginSsoComplete::new(*id, None))
+            }
+            Self::ChangePassword => url_builder.redirect(&AccountPassword),
+            Self::LinkUpstream { id } => url_builder.redirect(&UpstreamOAuth2Link::new(*id)),
+            Self::ManageAccount { action } => url_builder.redirect(&Account {
+                action: action.clone(),
+            }),
         }
     }
 }
@@ -219,10 +223,10 @@ impl Login {
         self.post_auth_action.as_ref()
     }
 
-    pub fn go_next(&self) -> axum::response::Redirect {
+    pub fn go_next(&self, url_builder: &UrlBuilder) -> axum::response::Redirect {
         match &self.post_auth_action {
-            Some(action) => action.go_next(),
-            None => Index.go(),
+            Some(action) => action.go_next(url_builder),
+            None => url_builder.redirect(&Index),
         }
     }
 }
@@ -268,10 +272,10 @@ impl Reauth {
         self.post_auth_action.as_ref()
     }
 
-    pub fn go_next(&self) -> axum::response::Redirect {
+    pub fn go_next(&self, url_builder: &UrlBuilder) -> axum::response::Redirect {
         match &self.post_auth_action {
-            Some(action) => action.go_next(),
-            None => Index.go(),
+            Some(action) => action.go_next(url_builder),
+            None => url_builder.redirect(&Index),
         }
     }
 }
@@ -328,10 +332,10 @@ impl Register {
         self.post_auth_action.as_ref()
     }
 
-    pub fn go_next(&self) -> axum::response::Redirect {
+    pub fn go_next(&self, url_builder: &UrlBuilder) -> axum::response::Redirect {
         match &self.post_auth_action {
-            Some(action) => action.go_next(),
-            None => Index.go(),
+            Some(action) => action.go_next(url_builder),
+            None => url_builder.redirect(&Index),
         }
     }
 }
@@ -425,11 +429,26 @@ impl AccountAddEmail {
 
 /// Actions parameters as defined by MSC2965
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case", tag = "action")]
+#[serde(tag = "action")]
 pub enum AccountAction {
+    #[serde(rename = "org.matrix.profile")]
+    OrgMatrixProfile,
+    #[serde(rename = "profile")]
     Profile,
+
+    #[serde(rename = "org.matrix.sessions_list")]
+    OrgMatrixSessionsList,
+    #[serde(rename = "sessions_list")]
     SessionsList,
+
+    #[serde(rename = "org.matrix.session_view")]
+    OrgMatrixSessionView { device_id: String },
+    #[serde(rename = "session_view")]
     SessionView { device_id: String },
+
+    #[serde(rename = "org.matrix.session_end")]
+    OrgMatrixSessionEnd { device_id: String },
+    #[serde(rename = "session_end")]
     SessionEnd { device_id: String },
 }
 
@@ -691,4 +710,18 @@ impl Route for StaticAsset {
     fn path(&self) -> std::borrow::Cow<'static, str> {
         format!("/assets/{}", self.path).into()
     }
+}
+
+/// `GET|POST /graphql`
+pub struct GraphQL;
+
+impl SimpleRoute for GraphQL {
+    const PATH: &'static str = "/graphql";
+}
+
+/// `GET /graphql/playground`
+pub struct GraphQLPlayground;
+
+impl SimpleRoute for GraphQLPlayground {
+    const PATH: &'static str = "/graphql/playground";
 }

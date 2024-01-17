@@ -17,14 +17,26 @@ limitations under the License.
 {% extends "base.html" %}
 
 {% block content %}
-  {{ navbar::top() }}
-  <section class="flex-1 flex flex-col items-center justify-center">
-    <div class="my-2 mx-8">
-      <h1 class="my-2 text-5xl font-semibold leading-tight">Matrix Authentication Service</h1>
-      <p class="text-lg">
-        OpenID Connect discovery document:
-        <a class="cpd-link" data-kind="primary" href="{{ discovery_url }}">{{ discovery_url }}</a>
+  <main class="flex flex-col justify-center gap-6">
+    <header class="page-heading">
+      <div class="header">
+        <h1 class="title">{{ _("app.human_name") }}</h1>
+        <p class="text">
+          {{ _("app.technical_description", discovery_url=discovery_url) }}
+        </p>
+      </div>
+    </header>
+
+    {% if current_session %}
+      <p class="cpd-text-body-md-regular">
+        {{ _("mas.navbar.signed_in_as", username=current_session.user.username) }}
       </p>
-    </div>
-  </section>
+
+      {{ button.link(text=_("mas.navbar.my_account"), href="/account/") }}
+      {{ logout.button(text=_("action.sign_out"), csrf_token=csrf_token) }}
+    {% else %}
+      {{ button.link(text=_("action.sign_in"), href="/login") }}
+      {{ button.link_outline(text=_("mas.navbar.register"), href="/register") }}
+    {% endif %}
+  </main>
 {% endblock content %}

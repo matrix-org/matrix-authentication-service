@@ -112,6 +112,15 @@ pub enum InvalidRedirectUriError {
 }
 
 impl Client {
+    /// Determine which redirect URI to use for the given request.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    ///
+    ///  - no URL was given but multiple redirect URIs are registered,
+    ///  - no URL was registered, or
+    ///  - the given URL is not registered
     pub fn resolve_redirect_uri<'a>(
         &'a self,
         redirect_uri: &'a Option<Url>,
@@ -125,6 +134,7 @@ impl Client {
         }
     }
 
+    #[doc(hidden)]
     pub fn samples(now: DateTime<Utc>, rng: &mut impl RngCore) -> Vec<Client> {
         vec![
             // A client with all the URIs set

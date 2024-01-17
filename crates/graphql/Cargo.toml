@@ -6,26 +6,31 @@ edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
+publish = false
+
+[lints]
+workspace = true
 
 [dependencies]
 anyhow.workspace = true
-async-graphql = { version = "6.0.7", features = ["chrono", "url"] }
-async-trait = "0.1.73"
+async-graphql = { version = "6.0.11", features = ["chrono", "url"] }
+async-trait = "0.1.74"
 chrono.workspace = true
-lettre = { version = "0.10.4", default-features = false  }
+lettre = { version = "0.11.2", default-features = false  }
 serde.workspace = true
 thiserror.workspace = true
-tokio = { version = "1.32.0", features = ["sync"] }
+tokio = { version = "1.34.0", features = ["sync"] }
 tracing.workspace = true
 tower = { version = "0.4.13", features = ["util"] }
 ulid.workspace = true
 url.workspace = true
 
-oauth2-types = { path = "../oauth2-types" }
-mas-data-model = { path = "../data-model" }
-mas-matrix = { path = "../matrix" }
-mas-policy = { path = "../policy" }
-mas-storage = { path = "../storage" }
+oauth2-types.workspace = true
+mas-data-model.workspace = true
+mas-matrix.workspace = true
+mas-policy.workspace = true
+mas-storage.workspace = true
 
 [[bin]]
 name = "schema"
+doc = false

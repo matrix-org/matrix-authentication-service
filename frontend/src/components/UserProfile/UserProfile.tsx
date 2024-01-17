@@ -12,8 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Separator } from "@vector-im/compound-web";
+
 import BlockList from "../BlockList/BlockList";
 
+import CrossSigningReset from "./CrossSigningReset";
 import UserEmailList from "./UserEmailList";
 import UserName from "./UserName";
 
@@ -22,6 +25,8 @@ const UserProfile: React.FC<{ userId: string }> = ({ userId }) => {
     <BlockList>
       <UserName userId={userId} />
       <UserEmailList userId={userId} />
+      <Separator />
+      <CrossSigningReset userId={userId} />
     </BlockList>
   );
 };

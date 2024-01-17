@@ -39,6 +39,7 @@ pub struct Pkce {
 }
 
 impl Pkce {
+    /// Create a new PKCE challenge, with the given method and challenge.
     #[must_use]
     pub fn new(challenge_method: PkceCodeChallengeMethod, challenge: String) -> Self {
         Pkce {
@@ -47,6 +48,11 @@ impl Pkce {
         }
     }
 
+    /// Verify the PKCE challenge.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the verifier is invalid.
     pub fn verify(&self, verifier: &str) -> Result<(), CodeChallengeError> {
         self.challenge_method.verify(&self.challenge, verifier)
     }
@@ -176,11 +182,25 @@ impl AuthorizationGrant {
         self.created_at - Duration::seconds(max_age.unwrap_or(3600 * 24 * 365))
     }
 
+    /// Mark the authorization grant as exchanged.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the authorization grant is not [`Fulfilled`].
+    ///
+    /// [`Fulfilled`]: AuthorizationGrantStage::Fulfilled
     pub fn exchange(mut self, exchanged_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
         self.stage = self.stage.exchange(exchanged_at)?;
         Ok(self)
     }
 
+    /// Mark the authorization grant as fulfilled.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the authorization grant is not [`Pending`].
+    ///
+    /// [`Pending`]: AuthorizationGrantStage::Pending
     pub fn fulfill(
         mut self,
         fulfilled_at: DateTime<Utc>,
@@ -190,12 +210,23 @@ impl AuthorizationGrant {
         Ok(self)
     }
 
-    // TODO: this is not used?
+    /// Mark the authorization grant as cancelled.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the authorization grant is not [`Pending`].
+    ///
+    /// [`Pending`]: AuthorizationGrantStage::Pending
+    ///
+    /// # TODO
+    ///
+    /// This appears to be unused
     pub fn cancel(mut self, canceld_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
         self.stage = self.stage.cancel(canceld_at)?;
         Ok(self)
     }
 
+    #[doc(hidden)]
     pub fn sample(now: DateTime<Utc>, rng: &mut impl RngCore) -> Self {
         Self {
             id: Ulid::from_datetime_with_source(now.into(), rng),

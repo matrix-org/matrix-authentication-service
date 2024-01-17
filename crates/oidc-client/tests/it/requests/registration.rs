@@ -188,9 +188,8 @@ async fn pass_register_client_private_key_jwt() {
     Mock::given(method("POST"))
         .and(path("/register"))
         .and(|req: &Request| {
-            let metadata = match req.body_json::<ClientMetadata>() {
-                Ok(body) => body,
-                Err(_) => return false,
+            let Ok(metadata) = req.body_json::<ClientMetadata>() else {
+                return false;
             };
 
             *metadata.token_endpoint_auth_method() == OAuthClientAuthenticationMethod::PrivateKeyJwt

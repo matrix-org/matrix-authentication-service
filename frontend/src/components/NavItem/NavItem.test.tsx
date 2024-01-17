@@ -14,46 +14,12 @@
 
 // @vitest-environment happy-dom
 
-import type { IWindow } from "happy-dom";
-import { Provider } from "jotai";
-import { useHydrateAtoms } from "jotai/utils";
 import { create } from "react-test-renderer";
-import { beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { appConfigAtom, locationAtom } from "../../routing";
+import { WithLocation } from "../../test-utils/WithLocation";
 
 import NavItem from "./NavItem";
-
-beforeEach(async () => {
-  const w = window as unknown as IWindow;
-
-  // For some reason, the locationAtom gets updated with `about:black` on render,
-  // so we need to set a "real" location and wait for the next tick
-  w.happyDOM.setURL("https://example.com/");
-  await w.happyDOM.whenAsyncComplete();
-});
-
-const HydrateLocation: React.FC<React.PropsWithChildren<{ path: string }>> = ({
-  children,
-  path,
-}) => {
-  useHydrateAtoms([
-    [appConfigAtom, { root: "/" }],
-    [locationAtom, { pathname: path }],
-  ]);
-  return <>{children}</>;
-};
-
-const WithLocation: React.FC<React.PropsWithChildren<{ path: string }>> = ({
-  children,
-  path,
-}) => {
-  return (
-    <Provider>
-      <HydrateLocation path={path}>{children}</HydrateLocation>
-    </Provider>
-  );
-};
 
 describe("NavItem", () => {
   it("render an active <NavItem />", () => {

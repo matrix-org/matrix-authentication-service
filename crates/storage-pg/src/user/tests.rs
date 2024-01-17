@@ -95,6 +95,26 @@ async fn test_user_repo(pool: PgPool) {
     let user = repo.user().unlock(user).await.unwrap();
     assert!(user.is_valid());
 
+    // Set the can_request_admin flag
+    let user = repo.user().set_can_request_admin(user, true).await.unwrap();
+    assert!(user.can_request_admin);
+
+    // Check that the property is retrieved on lookup
+    let user = repo.user().lookup(user.id).await.unwrap().unwrap();
+    assert!(user.can_request_admin);
+
+    // Unset the can_request_admin flag
+    let user = repo
+        .user()
+        .set_can_request_admin(user, false)
+        .await
+        .unwrap();
+    assert!(!user.can_request_admin);
+
+    // Check that the property is retrieved on lookup
+    let user = repo.user().lookup(user.id).await.unwrap().unwrap();
+    assert!(!user.can_request_admin);
+
     repo.save().await.unwrap();
 }
 

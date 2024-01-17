@@ -15,11 +15,27 @@
 import { resolve } from "path";
 
 import react from "@vitejs/plugin-react";
+import { PluginOption } from "vite";
 import compression from "vite-plugin-compression";
 import codegen from "vite-plugin-graphql-codegen";
 import manifestSRI from "vite-plugin-manifest-sri";
 import svgr from "vite-plugin-svgr";
 import { defineConfig } from "vitest/config";
+
+function i18nHotReload(): PluginOption {
+  return {
+    name: "i18n-hot-reload",
+    handleHotUpdate({ file, server }): void {
+      if (file.includes("locales") && file.endsWith(".json")) {
+        console.log("Locale file updated");
+        server.ws.send({
+          type: "custom",
+          event: "locales-update",
+        });
+      }
+    },
+  };
+}
 
 export default defineConfig((env) => ({
   base: "./",
@@ -28,6 +44,10 @@ export default defineConfig((env) => ({
     modules: {
       localsConvention: "camelCaseOnly",
     },
+  },
+
+  define: {
+    "import.meta.vitest": "undefined",
   },
 
   build: {
@@ -113,6 +133,8 @@ export default defineConfig((env) => ({
       algorithm: "deflate",
       ext: ".zz",
     }),
+
+    i18nHotReload(),
   ],
 
   server: {
@@ -126,6 +148,7 @@ export default defineConfig((env) => ({
 
   test: {
     globalSetup: "./vitest.global-setup.ts",
+    setupFiles: "./vitest.i18n-setup.ts",
     coverage: {
       provider: "v8",
       src: ["./src/"],

@@ -14,6 +14,7 @@
 
 import { parseISO } from "date-fns";
 import { useSetAtom } from "jotai";
+import { useTranslation } from "react-i18next";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
 import { Link } from "../../routing";
@@ -53,6 +54,7 @@ type Props = {
 const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
   const data = useFragment(FRAGMENT, session);
   const endSession = useSetAtom(endSessionFamily(data.id));
+  const { t } = useTranslation();
 
   const onSessionEnd = async (): Promise<void> => {
     await endSession();
@@ -104,11 +106,13 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
   ];
 
   const clientTitle = (
-    <Link route={{ type: "client", id: data.client.id }}>Client</Link>
+    <Link route={{ type: "client", id: data.client.id }}>
+      {t("frontend.oauth2_session_detail.client_title")}
+    </Link>
   );
   const clientDetails = [
     {
-      label: "Name",
+      label: t("frontend.oauth2_session_detail.client_details_name"),
       value: (
         <>
           <ClientAvatar
@@ -140,7 +144,10 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
       >
         {deviceId || data.id}
       </SessionHeader>
-      <SessionDetails title="Session" details={sessionDetails} />
+      <SessionDetails
+        title={t("frontend.oauth2_session_detail.session_details_title")}
+        details={sessionDetails}
+      />
       <SessionDetails title={clientTitle} details={clientDetails} />
       {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
     </BlockList>

@@ -27,7 +27,7 @@ use mas_axum_utils::{
     FancyError, SessionInfoExt,
 };
 use mas_data_model::Device;
-use mas_router::{CompatLoginSsoAction, PostAuthAction, Route};
+use mas_router::{CompatLoginSsoAction, PostAuthAction, UrlBuilder};
 use mas_storage::{
     compat::{CompatSessionRepository, CompatSsoLoginRepository},
     job::{JobRepositoryExt, ProvisionDeviceJob},
@@ -36,6 +36,8 @@ use mas_storage::{
 use mas_templates::{CompatSsoContext, ErrorContext, TemplateContext, Templates};
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
+
+use crate::PreferredLanguage;
 
 #[derive(Serialize)]
 struct AllParams<'s> {
@@ -58,10 +60,12 @@ pub struct Params {
     err,
 )]
 pub async fn get(
+    PreferredLanguage(locale): PreferredLanguage,
     mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
     State(templates): State<Templates>,
+    State(url_builder): State<UrlBuilder>,
     cookie_jar: CookieJar,
     Path(id): Path<Ulid>,
     Query(params): Query<Params>,
@@ -75,10 +79,10 @@ pub async fn get(
         // If there is no session, redirect to the login or register screen
         let url = match params.action {
             Some(CompatLoginSsoAction::Register) => {
-                mas_router::Register::and_continue_compat_sso_login(id).go()
+                url_builder.redirect(&mas_router::Register::and_continue_compat_sso_login(id))
             }
             Some(CompatLoginSsoAction::Login) | None => {
-                mas_router::Login::and_continue_compat_sso_login(id).go()
+                url_builder.redirect(&mas_router::Login::and_continue_compat_sso_login(id))
             }
         };
 
@@ -89,7 +93,7 @@ pub async fn get(
     if session.user.primary_user_email_id.is_none() {
         let destination = mas_router::AccountAddEmail::default()
             .and_then(PostAuthAction::continue_compat_sso_login(id));
-        return Ok((cookie_jar, destination.go()).into_response());
+        return Ok((cookie_jar, url_builder.redirect(&destination)).into_response());
     }
 
     let login = repo
@@ -102,17 +106,19 @@ pub async fn get(
     if clock.now() > login.created_at + Duration::minutes(30) {
         let ctx = ErrorContext::new()
             .with_code("compat_sso_login_expired")
-            .with_description("This login session expired.".to_owned());
+            .with_description("This login session expired.".to_owned())
+            .with_language(&locale);
 
-        let content = templates.render_error(&ctx).await?;
+        let content = templates.render_error(&ctx)?;
         return Ok((cookie_jar, Html(content)).into_response());
     }
 
     let ctx = CompatSsoContext::new(login)
         .with_session(session)
-        .with_csrf(csrf_token.form_value());
+        .with_csrf(csrf_token.form_value())
+        .with_language(locale);
 
-    let content = templates.render_sso_login(&ctx).await?;
+    let content = templates.render_sso_login(&ctx)?;
 
     Ok((cookie_jar, Html(content)).into_response())
 }
@@ -127,7 +133,9 @@ pub async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
+    PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
+    State(url_builder): State<UrlBuilder>,
     cookie_jar: CookieJar,
     Path(id): Path<Ulid>,
     Query(params): Query<Params>,
@@ -142,10 +150,10 @@ pub async fn post(
         // If there is no session, redirect to the login or register screen
         let url = match params.action {
             Some(CompatLoginSsoAction::Register) => {
-                mas_router::Register::and_continue_compat_sso_login(id).go()
+                url_builder.redirect(&mas_router::Register::and_continue_compat_sso_login(id))
             }
             Some(CompatLoginSsoAction::Login) | None => {
-                mas_router::Login::and_continue_compat_sso_login(id).go()
+                url_builder.redirect(&mas_router::Login::and_continue_compat_sso_login(id))
             }
         };
 
@@ -156,7 +164,7 @@ pub async fn post(
     if session.user.primary_user_email_id.is_none() {
         let destination = mas_router::AccountAddEmail::default()
             .and_then(PostAuthAction::continue_compat_sso_login(id));
-        return Ok((cookie_jar, destination.go()).into_response());
+        return Ok((cookie_jar, url_builder.redirect(&destination)).into_response());
     }
 
     let login = repo
@@ -169,9 +177,10 @@ pub async fn post(
     if clock.now() > login.created_at + Duration::minutes(30) {
         let ctx = ErrorContext::new()
             .with_code("compat_sso_login_expired")
-            .with_description("This login session expired.".to_owned());
+            .with_description("This login session expired.".to_owned())
+            .with_language(&locale);
 
-        let content = templates.render_error(&ctx).await?;
+        let content = templates.render_error(&ctx)?;
         return Ok((cookie_jar, Html(content)).into_response());
     }
 

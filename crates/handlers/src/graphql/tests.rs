@@ -159,13 +159,13 @@ async fn test_anonymous_viewer(pool: PgPool) {
     let state = TestState::from_pool(pool).await.unwrap();
 
     let req = Request::post("/graphql").json(serde_json::json!({
-        "query": r#"
+        "query": r"
             query {
                 viewer {
                     __typename
                 }
             }
-        "#,
+        ",
     }));
 
     let response = state.request(req).await;
@@ -199,7 +199,7 @@ async fn test_oauth2_viewer(pool: PgPool) {
     let req = Request::post("/graphql")
         .bearer(&access_token)
         .json(serde_json::json!({
-            "query": r#"
+            "query": r"
                 query {
                     viewer {
                         __typename
@@ -210,7 +210,7 @@ async fn test_oauth2_viewer(pool: PgPool) {
                         }
                     }
                 }
-            "#,
+            ",
         }));
 
     let response = state.request(req).await;
@@ -246,13 +246,13 @@ async fn test_oauth2_no_scope(pool: PgPool) {
     let req = Request::post("/graphql")
         .bearer(&access_token)
         .json(serde_json::json!({
-            "query": r#"
+            "query": r"
                 query {
                     viewer {
                         __typename
                     }
                 }
-            "#,
+            ",
         }));
 
     let response = state.request(req).await;
@@ -294,14 +294,14 @@ async fn test_oauth2_admin(pool: PgPool) {
     let request = Request::post("/graphql")
         .bearer(&access_token)
         .json(serde_json::json!({
-            "query": r#"
+            "query": r"
                 query UserQuery($id: ID) {
                     user(id: $id) {
                         id
                         username
                     }
                 }
-            "#, 
+            ", 
             "variables": {
                 "id": format!("user:{id}", id = user2.id),
             },
@@ -324,14 +324,14 @@ async fn test_oauth2_admin(pool: PgPool) {
     let request = Request::post("/graphql")
         .bearer(&access_token_admin)
         .json(serde_json::json!({
-            "query": r#"
+            "query": r"
                 query UserQuery($id: ID) {
                     user(id: $id) {
                         id
                         username
                     }
                 }
-            "#, 
+            ", 
             "variables": {
                 "id": format!("user:{id}", id = user2.id),
             },
@@ -392,7 +392,7 @@ async fn test_oauth2_client_credentials(pool: PgPool) {
     let request = Request::post("/graphql")
         .bearer(&access_token)
         .json(serde_json::json!({
-            "query": r#"
+            "query": r"
                 query {
                     viewer {
                         __typename
@@ -402,7 +402,7 @@ async fn test_oauth2_client_credentials(pool: PgPool) {
                         __typename
                     }
                 }
-            "#,
+            ",
         }));
 
     let response = state.request(request).await;
@@ -459,7 +459,7 @@ async fn test_oauth2_client_credentials(pool: PgPool) {
     let request = Request::post("/graphql")
         .bearer(&access_token)
         .json(serde_json::json!({
-            "query": r#"
+            "query": r"
                 query {
                     viewer {
                         __typename
@@ -469,7 +469,7 @@ async fn test_oauth2_client_credentials(pool: PgPool) {
                         __typename
                     }
                 }
-            "#,
+            ",
         }));
 
     let response = state.request(request).await;
@@ -535,14 +535,14 @@ async fn test_oauth2_client_credentials(pool: PgPool) {
     let request = Request::post("/graphql")
         .bearer(&access_token)
         .json(serde_json::json!({
-            "query": r#"
+            "query": r"
                 mutation CreateSession($userId: String!, $scope: String!) {
                     createOauth2Session(input: {userId: $userId, permanent: true, scope: $scope}) {
                         accessToken
                         refreshToken
                     }
                 }
-            "#,
+            ",
             "variables": {
                 "userId": user_id,
                 "scope": "urn:matrix:org.matrix.msc2967.client:device:AABBCCDDEE urn:matrix:org.matrix.msc2967.client:api:* urn:synapse:admin:*"

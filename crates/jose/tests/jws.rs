@@ -119,7 +119,7 @@ macro_rules! asymetric_jwt_test {
                     let mut rng = ChaCha8Rng::seed_from_u64(42);
                     let alg = JsonWebSignatureAlg::$alg;
                     let payload = Payload {
-                        hello: "world".to_string(),
+                        hello: "world".to_owned(),
                     };
                     let header = JsonWebSignatureHeader::new(alg.clone());
 
@@ -137,7 +137,7 @@ macro_rules! asymetric_jwt_test {
                 fn sign_and_verify_jwt() {
                     let alg = JsonWebSignatureAlg::$alg;
                     let payload = Payload {
-                        hello: "world".to_string(),
+                        hello: "world".to_owned(),
                     };
                     let header = JsonWebSignatureHeader::new(alg.clone());
 
@@ -192,7 +192,7 @@ macro_rules! symetric_jwt_test {
             fn sign_and_verify_jwt() {
                 let alg = JsonWebSignatureAlg::$alg;
                 let payload = Payload {
-                    hello: "world".to_string(),
+                    hello: "world".to_owned(),
                 };
                 let header = JsonWebSignatureHeader::new(alg.clone());
 

@@ -29,6 +29,12 @@ pub struct HttpClientFactory {
 }
 
 impl HttpClientFactory {
+    /// Constructs a new HTTP client factory
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the client factory failed to initialise, which can
+    /// happen when it fails to load the system's CA certificates.
     pub async fn new() -> Result<Self, ClientInitError> {
         Ok(Self {
             traced_connector: make_traced_connector().await?,
@@ -37,10 +43,6 @@ impl HttpClientFactory {
     }
 
     /// Constructs a new HTTP client
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the client failed to initialise
     pub fn client<B>(&self, category: &'static str) -> ClientService<TracedClient<B>>
     where
         B: axum::body::HttpBody + Send,
@@ -54,10 +56,6 @@ impl HttpClientFactory {
     }
 
     /// Constructs a new [`HttpService`], suitable for `mas-oidc-client`
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the client failed to initialise
     pub fn http_service(&self, category: &'static str) -> HttpService {
         let client = self.client(category);
         let client = (

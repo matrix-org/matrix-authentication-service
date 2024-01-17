@@ -14,6 +14,7 @@
 
 import { Button } from "@vector-im/compound-web";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import ConfirmationModal from "../ConfirmationModal/ConfirmationModal";
 import LoadingSpinner from "../LoadingSpinner/LoadingSpinner";
@@ -26,6 +27,7 @@ const EndSessionButton: React.FC<{ endSession: () => Promise<void> }> = ({
   endSession,
 }) => {
   const [inProgress, setInProgress] = useState(false);
+  const { t } = useTranslation();
 
   const onConfirm = async (): Promise<void> => {
     setInProgress(true);
@@ -45,10 +47,11 @@ const EndSessionButton: React.FC<{ endSession: () => Promise<void> }> = ({
       <ConfirmationModal
         onDeny={onDeny}
         onConfirm={onConfirm}
-        title="Are you sure you want to end this session?"
+        title={t("frontend.end_session_button.confirmation_modal_title")}
         trigger={
           <Button kind="destructive" size="sm" disabled={inProgress}>
-            {inProgress && <LoadingSpinner inline />}End session
+            {inProgress && <LoadingSpinner inline />}
+            {t("frontend.end_session_button.text")}
           </Button>
         }
       />

@@ -6,27 +6,35 @@ edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
+publish = false
+
+[lints]
+workspace = true
 
 [dependencies]
+arc-swap = "1.6.0"
 tracing.workspace = true
-tokio = { version = "1.32.0", features = ["macros", "rt", "fs"] }
+tokio = { version = "1.34.0", features = ["macros", "rt", "fs"] }
+walkdir = "2.4.0"
 
 anyhow.workspace = true
 thiserror.workspace = true
 
-tera = { version = "1.19.1", default-features = false }
+minijinja = { workspace = true, features = ["loader", "json", "speedups", "unstable_machinery"] }
 serde.workspace = true
 serde_json.workspace = true
 serde_urlencoded = "0.7.1"
+v_htmlescape = "0.15.8"
 
-camino = "1.1.6"
+camino.workspace = true
 chrono.workspace = true
 url.workspace = true
 http.workspace = true
 ulid.workspace = true
 rand.workspace = true
 
-oauth2-types = { path = "../oauth2-types" }
-mas-data-model = { path = "../data-model" }
-mas-router = { path = "../router" }
-mas-spa = { path = "../spa" }
+oauth2-types.workspace = true
+mas-data-model.workspace = true
+mas-i18n.workspace = true
+mas-router.workspace = true
+mas-spa.workspace = true

@@ -34,6 +34,7 @@ pub enum Users {
     PrimaryUserEmailId,
     CreatedAt,
     LockedAt,
+    CanRequestAdmin,
 }
 
 #[derive(sea_query::Iden)]
@@ -95,6 +96,8 @@ pub enum UpstreamOAuthProviders {
     #[iden = "upstream_oauth_provider_id"]
     UpstreamOAuthProviderId,
     Issuer,
+    HumanName,
+    BrandName,
     Scope,
     ClientId,
     EncryptedClientSecret,
@@ -102,6 +105,11 @@ pub enum UpstreamOAuthProviders {
     TokenEndpointAuthMethod,
     CreatedAt,
     ClaimsImports,
+    DiscoveryMode,
+    PkceMode,
+    JwksUriOverride,
+    TokenEndpointOverride,
+    AuthorizationEndpointOverride,
 }
 
 #[derive(sea_query::Iden)]

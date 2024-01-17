@@ -17,21 +17,26 @@ limitations under the License.
 {% extends "base.html" %}
 
 {% block content %}
-  {{ navbar::top() }}
-  <section class="flex items-center justify-center flex-1">
-    <div class="grid grid-cols-1 gap-6 w-96 my-2 mx-8">
-      <h1 class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 flex flex-col font-medium text-lg text-center">
-        Link to your existing account
-      </h1>
-
-      <form method="POST" class="flex">
-        <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-        <input type="hidden" name="action" value="link" />
-
-        {{ button::button(text="Link", class="flex-1") }}
-      </form>
-
-      <div>Or {{ logout::button(text="Logout", csrf_token=csrf_token, post_logout_action=post_logout_action, as_link=true) }}</div>
+  <header class="page-heading">
+    <div class="icon">
+      {{ icon.link() }}
     </div>
+
+    <div class="header">
+      <h1 class="title">{{ _("mas.upstream_oauth2.suggest_link.heading") }}</h1>
+    </div>
+  </header>
+
+  <section class="flex flex-col gap-6 justify-center">
+    <form method="POST" class="cpd-form-root">
+      <input type="hidden" name="csrf" value="{{ csrf_token }}" />
+      <input type="hidden" name="action" value="link" />
+
+      {{ button.button(text=_("mas.upstream_oauth2.suggest_link.action")) }}
+    </form>
+
+    {{ field.separator() }}
+
+    {{ logout.button(text=_("action.sign_out"), csrf_token=csrf_token, post_logout_action=post_logout_action) }}
   </section>
 {% endblock content %}

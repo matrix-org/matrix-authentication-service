@@ -46,6 +46,11 @@ pub trait ConfigurationSection: Sized + DeserializeOwned + Serialize {
     /// export MAS_HTTP_ADDRESS=127.0.0.1:1234
     /// matrix-authentication-service config generate
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the configuration could not be generated or if the
+    /// existing configuration could not be loaded
     async fn load_and_generate<R>(rng: R) -> anyhow::Result<Self>
     where
         R: Rng + Send,
@@ -62,6 +67,10 @@ pub trait ConfigurationSection: Sized + DeserializeOwned + Serialize {
     }
 
     /// Load configuration from a list of files and environment variables.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the configuration could not be loaded
     fn load_from_files<P>(paths: &[P]) -> Result<Self, FigmentError>
     where
         P: AsRef<Utf8Path>,
@@ -75,6 +84,10 @@ pub trait ConfigurationSection: Sized + DeserializeOwned + Serialize {
     }
 
     /// Load configuration from a file and environment variables.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the configuration could not be loaded
     fn load_from_file<P>(path: P) -> Result<Self, FigmentError>
     where
         P: AsRef<Utf8Path>,

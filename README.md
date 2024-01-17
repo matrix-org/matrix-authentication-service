@@ -19,9 +19,10 @@ You can learn more about Matrix and OIDC at [areweoidcyet.com](https://areweoidc
   - 🚧 Local password
 - Migration support
   - ✅ Compatibility layer for legacy Matrix authentication
-  - 🚧 Advisor on migration readiness
-  - 🚧 Import users from Synapse
-  - 🚧 Import of external subject IDs from upstream identity providers
+  - ✅ Advisor on migration readiness
+  - ✅ Import users from Synapse
+  - ✅ Import password hashes from Synapse
+  - ✅ Import of external subject IDs for upstream identity providers from Synapse
 
 ## Upstream Identity Providers
 

@@ -15,6 +15,8 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: "sccache"
 
 jobs:
   opa-lint:
@@ -26,12 +28,12 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
 
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.1.0
         with:
-          version: 0.55.0
+          version: 0.59.0
 
       - name: Lint policies
         working-directory: ./policies
@@ -50,10 +52,10 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
 
       - name: Install Node
-        uses: actions/setup-node@v3.8.1
+        uses: actions/setup-node@v4.0.0
         with:
           node-version: 18
 
@@ -75,10 +77,10 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
 
       - name: Install Node
-        uses: actions/setup-node@v3.8.1
+        uses: actions/setup-node@v4.0.0
         with:
           node-version: 18
 
@@ -100,7 +102,7 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
 
       - name: Install toolchain
         run: |
@@ -116,15 +118,19 @@ jobs:
     name: Run `cargo deny` checks
     runs-on: ubuntu-latest
 
+    env:
+      # We need to remove the sccache wrapper because we don't install it in this job
+      RUSTC_WRAPPER: ""
+
     permissions:
       contents: read
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
 
       - name: Run `cargo-deny`
-        uses: EmbarkStudios/cargo-deny-action@v1.5.4
+        uses: EmbarkStudios/cargo-deny-action@v1.5.5
 
   
   check-schema:
@@ -136,20 +142,18 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
 
       - name: Install Rust toolchain
         run: |
           rustup toolchain install stable
           rustup default stable
 
-      - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2.7.0
-        with:
-          save-if: "${{ github.event_name != 'pull_request' }}"
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.3
 
       - name: Install Node
-        uses: actions/setup-node@v3.8.1
+        uses: actions/setup-node@v4.0.0
         with:
           node-version: 18
 
@@ -187,27 +191,25 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
 
       - name: Install toolchain
         run: |
-          rustup toolchain install 1.71.0
-          rustup default 1.71.0
+          rustup toolchain install 1.74.0
+          rustup default 1.74.0
           rustup component add clippy
 
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.1.0
         with:
-          version: 0.55.0
+          version: 0.59.0
 
       - name: Compile OPA policies
         working-directory: ./policies
         run: make
 
-      - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2.7.0
-        with:
-          save-if: "${{ github.event_name != 'pull_request' }}"
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.3
 
       - name: Run clippy
         run: |
@@ -239,7 +241,7 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
 
       - name: Install toolchain
         run: |
@@ -247,7 +249,7 @@ jobs:
           rustup default stable
 
       - name: Install Node
-        uses: actions/setup-node@v3.8.1
+        uses: actions/setup-node@v4.0.0
         with:
           node-version: 18
 
@@ -262,16 +264,14 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.1.0
         with:
-          version: 0.55.0
+          version: 0.59.0
 
       - name: Compile OPA policies
         working-directory: ./policies
         run: make
 
-      - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2.7.0
-        with:
-          save-if: "${{ github.event_name != 'pull_request' }}"
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.3
 
       - name: Test
         id: test
@@ -281,6 +281,33 @@ jobs:
         run: |
           cargo test --workspace
 
+  syn2mas:
+    name: Check syn2mas
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4.1.1
+
+      - name: Install Node
+        uses: actions/setup-node@v4.0.0
+        with:
+          node-version-file: ./tools/syn2mas/.nvmrc
+
+      - name: Install Node dependencies
+        working-directory: ./tools/syn2mas
+        run: npm ci
+
+      - name: Lint
+        working-directory: ./tools/syn2mas
+        run: npm run lint
+
+      - name: Build
+        working-directory: ./tools/syn2mas
+        run: npm run build
 
   tests-done:
     name: Tests done
@@ -294,6 +321,7 @@ jobs:
       - clippy
       - check-schema
       - test
+      - syn2mas
     runs-on: ubuntu-latest
 
     steps:

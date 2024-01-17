@@ -17,6 +17,7 @@ import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 import { useTransition } from "react";
+import { useTranslation } from "react-i18next";
 
 import { graphql } from "../../gql";
 import { PageInfo } from "../../gql/graphql";
@@ -135,6 +136,7 @@ const UserEmailList: React.FC<{
   const [primaryEmailId, refreshPrimaryEmailId] = useAtom(
     primaryEmailIdFamily(userId),
   );
+  const { t } = useTranslation();
 
   const paginate = (pagination: Pagination): void => {
     startTransition(() => {
@@ -159,9 +161,12 @@ const UserEmailList: React.FC<{
 
   return (
     <BlockList>
-      <H3>Emails</H3>
+      <H3>{t("frontend.user_email_list.heading")}</H3>
       {showNoPrimaryEmailAlert && (
-        <Alert type="critical" title="No primary email address" />
+        <Alert
+          type="critical"
+          title={t("frontend.user_email_list.no_primary_email_alert")}
+        />
       )}
       {result.data?.user?.emails?.edges?.map((edge) => (
         <UserEmail

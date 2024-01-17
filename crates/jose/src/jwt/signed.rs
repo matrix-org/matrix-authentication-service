@@ -192,10 +192,12 @@ pub struct NoKeyWorked {
 }
 
 impl<'a, T> Jwt<'a, T> {
+    /// Get the JWT header
     pub fn header(&self) -> &JsonWebSignatureHeader {
         &self.header
     }
 
+    /// Get the JWT payload
     pub fn payload(&self) -> &T {
         &self.payload
     }
@@ -209,6 +211,11 @@ impl<'a, T> Jwt<'a, T> {
         }
     }
 
+    /// Verify the signature of this JWT using the given key.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the signature is invalid.
     pub fn verify<K, S>(&self, key: &K) -> Result<(), JwtVerificationError>
     where
         K: Verifier<S>,
@@ -221,6 +228,12 @@ impl<'a, T> Jwt<'a, T> {
             .map_err(JwtVerificationError::verify)
     }
 
+    /// Verify the signature of this JWT using the given symmetric key.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the signature is invalid or if the algorithm is not
+    /// supported.
     pub fn verify_with_shared_secret(&self, secret: Vec<u8>) -> Result<(), NoKeyWorked> {
         let verifier = crate::jwa::SymmetricKey::new_for_alg(secret, self.header().alg())
             .map_err(|_| NoKeyWorked::default())?;
@@ -230,6 +243,12 @@ impl<'a, T> Jwt<'a, T> {
         Ok(())
     }
 
+    /// Verify the signature of this JWT using the given JWKS.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the signature is invalid, if no key matches the
+    /// constraints, or if the algorithm is not supported.
     pub fn verify_with_jwks(&self, jwks: &PublicJsonWebKeySet) -> Result<(), NoKeyWorked> {
         let constraints = ConstraintSet::from(self.header());
         let candidates = constraints.filter(&**jwks);
@@ -250,14 +269,17 @@ impl<'a, T> Jwt<'a, T> {
         Err(NoKeyWorked::default())
     }
 
+    /// Get the raw JWT string as a borrowed [`str`]
     pub fn as_str(&'a self) -> &'a str {
         &self.raw
     }
 
+    /// Get the raw JWT string as an owned [`String`]
     pub fn into_string(self) -> String {
         self.raw.into()
     }
 
+    /// Split the JWT into its parts (header and payload).
     pub fn into_parts(self) -> (JsonWebSignatureHeader, T) {
         (self.header, self.payload)
     }
@@ -295,6 +317,12 @@ impl JwtSignatureError {
 }
 
 impl<T> Jwt<'static, T> {
+    /// Sign the given payload with the given key.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the payload could not be serialized or if the key
+    /// could not sign the payload.
     pub fn sign<K, S>(
         header: JsonWebSignatureHeader,
         payload: T,
@@ -309,6 +337,12 @@ impl<T> Jwt<'static, T> {
         Self::sign_with_rng(&mut thread_rng(), header, payload, key)
     }
 
+    /// Sign the given payload with the given key using the given RNG.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the payload could not be serialized or if the key
+    /// could not sign the payload.
     pub fn sign_with_rng<R, K, S>(
         rng: &mut R,
         header: JsonWebSignatureHeader,

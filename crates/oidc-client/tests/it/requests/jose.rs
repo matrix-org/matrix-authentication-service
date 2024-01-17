@@ -49,7 +49,7 @@ fn id_token(
     let mut claims = HashMap::new();
     let now = now();
 
-    claims::ISS.insert(&mut claims, issuer.to_string()).unwrap();
+    claims::ISS.insert(&mut claims, issuer.to_owned()).unwrap();
     claims::AUD
         .insert(&mut claims, CLIENT_ID.to_owned())
         .unwrap();
@@ -246,5 +246,5 @@ async fn fail_verify_id_token_wrong_auth_time() {
     )
     .unwrap_err();
 
-    assert_matches!(error, IdTokenError::WrongAuthTime)
+    assert_matches!(error, IdTokenError::WrongAuthTime);
 }

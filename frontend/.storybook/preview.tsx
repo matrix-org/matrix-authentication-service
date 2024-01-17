@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { ArgTypes, Decorator, Parameters } from "@storybook/react";
+import { ArgTypes, Decorator, Parameters, Preview } from "@storybook/react";
 import { useLayoutEffect } from "react";
+
 import "../src/main.css";
+import i18n from "../src/i18n";
 
 export const parameters: Parameters = {
   actions: { argTypesRegex: "^on[A-Z].*" },
@@ -74,3 +76,18 @@ const withThemeProvider: Decorator = (Story, context) => {
 };
 
 export const decorators: Decorator[] = [withThemeProvider];
+
+const preview: Preview = {
+  globals: {
+    locale: "en",
+    locales: {
+      en: "English",
+      fr: "Français",
+    },
+  },
+  parameters: {
+    i18n,
+  },
+};
+
+export default preview;

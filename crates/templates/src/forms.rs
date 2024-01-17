@@ -92,6 +92,22 @@ impl<K: Hash + Eq> Default for FormState<K> {
     }
 }
 
+#[derive(Deserialize, PartialEq, Eq, Hash)]
+#[serde(untagged)]
+enum KeyOrOther<K> {
+    Key(K),
+    Other(String),
+}
+
+impl<K> KeyOrOther<K> {
+    fn key(self) -> Option<K> {
+        match self {
+            Self::Key(key) => Some(key),
+            Self::Other(_) => None,
+        }
+    }
+}
+
 impl<K: FormField> FormState<K> {
     /// Generate a [`FormState`] out of a form
     ///
@@ -101,17 +117,18 @@ impl<K: FormField> FormState<K> {
     /// deserialize
     pub fn from_form<F: Serialize>(form: &F) -> Self {
         let form = serde_json::to_value(form).unwrap();
-        let fields: HashMap<K, Option<String>> = serde_json::from_value(form).unwrap();
+        let fields: HashMap<KeyOrOther<K>, Option<String>> = serde_json::from_value(form).unwrap();
 
         let fields = fields
             .into_iter()
-            .map(|(key, value)| {
+            .filter_map(|(key, value)| {
+                let key = key.key()?;
                 let value = key.keep().then_some(value).flatten();
                 let field = FieldState {
                     value,
                     errors: Vec::new(),
                 };
-                (key, field)
+                Some((key, field))
             })
             .collect();
 

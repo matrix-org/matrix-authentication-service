@@ -11,6 +11,18 @@ allow {
 	count(violation) == 0
 }
 
+# Users can request admin scopes if either:
+# 1. They are in the admin_users list
+can_request_admin(user) {
+	some admin_user in data.admin_users
+	user.username == admin_user
+}
+
+# 2. They have the can_request_admin flag set to true
+can_request_admin(user) {
+	user.can_request_admin
+}
+
 # Special case to make empty scope work
 allowed_scope("") = true
 
@@ -22,8 +34,7 @@ allowed_scope("email") = true
 allowed_scope("urn:synapse:admin:*") {
 	# Synapse doesn't support user-less tokens yet, so access to the admin API can only be used with an authorization_code grant as the user is present
 	input.grant_type == "authorization_code"
-	some user in data.admin_users
-	input.user.username == user
+	can_request_admin(input.user)
 }
 
 # This grants access to the /graphql API endpoint
@@ -32,8 +43,7 @@ allowed_scope("urn:mas:graphql:*") = true
 # This makes it possible to query and do anything in the GraphQL API as an admin
 allowed_scope("urn:mas:admin") {
 	input.grant_type == "authorization_code"
-	some user in data.admin_users
-	input.user.username == user
+	can_request_admin(input.user)
 }
 
 # This makes it possible to get the admin scope for clients that are allowed

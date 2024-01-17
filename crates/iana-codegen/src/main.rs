@@ -12,10 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![forbid(unsafe_code)]
-#![deny(clippy::all, clippy::str_to_string, rustdoc::broken_intra_doc_links)]
-#![warn(clippy::pedantic)]
-
 use std::{collections::HashMap, fmt::Display, sync::Arc};
 
 use camino::{Utf8Path, Utf8PathBuf};

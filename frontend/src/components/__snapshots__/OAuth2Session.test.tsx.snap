@@ -2,119 +2,228 @@
 
 exports[`<OAuth2Session /> > renders a finished session 1`] = `
 <div
-  className="_block_17898c"
+  className="_block_17898c _session_634806"
 >
-  <h6
-    className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
-    title="session-id"
+  <svg
+    aria-label="Web"
+    className="_icon_e677aa"
+    fill="none"
+    height="1em"
+    viewBox="0 0 24 24"
+    width="1em"
+    xmlns="http://www.w3.org/2000/svg"
   >
-    <a
-      className=""
-      href="/session/abcd1234"
-      onClick={[Function]}
+    <path
+      d="M4 20C3.45 20 2.97917 19.8042 2.5875 19.4125C2.19583 19.0208 2 18.55 2 18V6C2 5.45 2.19583 4.97917 2.5875 4.5875C2.97917 4.19583 3.45 4 4 4H20C20.55 4 21.0208 4.19583 21.4125 4.5875C21.8042 4.97917 22 5.45 22 6V18C22 18.55 21.8042 19.0208 21.4125 19.4125C21.0208 19.8042 20.55 20 20 20H4ZM4 18H20V8H4V18Z"
+      fill="currentColor"
+    />
+  </svg>
+  <div
+    className="_container_634806"
+  >
+    <h6
+      className="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64 _sessionName_634806"
+      title="session-id"
     >
-      abcd1234
-    </a>
-  </h6>
-  <p
-    className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
-  >
-    Signed in 
-    <time
-      dateTime="2023-06-29T03:35:17Z"
+      <a
+        className=""
+        href="/session/abcd1234"
+        onClick={[Function]}
+      >
+        abcd1234
+      </a>
+    </h6>
+    <p
+      className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
     >
-      Thu, 29 Jun 2023, 03:35
-    </time>
-  </p>
-  <p
-    className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
-    data-finished={true}
-  >
-    Finished 
-    <time
-      dateTime="2023-06-29T03:35:19Z"
+      Signed in 
+      <time
+        dateTime="2023-06-29T03:35:17Z"
+      >
+        Thu, 29 Jun 2023, 03:35
+      </time>
+    </p>
+    <p
+      className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
+      data-finished={true}
     >
-      Thu, 29 Jun 2023, 03:35
-    </time>
-  </p>
-  <p
-    className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
-  >
-    1.2.3.4
-  </p>
-  <p
-    className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
-  >
-     
-    <span
-      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      Finished 
+      <time
+        dateTime="2023-06-29T03:35:19Z"
+      >
+        Thu, 29 Jun 2023, 03:35
+      </time>
+    </p>
+    <p
+      className="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _sessionMetadata_634806"
     >
-      Element
-    </span>
-  </p>
+      1.2.3.4
+    </p>
+    <p
+      className="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _sessionMetadata_634806"
+    >
+       
+      <span
+        className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
+      >
+        Element
+      </span>
+    </p>
+  </div>
 </div>
 `;
 
 exports[`<OAuth2Session /> > renders an active session 1`] = `
 <div
-  className="_block_17898c"
+  className="_block_17898c _session_634806"
 >
-  <h6
-    className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
-    title="session-id"
+  <svg
+    aria-label="Web"
+    className="_icon_e677aa"
+    fill="none"
+    height="1em"
+    viewBox="0 0 24 24"
+    width="1em"
+    xmlns="http://www.w3.org/2000/svg"
   >
-    <a
-      className=""
-      href="/session/abcd1234"
-      onClick={[Function]}
-    >
-      abcd1234
-    </a>
-  </h6>
-  <p
-    className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
-  >
-    Signed in 
-    <time
-      dateTime="2023-06-29T03:35:17Z"
-    >
-      Thu, 29 Jun 2023, 03:35
-    </time>
-  </p>
-  <p
-    className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
-  >
-    1.2.3.4
-  </p>
-  <p
-    className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
-  >
-     
-    <span
-      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
-    >
-      Element
-    </span>
-  </p>
+    <path
+      d="M4 20C3.45 20 2.97917 19.8042 2.5875 19.4125C2.19583 19.0208 2 18.55 2 18V6C2 5.45 2.19583 4.97917 2.5875 4.5875C2.97917 4.19583 3.45 4 4 4H20C20.55 4 21.0208 4.19583 21.4125 4.5875C21.8042 4.97917 22 5.45 22 6V18C22 18.55 21.8042 19.0208 21.4125 19.4125C21.0208 19.8042 20.55 20 20 20H4ZM4 18H20V8H4V18Z"
+      fill="currentColor"
+    />
+  </svg>
   <div
-    className="_sessionActions_634806"
+    className="_container_634806"
   >
-    <button
-      aria-controls="radix-:r0:"
-      aria-expanded={false}
-      aria-haspopup="dialog"
-      className="_button_1ukgx_17"
-      data-kind="destructive"
-      data-size="sm"
-      data-state="closed"
-      disabled={false}
-      onClick={[Function]}
-      role="button"
-      tabIndex={0}
-      type="button"
+    <h6
+      className="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64 _sessionName_634806"
+      title="session-id"
     >
-      End session
-    </button>
+      <a
+        className=""
+        href="/session/abcd1234"
+        onClick={[Function]}
+      >
+        abcd1234
+      </a>
+    </h6>
+    <p
+      className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
+    >
+      Signed in 
+      <time
+        dateTime="2023-06-29T03:35:17Z"
+      >
+        Thu, 29 Jun 2023, 03:35
+      </time>
+    </p>
+    <p
+      className="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _sessionMetadata_634806"
+    >
+      1.2.3.4
+    </p>
+    <p
+      className="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _sessionMetadata_634806"
+    >
+       
+      <span
+        className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
+      >
+        Element
+      </span>
+    </p>
+    <div
+      className="_sessionActions_634806"
+    >
+      <button
+        aria-controls="radix-:r0:"
+        aria-expanded={false}
+        aria-haspopup="dialog"
+        className="_button_1t47t_17"
+        data-kind="destructive"
+        data-size="sm"
+        data-state="closed"
+        disabled={false}
+        onClick={[Function]}
+        role="button"
+        tabIndex={0}
+        type="button"
+      >
+        End session
+      </button>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`<OAuth2Session /> > renders correct icon for a native session 1`] = `
+<div
+  className="_block_17898c _session_634806"
+>
+  <svg
+    aria-label="Mobile"
+    className="_icon_e677aa"
+    fill="none"
+    height="1em"
+    viewBox="0 0 24 24"
+    width="1em"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M7 23C6.45 23 5.97917 22.8042 5.5875 22.4125C5.19583 22.0208 5 21.55 5 21V3C5 2.45 5.19583 1.97917 5.5875 1.5875C5.97917 1.19583 6.45 1 7 1H17C17.55 1 18.0208 1.19583 18.4125 1.5875C18.8042 1.97917 19 2.45 19 3V21C19 21.55 18.8042 22.0208 18.4125 22.4125C18.0208 22.8042 17.55 23 17 23H7ZM7 18H17V6H7V18Z"
+      fill="currentColor"
+    />
+  </svg>
+  <div
+    className="_container_634806"
+  >
+    <h6
+      className="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64 _sessionName_634806"
+      title="session-id"
+    >
+      <a
+        className=""
+        href="/session/abcd1234"
+        onClick={[Function]}
+      >
+        abcd1234
+      </a>
+    </h6>
+    <p
+      className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
+    >
+      Signed in 
+      <time
+        dateTime="2023-06-29T03:35:17Z"
+      >
+        Thu, 29 Jun 2023, 03:35
+      </time>
+    </p>
+    <p
+      className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
+      data-finished={true}
+    >
+      Finished 
+      <time
+        dateTime="2023-06-29T03:35:19Z"
+      >
+        Thu, 29 Jun 2023, 03:35
+      </time>
+    </p>
+    <p
+      className="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _sessionMetadata_634806"
+    >
+      1.2.3.4
+    </p>
+    <p
+      className="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _sessionMetadata_634806"
+    >
+       
+      <span
+        className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
+      >
+        Element
+      </span>
+    </p>
   </div>
 </div>
 `;

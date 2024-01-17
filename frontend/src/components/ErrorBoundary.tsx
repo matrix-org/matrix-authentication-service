@@ -15,6 +15,7 @@
 import { CombinedError } from "@urql/core";
 import { Alert } from "@vector-im/compound-web";
 import { ErrorInfo, ReactNode, PureComponent } from "react";
+import { Translation } from "react-i18next";
 
 import GraphQLError from "./GraphQLError";
 
@@ -61,9 +62,13 @@ export default class ErrorBoundary extends PureComponent<Props, IState> {
       }
 
       return (
-        <Alert type="critical" title="Something went wrong">
-          {this.state.error.message}
-        </Alert>
+        <Translation>
+          {(t): ReactNode => (
+            <Alert type="critical" title={t("frontend.error_boundary_title")}>
+              {this.state.error!.message}
+            </Alert>
+          )}
+        </Translation>
       );
     }
 

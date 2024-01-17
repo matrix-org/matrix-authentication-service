@@ -2,18 +2,47 @@
 
 ## Pre-built binaries
 
-Nightly builds for Linux and macOS (`arm64` and `x86-64`) are available through GitHub Actions artifacts.
-They can be found for each commit on the [Actions tab](https://github.com/matrix-org/matrix-authentication-service/actions/workflows/build.yaml?query=branch%3Amain+is%3Asuccess).
-The archives contain:
+Pre-built binaries can be found attached on each release, for Linux and macOS, on both `x86_64` and `aarch64` architectures.
 
- - the `mas-cli` binary
- - assets needed for running the service, including:
-    - `share/assets/`: the built frontend assets
-    - `share/manifest.json`: the manifest for the frontend assets
-    - `share/policy.wasm`: the built OPA policies
-    - `share/templates/`: the default templates
+- [`mas-cli-aarch64-linux.tar.gz`](https://github.com/matrix-org/matrix-authentication-service/releases/latest/download/mas-cli-aarch64-linux.tar.gz)
+- [`mas-cli-x86_64-linux.tar.gz`](https://github.com/matrix-org/matrix-authentication-service/releases/latest/download/mas-cli-x86_64-linux.tar.gz)
+- [`mas-cli-aarch64-macos.tar.gz`](https://github.com/matrix-org/matrix-authentication-service/releases/latest/download/mas-cli-aarch64-macos.tar.gz)
+- [`mas-cli-x86_64-macos.tar.gz`](https://github.com/matrix-org/matrix-authentication-service/releases/latest/download/mas-cli-x86_64-macos.tar.gz)
+
+Each archive contains:
+
+- the `mas-cli` binary
+- assets needed for running the service, including:
+  - `share/assets/`: the built frontend assets
+  - `share/manifest.json`: the manifest for the frontend assets
+  - `share/policy.wasm`: the built OPA policies
+  - `share/templates/`: the default templates
+  - `share/translations/`: the default translations
 
 The location of all these assets can be overridden in the [configuration file](./configuration.md).
+
+---
+
+Example shell commands to download and extract the `mas-cli` binary:
+
+```sh
+ARCH=x86_64 # or aarch64
+OS=linux # or macos
+VERSION=latest # or a specific version, like "v0.1.0"
+
+# URL to the right archive
+URL="https://github.com/matrix-org/matrix-authentication-service/releases/${VERSION}/download/mas-cli-${ARCH}-${OS}.tar.gz"
+
+# Create a directory and extract the archive in it
+mkdir -p /path/to/mas
+curl -sL "$URL" | tar xzC /path/to/mas
+
+# This should display the help message
+/path/to/mas/mas-cli --help
+```
+
+**Note for macOS users**: the binaries are not signed, so if the archive is downloaded from a browser, it may be necessary to run `xattr -d com.apple.quarantine mas-cli` to remove the quarantine attribute on the binary.
+
 
 ## Using the Docker image
 
@@ -37,9 +66,9 @@ The image can also be built from the source:
 
 Building from the source requires:
 
- - The latest stable [Rust toolchain](https://www.rust-lang.org/learn/get-started)
- - [Node.js (18 and later)](https://nodejs.org/en/) and [npm](https://www.npmjs.com/get-npm)
- - the [Open Policy Agent](https://www.openpolicyagent.org/docs/latest/#running-opa) binary (or alternatively, Docker)
+- The latest stable [Rust toolchain](https://www.rust-lang.org/learn/get-started)
+- [Node.js (18 and later)](https://nodejs.org/en/) and [npm](https://www.npmjs.com/get-npm)
+- the [Open Policy Agent](https://www.openpolicyagent.org/docs/latest/#running-opa) binary (or alternatively, Docker)
 
 1. Get the source
    ```sh

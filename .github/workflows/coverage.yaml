@@ -24,12 +24,12 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
 
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.1.0
         with:
-          version: 0.55.0
+          version: 0.59.0
 
       - name: Run OPA tests with coverage
         working-directory: ./policies
@@ -50,10 +50,10 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
 
       - name: Install Node
-        uses: actions/setup-node@v3.8.1
+        uses: actions/setup-node@v4.0.0
         with:
           node-version: 18
 
@@ -78,6 +78,10 @@ jobs:
     permissions:
       contents: read
 
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
+
     services:
       postgres:
         image: docker.io/library/postgres:15.3
@@ -95,7 +99,7 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
 
       - name: Install toolchain
         run: |
@@ -104,7 +108,7 @@ jobs:
           rustup component add llvm-tools-preview
 
       - name: Install Node
-        uses: actions/setup-node@v3.8.1
+        uses: actions/setup-node@v4.0.0
         with:
           node-version: 18
 
@@ -119,16 +123,14 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.1.0
         with:
-          version: 0.55.0
+          version: 0.59.0
 
       - name: Compile OPA policies
         working-directory: ./policies
         run: make
 
-      - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2.7.0
-        with:
-          save-if: "${{ github.event_name != 'pull_request' }}"
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.3
 
       - name: Download grcov
         run: |

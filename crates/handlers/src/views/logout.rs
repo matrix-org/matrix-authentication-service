@@ -12,13 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{extract::Form, response::IntoResponse};
+use axum::{
+    extract::{Form, State},
+    response::IntoResponse,
+};
 use mas_axum_utils::{
     cookies::CookieJar,
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
 };
-use mas_router::{PostAuthAction, Route};
+use mas_router::{PostAuthAction, UrlBuilder};
 use mas_storage::{user::BrowserSessionRepository, BoxClock, BoxRepository};
 
 use crate::BoundActivityTracker;
@@ -28,6 +31,7 @@ pub(crate) async fn post(
     clock: BoxClock,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
+    State(url_builder): State<UrlBuilder>,
     activity_tracker: BoundActivityTracker,
     Form(form): Form<ProtectedForm<Option<PostAuthAction>>>,
 ) -> Result<impl IntoResponse, FancyError> {
@@ -49,9 +53,9 @@ pub(crate) async fn post(
     repo.save().await?;
 
     let destination = if let Some(action) = form {
-        action.go_next()
+        action.go_next(&url_builder)
     } else {
-        mas_router::Login::default().go()
+        url_builder.redirect(&mas_router::Login::default())
     };
 
     Ok((cookie_jar, destination))

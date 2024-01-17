@@ -1,0 +1,174 @@
+{
+  "action": {
+    "back": "Back",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "save": "Save"
+  },
+  "branding": {
+    "privacy_policy": {
+      "alt": "Link to the service privacy policy",
+      "link": "Privacy Policy"
+    },
+    "terms_and_conditions": {
+      "alt": "Link to the service terms and conditions",
+      "link": "Terms & Conditions"
+    }
+  },
+  "common": {
+    "add": "Add",
+    "error": "Error",
+    "loading": "Loading…",
+    "next": "Next",
+    "previous": "Previous"
+  },
+  "frontend": {
+    "add_email_form": {
+      "email_denied_alert": {
+        "text": "The entered email is not allowed by the server policy.",
+        "title": "Email denied by policy"
+      },
+      "email_exists_alert": {
+        "text": "The entered email is already added to this account",
+        "title": "Email already exists"
+      },
+      "email_field_label": "Add email",
+      "email_invalid_alert": {
+        "text": "The entered email is invalid",
+        "title": "Invalid email"
+      }
+    },
+    "app_sessions_list": {
+      "error": "Failed to load app sessions",
+      "heading": "Apps"
+    },
+    "browser_session_details": {
+      "current_badge": "Current",
+      "session_details_title": "Session"
+    },
+    "browser_sessions_overview": {
+      "body:one": "{{count}} active session",
+      "body:other": "{{count}} active sessions",
+      "heading": "Browsers",
+      "view_all_button": "View all"
+    },
+    "compat_session_detail": {
+      "client_details_title": "Client",
+      "name": "Name",
+      "session_details_title": "Session"
+    },
+    "device_type_icon_label": {
+      "desktop": "Desktop",
+      "mobile": "Mobile",
+      "unknown": "Unknown device type",
+      "web": "Web"
+    },
+    "end_session_button": {
+      "confirmation_modal_title": "Are you sure you want to end this session?",
+      "text": "End session"
+    },
+    "error_boundary_title": "Something went wrong",
+    "last_active": {
+      "active_date": "Active {{relativeDate}}",
+      "active_now": "Active now",
+      "inactive_90_days": "Inactive for 90+ days"
+    },
+    "nav": {
+      "profile": "Profile",
+      "sessions": "Sessions"
+    },
+    "not_found_alert_title": "Not found.",
+    "not_logged_in_alert": "You're not logged in.",
+    "oauth2_client_detail": {
+      "details_title": "Client",
+      "id": "Client ID",
+      "name": "Name",
+      "policy": "Policy",
+      "terms": "Terms of service"
+    },
+    "oauth2_session_detail": {
+      "client_details_name": "Name",
+      "client_title": "Client",
+      "session_details_title": "Session"
+    },
+    "pagination_controls": {
+      "total": "Total: {{totalCount}}"
+    },
+    "reset_cross_signing": {
+      "button": "Allow crypto identity reset",
+      "description": "If you are not signed in anywhere else, and have forgotten or lost all recovery options you’ll need to reset your crypto identity. This means you will lose your existing message history, other users will see that you have reset your identity and you will need to verify your existing devices again.",
+      "failure": {
+        "description": "This might be a temporary problem, so please try again later. If the problem persists, please contact your server administrator.",
+        "title": "Failed to allow crypto identity"
+      },
+      "heading": "Reset crypto identity",
+      "success": {
+        "description": "A client can now temporarily reset your account crypto identity. Follow the instructions in your client to complete the process.",
+        "title": "Crypto identity reset temporarily allowed"
+      }
+    },
+    "selectable_session": {
+      "label": "Select session"
+    },
+    "session": {
+      "current_badge": "Current",
+      "finished_date": "Finished <datetime/>",
+      "signed_in_date": "Signed in <datetime/>"
+    },
+    "session_detail": {
+      "alert": {
+        "button": "Go back",
+        "text": "This session does not exist, or is no longer active.",
+        "title": "Cannot find session: {{deviceId}}"
+      }
+    },
+    "unknown_route": "Unknown route {{route}}",
+    "unverified_email_alert": {
+      "button": "Review and verify",
+      "text:one": "You have {{count}} unverified email address.",
+      "text:other": "You have {{count}} unverified email addresses.",
+      "title": "Unverified email"
+    },
+    "user_email": {
+      "delete_button_confirmation_modal": {
+        "body": "Are you sure you want to remove this email?"
+      },
+      "delete_button_title": "Remove email address",
+      "email": "Email",
+      "make_primary_button": "Make primary",
+      "primary_email": "Primary email",
+      "retry_button": "Retry verification",
+      "unverified": "Unverified"
+    },
+    "user_email_list": {
+      "heading": "Emails",
+      "no_primary_email_alert": "No primary email address"
+    },
+    "user_greeting": {
+      "error": "Failed to load user"
+    },
+    "user_name": {
+      "display_name_field_label": "Display Name"
+    },
+    "user_sessions_overview": {
+      "heading": "Where you're signed in"
+    },
+    "verify_email": {
+      "code_field_error": "Code not recognised",
+      "code_field_label": "6-digit code",
+      "code_field_wrong_shape": "Code must be 6 digits",
+      "email_sent_alert": {
+        "description": "Enter the new code below.",
+        "title": "New code sent"
+      },
+      "enter_code_prompt": "Enter the 6-digit code sent to: <email>{{email}}</email>",
+      "heading": "Verify your email",
+      "invalid_code_alert": {
+        "description": "Check the code sent to your email and update the fields below to continue.",
+        "title": "You entered the wrong code"
+      },
+      "resend_code": "Resend code",
+      "unknown_email": "Unknown email"
+    }
+  }
+}

@@ -1,4 +1,4 @@
-# syntax = docker/dockerfile:1.4
+# syntax = docker/dockerfile:1.6
 
 # Builds a minimal image with the binary only. It is multi-arch capable,
 # cross-building to aarch64 and x86_64. When cross-compiling, Docker sets two
@@ -6,17 +6,17 @@
 # being the platform being built.
 
 # The Debian version and version name must be in sync
-ARG DEBIAN_VERSION=11
-ARG DEBIAN_VERSION_NAME=bullseye
-ARG RUSTC_VERSION=1.72.0
+ARG DEBIAN_VERSION=12
+ARG DEBIAN_VERSION_NAME=bookworm
+ARG RUSTC_VERSION=1.74.0
 # XXX: Upgrade to 0.10.0 blocked by https://github.com/ziglang/zig/issues/10915#issuecomment-1354548110
 # XXX: Upgrade to 0.11.0 blocked by https://github.com/rust-cross/cargo-zigbuild/issues/162
 ARG ZIG_VERSION=0.9.1
-ARG NODEJS_VERSION=18.17.1
-ARG OPA_VERSION=0.55.0
+ARG NODEJS_VERSION=20.9.0
+ARG OPA_VERSION=0.59.0
 ARG CARGO_AUDITABLE_VERSION=0.6.1
 ARG CARGO_CHEF_VERSION=0.1.62
-ARG CARGO_ZIGBUILD_VERSION=0.17.3
+ARG CARGO_ZIGBUILD_VERSION=0.17.5
 
 ##########################################
 ## Build stage that builds the frontend ##
@@ -78,9 +78,9 @@ ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 # Network access: to fetch dependencies
 RUN --network=default \
   cargo install --locked \
-    cargo-chef@=${CARGO_CHEF_VERSION} \
-    cargo-zigbuild@=${CARGO_ZIGBUILD_VERSION} \
-    cargo-auditable@=${CARGO_AUDITABLE_VERSION}
+  cargo-chef@=${CARGO_CHEF_VERSION} \
+  cargo-zigbuild@=${CARGO_ZIGBUILD_VERSION} \
+  cargo-auditable@=${CARGO_AUDITABLE_VERSION}
 
 # Download zig compiler for cross-compilation
 # Network access: to download zig
@@ -92,9 +92,9 @@ RUN --network=default \
 # Network access: to download the targets
 RUN --network=default \
   rustup target add  \
-    --toolchain "${RUSTC_VERSION}" \
-    x86_64-unknown-linux-musl \
-    aarch64-unknown-linux-musl
+  --toolchain "${RUSTC_VERSION}" \
+  x86_64-unknown-linux-musl \
+  aarch64-unknown-linux-musl
 
 # Set the working directory
 WORKDIR /app
@@ -106,7 +106,7 @@ FROM --platform=${BUILDPLATFORM} toolchain AS planner
 COPY ./Cargo.toml ./Cargo.lock /app/
 COPY ./crates /app/crates
 RUN --network=none \
-    cargo chef prepare --recipe-path recipe.json --bin crates/cli
+  cargo chef prepare --recipe-path recipe.json --bin crates/cli
 
 ########################
 ## Actual build stage ##
@@ -118,15 +118,15 @@ COPY --from=planner /app/recipe.json recipe.json
 # Network access: cargo-chef cook fetches the dependencies
 RUN --network=default \
   cargo chef cook \
-    --zigbuild \
-    --bin mas-cli \
-    --release \
-    --recipe-path recipe.json \
-    --no-default-features \
-    --features docker \
-    --target x86_64-unknown-linux-musl \
-    --target aarch64-unknown-linux-musl \
-    --package mas-cli
+  --zigbuild \
+  --bin mas-cli \
+  --release \
+  --recipe-path recipe.json \
+  --no-default-features \
+  --features docker \
+  --target x86_64-unknown-linux-musl \
+  --target aarch64-unknown-linux-musl \
+  --package mas-cli
 
 # Build the rest
 COPY ./Cargo.toml ./Cargo.lock /app/
@@ -135,13 +135,13 @@ ENV SQLX_OFFLINE=true
 # Network access: cargo auditable needs it
 RUN --network=default \
   cargo auditable zigbuild \
-    --locked \
-    --release \
-    --bin mas-cli \
-    --no-default-features \
-    --features docker \
-    --target x86_64-unknown-linux-musl \
-    --target aarch64-unknown-linux-musl
+  --locked \
+  --release \
+  --bin mas-cli \
+  --no-default-features \
+  --features docker \
+  --target x86_64-unknown-linux-musl \
+  --target aarch64-unknown-linux-musl
 
 # Move the binary to avoid having to guess its name in the next stage
 RUN --network=none \
@@ -157,6 +157,7 @@ FROM --platform=${BUILDPLATFORM} scratch AS share
 COPY --from=frontend /share /share
 COPY --from=policy /app/policies/policy.wasm /share/policy.wasm
 COPY ./templates/ /share/templates
+COPY ./translations/ /share/translations
 
 ##################################
 ## Runtime stage, debug variant ##

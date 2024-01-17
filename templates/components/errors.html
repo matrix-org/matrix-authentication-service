@@ -16,9 +16,11 @@ limitations under the License.
 
 {% macro form_error_message(error) -%}
   {% if error.kind == "invalid_credentials" %}
-    Invalid credentials
+    {{ _("mas.errors.invalid_credentials") }}
   {% elif error.kind == "password_mismatch" %}
-    Password fields don't match 
+    {{ _("mas.errors.password_mismatch") }}
+  {% elif error.kind == "policy" %}
+    {{ _("mas.errors.denied_policy", policy=error.message) }}
   {% else %}
     {{ error.kind }}
   {% endif %}

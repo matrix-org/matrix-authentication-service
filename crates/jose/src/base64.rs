@@ -56,6 +56,10 @@ impl<C: Encoding> Base64<C> {
     }
 
     /// Parse some base64-encoded data to create a `Base64` instance.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the input is not valid base64.
     pub fn parse(encoded: &str) -> Result<Self, base64ct::Error> {
         C::decode_vec(encoded).map(Self::new)
     }

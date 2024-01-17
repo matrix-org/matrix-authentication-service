@@ -14,15 +14,18 @@
 
 use std::collections::HashSet;
 
+use camino::Utf8PathBuf;
 use clap::Parser;
 use mas_config::{ConfigurationSection, RootConfig, SyncConfig};
 use mas_storage::{
-    upstream_oauth2::UpstreamOAuthProviderRepository, RepositoryAccess, SystemClock,
+    upstream_oauth2::{UpstreamOAuthProviderParams, UpstreamOAuthProviderRepository},
+    RepositoryAccess, SystemClock,
 };
 use mas_storage_pg::PgRepository;
 use rand::SeedableRng;
 use sqlx::{postgres::PgAdvisoryLock, Acquire};
-use tracing::{info, info_span, warn};
+use tokio::io::AsyncWriteExt;
+use tracing::{error, info, info_span, warn};
 
 use crate::util::database_connection_from_config;
 
@@ -45,51 +48,36 @@ fn map_import_action(
     }
 }
 
-fn map_import_preference(
-    config: &mas_config::UpstreamOAuth2ImportPreference,
-) -> mas_data_model::UpstreamOAuthProviderImportPreference {
-    mas_data_model::UpstreamOAuthProviderImportPreference {
-        action: map_import_action(&config.action),
-    }
-}
-
 fn map_claims_imports(
     config: &mas_config::UpstreamOAuth2ClaimsImports,
 ) -> mas_data_model::UpstreamOAuthProviderClaimsImports {
     mas_data_model::UpstreamOAuthProviderClaimsImports {
-        localpart: config
-            .localpart
-            .as_ref()
-            .map(map_import_preference)
-            .unwrap_or_default(),
-        displayname: config
-            .displayname
-            .as_ref()
-            .map(map_import_preference)
-            .unwrap_or_default(),
-        email: config
-            .email
-            .as_ref()
-            .map(|c| mas_data_model::UpstreamOAuthProviderImportPreference {
-                action: map_import_action(&c.action),
-            })
-            .unwrap_or_default(),
-        // XXX: this is a bit ugly
-        verify_email: config
-            .email
-            .as_ref()
-            .map(|c| match c.set_email_verification {
-                mas_config::UpstreamOAuth2SetEmailVerification::Always => {
-                    mas_data_model::UpsreamOAuthProviderSetEmailVerification::Always
-                }
-                mas_config::UpstreamOAuth2SetEmailVerification::Never => {
-                    mas_data_model::UpsreamOAuthProviderSetEmailVerification::Never
-                }
-                mas_config::UpstreamOAuth2SetEmailVerification::Import => {
-                    mas_data_model::UpsreamOAuthProviderSetEmailVerification::Import
-                }
-            })
-            .unwrap_or_default(),
+        subject: mas_data_model::UpstreamOAuthProviderSubjectPreference {
+            template: config.subject.template.clone(),
+        },
+        localpart: mas_data_model::UpstreamOAuthProviderImportPreference {
+            action: map_import_action(&config.localpart.action),
+            template: config.localpart.template.clone(),
+        },
+        displayname: mas_data_model::UpstreamOAuthProviderImportPreference {
+            action: map_import_action(&config.displayname.action),
+            template: config.displayname.template.clone(),
+        },
+        email: mas_data_model::UpstreamOAuthProviderImportPreference {
+            action: map_import_action(&config.email.action),
+            template: config.email.template.clone(),
+        },
+        verify_email: match config.email.set_email_verification {
+            mas_config::UpstreamOAuth2SetEmailVerification::Always => {
+                mas_data_model::UpsreamOAuthProviderSetEmailVerification::Always
+            }
+            mas_config::UpstreamOAuth2SetEmailVerification::Never => {
+                mas_data_model::UpsreamOAuthProviderSetEmailVerification::Never
+            }
+            mas_config::UpstreamOAuth2SetEmailVerification::Import => {
+                mas_data_model::UpsreamOAuthProviderSetEmailVerification::Import
+            }
+        },
     }
 }
 
@@ -108,7 +96,13 @@ enum Subcommand {
     Check,
 
     /// Generate a new config file
-    Generate,
+    Generate {
+        /// The path to the config file to generate
+        ///
+        /// If not specified, the config will be written to stdout
+        #[clap(short, long)]
+        output: Option<Utf8PathBuf>,
+    },
 
     /// Sync the clients and providers from the config file to the database
     Sync {
@@ -142,14 +136,22 @@ impl Options {
                 info!(path = ?root.config, "Configuration file looks good");
             }
 
-            SC::Generate => {
+            SC::Generate { output } => {
                 let _span = info_span!("cli.config.generate").entered();
 
                 // XXX: we should disallow SeedableRng::from_entropy
                 let rng = rand_chacha::ChaChaRng::from_entropy();
                 let config = RootConfig::load_and_generate(rng).await?;
+                let config = serde_yaml::to_string(&config)?;
 
-                serde_yaml::to_writer(std::io::stdout(), &config)?;
+                if let Some(output) = output {
+                    info!("Writing configuration to {output:?}");
+                    let mut file = tokio::fs::File::create(output).await?;
+                    file.write_all(config.as_bytes()).await?;
+                } else {
+                    info!("Writing configuration to standard output");
+                    tokio::io::stdout().write_all(config.as_bytes()).await?;
+                }
             }
 
             SC::Sync { prune, dry_run } => {
@@ -219,10 +221,11 @@ async fn sync(root: &super::Options, prune: bool, dry_run: bool) -> anyhow::Resu
         }
 
         for provider in config.upstream_oauth2.providers {
+            let _span = info_span!("provider", %provider.id).entered();
             if existing_ids.contains(&provider.id) {
-                info!(%provider.id, "Updating provider");
+                info!("Updating provider");
             } else {
-                info!(%provider.id, "Adding provider");
+                info!("Adding provider");
             }
 
             if dry_run {
@@ -233,20 +236,67 @@ async fn sync(root: &super::Options, prune: bool, dry_run: bool) -> anyhow::Resu
                 .client_secret()
                 .map(|client_secret| encrypter.encrypt_to_string(client_secret.as_bytes()))
                 .transpose()?;
-            let client_auth_method = provider.client_auth_method();
-            let client_auth_signing_alg = provider.client_auth_signing_alg();
+            let token_endpoint_auth_method = provider.client_auth_method();
+            let token_endpoint_signing_alg = provider.client_auth_signing_alg();
+
+            let discovery_mode = match provider.discovery_mode {
+                mas_config::UpstreamOAuth2DiscoveryMode::Oidc => {
+                    mas_data_model::UpstreamOAuthProviderDiscoveryMode::Oidc
+                }
+                mas_config::UpstreamOAuth2DiscoveryMode::Insecure => {
+                    mas_data_model::UpstreamOAuthProviderDiscoveryMode::Insecure
+                }
+                mas_config::UpstreamOAuth2DiscoveryMode::Disabled => {
+                    mas_data_model::UpstreamOAuthProviderDiscoveryMode::Disabled
+                }
+            };
+
+            if discovery_mode.is_disabled() {
+                if provider.authorization_endpoint.is_none() {
+                    error!("Provider has discovery disabled but no authorization endpoint set");
+                }
+
+                if provider.token_endpoint.is_none() {
+                    error!("Provider has discovery disabled but no token endpoint set");
+                }
+
+                if provider.jwks_uri.is_none() {
+                    error!("Provider has discovery disabled but no JWKS URI set");
+                }
+            }
+
+            let pkce_mode = match provider.pkce_method {
+                mas_config::UpstreamOAuth2PkceMethod::Auto => {
+                    mas_data_model::UpstreamOAuthProviderPkceMode::Auto
+                }
+                mas_config::UpstreamOAuth2PkceMethod::Always => {
+                    mas_data_model::UpstreamOAuthProviderPkceMode::S256
+                }
+                mas_config::UpstreamOAuth2PkceMethod::Never => {
+                    mas_data_model::UpstreamOAuthProviderPkceMode::Disabled
+                }
+            };
 
             repo.upstream_oauth_provider()
                 .upsert(
                     &clock,
                     provider.id,
-                    provider.issuer,
-                    provider.scope.parse()?,
-                    client_auth_method,
-                    client_auth_signing_alg,
-                    provider.client_id,
-                    encrypted_client_secret,
-                    map_claims_imports(&provider.claims_imports),
+                    UpstreamOAuthProviderParams {
+                        issuer: provider.issuer,
+                        human_name: provider.human_name,
+                        brand_name: provider.brand_name,
+                        scope: provider.scope.parse()?,
+                        token_endpoint_auth_method,
+                        token_endpoint_signing_alg,
+                        client_id: provider.client_id,
+                        encrypted_client_secret,
+                        claims_imports: map_claims_imports(&provider.claims_imports),
+                        token_endpoint_override: provider.token_endpoint,
+                        authorization_endpoint_override: provider.authorization_endpoint,
+                        jwks_uri_override: provider.jwks_uri,
+                        discovery_mode,
+                        pkce_mode,
+                    },
                 )
                 .await?;
         }
@@ -283,10 +333,11 @@ async fn sync(root: &super::Options, prune: bool, dry_run: bool) -> anyhow::Resu
         }
 
         for client in config.clients.iter() {
+            let _span = info_span!("client", client.id = %client.client_id).entered();
             if existing_ids.contains(&client.client_id) {
-                info!(client.id = %client.client_id, "Updating client");
+                info!("Updating client");
             } else {
-                info!(client.id = %client.client_id, "Adding client");
+                info!("Adding client");
             }
 
             if dry_run {

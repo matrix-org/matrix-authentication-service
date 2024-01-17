@@ -12,14 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![forbid(unsafe_code)]
-#![deny(
-    clippy::all,
-    clippy::str_to_string,
-    rustdoc::missing_crate_level_docs,
-    rustdoc::broken_intra_doc_links
-)]
-#![warn(clippy::pedantic)]
+#![deny(rustdoc::missing_crate_level_docs)]
 #![allow(clippy::module_name_repetitions)]
 
 //! An utility crate to build flexible [`hyper`] listeners, with optional TLS

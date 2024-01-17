@@ -99,6 +99,19 @@ export enum AddUserStatus {
   Invalid = "INVALID",
 }
 
+/** The input for the `allowUserCrossSigningReset` mutation. */
+export type AllowUserCrossSigningResetInput = {
+  /** The ID of the user to update. */
+  userId: Scalars["ID"]["input"];
+};
+
+/** The payload for the `allowUserCrossSigningReset` mutation. */
+export type AllowUserCrossSigningResetPayload = {
+  __typename?: "AllowUserCrossSigningResetPayload";
+  /** The user that was updated. */
+  user?: Maybe<User>;
+};
+
 export type Anonymous = Node & {
   __typename?: "Anonymous";
   id: Scalars["ID"]["output"];
@@ -421,6 +434,8 @@ export type Mutation = {
   addEmail: AddEmailPayload;
   /** Add a user. This is only available to administrators. */
   addUser: AddUserPayload;
+  /** Temporarily allow user to reset their cross-signing keys. */
+  allowUserCrossSigningReset: AllowUserCrossSigningResetPayload;
   /**
    * Create a new arbitrary OAuth 2.0 Session.
    *
@@ -436,6 +451,11 @@ export type Mutation = {
   removeEmail: RemoveEmailPayload;
   /** Send a verification code for an email address */
   sendVerificationEmail: SendVerificationEmailPayload;
+  /**
+   * Set whether a user can request admin. This is only available to
+   * administrators.
+   */
+  setCanRequestAdmin: SetCanRequestAdminPayload;
   /** Set the display name of a user */
   setDisplayName: SetDisplayNamePayload;
   /** Set an email address as primary */
@@ -452,6 +472,11 @@ export type MutationAddEmailArgs = {
 /** The mutations root of the GraphQL interface. */
 export type MutationAddUserArgs = {
   input: AddUserInput;
+};
+
+/** The mutations root of the GraphQL interface. */
+export type MutationAllowUserCrossSigningResetArgs = {
+  input: AllowUserCrossSigningResetInput;
 };
 
 /** The mutations root of the GraphQL interface. */
@@ -487,6 +512,11 @@ export type MutationRemoveEmailArgs = {
 /** The mutations root of the GraphQL interface. */
 export type MutationSendVerificationEmailArgs = {
   input: SendVerificationEmailInput;
+};
+
+/** The mutations root of the GraphQL interface. */
+export type MutationSetCanRequestAdminArgs = {
+  input: SetCanRequestAdminInput;
 };
 
 /** The mutations root of the GraphQL interface. */
@@ -762,6 +792,21 @@ export enum SessionState {
   Finished = "FINISHED",
 }
 
+/** The input for the `setCanRequestAdmin` mutation. */
+export type SetCanRequestAdminInput = {
+  /** Whether the user can request admin. */
+  canRequestAdmin: Scalars["Boolean"]["input"];
+  /** The ID of the user to update. */
+  userId: Scalars["ID"]["input"];
+};
+
+/** The payload for the `setCanRequestAdmin` mutation. */
+export type SetCanRequestAdminPayload = {
+  __typename?: "SetCanRequestAdminPayload";
+  /** The user that was updated. */
+  user?: Maybe<User>;
+};
+
 /** The input for the `addEmail` mutation */
 export type SetDisplayNameInput = {
   /** The display name to set. If `None`, the display name will be removed. */
@@ -891,6 +936,8 @@ export type User = Node & {
   appSessions: AppSessionConnection;
   /** Get the list of active browser sessions, chronologically sorted */
   browserSessions: BrowserSessionConnection;
+  /** Whether the user can request admin privileges. */
+  canRequestAdmin: Scalars["Boolean"]["output"];
   /** Get the list of compatibility sessions, chronologically sorted */
   compatSessions: CompatSessionConnection;
   /** Get the list of compatibility SSO logins, chronologically sorted */
@@ -919,6 +966,7 @@ export type User = Node & {
 export type UserAppSessionsArgs = {
   after?: InputMaybe<Scalars["String"]["input"]>;
   before?: InputMaybe<Scalars["String"]["input"]>;
+  device?: InputMaybe<Scalars["String"]["input"]>;
   first?: InputMaybe<Scalars["Int"]["input"]>;
   last?: InputMaybe<Scalars["Int"]["input"]>;
   state?: InputMaybe<SessionState>;
@@ -1208,6 +1256,7 @@ export type OAuth2Session_SessionFragment = {
     id: string;
     clientId: string;
     clientName?: string | null;
+    applicationType?: Oauth2ApplicationType | null;
     logoUri?: string | null;
   };
 } & { " $fragmentName"?: "OAuth2Session_SessionFragment" };
@@ -1386,6 +1435,18 @@ export type AddEmailMutation = {
           };
         })
       | null;
+  };
+};
+
+export type AllowCrossSigningResetMutationVariables = Exact<{
+  userId: Scalars["ID"]["input"];
+}>;
+
+export type AllowCrossSigningResetMutation = {
+  __typename?: "Mutation";
+  allowUserCrossSigningReset: {
+    __typename?: "AllowUserCrossSigningResetPayload";
+    user?: { __typename?: "User"; id: string } | null;
   };
 };
 
@@ -1743,6 +1804,10 @@ export const OAuth2Session_SessionFragmentDoc = {
                 { kind: "Field", name: { kind: "Name", value: "id" } },
                 { kind: "Field", name: { kind: "Name", value: "clientId" } },
                 { kind: "Field", name: { kind: "Name", value: "clientName" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "applicationType" },
+                },
                 { kind: "Field", name: { kind: "Name", value: "logoUri" } },
               ],
             },
@@ -2600,6 +2665,10 @@ export const EndOAuth2SessionDocument = {
                 { kind: "Field", name: { kind: "Name", value: "id" } },
                 { kind: "Field", name: { kind: "Name", value: "clientId" } },
                 { kind: "Field", name: { kind: "Name", value: "clientName" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "applicationType" },
+                },
                 { kind: "Field", name: { kind: "Name", value: "logoUri" } },
               ],
             },
@@ -3111,6 +3180,75 @@ export const AddEmailDocument = {
     },
   ],
 } as unknown as DocumentNode<AddEmailMutation, AddEmailMutationVariables>;
+export const AllowCrossSigningResetDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "AllowCrossSigningReset" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "userId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "allowUserCrossSigningReset" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "userId" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "userId" },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "user" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  AllowCrossSigningResetMutation,
+  AllowCrossSigningResetMutationVariables
+>;
 export const UserEmailListQueryDocument = {
   kind: "Document",
   definitions: [
@@ -3733,6 +3871,10 @@ export const AppSessionListDocument = {
                 { kind: "Field", name: { kind: "Name", value: "id" } },
                 { kind: "Field", name: { kind: "Name", value: "clientId" } },
                 { kind: "Field", name: { kind: "Name", value: "clientName" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "applicationType" },
+                },
                 { kind: "Field", name: { kind: "Name", value: "logoUri" } },
               ],
             },

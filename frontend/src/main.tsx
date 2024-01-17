@@ -16,11 +16,13 @@ import { Provider } from "jotai";
 import { DevTools } from "jotai-devtools";
 import { Suspense, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { I18nextProvider } from "react-i18next";
 
 import { HydrateAtoms } from "./atoms";
 import Layout from "./components/Layout";
 import LoadingScreen from "./components/LoadingScreen";
 import LoadingSpinner from "./components/LoadingSpinner";
+import i18n from "./i18n";
 import { Router } from "./routing";
 import "./main.css";
 
@@ -30,11 +32,13 @@ createRoot(document.getElementById("root") as HTMLElement).render(
       {import.meta.env.DEV && <DevTools />}
       <HydrateAtoms>
         <Suspense fallback={<LoadingScreen />}>
-          <Layout>
-            <Suspense fallback={<LoadingSpinner />}>
-              <Router />
-            </Suspense>
-          </Layout>
+          <I18nextProvider i18n={i18n}>
+            <Layout>
+              <Suspense fallback={<LoadingSpinner />}>
+                <Router />
+              </Suspense>
+            </Layout>
+          </I18nextProvider>
         </Suspense>
       </HydrateAtoms>
     </Provider>

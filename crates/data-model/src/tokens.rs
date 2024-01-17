@@ -121,6 +121,11 @@ pub enum RefreshTokenState {
 }
 
 impl RefreshTokenState {
+    /// Consume the refresh token, returning a new state.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the refresh token is already consumed.
     fn consume(self, consumed_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
         match self {
             Self::Valid => Ok(Self::Consumed { consumed_at }),
@@ -169,6 +174,11 @@ impl RefreshToken {
         self.id.to_string()
     }
 
+    /// Consumes the refresh token and returns the consumed token.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the refresh token is already consumed.
     pub fn consume(mut self, consumed_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
         self.state = self.state.consume(consumed_at)?;
         Ok(self)
@@ -266,6 +276,10 @@ impl TokenType {
     ///     Ok(TokenType::CompatAccessToken)
     /// );
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the token is not valid
     pub fn check(token: &str) -> Result<TokenType, TokenFormatError> {
         // these are legacy tokens imported from Synapse
         // we don't do any validation on them and continue as is

@@ -48,7 +48,7 @@ http:
       # List of addresses and ports to listen to
       binds:
         # First option: listen to the given address
-        - address: '[::]:8080'
+        - address: "[::]:8080"
 
         # Second option: listen on the given host and port combination
         - host: localhost
@@ -78,8 +78,8 @@ http:
 
 The following additional resources are available, although it is recommended to serve them on a separate listener, not exposed to the public internet:
 
- - `name: prometheus`: serves the a Prometheus-compatible metrics endpoint on `/metrics`, if the Prometheus exporter is enabled in `telemetry.metrics.exporter`.
- - `name: health`: serves the health check endpoint on `/health`.
+- `name: prometheus`: serves a Prometheus-compatible metrics endpoint on `/metrics`, if the Prometheus exporter is enabled in `telemetry.metrics.exporter`.
+- `name: health`: serves the health check endpoint on `/health`.
 
 ## `database`
 
@@ -215,21 +215,20 @@ secrets:
 The service can use a number of key types for signing.
 The following key types are supported:
 
- - RSA
- - ECDSA with the P-256 (`prime256v1`) curve
- - ECDSA with the P-384 (`secp384r1`) curve
- - ECDSA with the K-256 (`secp256k1`) curve
+- RSA
+- ECDSA with the P-256 (`prime256v1`) curve
+- ECDSA with the P-384 (`secp384r1`) curve
+- ECDSA with the K-256 (`secp256k1`) curve
 
 Each entry must have a unique (and arbitrary) `kid`, plus the key itself.
 The key can either be specified inline (with the `key` property), or loaded from a file (with the `key_file` property).
 The following key formats are supported:
 
- - PKCS#1 PEM or DER-encoded RSA private key
- - PKCS#8 PEM or DER-encoded RSA or ECDSA private key, encrypted or not
- - SEC1 PEM or DER-encoded ECDSA private key
+- PKCS#1 PEM or DER-encoded RSA private key
+- PKCS#8 PEM or DER-encoded RSA or ECDSA private key, encrypted or not
+- SEC1 PEM or DER-encoded ECDSA private key
 
 For PKCS#8 encoded keys, the `password` or `password_file` properties can be used to decrypt the key.
-
 
 ## `passwords`
 
@@ -240,7 +239,7 @@ passwords:
   # Whether to enable the password database.
   # If disabled, users will only be able to log in using upstream OIDC providers
   enabled: true
-   
+
   # List of password hashing schemes being used
   # /!\ Only change this if you know what you're doing
   # TODO: document this section better
@@ -248,7 +247,6 @@ passwords:
     - version: 1
       algorithm: argon2id
 ```
-
 
 ## `policy`
 
@@ -306,7 +304,7 @@ telemetry:
     # Export traces to an OTLP-compatible endpoint
     #exporter: otlp
     #endpoint: https://localhost:4317
-    
+
     # Export traces to a Jaeger endpoint
     #exporter: jaeger
     #protocol: http/thrift.binary | udp/thrift.compact
@@ -323,7 +321,7 @@ telemetry:
   metrics:
     # The default: don't export metrics
     exporter: none
-    
+
     # Export metrics to an OTLP-compatible endpoint
     #exporter: otlp
     #endpoint: https://localhost:4317
@@ -345,7 +343,7 @@ Settings related to sending emails
 email:
   from: '"The almighty auth service" <auth@example.com>'
   reply_to: '"No reply" <no-reply@example.com>'
-  
+
   # Default transport: don't send any emails
   transport: blackhole
 
@@ -356,7 +354,7 @@ email:
   #port: 587
   #username: username
   #password: password
-  
+
   # Send emails by calling a local sendmail binary
   #transport: sendmail
   #command: /usr/sbin/sendmail
@@ -364,4 +362,143 @@ email:
   # Send emails through the AWS SESv2 API
   # This uses the AWS SDK, so the usual AWS environment variables are supported
   #transport: aws_ses
+```
+
+### `upstream_oauth2`
+
+Settings related to upstream OAuth 2.0/OIDC providers.
+This section must be synced to the database using the [`config sync`](../usage/cli/config.md#config-sync---prune---dry-run) command.
+
+#### `upstream_oauth2.providers`
+
+A list of upstream OAuth 2.0/OIDC providers to use to authenticate users.
+
+Sample configurations for popular providers can be found in the [upstream provider setup](../setup/sso.md#sample-configurations) guide.
+
+```yaml
+upstream_oauth2:
+  providers:
+    - # A unique identifier for the provider
+      # Must be a valid ULID
+      id: 01HFVBY12TMNTYTBV8W921M5FA
+
+      # The issuer URL, which will be used to discover the provider's configuration.
+      # If discovery is enabled, this *must* exactly match the `issuer` field
+      # advertised in `<issuer>/.well-known/openid-configuration`.
+      issuer: https://example.com/
+
+      # A human-readable name for the provider,
+      # which will be displayed on the login page
+      #human_name: Example
+
+      # A brand identifier for the provider, which will be used to display a logo
+      # on the login page. Values supported by the default template are:
+      #  - `apple`
+      #  - `google`
+      #  - `facebook`
+      #  - `github`
+      #  - `gitlab`
+      #  - `twitter`
+      #brand_name: google
+
+      # The client ID to use to authenticate to the provider
+      client_id: mas-fb3f0c09c4c23de4
+
+      # The client secret to use to authenticate to the provider
+      # This is only used by the `client_secret_post`, `client_secret_basic`
+      # and `client_secret_jwk` authentication methods
+      #client_secret: f4f6bb68a0269264877e9cb23b1856ab
+
+      # Which authentication method to use to authenticate to the provider
+      # Supported methods are:
+      #   - `none`
+      #   - `client_secret_basic`
+      #   - `client_secret_post`
+      #   - `client_secret_jwt`
+      #   - `private_key_jwt` (using the keys defined in the `secrets.keys` section)
+      token_endpoint_auth_method: client_secret_post
+
+      # What signing algorithm to use to sign the authentication request when using 
+      # the `private_key_jwt` or the `client_secret_jwt` authentication methods
+      #token_endpoint_auth_signing_alg: RS256
+
+      # The scopes to request from the provider
+      # In most cases, it should always include `openid` scope
+      scope: "openid email profile"
+
+      # How the provider configuration and endpoints should be discovered
+      # Possible values are:
+      #  - `oidc`: discover the provider through OIDC discovery,
+      #     with strict metadata validation (default)
+      #  - `insecure`: discover through OIDC discovery, but skip metadata validation
+      #  - `disabled`: don't discover the provider and use the endpoints below
+      #discovery_mode: oidc
+
+      # Whether PKCE should be used during the authorization code flow.
+      # Possible values are:
+      #  - `auto`: use PKCE if the provider supports it (default)
+      #    Determined through discovery, and disabled if discovery is disabled
+      #  - `always`: always use PKCE (with the S256 method)
+      #  - `never`: never use PKCE
+      #pkce_method: auto
+
+      # The provider authorization endpoint
+      # This takes precedence over the discovery mechanism
+      #authorization_endpoint: https://example.com/oauth2/authorize
+
+      # The provider token endpoint
+      # This takes precedence over the discovery mechanism
+      #token_endpoint: https://example.com/oauth2/token
+
+      # The provider JWKS URI
+      # This takes precedence over the discovery mechanism
+      #jwks_uri: https://example.com/oauth2/keys
+
+      # How user attributes should be mapped
+      #
+      # Most of those attributes have two main properties:
+      #   - `action`: what to do with the attribute. Possible values are:
+      #      - `ignore`: ignore the attribute
+      #      - `suggest`: suggest the attribute to the user, but let them opt out
+      #      - `force`: always import the attribute, and don't fail if it's missing
+      #      - `require`: always import the attribute, and fail if it's missing
+      #   - `template`: a Jinja2 template used to generate the value. In this template,
+      #      the `user` variable is available, which contains the user's attributes 
+      #      retrieved from the `id_token` given by the upstream provider.
+      #
+      # Each attribute has a default template which follows the well-known OIDC claims.
+      #
+      claims_imports:
+        # The subject is an internal identifier used to link the
+        # user's provider identity to local accounts.
+        # By default it uses the `sub` claim as per the OIDC spec,
+        # which should fit most use cases.
+        subject:
+          #template: "{{ user.sub }}"
+
+        # The localpart is the local part of the user's Matrix ID.
+        # For example, on the `example.com` server, if the localpart is `alice`,
+        #  the user's Matrix ID will be `@alice:example.com`.
+        localpart:
+          #action: force
+          #template: "{{ user.preferred_username }}"
+
+        # The display name is the user's display name.
+        displayname:
+          #action: suggest
+          #template: "{{ user.name }}"
+
+        # An email address to import.
+        email:
+          #action: suggest
+          #template: "{{ user.email }}"
+
+          # Whether the email address must be marked as verified.
+          # Possible values are:
+          #  - `import`: mark the email address as verified if the upstream provider
+          #     has marked it as verified, using the `email_verified` claim.
+          #     This is the default.
+          #   - `always`: mark the email address as verified
+          #   - `never`: mark the email address as not verified
+          #set_email_verification: import
 ```

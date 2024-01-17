@@ -14,37 +14,50 @@ See the License for the specific language governing permissions and
 limitations under the License.
 #}
 
-{% macro input(label, name, type="text", form_state=false, autocomplete=false, class="", inputmode="text", autocorrect=false, autocapitalize=false, disabled=false, required=false) %}
+{% set cnt = counter() %}
+
+{% macro new_id() -%}
+  form-{{- cnt.next() -}}
+{%- endmacro %}
+
+{% macro attributes(field, default_value=None) -%}
+  {%- set value = field.value | default(default_value) -%}
+  name="{{ field.name }}" id="{{ field.id }}"
+  {%- if field.errors is not empty %} data-invalid{% endif %}
+  {%- if value %} value="{{ value }}" {% endif %}
+{%- endmacro %}
+
+{% macro field(label, name, form_state=false, class="") %}
+  {% set field_id = new_id() %}
   {% if not form_state %}
-    {% set form_state = dict(errors=[], fields=dict()) %}
+    {% set form_state = {"fields": {}} %}
   {% endif %}
 
-  {% set state = form_state.fields[name] | default(value=dict(errors=[], value="")) %}
+  {% set state = form_state.fields[name] | default({"errors": [], "value": ""}) %}
+  {% set field = {
+    "id": new_id(),
+    "name": name,
+    "errors": state.errors,
+    "value": state.value,
+  } %}
 
-  <div class="flex flex-col cpd-field {{ class }}">
-    <div class="cpd-label"{% if state.errors is not empty %} data-invalid{% endif %}>{{ label }}</div>
-    <input name="{{ name }}"
-      class="cpd-control"
-      {% if state.errors is not empty %} data-invalid {% endif %}
-      type="{{ type }}"
-      inputmode="{{ inputmode }}"
-      {% if required %} required {% endif %}
-      {% if disabled %} disabled {% endif %}
-      {% if autocomplete %} autocomplete="{{ autocomplete }}" {% endif %} 
-      {% if autocorrect %} autocorrect="{{ autocorrect }}" {% endif %}
-      {% if autocapitalize %} autocapitalize="{{ autocapitalize }}" {% endif %} 
-      />
+  <div class="cpd-form-field {{ class }}">
+    <label class="cpd-form-label" for="{{ field.id }}"
+      {%- if field.errors is not empty %} data-invalid{% endif -%}
+    >{{ label }}</label>
 
-    {% if state.errors is not empty %}
-      {% for error in state.errors %}
+    {{ caller(field) }}
+
+    {% if field.errors is not empty %}
+      {% for error in field.errors %}
         {% if error.kind != "unspecified" %}
-          <div class="text-sm text-critical">
+          <div class="cpd-form-message cpd-form-error-message">
             {% if error.kind == "required" %}
-              This field is required
-            {% elif error.kind == "exists" and name == "username" %}
-              This username is already taken
+              {{ _("mas.errors.field_required") }}
+            {% elif error.kind == "exists" and field.name == "username" %}
+              {{ _("mas.errors.username_taken") }}
             {% elif error.kind == "policy" %}
-              Denied by policy: {{ error.message }}
+              {{ _("mas.errors.denied_policy", policy=error.message) }}
             {% else %}
               {{ error.kind }}
             {% endif %}
@@ -53,4 +66,13 @@ limitations under the License.
       {% endfor %}
     {% endif %}
   </div>
-{% endmacro input %}
+{% endmacro %}
+
+
+{% macro separator() %}
+  <div class="separator">
+    <hr />
+    <p>{{ _("mas.or_separator") }}</p>
+    <hr />
+  </div>
+{% endmacro %}

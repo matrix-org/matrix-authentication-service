@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import { H3 } from "@vector-im/compound-web";
+import { useTranslation } from "react-i18next";
 
 import { FragmentType, useFragment } from "../../gql";
 import { graphql } from "../../gql/gql";
@@ -52,16 +53,20 @@ const FriendlyExternalLink: React.FC<{ uri?: string }> = ({ uri }) => {
 
 const OAuth2ClientDetail: React.FC<Props> = ({ client }) => {
   const data = useFragment(OAUTH2_CLIENT_FRAGMENT, client);
+  const { t } = useTranslation();
 
   const details = [
-    { label: "Name", value: data.clientName },
-    { label: "Client ID", value: <code>{data.clientId}</code> },
+    { label: t("frontend.oauth2_client_detail.name"), value: data.clientName },
     {
-      label: "Terms of service",
+      label: t("frontend.oauth2_client_detail.id"),
+      value: <code>{data.clientId}</code>,
+    },
+    {
+      label: t("frontend.oauth2_client_detail.terms"),
       value: data.tosUri && <FriendlyExternalLink uri={data.tosUri} />,
     },
     {
-      label: "Policy",
+      label: t("frontend.oauth2_client_detail.policy"),
       value: data.policyUri && <FriendlyExternalLink uri={data.policyUri} />,
     },
   ].filter(({ value }) => !!value);
@@ -76,7 +81,10 @@ const OAuth2ClientDetail: React.FC<Props> = ({ client }) => {
         />
         <H3>{data.clientName}</H3>
       </header>
-      <SessionDetails title="Client" details={details} />
+      <SessionDetails
+        title={t("frontend.oauth2_client_detail.details_title")}
+        details={details}
+      />
     </BlockList>
   );
 };

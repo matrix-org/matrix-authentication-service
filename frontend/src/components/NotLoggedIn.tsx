@@ -13,9 +13,15 @@
 // limitations under the License.
 
 import { Alert } from "@vector-im/compound-web";
+import { ReactNode } from "react";
+import { Translation } from "react-i18next";
 
 const NotLoggedIn: React.FC = () => (
-  <Alert type="critical" title="You're not logged in." />
+  <Translation>
+    {(t): ReactNode => (
+      <Alert type="critical" title={t("frontend.not_logged_in_alert")} />
+    )}
+  </Translation>
 );
 
 export default NotLoggedIn;

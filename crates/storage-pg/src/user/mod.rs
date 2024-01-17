@@ -57,6 +57,7 @@ struct UserLookup {
     primary_user_email_id: Option<Uuid>,
     created_at: DateTime<Utc>,
     locked_at: Option<DateTime<Utc>>,
+    can_request_admin: bool,
 }
 
 impl From<UserLookup> for User {
@@ -69,6 +70,7 @@ impl From<UserLookup> for User {
             primary_user_email_id: value.primary_user_email_id.map(Into::into),
             created_at: value.created_at,
             locked_at: value.locked_at,
+            can_request_admin: value.can_request_admin,
         }
     }
 }
@@ -95,6 +97,7 @@ impl<'c> UserRepository for PgUserRepository<'c> {
                      , primary_user_email_id
                      , created_at
                      , locked_at
+                     , can_request_admin
                 FROM users
                 WHERE user_id = $1
             "#,
@@ -127,6 +130,7 @@ impl<'c> UserRepository for PgUserRepository<'c> {
                      , primary_user_email_id
                      , created_at
                      , locked_at
+                     , can_request_admin
                 FROM users
                 WHERE username = $1
             "#,
@@ -186,6 +190,7 @@ impl<'c> UserRepository for PgUserRepository<'c> {
             primary_user_email_id: None,
             created_at,
             locked_at: None,
+            can_request_admin: false,
         })
     }
 
@@ -278,6 +283,41 @@ impl<'c> UserRepository for PgUserRepository<'c> {
         DatabaseError::ensure_affected_rows(&res, 1)?;
 
         user.locked_at = None;
+
+        Ok(user)
+    }
+
+    #[tracing::instrument(
+        name = "db.user.set_can_request_admin",
+        skip_all,
+        fields(
+            db.statement,
+            %user.id,
+            user.can_request_admin = can_request_admin,
+        ),
+        err,
+    )]
+    async fn set_can_request_admin(
+        &mut self,
+        mut user: User,
+        can_request_admin: bool,
+    ) -> Result<User, Self::Error> {
+        let res = sqlx::query!(
+            r#"
+                UPDATE users
+                SET can_request_admin = $2
+                WHERE user_id = $1
+            "#,
+            Uuid::from(user.id),
+            can_request_admin,
+        )
+        .traced()
+        .execute(&mut *self.conn)
+        .await?;
+
+        DatabaseError::ensure_affected_rows(&res, 1)?;
+
+        user.can_request_admin = can_request_admin;
 
         Ok(user)
     }

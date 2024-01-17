@@ -12,14 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![forbid(unsafe_code)]
-#![deny(clippy::all, clippy::str_to_string, rustdoc::broken_intra_doc_links)]
-#![warn(clippy::pedantic)]
-#![allow(
-    clippy::module_name_repetitions,
-    clippy::missing_panics_doc,
-    clippy::missing_errors_doc
-)]
+#![allow(clippy::module_name_repetitions)]
 
 use thiserror::Error;
 
@@ -29,6 +22,7 @@ pub(crate) mod tokens;
 pub(crate) mod upstream_oauth2;
 pub(crate) mod users;
 
+/// Error when an invalid state transition is attempted.
 #[derive(Debug, Error)]
 #[error("invalid state transition")]
 pub struct InvalidTransitionError;
@@ -48,8 +42,9 @@ pub use self::{
     upstream_oauth2::{
         UpsreamOAuthProviderSetEmailVerification, UpstreamOAuthAuthorizationSession,
         UpstreamOAuthAuthorizationSessionState, UpstreamOAuthLink, UpstreamOAuthProvider,
-        UpstreamOAuthProviderClaimsImports, UpstreamOAuthProviderImportAction,
-        UpstreamOAuthProviderImportPreference,
+        UpstreamOAuthProviderClaimsImports, UpstreamOAuthProviderDiscoveryMode,
+        UpstreamOAuthProviderImportAction, UpstreamOAuthProviderImportPreference,
+        UpstreamOAuthProviderPkceMode, UpstreamOAuthProviderSubjectPreference,
     },
     users::{
         Authentication, AuthenticationMethod, BrowserSession, Password, User, UserEmail,

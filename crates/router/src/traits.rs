@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::borrow::{Borrow, Cow};
+use std::borrow::Cow;
 
 use serde::Serialize;
 use url::Url;
@@ -28,7 +28,7 @@ pub trait Route {
         Cow::Borrowed(Self::route())
     }
 
-    fn relative_url(&self) -> Cow<'static, str> {
+    fn path_and_query(&self) -> Cow<'static, str> {
         let path = self.path();
         if let Some(query) = self.query() {
             let query = serde_urlencoded::to_string(query).unwrap();
@@ -39,16 +39,9 @@ pub trait Route {
     }
 
     fn absolute_url(&self, base: &Url) -> Url {
-        let relative = self.relative_url();
-        base.join(relative.borrow()).unwrap()
-    }
-
-    fn go(&self) -> axum::response::Redirect {
-        axum::response::Redirect::to(&self.relative_url())
-    }
-
-    fn go_absolute(&self, base: &Url) -> axum::response::Redirect {
-        axum::response::Redirect::to(self.absolute_url(base).as_str())
+        let relative = self.path_and_query();
+        let relative = relative.trim_start_matches('/');
+        base.join(relative).unwrap()
     }
 }
 

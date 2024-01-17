@@ -88,6 +88,22 @@ export default {
       },
       {
         kind: "OBJECT",
+        name: "AllowUserCrossSigningResetPayload",
+        fields: [
+          {
+            name: "user",
+            type: {
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
+        kind: "OBJECT",
         name: "Anonymous",
         fields: [
           {
@@ -1101,6 +1117,29 @@ export default {
             ],
           },
           {
+            name: "allowUserCrossSigningReset",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "AllowUserCrossSigningResetPayload",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
+          },
+          {
             name: "createOauth2Session",
             type: {
               kind: "NON_NULL",
@@ -1245,6 +1284,29 @@ export default {
               ofType: {
                 kind: "OBJECT",
                 name: "SendVerificationEmailPayload",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
+          },
+          {
+            name: "setCanRequestAdmin",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "SetCanRequestAdminPayload",
                 ofType: null,
               },
             },
@@ -2142,6 +2204,22 @@ export default {
       },
       {
         kind: "OBJECT",
+        name: "SetCanRequestAdminPayload",
+        fields: [
+          {
+            name: "user",
+            type: {
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
+        kind: "OBJECT",
         name: "SetDisplayNamePayload",
         fields: [
           {
@@ -2546,6 +2624,13 @@ export default {
                 },
               },
               {
+                name: "device",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
                 name: "first",
                 type: {
                   kind: "SCALAR",
@@ -2615,6 +2700,17 @@ export default {
                 },
               },
             ],
+          },
+          {
+            name: "canRequestAdmin",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
           },
           {
             name: "compatSessions",

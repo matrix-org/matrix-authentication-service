@@ -84,6 +84,13 @@ pub struct UserAuthorization<F = ()> {
 
 impl<F: Send> UserAuthorization<F> {
     // TODO: take scopes to validate as parameter
+    /// Verify a user authorization and return the session and the protected
+    /// form value
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the token is invalid, if the user session ended or
+    /// if the form is missing
     pub async fn protected_form<E>(
         self,
         repo: &mut impl RepositoryAccess<Error = E>,
@@ -103,6 +110,11 @@ impl<F: Send> UserAuthorization<F> {
     }
 
     // TODO: take scopes to validate as parameter
+    /// Verify a user authorization and return the session
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the token is invalid or if the user session ended
     pub async fn protected<E>(
         self,
         repo: &mut impl RepositoryAccess<Error = E>,

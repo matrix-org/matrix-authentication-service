@@ -94,7 +94,7 @@ fn id_token(issuer: &str) -> (IdToken, PublicJsonWebKeySet) {
     let mut claims = HashMap::new();
     let now = now();
 
-    claims::ISS.insert(&mut claims, issuer.to_string()).unwrap();
+    claims::ISS.insert(&mut claims, issuer.to_owned()).unwrap();
     claims::SUB
         .insert(&mut claims, SUBJECT_IDENTIFIER.to_owned())
         .unwrap();
@@ -128,7 +128,7 @@ fn id_token(issuer: &str) -> (IdToken, PublicJsonWebKeySet) {
 
 /// Generate client credentials for the given authentication method.
 fn client_credentials(
-    auth_method: OAuthClientAuthenticationMethod,
+    auth_method: &OAuthClientAuthenticationMethod,
     issuer: &Url,
     custom_signing: Option<Box<JwtSigningFn>>,
 ) -> ClientCredentials {
