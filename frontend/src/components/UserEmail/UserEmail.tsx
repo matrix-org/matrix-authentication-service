@@ -17,7 +17,7 @@ import { Form, IconButton, Text, Tooltip } from "@vector-im/compound-web";
 import { atom, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
-import { useTransition, ComponentProps, ReactNode } from "react";
+import { useTransition, ComponentProps, ReactNode, forwardRef } from "react";
 import { Translation, useTranslation } from "react-i18next";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
@@ -87,10 +87,10 @@ const setPrimaryEmailFamily = atomFamily((id: string) => {
   return setPrimaryEmailAtom;
 });
 
-const DeleteButton: React.FC<{ disabled?: boolean; onClick?: () => void }> = ({
-  disabled,
-  onClick,
-}) => (
+const DeleteButton = forwardRef<
+  HTMLButtonElement,
+  { disabled?: boolean; onClick?: () => void }
+>(({ disabled, onClick }, ref) => (
   <Translation>
     {(t): ReactNode => (
       <Tooltip label={t("frontend.user_email.delete_button_title")}>
@@ -100,13 +100,14 @@ const DeleteButton: React.FC<{ disabled?: boolean; onClick?: () => void }> = ({
           className="m-2"
           onClick={onClick}
           size="var(--cpd-space-8x)"
+          ref={ref}
         >
           <IconDelete className={styles.userEmailDeleteIcon} />
         </IconButton>
       </Tooltip>
     )}
   </Translation>
-);
+));
 
 const DeleteButtonWithConfirmation: React.FC<
   ComponentProps<typeof DeleteButton>
