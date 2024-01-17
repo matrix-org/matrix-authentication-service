@@ -22,6 +22,7 @@
   justify-content: center;
   gap: var(--cpd-space-2x);
   box-sizing: border-box;
+  font: var(--cpd-font-body-md-semibold);
 }
 
 .cpd-button[disabled] {
@@ -34,7 +35,6 @@
  */
 
 .cpd-button[data-size="lg"] {
-  font: var(--cpd-font-body-lg-semibold);
   padding-block: var(--cpd-space-2x);
   padding-inline: var(--cpd-space-8x);
   min-block-size: var(--cpd-space-12x);
@@ -45,7 +45,6 @@
 }
 
 .cpd-button[data-size="sm"] {
-  font: var(--cpd-font-body-md-semibold);
   padding-block: var(--cpd-space-1x);
   padding-inline: var(--cpd-space-6x);
   min-block-size: var(--cpd-space-9x);

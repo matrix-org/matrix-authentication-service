@@ -14,6 +14,7 @@
 
 import { Badge } from "@vector-im/compound-web";
 import { parseISO } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
 import {
@@ -57,6 +58,7 @@ type Props = {
 const BrowserSessionDetail: React.FC<Props> = ({ session }) => {
   const data = useFragment(FRAGMENT, session);
   const currentBrowserSessionId = useCurrentBrowserSessionId();
+  const { t } = useTranslation();
 
   const isCurrent = currentBrowserSessionId === data.id;
   const onSessionEnd = useEndBrowserSession(data.id, isCurrent);
@@ -113,13 +115,16 @@ const BrowserSessionDetail: React.FC<Props> = ({ session }) => {
     <BlockList>
       {isCurrent && (
         <Badge className={styles.currentBadge} kind="success">
-          Current
+          {t("frontend.browser_session_details.current_badge")}
         </Badge>
       )}
       <SessionHeader backToRoute={{ type: "browser-session-list" }}>
         {sessionName}
       </SessionHeader>
-      <SessionDetails title="Session" details={sessionDetails} />
+      <SessionDetails
+        title={t("frontend.browser_session_details.session_details_title")}
+        details={sessionDetails}
+      />
       {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
     </BlockList>
   );

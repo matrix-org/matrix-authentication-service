@@ -27,6 +27,7 @@ pub struct User {
     pub primary_user_email_id: Option<Ulid>,
     pub created_at: DateTime<Utc>,
     pub locked_at: Option<DateTime<Utc>>,
+    pub can_request_admin: bool,
 }
 
 impl User {
@@ -38,6 +39,7 @@ impl User {
 }
 
 impl User {
+    #[doc(hidden)]
     #[must_use]
     pub fn samples(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self> {
         vec![User {
@@ -47,6 +49,7 @@ impl User {
             primary_user_email_id: None,
             created_at: now,
             locked_at: None,
+            can_request_admin: false,
         }]
     }
 }
@@ -173,6 +176,7 @@ impl Deref for UserEmailVerification {
 }
 
 impl UserEmailVerification {
+    #[doc(hidden)]
     #[must_use]
     pub fn samples(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self> {
         let states = [

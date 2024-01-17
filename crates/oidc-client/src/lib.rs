@@ -53,14 +53,7 @@
 //! [MSC3861]: https://github.com/matrix-org/matrix-spec-proposals/pull/3861
 //! [OAuth 2.0]: https://oauth.net/2/
 
-#![forbid(unsafe_code)]
-#![deny(
-    clippy::all,
-    clippy::str_to_string,
-    rustdoc::broken_intra_doc_links,
-    missing_docs
-)]
-#![warn(clippy::pedantic)]
+#![deny(missing_docs)]
 #![allow(clippy::module_name_repetitions, clippy::implicit_hasher)]
 
 pub mod error;

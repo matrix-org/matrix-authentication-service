@@ -123,6 +123,23 @@ pub trait UserRepository: Send + Sync {
     ///
     /// Returns [`Self::Error`] if the underlying repository fails
     async fn unlock(&mut self, user: User) -> Result<User, Self::Error>;
+
+    /// Set whether a [`User`] can request admin
+    ///
+    /// Returns the [`User`] with the new `can_request_admin` value
+    ///
+    /// # Parameters
+    ///
+    /// * `user`: The [`User`] to update
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn set_can_request_admin(
+        &mut self,
+        user: User,
+        can_request_admin: bool,
+    ) -> Result<User, Self::Error>;
 }
 
 repository_impl!(UserRepository:
@@ -137,4 +154,9 @@ repository_impl!(UserRepository:
     async fn exists(&mut self, username: &str) -> Result<bool, Self::Error>;
     async fn lock(&mut self, clock: &dyn Clock, user: User) -> Result<User, Self::Error>;
     async fn unlock(&mut self, user: User) -> Result<User, Self::Error>;
+    async fn set_can_request_admin(
+        &mut self,
+        user: User,
+        can_request_admin: bool,
+    ) -> Result<User, Self::Error>;
 );

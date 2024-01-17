@@ -85,11 +85,11 @@ mod tests {
         Jail::expect_with(|jail| {
             jail.create_file(
                 "config.yaml",
-                r#"
+                r"
                     matrix:
                       homeserver: matrix.org
                       secret: test
-                "#,
+                ",
             )?;
 
             let config = MatrixConfig::load_from_file("config.yaml")?;

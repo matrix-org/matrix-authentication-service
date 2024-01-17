@@ -12,14 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![forbid(unsafe_code)]
-#![deny(
-    clippy::all,
-    clippy::str_to_string,
-    rustdoc::broken_intra_doc_links,
-    clippy::future_not_send
-)]
-#![warn(clippy::pedantic)]
+#![deny(clippy::future_not_send)]
 #![allow(
     // Some axum handlers need that
     clippy::unused_async,
@@ -30,7 +23,7 @@
     clippy::let_with_type_underscore,
 )]
 
-use std::{borrow::Cow, convert::Infallible, time::Duration};
+use std::{convert::Infallible, time::Duration};
 
 use axum::{
     body::{Bytes, HttpBody},
@@ -53,7 +46,7 @@ use mas_keystore::{Encrypter, Keystore};
 use mas_policy::Policy;
 use mas_router::{Route, UrlBuilder};
 use mas_storage::{BoxClock, BoxRepository, BoxRng};
-use mas_templates::{ErrorContext, NotFoundContext, Templates};
+use mas_templates::{ErrorContext, NotFoundContext, TemplateContext, Templates};
 use passwords::PasswordManager;
 use sqlx::PgPool;
 use tower::util::AndThenLayer;
@@ -68,6 +61,7 @@ pub mod upstream_oauth2;
 mod views;
 
 mod activity_tracker;
+mod preferred_language;
 mod site_config;
 #[cfg(test)]
 mod test_utils;
@@ -96,6 +90,7 @@ pub use self::{
     activity_tracker::{ActivityTracker, Bound as BoundActivityTracker},
     compat::MatrixHomeserver,
     graphql::schema as graphql_schema,
+    preferred_language::PreferredLanguage,
     site_config::SiteConfig,
     upstream_oauth2::cache::MetadataCache,
 };
@@ -124,7 +119,7 @@ where
 {
     let mut router = Router::new()
         .route(
-            "/graphql",
+            mas_router::GraphQL::route(),
             get(self::graphql::get).post(self::graphql::post),
         )
         .layer(
@@ -141,7 +136,10 @@ where
         );
 
     if playground {
-        router = router.route("/graphql/playground", get(self::graphql::playground));
+        router = router.route(
+            mas_router::GraphQLPlayground::route(),
+            get(self::graphql::playground),
+        );
     }
 
     router
@@ -271,6 +269,18 @@ where
             mas_router::CompatRefresh::route(),
             post(self::compat::refresh::post),
         )
+        .route(
+            mas_router::CompatLoginSsoRedirect::route(),
+            get(self::compat::login_sso_redirect::get),
+        )
+        .route(
+            mas_router::CompatLoginSsoRedirectIdp::route(),
+            get(self::compat::login_sso_redirect::get),
+        )
+        .route(
+            mas_router::CompatLoginSsoRedirectSlash::route(),
+            get(self::compat::login_sso_redirect::get),
+        )
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
@@ -295,6 +305,7 @@ where
     <B as HttpBody>::Error: std::error::Error + Send + Sync,
     S: Clone + Send + Sync + 'static,
     UrlBuilder: FromRef<S>,
+    PreferredLanguage: FromRequestParts<S>,
     BoxRepository: FromRequestParts<S>,
     CookieJar: FromRequestParts<S>,
     BoundActivityTracker: FromRequestParts<S>,
@@ -312,16 +323,19 @@ where
         // XXX: hard-coded redirect from /account to /account/
         .route(
             "/account",
-            get(|RawQuery(query): RawQuery| async {
-                let route = mas_router::Account::route();
-                let destination = if let Some(query) = query {
-                    Cow::Owned(format!("{route}?{query}"))
-                } else {
-                    Cow::Borrowed(route)
-                };
+            get(
+                |State(url_builder): State<UrlBuilder>, RawQuery(query): RawQuery| async move {
+                    let prefix = url_builder.prefix().unwrap_or_default();
+                    let route = mas_router::Account::route();
+                    let destination = if let Some(query) = query {
+                        format!("{prefix}{route}?{query}")
+                    } else {
+                        format!("{prefix}{route}")
+                    };
 
-                axum::response::Redirect::to(&destination)
-            }),
+                    axum::response::Redirect::to(&destination)
+                },
+            ),
         )
         .route(mas_router::Account::route(), get(self::views::app::get))
         .route(
@@ -330,7 +344,9 @@ where
         )
         .route(
             mas_router::ChangePasswordDiscovery::route(),
-            get(|| async { mas_router::AccountPassword.go() }),
+            get(|State(url_builder): State<UrlBuilder>| async move {
+                url_builder.redirect(&mas_router::AccountPassword)
+            }),
         )
         .route(mas_router::Index::route(), get(self::views::index::get))
         .route(
@@ -373,18 +389,6 @@ where
             get(self::oauth2::consent::get).post(self::oauth2::consent::post),
         )
         .route(
-            mas_router::CompatLoginSsoRedirect::route(),
-            get(self::compat::login_sso_redirect::get),
-        )
-        .route(
-            mas_router::CompatLoginSsoRedirectIdp::route(),
-            get(self::compat::login_sso_redirect::get),
-        )
-        .route(
-            mas_router::CompatLoginSsoRedirectSlash::route(),
-            get(self::compat::login_sso_redirect::get),
-        )
-        .route(
             mas_router::CompatLoginSsoComplete::route(),
             get(self::compat::login_sso_complete::get).post(self::compat::login_sso_complete::post),
         )
@@ -406,7 +410,7 @@ where
                     // Error responses should have an ErrorContext attached to them
                     let ext = response.extensions().get::<ErrorContext>();
                     if let Some(ctx) = ext {
-                        if let Ok(res) = templates.render_error(ctx).await {
+                        if let Ok(res) = templates.render_error(ctx) {
                             let (mut parts, _original_body) = response.into_parts();
                             parts.headers.remove(CONTENT_TYPE);
                             parts.headers.remove(CONTENT_LENGTH);
@@ -430,11 +434,12 @@ pub async fn fallback(
     OriginalUri(uri): OriginalUri,
     method: Method,
     version: Version,
+    PreferredLanguage(locale): PreferredLanguage,
 ) -> Result<impl IntoResponse, FancyError> {
-    let ctx = NotFoundContext::new(&method, version, &uri);
+    let ctx = NotFoundContext::new(&method, version, &uri).with_language(locale);
     // XXX: this should look at the Accept header and return JSON if requested
 
-    let res = templates.render_not_found(&ctx).await?;
+    let res = templates.render_not_found(&ctx)?;
 
     Ok((StatusCode::NOT_FOUND, Html(res)))
 }

@@ -17,16 +17,18 @@ use axum::{
     response::{Html, IntoResponse},
 };
 use mas_axum_utils::{cookies::CookieJar, FancyError, SessionInfoExt};
-use mas_router::{PostAuthAction, Route};
+use mas_router::{PostAuthAction, UrlBuilder};
 use mas_storage::{BoxClock, BoxRepository};
-use mas_templates::{AppContext, Templates};
+use mas_templates::{AppContext, TemplateContext, Templates};
 
-use crate::BoundActivityTracker;
+use crate::{BoundActivityTracker, PreferredLanguage};
 
 #[tracing::instrument(name = "handlers.views.app.get", skip_all, err)]
 pub async fn get(
+    PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
     activity_tracker: BoundActivityTracker,
+    State(url_builder): State<UrlBuilder>,
     action: Option<Query<mas_router::AccountAction>>,
     mut repo: BoxRepository,
     clock: BoxClock,
@@ -40,7 +42,9 @@ pub async fn get(
     let Some(session) = session else {
         return Ok((
             cookie_jar,
-            mas_router::Login::and_then(PostAuthAction::manage_account(action)).go(),
+            url_builder.redirect(&mas_router::Login::and_then(
+                PostAuthAction::manage_account(action),
+            )),
         )
             .into_response());
     };
@@ -49,8 +53,8 @@ pub async fn get(
         .record_browser_session(&clock, &session)
         .await;
 
-    let ctx = AppContext::default();
-    let content = templates.render_app(&ctx).await?;
+    let ctx = AppContext::from_url_builder(&url_builder).with_language(locale);
+    let content = templates.render_app(&ctx)?;
 
     Ok((cookie_jar, Html(content)).into_response())
 }

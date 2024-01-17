@@ -13,22 +13,13 @@
 // limitations under the License.
 
 import IconArrowLeft from "@vector-im/compound-design-tokens/icons/arrow-left.svg?react";
-import IconSend from "@vector-im/compound-design-tokens/icons/check.svg?react";
-import {
-  Button,
-  Control,
-  Field,
-  Label,
-  Submit,
-  Root as Form,
-  Alert,
-  H1,
-  Text,
-} from "@vector-im/compound-web";
+import IconSend from "@vector-im/compound-design-tokens/icons/send-solid.svg?react";
+import { Button, Form, Alert, H1, Text } from "@vector-im/compound-web";
 import { useSetAtom, atom, useAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
-import { useEffect, useRef, useTransition } from "react";
+import { useRef, useTransition } from "react";
+import { Trans, useTranslation } from "react-i18next";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
 import { routeAtom, useNavigationLink } from "../../routing";
@@ -112,6 +103,7 @@ const BackButton: React.FC = () => {
   const { onClick, href, pending } = useNavigationLink({
     type: "profile",
   });
+  const { t } = useTranslation();
 
   return (
     <Button
@@ -121,7 +113,7 @@ const BackButton: React.FC = () => {
       Icon={IconArrowLeft}
       kind="tertiary"
     >
-      {pending ? "Loading..." : "Back"}
+      {pending ? t("common.loading") : t("action.back")}
     </Button>
   );
 };
@@ -137,30 +129,24 @@ const VerifyEmail: React.FC<{
   );
   const setRoute = useSetAtom(routeAtom);
   const fieldRef = useRef<HTMLInputElement>(null);
+  const { t } = useTranslation();
 
   const onFormSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const formData = new FormData(form);
     const code = formData.get("code") as string;
     startTransition(() => {
       verifyEmail(code).then((result) => {
         // Clear the form
-        e.currentTarget?.reset();
+        form.reset();
 
         if (result.data?.verifyEmail.status === "VERIFIED") {
           setRoute({ type: "profile" });
-        } else {
-          fieldRef.current?.focus();
-          fieldRef.current?.select();
         }
       });
     });
   };
-
-  // Focus the field on mount
-  useEffect(() => {
-    fieldRef.current?.focus();
-  }, [fieldRef]);
 
   const onResendClick = (): void => {
     startTransition(() => {
@@ -174,49 +160,72 @@ const VerifyEmail: React.FC<{
     resendVerificationEmailResult.data?.sendVerificationEmail.status === "SENT";
   const invalidCode =
     verifyEmailResult.data?.verifyEmail.status === "INVALID_CODE";
+  const { email: codeEmail } = data;
 
   return (
-    <div className={styles.block}>
+    <>
       <header className={styles.header}>
         <IconSend className={styles.icon} />
-        <H1>Verify your email</H1>
+        <H1>{t("frontend.verify_email.heading")}</H1>
         <Text size="lg" className={styles.tagline}>
-          Enter the 6-digit code sent to{" "}
-          <Text as="span" size="lg" weight="semibold">
-            {data.email}
-          </Text>
+          <Trans
+            i18nKey="frontend.verify_email.enter_code_prompt"
+            values={{ email: codeEmail }}
+            components={{ email: <span /> }}
+          />
         </Text>
       </header>
 
-      <Form onSubmit={onFormSubmit} className={styles.form}>
-        {invalidCode && <Alert type="critical" title="Invalid code" />}
-        <Field name="code" serverInvalid={invalidCode}>
-          <Label>6-digit code</Label>
-          <Control
-            ref={fieldRef}
-            placeholder="xxxxxx"
-            type="text"
-            inputMode="numeric"
-          />
-        </Field>
-
-        <Submit
-          type="submit"
-          disabled={pending}
-          className={styles.submitButton}
+      <Form.Root onSubmit={onFormSubmit}>
+        {emailSent && (
+          <Alert
+            type="success"
+            title={t("frontend.verify_email.email_sent_alert.title")}
+          >
+            {t("frontend.verify_email.email_sent_alert.description")}
+          </Alert>
+        )}
+        {invalidCode && (
+          <Alert
+            type="critical"
+            title={t("frontend.verify_email.invalid_code_alert.title")}
+          >
+            {t("frontend.verify_email.invalid_code_alert.description")}
+          </Alert>
+        )}
+        <Form.Field
+          name="code"
+          serverInvalid={invalidCode}
+          className="self-center mb-4"
         >
-          Continue
-        </Submit>
+          <Form.Label>{t("frontend.verify_email.code_field_label")}</Form.Label>
+          <Form.MFAControl ref={fieldRef} />
+
+          {invalidCode && (
+            <Form.ErrorMessage>
+              {t("frontend.verify_email.code_field_error")}
+            </Form.ErrorMessage>
+          )}
+
+          <Form.ErrorMessage match="patternMismatch">
+            {t("frontend.verify_email.code_field_wrong_shape")}
+          </Form.ErrorMessage>
+        </Form.Field>
+
+        <Form.Submit type="submit" disabled={pending}>
+          {t("action.continue")}
+        </Form.Submit>
         <Button
+          type="button"
           kind="secondary"
-          disabled={pending || emailSent}
+          disabled={pending}
           onClick={onResendClick}
         >
-          {emailSent ? "Sent!" : "Resend email"}
+          {t("frontend.verify_email.resend_code")}
         </Button>
         <BackButton />
-      </Form>
-    </div>
+      </Form.Root>
+    </>
   );
 };
 

@@ -14,6 +14,14 @@
 
 use crate::traits::{EnumMember, Section};
 
+fn raw_string(string: &str) -> String {
+    if string.contains('"') {
+        format!(r##"r#"{string}"#"##)
+    } else {
+        format!(r#"r"{string}""#)
+    }
+}
+
 pub fn struct_def(
     f: &mut std::fmt::Formatter<'_>,
     section: &Section,
@@ -187,14 +195,15 @@ impl schemars::JsonSchema for {} {{
         if let Some(description) = &member.description {
             write!(
                 f,
-                r##"
+                r#"
                 metadata: Some(Box::new(schemars::schema::Metadata {{
                     description: Some(
                         // ---
-                        r#"{description}"#.to_owned(),
+                        {}.to_owned(),
                     ),
                     ..Default::default()
-                }})),"##,
+                }})),"#,
+                raw_string(description),
             )?;
         }
 
@@ -211,10 +220,10 @@ impl schemars::JsonSchema for {} {{
 
     writeln!(
         f,
-        r##"
+        r#"
         ];
 
-        let description = r#"{}"#;
+        let description = {};
         schemars::schema::SchemaObject {{
             metadata: Some(Box::new(schemars::schema::Metadata {{
                 description: Some(description.to_owned()),
@@ -228,8 +237,8 @@ impl schemars::JsonSchema for {} {{
         }}
         .into()
     }}
-}}"##,
-        section.doc,
+}}"#,
+        raw_string(section.doc),
     )
 }
 

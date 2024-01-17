@@ -12,17 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {
-  Alert,
-  Control,
-  Field,
-  Label,
-  Root,
-  Submit,
-} from "@vector-im/compound-web";
+import { Alert, Form } from "@vector-im/compound-web";
 import { useAtom } from "jotai";
 import { atomWithMutation } from "jotai-urql";
 import { useRef, useTransition } from "react";
+import { useTranslation } from "react-i18next";
 
 import { graphql } from "../../gql";
 
@@ -49,6 +43,7 @@ const AddEmailForm: React.FC<{
   const fieldRef = useRef<HTMLInputElement>(null);
   const [addEmailResult, addEmail] = useAtom(addUserEmailAtom);
   const [pending, startTransition] = useTransition();
+  const { t } = useTranslation();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
@@ -59,8 +54,6 @@ const AddEmailForm: React.FC<{
       addEmail({ userId, email }).then((result) => {
         // Don't clear the form if the email was invalid or already exists
         if (result.data?.addEmail.status !== "ADDED") {
-          fieldRef.current?.focus();
-          fieldRef.current?.select();
           return;
         }
 
@@ -85,22 +78,31 @@ const AddEmailForm: React.FC<{
 
   return (
     <>
-      <Root ref={formRef} onSubmit={handleSubmit}>
+      <Form.Root ref={formRef} onSubmit={handleSubmit}>
         {emailExists && (
-          <Alert type="info" title="Email already exists">
-            The entered email is already added to this account
+          <Alert
+            type="info"
+            title={t("frontend.add_email_form.email_exists_alert.title")}
+          >
+            {t("frontend.add_email_form.email_exists_alert.text")}
           </Alert>
         )}
 
         {emailInvalid && (
-          <Alert type="critical" title="Invalid email">
-            The entered email is invalid
+          <Alert
+            type="critical"
+            title={t("frontend.add_email_form.email_invalid_alert.title")}
+          >
+            {t("frontend.add_email_form.email_invalid_alert.text")}
           </Alert>
         )}
 
         {emailDenied && (
-          <Alert type="critical" title="Email denied by policy">
-            The entered email is not allowed by the server policy.
+          <Alert
+            type="critical"
+            title={t("frontend.add_email_form.email_denied_alert.title")}
+          >
+            {t("frontend.add_email_form.email_denied_alert.text")}
             <ul>
               {violations.map((violation, index) => (
                 <li key={index}>• {violation}</li>
@@ -109,14 +111,25 @@ const AddEmailForm: React.FC<{
           </Alert>
         )}
 
-        <Field name="email" className="my-2">
-          <Label>Add email</Label>
-          <Control disabled={pending} inputMode="email" ref={fieldRef} />
-        </Field>
-        <Submit size="sm" disabled={pending}>
-          Add
-        </Submit>
-      </Root>
+        <Form.Field
+          name="email"
+          serverInvalid={emailInvalid || emailExists || emailDenied}
+        >
+          <Form.Label>
+            {t("frontend.add_email_form.email_field_label")}
+          </Form.Label>
+          <Form.TextControl
+            disabled={pending}
+            type="email"
+            autoComplete="email"
+            ref={fieldRef}
+          />
+        </Form.Field>
+
+        <Form.Submit size="sm" disabled={pending} className="self-start">
+          {t("common.add")}
+        </Form.Submit>
+      </Form.Root>
     </>
   );
 };

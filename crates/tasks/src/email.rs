@@ -15,8 +15,10 @@
 use anyhow::Context;
 use apalis_core::{context::JobContext, executor::TokioExecutor, monitor::Monitor};
 use chrono::Duration;
-use mas_email::{Address, EmailVerificationContext, Mailbox};
+use mas_email::{Address, Mailbox};
+use mas_i18n::locale;
 use mas_storage::job::{JobWithSpanContext, VerifyEmailJob};
+use mas_templates::{EmailVerificationContext, TemplateContext};
 use rand::{distributions::Uniform, Rng};
 use tracing::info;
 
@@ -37,6 +39,11 @@ async fn verify_email(
     let mut rng = state.rng();
     let mailer = state.mailer();
     let clock = state.clock();
+
+    let language = job
+        .language()
+        .and_then(|l| l.parse().ok())
+        .unwrap_or(locale!("en").into());
 
     // Lookup the user email
     let user_email = repo
@@ -68,7 +75,8 @@ async fn verify_email(
     // And send the verification email
     let mailbox = Mailbox::new(Some(user.username.clone()), address);
 
-    let context = EmailVerificationContext::new(user.clone(), verification.clone());
+    let context =
+        EmailVerificationContext::new(user.clone(), verification.clone()).with_language(language);
 
     mailer.send_verification_email(mailbox, &context).await?;
 

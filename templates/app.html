@@ -15,15 +15,25 @@ limitations under the License.
 #}
 
 {# Must be kept in sync with frontend/index.html #}
+{% set _ = translator(lang) %}
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ lang }}">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>matrix-authentication-service</title>
+    <title>{{ _("app.name") }}</title>
     <script>
-      window.APP_CONFIG = JSON.parse("{{ app_config | json_encode | addslashes | safe }}");
+      {% set config = {
+        'branding': {
+          'imprint': branding.imprint,
+          'tosUri': branding.tos_uri,
+          'policyUri': branding.policy_uri,
+        },
+        'graphqlEndpoint': app_config.graphqlEndpoint,
+        'root': app_config.root,
+      } -%}
+      window.APP_CONFIG = JSON.parse("{{ config | tojson | add_slashes | safe }}");
       (function () {
         const query = window.matchMedia("(prefers-color-scheme: dark)");
         function handleChange(list) {
@@ -38,7 +48,7 @@ limitations under the License.
         handleChange(query);
       })();
     </script>
-    {{ include_asset(path='src/main.tsx', preload=true) | indent(prefix="    ") | safe }}
+    {{ include_asset('src/main.tsx', preload=true) | indent(4) | safe }}
   </head>
 
   <body>

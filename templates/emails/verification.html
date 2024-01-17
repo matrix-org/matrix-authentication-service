@@ -12,8 +12,10 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-#}
+-#}
 
-Hello {{ user.username }},<br />
+{%- set _ = translator(lang) -%}
+
+{{ _("mas.emails.greeting", username=user.username) }}<br />
 <br />
-Your verification code to confirm this email address is: <strong>{{ verification.code }}</strong><br />
+{{ _("mas.emails.verify.body_html", code=verification.code) }}<br />

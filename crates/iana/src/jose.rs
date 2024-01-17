@@ -155,7 +155,7 @@ impl schemars::JsonSchema for JsonWebSignatureAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"HMAC using SHA-256"#.to_owned(),
+                        r"HMAC using SHA-256".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -168,7 +168,7 @@ impl schemars::JsonSchema for JsonWebSignatureAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"HMAC using SHA-384"#.to_owned(),
+                        r"HMAC using SHA-384".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -181,7 +181,7 @@ impl schemars::JsonSchema for JsonWebSignatureAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"HMAC using SHA-512"#.to_owned(),
+                        r"HMAC using SHA-512".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -194,7 +194,7 @@ impl schemars::JsonSchema for JsonWebSignatureAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"RSASSA-PKCS1-v1_5 using SHA-256"#.to_owned(),
+                        r"RSASSA-PKCS1-v1_5 using SHA-256".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -207,7 +207,7 @@ impl schemars::JsonSchema for JsonWebSignatureAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"RSASSA-PKCS1-v1_5 using SHA-384"#.to_owned(),
+                        r"RSASSA-PKCS1-v1_5 using SHA-384".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -220,7 +220,7 @@ impl schemars::JsonSchema for JsonWebSignatureAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"RSASSA-PKCS1-v1_5 using SHA-512"#.to_owned(),
+                        r"RSASSA-PKCS1-v1_5 using SHA-512".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -233,7 +233,7 @@ impl schemars::JsonSchema for JsonWebSignatureAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"ECDSA using P-256 and SHA-256"#.to_owned(),
+                        r"ECDSA using P-256 and SHA-256".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -246,7 +246,7 @@ impl schemars::JsonSchema for JsonWebSignatureAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"ECDSA using P-384 and SHA-384"#.to_owned(),
+                        r"ECDSA using P-384 and SHA-384".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -259,7 +259,7 @@ impl schemars::JsonSchema for JsonWebSignatureAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"ECDSA using P-521 and SHA-512"#.to_owned(),
+                        r"ECDSA using P-521 and SHA-512".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -272,7 +272,7 @@ impl schemars::JsonSchema for JsonWebSignatureAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"RSASSA-PSS using SHA-256 and MGF1 with SHA-256"#.to_owned(),
+                        r"RSASSA-PSS using SHA-256 and MGF1 with SHA-256".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -285,7 +285,7 @@ impl schemars::JsonSchema for JsonWebSignatureAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"RSASSA-PSS using SHA-384 and MGF1 with SHA-384"#.to_owned(),
+                        r"RSASSA-PSS using SHA-384 and MGF1 with SHA-384".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -298,7 +298,7 @@ impl schemars::JsonSchema for JsonWebSignatureAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"RSASSA-PSS using SHA-512 and MGF1 with SHA-512"#.to_owned(),
+                        r"RSASSA-PSS using SHA-512 and MGF1 with SHA-512".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -311,7 +311,7 @@ impl schemars::JsonSchema for JsonWebSignatureAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"No digital signature or MAC performed"#.to_owned(),
+                        r"No digital signature or MAC performed".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -324,7 +324,7 @@ impl schemars::JsonSchema for JsonWebSignatureAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"EdDSA signature algorithms"#.to_owned(),
+                        r"EdDSA signature algorithms".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -337,7 +337,7 @@ impl schemars::JsonSchema for JsonWebSignatureAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"ECDSA using secp256k1 curve and SHA-256"#.to_owned(),
+                        r"ECDSA using secp256k1 curve and SHA-256".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -521,7 +521,7 @@ impl schemars::JsonSchema for JsonWebEncryptionAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"RSAES-PKCS1-v1_5"#.to_owned(),
+                        r"RSAES-PKCS1-v1_5".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -534,7 +534,7 @@ impl schemars::JsonSchema for JsonWebEncryptionAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"RSAES OAEP using default parameters"#.to_owned(),
+                        r"RSAES OAEP using default parameters".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -547,7 +547,7 @@ impl schemars::JsonSchema for JsonWebEncryptionAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"RSAES OAEP using SHA-256 and MGF1 with SHA-256"#.to_owned(),
+                        r"RSAES OAEP using SHA-256 and MGF1 with SHA-256".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -560,7 +560,7 @@ impl schemars::JsonSchema for JsonWebEncryptionAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"AES Key Wrap using 128-bit key"#.to_owned(),
+                        r"AES Key Wrap using 128-bit key".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -573,7 +573,7 @@ impl schemars::JsonSchema for JsonWebEncryptionAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"AES Key Wrap using 192-bit key"#.to_owned(),
+                        r"AES Key Wrap using 192-bit key".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -586,7 +586,7 @@ impl schemars::JsonSchema for JsonWebEncryptionAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"AES Key Wrap using 256-bit key"#.to_owned(),
+                        r"AES Key Wrap using 256-bit key".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -599,7 +599,7 @@ impl schemars::JsonSchema for JsonWebEncryptionAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"Direct use of a shared symmetric key"#.to_owned(),
+                        r"Direct use of a shared symmetric key".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -612,7 +612,7 @@ impl schemars::JsonSchema for JsonWebEncryptionAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"ECDH-ES using Concat KDF"#.to_owned(),
+                        r"ECDH-ES using Concat KDF".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -664,7 +664,7 @@ impl schemars::JsonSchema for JsonWebEncryptionAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"Key wrapping with AES GCM using 128-bit key"#.to_owned(),
+                        r"Key wrapping with AES GCM using 128-bit key".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -677,7 +677,7 @@ impl schemars::JsonSchema for JsonWebEncryptionAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"Key wrapping with AES GCM using 192-bit key"#.to_owned(),
+                        r"Key wrapping with AES GCM using 192-bit key".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -690,7 +690,7 @@ impl schemars::JsonSchema for JsonWebEncryptionAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"Key wrapping with AES GCM using 256-bit key"#.to_owned(),
+                        r"Key wrapping with AES GCM using 256-bit key".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -742,7 +742,7 @@ impl schemars::JsonSchema for JsonWebEncryptionAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"RSA-OAEP using SHA-384 and MGF1 with SHA-384"#.to_owned(),
+                        r"RSA-OAEP using SHA-384 and MGF1 with SHA-384".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -755,7 +755,7 @@ impl schemars::JsonSchema for JsonWebEncryptionAlg {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"RSA-OAEP using SHA-512 and MGF1 with SHA-512"#.to_owned(),
+                        r"RSA-OAEP using SHA-512 and MGF1 with SHA-512".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -874,7 +874,7 @@ impl schemars::JsonSchema for JsonWebEncryptionEnc {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"AES_128_CBC_HMAC_SHA_256 authenticated encryption algorithm"#.to_owned(),
+                        r"AES_128_CBC_HMAC_SHA_256 authenticated encryption algorithm".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -887,7 +887,7 @@ impl schemars::JsonSchema for JsonWebEncryptionEnc {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"AES_192_CBC_HMAC_SHA_384 authenticated encryption algorithm"#.to_owned(),
+                        r"AES_192_CBC_HMAC_SHA_384 authenticated encryption algorithm".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -900,7 +900,7 @@ impl schemars::JsonSchema for JsonWebEncryptionEnc {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"AES_256_CBC_HMAC_SHA_512 authenticated encryption algorithm"#.to_owned(),
+                        r"AES_256_CBC_HMAC_SHA_512 authenticated encryption algorithm".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -913,7 +913,7 @@ impl schemars::JsonSchema for JsonWebEncryptionEnc {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"AES GCM using 128-bit key"#.to_owned(),
+                        r"AES GCM using 128-bit key".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -926,7 +926,7 @@ impl schemars::JsonSchema for JsonWebEncryptionEnc {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"AES GCM using 192-bit key"#.to_owned(),
+                        r"AES GCM using 192-bit key".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -939,7 +939,7 @@ impl schemars::JsonSchema for JsonWebEncryptionEnc {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"AES GCM using 256-bit key"#.to_owned(),
+                        r"AES GCM using 256-bit key".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1033,7 +1033,7 @@ impl schemars::JsonSchema for JsonWebEncryptionCompressionAlgorithm {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"DEFLATE"#.to_owned(),
+                        r"DEFLATE".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1043,7 +1043,7 @@ impl schemars::JsonSchema for JsonWebEncryptionCompressionAlgorithm {
             .into(),
         ];
 
-        let description = r#"JSON Web Encryption Compression Algorithm"#;
+        let description = r"JSON Web Encryption Compression Algorithm";
         schemars::schema::SchemaObject {
             metadata: Some(Box::new(schemars::schema::Metadata {
                 description: Some(description.to_owned()),
@@ -1142,7 +1142,7 @@ impl schemars::JsonSchema for JsonWebKeyType {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"Elliptic Curve"#.to_owned(),
+                        r"Elliptic Curve".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1155,7 +1155,7 @@ impl schemars::JsonSchema for JsonWebKeyType {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"RSA"#.to_owned(),
+                        r"RSA".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1168,7 +1168,7 @@ impl schemars::JsonSchema for JsonWebKeyType {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"Octet sequence"#.to_owned(),
+                        r"Octet sequence".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1181,7 +1181,7 @@ impl schemars::JsonSchema for JsonWebKeyType {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"Octet string key pairs"#.to_owned(),
+                        r"Octet string key pairs".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1191,7 +1191,7 @@ impl schemars::JsonSchema for JsonWebKeyType {
             .into(),
         ];
 
-        let description = r#"JSON Web Key Type"#;
+        let description = r"JSON Web Key Type";
         schemars::schema::SchemaObject {
             metadata: Some(Box::new(schemars::schema::Metadata {
                 description: Some(description.to_owned()),
@@ -1290,7 +1290,7 @@ impl schemars::JsonSchema for JsonWebKeyEcEllipticCurve {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"P-256 Curve"#.to_owned(),
+                        r"P-256 Curve".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1303,7 +1303,7 @@ impl schemars::JsonSchema for JsonWebKeyEcEllipticCurve {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"P-384 Curve"#.to_owned(),
+                        r"P-384 Curve".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1316,7 +1316,7 @@ impl schemars::JsonSchema for JsonWebKeyEcEllipticCurve {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"P-521 Curve"#.to_owned(),
+                        r"P-521 Curve".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1329,7 +1329,7 @@ impl schemars::JsonSchema for JsonWebKeyEcEllipticCurve {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"SECG secp256k1 curve"#.to_owned(),
+                        r"SECG secp256k1 curve".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1339,7 +1339,7 @@ impl schemars::JsonSchema for JsonWebKeyEcEllipticCurve {
             .into(),
         ];
 
-        let description = r#"JSON Web Key EC Elliptic Curve"#;
+        let description = r"JSON Web Key EC Elliptic Curve";
         schemars::schema::SchemaObject {
             metadata: Some(Box::new(schemars::schema::Metadata {
                 description: Some(description.to_owned()),
@@ -1438,7 +1438,7 @@ impl schemars::JsonSchema for JsonWebKeyOkpEllipticCurve {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"Ed25519 signature algorithm key pairs"#.to_owned(),
+                        r"Ed25519 signature algorithm key pairs".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1451,7 +1451,7 @@ impl schemars::JsonSchema for JsonWebKeyOkpEllipticCurve {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"Ed448 signature algorithm key pairs"#.to_owned(),
+                        r"Ed448 signature algorithm key pairs".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1464,7 +1464,7 @@ impl schemars::JsonSchema for JsonWebKeyOkpEllipticCurve {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"X25519 function key pairs"#.to_owned(),
+                        r"X25519 function key pairs".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1477,7 +1477,7 @@ impl schemars::JsonSchema for JsonWebKeyOkpEllipticCurve {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"X448 function key pairs"#.to_owned(),
+                        r"X448 function key pairs".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1487,7 +1487,7 @@ impl schemars::JsonSchema for JsonWebKeyOkpEllipticCurve {
             .into(),
         ];
 
-        let description = r#"JSON Web Key OKP Elliptic Curve"#;
+        let description = r"JSON Web Key OKP Elliptic Curve";
         schemars::schema::SchemaObject {
             metadata: Some(Box::new(schemars::schema::Metadata {
                 description: Some(description.to_owned()),
@@ -1576,7 +1576,7 @@ impl schemars::JsonSchema for JsonWebKeyUse {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"Digital Signature or MAC"#.to_owned(),
+                        r"Digital Signature or MAC".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1589,7 +1589,7 @@ impl schemars::JsonSchema for JsonWebKeyUse {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"Encryption"#.to_owned(),
+                        r"Encryption".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1599,7 +1599,7 @@ impl schemars::JsonSchema for JsonWebKeyUse {
             .into(),
         ];
 
-        let description = r#"JSON Web Key Use"#;
+        let description = r"JSON Web Key Use";
         schemars::schema::SchemaObject {
             metadata: Some(Box::new(schemars::schema::Metadata {
                 description: Some(description.to_owned()),
@@ -1718,7 +1718,7 @@ impl schemars::JsonSchema for JsonWebKeyOperation {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"Compute digital signature or MAC"#.to_owned(),
+                        r"Compute digital signature or MAC".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1731,7 +1731,7 @@ impl schemars::JsonSchema for JsonWebKeyOperation {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"Verify digital signature or MAC"#.to_owned(),
+                        r"Verify digital signature or MAC".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1744,7 +1744,7 @@ impl schemars::JsonSchema for JsonWebKeyOperation {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"Encrypt content"#.to_owned(),
+                        r"Encrypt content".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1757,7 +1757,7 @@ impl schemars::JsonSchema for JsonWebKeyOperation {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"Decrypt content and validate decryption, if applicable"#.to_owned(),
+                        r"Decrypt content and validate decryption, if applicable".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1770,7 +1770,7 @@ impl schemars::JsonSchema for JsonWebKeyOperation {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"Encrypt key"#.to_owned(),
+                        r"Encrypt key".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1783,7 +1783,7 @@ impl schemars::JsonSchema for JsonWebKeyOperation {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"Decrypt key and validate decryption, if applicable"#.to_owned(),
+                        r"Decrypt key and validate decryption, if applicable".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1796,7 +1796,7 @@ impl schemars::JsonSchema for JsonWebKeyOperation {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"Derive key"#.to_owned(),
+                        r"Derive key".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1809,7 +1809,7 @@ impl schemars::JsonSchema for JsonWebKeyOperation {
                 metadata: Some(Box::new(schemars::schema::Metadata {
                     description: Some(
                         // ---
-                        r#"Derive bits not to be used as a key"#.to_owned(),
+                        r"Derive bits not to be used as a key".to_owned(),
                     ),
                     ..Default::default()
                 })),
@@ -1819,7 +1819,7 @@ impl schemars::JsonSchema for JsonWebKeyOperation {
             .into(),
         ];
 
-        let description = r#"JSON Web Key Operation"#;
+        let description = r"JSON Web Key Operation";
         schemars::schema::SchemaObject {
             metadata: Some(Box::new(schemars::schema::Metadata {
                 description: Some(description.to_owned()),

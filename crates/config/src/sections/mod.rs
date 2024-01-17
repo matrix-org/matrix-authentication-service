@@ -17,6 +17,7 @@ use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+mod branding;
 mod clients;
 mod database;
 mod email;
@@ -31,6 +32,7 @@ mod templates;
 mod upstream_oauth2;
 
 pub use self::{
+    branding::BrandingConfig,
     clients::{ClientAuthMethodConfig, ClientConfig, ClientsConfig},
     database::{ConnectConfig as DatabaseConnectConfig, DatabaseConfig},
     email::{EmailConfig, EmailSmtpMode, EmailTransportConfig},
@@ -49,10 +51,10 @@ pub use self::{
     },
     templates::TemplatesConfig,
     upstream_oauth2::{
-        ClaimsImports as UpstreamOAuth2ClaimsImports,
+        ClaimsImports as UpstreamOAuth2ClaimsImports, DiscoveryMode as UpstreamOAuth2DiscoveryMode,
         EmailImportPreference as UpstreamOAuth2EmailImportPreference,
         ImportAction as UpstreamOAuth2ImportAction,
-        ImportPreference as UpstreamOAuth2ImportPreference,
+        ImportPreference as UpstreamOAuth2ImportPreference, PkceMethod as UpstreamOAuth2PkceMethod,
         SetEmailVerification as UpstreamOAuth2SetEmailVerification, UpstreamOAuth2Config,
     },
 };
@@ -103,6 +105,10 @@ pub struct RootConfig {
     #[serde(default)]
     pub upstream_oauth2: UpstreamOAuth2Config,
 
+    /// Configuration section for tweaking the branding of the service
+    #[serde(default)]
+    pub branding: BrandingConfig,
+
     /// Experimental configuration options
     #[serde(default)]
     pub experimental: ExperimentalConfig,
@@ -130,6 +136,7 @@ impl ConfigurationSection for RootConfig {
             matrix: MatrixConfig::generate(&mut rng).await?,
             policy: PolicyConfig::generate(&mut rng).await?,
             upstream_oauth2: UpstreamOAuth2Config::generate(&mut rng).await?,
+            branding: BrandingConfig::generate(&mut rng).await?,
             experimental: ExperimentalConfig::generate(&mut rng).await?,
         })
     }
@@ -147,6 +154,7 @@ impl ConfigurationSection for RootConfig {
             matrix: MatrixConfig::test(),
             policy: PolicyConfig::test(),
             upstream_oauth2: UpstreamOAuth2Config::test(),
+            branding: BrandingConfig::test(),
             experimental: ExperimentalConfig::test(),
         }
     }
@@ -179,6 +187,9 @@ pub struct AppConfig {
     pub policy: PolicyConfig,
 
     #[serde(default)]
+    pub branding: BrandingConfig,
+
+    #[serde(default)]
     pub experimental: ExperimentalConfig,
 }
 
@@ -201,6 +212,7 @@ impl ConfigurationSection for AppConfig {
             secrets: SecretsConfig::generate(&mut rng).await?,
             matrix: MatrixConfig::generate(&mut rng).await?,
             policy: PolicyConfig::generate(&mut rng).await?,
+            branding: BrandingConfig::generate(&mut rng).await?,
             experimental: ExperimentalConfig::generate(&mut rng).await?,
         })
     }
@@ -215,6 +227,7 @@ impl ConfigurationSection for AppConfig {
             secrets: SecretsConfig::test(),
             matrix: MatrixConfig::test(),
             policy: PolicyConfig::test(),
+            branding: BrandingConfig::test(),
             experimental: ExperimentalConfig::test(),
         }
     }

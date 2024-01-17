@@ -21,6 +21,8 @@ mod session;
 
 pub use self::{
     link::{UpstreamOAuthLinkFilter, UpstreamOAuthLinkRepository},
-    provider::{UpstreamOAuthProviderFilter, UpstreamOAuthProviderRepository},
+    provider::{
+        UpstreamOAuthProviderFilter, UpstreamOAuthProviderParams, UpstreamOAuthProviderRepository,
+    },
     session::UpstreamOAuthSessionRepository,
 };

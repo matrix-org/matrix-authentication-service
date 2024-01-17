@@ -12,10 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![forbid(unsafe_code)]
-#![deny(clippy::all, clippy::str_to_string, rustdoc::broken_intra_doc_links)]
-#![warn(clippy::pedantic)]
-
 mod mock;
 
 pub use self::mock::HomeserverConnection as MockHomeserverConnection;
@@ -286,6 +282,18 @@ pub trait HomeserverConnection: Send + Sync {
     /// Returns an error if the homeserver is unreachable or the displayname
     /// could not be unset.
     async fn unset_displayname(&self, mxid: &str) -> Result<(), Self::Error>;
+
+    /// Temporarily allow a user to reset their cross-signing keys.
+    ///
+    /// # Parameters
+    ///
+    /// * `mxid` - The Matrix ID of the user to allow cross-signing key reset
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the homeserver is unreachable or the cross-signing
+    /// reset could not be allowed.
+    async fn allow_cross_signing_reset(&self, mxid: &str) -> Result<(), Self::Error>;
 }
 
 #[async_trait::async_trait]
@@ -322,5 +330,9 @@ impl<T: HomeserverConnection + Send + Sync + ?Sized> HomeserverConnection for &T
 
     async fn unset_displayname(&self, mxid: &str) -> Result<(), Self::Error> {
         (**self).unset_displayname(mxid).await
+    }
+
+    async fn allow_cross_signing_reset(&self, mxid: &str) -> Result<(), Self::Error> {
+        (**self).allow_cross_signing_reset(mxid).await
     }
 }

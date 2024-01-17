@@ -25,6 +25,20 @@ use oauth2_types::{
     requests::{Display, GrantType, Prompt, ResponseMode},
     scope,
 };
+use serde::Serialize;
+
+#[derive(Debug, Serialize)]
+struct DiscoveryResponse {
+    #[serde(flatten)]
+    standard: ProviderMetadata,
+
+    #[serde(rename = "org.matrix.matrix-authentication-service.graphql_endpoint")]
+    graphql_endpoint: url::Url,
+
+    // As per MSC2965
+    account_management_uri: url::Url,
+    account_management_actions_supported: Vec<String>,
+}
 
 #[tracing::instrument(name = "handlers.oauth2.discovery.get", skip_all)]
 #[allow(clippy::too_many_lines)]
@@ -122,7 +136,7 @@ pub(crate) async fn get(
 
     let prompt_values_supported = Some(vec![Prompt::None, Prompt::Login, Prompt::Create]);
 
-    let metadata = ProviderMetadata {
+    let standard = ProviderMetadata {
         issuer,
         authorization_endpoint,
         token_endpoint,
@@ -155,7 +169,19 @@ pub(crate) async fn get(
         ..ProviderMetadata::default()
     };
 
-    Json(metadata)
+    Json(DiscoveryResponse {
+        standard,
+        graphql_endpoint: url_builder.graphql_endpoint(),
+        account_management_uri: url_builder.account_management_uri(),
+        // This needs to be kept in sync with what is supported in the frontend,
+        // see frontend/src/routing/actions.ts
+        account_management_actions_supported: vec![
+            "org.matrix.profile".to_owned(),
+            "org.matrix.sessions_list".to_owned(),
+            "org.matrix.session_view".to_owned(),
+            "org.matrix.session_end".to_owned(),
+        ],
+    })
 }
 
 #[cfg(test)]

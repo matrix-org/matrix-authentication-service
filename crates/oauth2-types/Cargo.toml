@@ -1,11 +1,15 @@
 [package]
 name = "oauth2-types"
+description = "OAuth 2.0 types used by the Matrix Authentication Service"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
+
+[lints]
+workspace = true
 
 [dependencies]
 http.workspace = true
@@ -14,14 +18,14 @@ serde_json.workspace = true
 language-tags = { version = "0.3.2", features = ["serde"] }
 url.workspace = true
 parse-display = "0.8.2"
-serde_with = { version = "3.3.0", features = ["chrono"] }
+serde_with = { version = "3.4.0", features = ["chrono"] }
 chrono.workspace = true
-sha2 = "0.10.7"
-data-encoding = "2.4.0"
+sha2 = "0.10.8"
+data-encoding = "2.5.0"
 thiserror.workspace = true
 
-mas-iana = { path = "../iana" }
-mas-jose = { path = "../jose" }
+mas-iana.workspace = true
+mas-jose.workspace = true
 
 [dev-dependencies]
 assert_matches = "1.5.0"

@@ -21,13 +21,16 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: "sccache"
   IMAGE: ghcr.io/matrix-org/matrix-authentication-service
+  IMAGE_SYN2MAS: ghcr.io/matrix-org/matrix-authentication-service/syn2mas
+  BUILDCACHE: ghcr.io/matrix-org/matrix-authentication-service/buildcache
 
 jobs:
   build-binaries:
     name: Build binaries
-    runs-on: memory-l-storage
-    container: docker.io/library/buildpack-deps:bookworm
+    runs-on: ubuntu-22.04
 
     env:
       SDKROOT: /opt/MacOSX11.3.sdk
@@ -37,17 +40,12 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
 
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.1.0
         with:
-          version: 0.55.0
-
-      - name: Install Node
-        uses: actions/setup-node@v3.8.1
-        with:
-          node-version: 18
+          version: 0.59.0
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -58,10 +56,8 @@ jobs:
             x86_64-apple-darwin
             aarch64-apple-darwin
 
-      - name: Setup Rust build cache
-        uses: Swatinem/rust-cache@v2.7.0
-        with:
-          save-if: "${{ github.event_name != 'pull_request' }}"
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.3
 
       - name: Install zig
         uses: goto-bus-stop/setup-zig@v2
@@ -74,7 +70,12 @@ jobs:
       - name: Download the macOS SDK
         run: curl -L "https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX11.3.sdk.tar.xz" | tar -J -x -C /opt
 
-      - name: Install Node dependencies
+      - name: Install frontend Node
+        uses: actions/setup-node@v4.0.0
+        with:
+          node-version: 18
+
+      - name: Install frontend Node dependencies
         working-directory: ./frontend
         run: npm ci
 
@@ -121,6 +122,7 @@ jobs:
             frontend/dist/
             policies/policy.wasm
             templates/
+            translations/
             LICENSE
 
 
@@ -138,7 +140,7 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.1
 
       - name: Docker meta
         id: meta
@@ -171,8 +173,24 @@ jobs:
             type=semver,pattern={{major}}
             type=sha
 
+      - name: Docker meta (syn2mas)
+        id: meta-syn2mas
+        uses: docker/metadata-action@v5.0.0
+        with:
+          images: "${{ env.IMAGE_SYN2MAS }}"
+          bake-target: docker-metadata-action-syn2mas
+          flavor: |
+            latest=auto
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
+
+
       - name: Setup Cosign
-        uses: sigstore/cosign-installer@v3.1.2
+        uses: sigstore/cosign-installer@v3.2.0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3.0.0
@@ -192,31 +210,35 @@ jobs:
       # For pull-requests, only read from the cache, do not try to push to the
       # cache or the image itself
       - name: Build
-        uses: docker/bake-action@v4.0.0
+        uses: docker/bake-action@v4.1.0
         if: github.event_name == 'pull_request'
         with:
           files: |
             docker-bake.hcl
             ${{ steps.meta.outputs.bake-file }}
             ${{ steps.meta-debug.outputs.bake-file }}
+            ${{ steps.meta-syn2mas.outputs.bake-file }}
           set: |
             base.context=https://github.com/${{ github.repository }}.git#${{ github.ref }}
-            base.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
+            syn2mas.context=https://github.com/${{ github.repository }}.git#${{ github.ref }}:tools/syn2mas/
+            base.cache-from=type=registry,ref=${{ env.BUILDCACHE }}:buildcache
 
       - name: Build and push
         id: bake
-        uses: docker/bake-action@v4.0.0
+        uses: docker/bake-action@v4.1.0
         if: github.event_name != 'pull_request'
         with:
           files: |
             docker-bake.hcl
             ${{ steps.meta.outputs.bake-file }}
             ${{ steps.meta-debug.outputs.bake-file }}
+            ${{ steps.meta-syn2mas.outputs.bake-file }}
           set: |
             base.context=https://github.com/${{ github.repository }}.git#${{ github.ref }}
+            syn2mas.context=https://github.com/${{ github.repository }}.git#${{ github.ref }}:tools/syn2mas/
             base.output=type=image,push=true
-            base.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
-            base.cache-to=type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max
+            base.cache-from=type=registry,ref=${{ env.BUILDCACHE }}:buildcache
+            base.cache-to=type=registry,ref=${{ env.BUILDCACHE }}:buildcache,mode=max
 
       - name: Sign the images with GitHub Actions provided token
         # Only sign on tags and on commits on main branch
@@ -227,7 +249,37 @@ jobs:
         run: |-
           cosign sign --yes \
             "${{ env.IMAGE }}@${{ fromJSON(steps.bake.outputs.metadata).regular['containerimage.digest'] }}" \
-            "${{ env.IMAGE }}@${{ fromJSON(steps.bake.outputs.metadata).debug['containerimage.digest'] }}"
+            "${{ env.IMAGE }}@${{ fromJSON(steps.bake.outputs.metadata).debug['containerimage.digest'] }}" \
+            "${{ env.IMAGE_SYN2MAS }}@${{ fromJSON(steps.bake.outputs.metadata).syn2mas['containerimage.digest'] }}"
+          
+
+  syn2mas:
+    name: Release syn2mas on NPM
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4.1.1
+
+      - name: Install Node
+        uses: actions/setup-node@v4.0.0
+        with:
+          node-version-file: ./tools/syn2mas/.nvmrc
+
+      - name: Install Node dependencies
+        working-directory: ./tools/syn2mas
+        run: npm ci
+
+      - name: Publish
+        uses: JS-DevTools/npm-publish@v3
+        with:
+          package: ./tools/syn2mas
+          token: ${{ secrets.NPM_TOKEN }}
+          provenance: true
+          dry-run: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 
   release:
@@ -237,6 +289,7 @@ jobs:
     needs:
       - build-binaries
       - build-image
+      - syn2mas
     steps:
       - name: Download the artifacts from the previous job
         uses: actions/download-artifact@v3
@@ -251,6 +304,7 @@ jobs:
           mv artifacts/frontend/dist/manifest.json dist/share/manifest.json
           mv artifacts/frontend/dist/ dist/share/assets
           mv artifacts/templates/ dist/share/templates
+          mv artifacts/translations/ dist/share/translations
           mv artifacts/LICENSE dist/LICENSE
           chmod -R u=rwX,go=rX dist/
 
@@ -292,6 +346,17 @@ jobs:
               - Tags:
                 ```
                 ${{ fromJSON(needs.build-image.outputs.metadata).debug['image.name'] }}
+                ```
+            
+            `syn2mas` migration tool: 
+            
+              - Digest: 
+                ```
+                ${{ env.IMAGE_SYN2MAS }}@${{ fromJSON(needs.build-image.outputs.metadata).syn2mas['containerimage.digest'] }}
+                ```
+              - Tags:
+                ```
+                ${{ fromJSON(needs.build-image.outputs.metadata).syn2mas['image.name'] }}
                 ```
 
           files: |

@@ -17,14 +17,17 @@ limitations under the License.
 {% extends "base.html" %}
 
 {% block content %}
-  {{ navbar::top() }}
-  <section class="flex items-center justify-center flex-1">
-    <div class="grid grid-cols-1 gap-6 w-96 my-2 mx-8">
-      <h1 class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 flex flex-col font-medium text-lg text-center">
-        This upstream account is already linked to another account.
-      </h1>
-
-      <div>{{ logout::button(text="Logout", csrf_token=csrf_token) }}</div>
+  <header class="page-heading">
+    <div class="icon invalid">
+      {{ icon.warning() }}
     </div>
-  </section>
+
+    <div class="header">
+      <h1 class="title">
+        {{ _("mas.upstream_oauth2.link_mismatch.heading") }}
+      </h1>
+    </div>
+  </header>
+
+  {{ logout.button(text=_("action.sign_out"), csrf_token=csrf_token) }}
 {% endblock content %}

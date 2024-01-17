@@ -32,10 +32,16 @@ export const getRouteActionRedirection = (
 } => {
   // Clone the search params so we can modify them
   const searchParams = new URLSearchParams(location.searchParams?.toString());
-  const action = searchParams.get("action");
+  let action = searchParams.get("action");
   const deviceId = searchParams.get("device_id");
   searchParams.delete("action");
   searchParams.delete("device_id");
+
+  // Actions are actually prefixed with org.matrix. in the latest version of MSC2965
+  // but we still want to support non-prefixed actions for backwards compatibility
+  if (action) {
+    action = action.replace(/^org.matrix./, "");
+  }
 
   let route: Route;
   switch (action) {

@@ -29,7 +29,7 @@ use mas_storage::{
 use thiserror::Error;
 use ulid::Ulid;
 
-use super::UpstreamSessionsCookie;
+use super::{cache::LazyProviderInfos, UpstreamSessionsCookie};
 use crate::{
     impl_from_error_for_route, upstream_oauth2::cache::MetadataCache,
     views::shared::OptionalPostAuthAction,
@@ -87,23 +87,28 @@ pub(crate) async fn get(
     let http_service = http_client_factory.http_service("upstream_oauth2.authorize");
 
     // First, discover the provider
-    let metadata = metadata_cache.get(&http_service, &provider.issuer).await?;
+    // This is done lazyly according to provider.discovery_mode and the various
+    // endpoint overrides
+    let mut lazy_metadata = LazyProviderInfos::new(&metadata_cache, &provider, &http_service);
+    lazy_metadata.maybe_discover().await?;
 
     let redirect_uri = url_builder.upstream_oauth_callback(provider.id);
 
-    let mut data = AuthorizationRequestData::new(
+    let data = AuthorizationRequestData::new(
         provider.client_id.clone(),
         provider.scope.clone(),
         redirect_uri,
     );
 
-    if let Some(methods) = metadata.code_challenge_methods_supported.clone() {
-        data = data.with_code_challenge_methods_supported(methods);
-    }
+    let data = if let Some(methods) = lazy_metadata.pkce_methods().await? {
+        data.with_code_challenge_methods_supported(methods)
+    } else {
+        data
+    };
 
     // Build an authorization request for it
     let (url, data) = mas_oidc_client::requests::authorization_code::build_authorization_url(
-        metadata.authorization_endpoint().clone(),
+        lazy_metadata.authorization_endpoint().await?.clone(),
         data,
         &mut rng,
     )?;

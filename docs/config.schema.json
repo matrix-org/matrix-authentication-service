@@ -8,6 +8,21 @@
     "secrets"
   ],
   "properties": {
+    "branding": {
+      "description": "Configuration section for tweaking the branding of the service",
+      "default": {
+        "imprint": null,
+        "logo_uri": null,
+        "policy_uri": null,
+        "service_name": null,
+        "tos_uri": null
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/BrandingConfig"
+        }
+      ]
+    },
     "clients": {
       "description": "List of OAuth 2.0/OIDC clients config",
       "default": [],
@@ -199,7 +214,8 @@
       "description": "Configuration related to templates",
       "default": {
         "assets_manifest": "./frontend/dist/manifest.json",
-        "path": "./templates/"
+        "path": "./templates/",
+        "translations_path": "./translations/"
       },
       "allOf": [
         {
@@ -298,22 +314,58 @@
         }
       ]
     },
+    "BrandingConfig": {
+      "description": "Configuration section for tweaking the branding of the service",
+      "type": "object",
+      "properties": {
+        "imprint": {
+          "description": "Legal imprint, displayed in the footer in the footer of web pages and emails.",
+          "type": "string"
+        },
+        "logo_uri": {
+          "description": "Logo displayed in some web pages.",
+          "type": "string",
+          "format": "uri"
+        },
+        "policy_uri": {
+          "description": "Link to a privacy policy, displayed in the footer of web pages and emails. It is also advertised to clients through the `op_policy_uri` OIDC provider metadata.",
+          "type": "string",
+          "format": "uri"
+        },
+        "service_name": {
+          "description": "A human-readable name. Defaults to the server's address.",
+          "type": "string"
+        },
+        "tos_uri": {
+          "description": "Link to a terms of service document, displayed in the footer of web pages and emails. It is also advertised to clients through the `op_tos_uri` OIDC provider metadata.",
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
     "ClaimsImports": {
       "description": "How claims should be imported",
       "type": "object",
       "properties": {
         "displayname": {
-          "description": "Import the displayname of the user based on the `name` claim",
-          "default": null,
+          "description": "Import the displayname of the user.",
+          "default": {
+            "action": "ignore",
+            "template": null
+          },
           "allOf": [
             {
-              "$ref": "#/definitions/ImportPreference"
+              "$ref": "#/definitions/DisplaynameImportPreference"
             }
           ]
         },
         "email": {
           "description": "Import the email address of the user based on the `email` and `email_verified` claims",
-          "default": null,
+          "default": {
+            "action": "ignore",
+            "set_email_verification": "import",
+            "template": null
+          },
           "allOf": [
             {
               "$ref": "#/definitions/EmailImportPreference"
@@ -321,11 +373,25 @@
           ]
         },
         "localpart": {
-          "description": "Import the localpart of the MXID based on the `preferred_username` claim",
-          "default": null,
+          "description": "Import the localpart of the MXID",
+          "default": {
+            "action": "ignore",
+            "template": null
+          },
           "allOf": [
             {
-              "$ref": "#/definitions/ImportPreference"
+              "$ref": "#/definitions/LocalpartImportPreference"
+            }
+          ]
+        },
+        "subject": {
+          "description": "How to determine the subject of the user",
+          "default": {
+            "template": null
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/SubjectImportPreference"
             }
           ]
         }
@@ -567,6 +633,52 @@
         }
       }
     },
+    "DiscoveryMode": {
+      "description": "How to discover the provider's configuration",
+      "oneOf": [
+        {
+          "description": "Use OIDC discovery with strict metadata verification",
+          "type": "string",
+          "enum": [
+            "oidc"
+          ]
+        },
+        {
+          "description": "Use OIDC discovery with relaxed metadata verification",
+          "type": "string",
+          "enum": [
+            "insecure"
+          ]
+        },
+        {
+          "description": "Use a static configuration",
+          "type": "string",
+          "enum": [
+            "disabled"
+          ]
+        }
+      ]
+    },
+    "DisplaynameImportPreference": {
+      "description": "What should be done for the displayname attribute",
+      "type": "object",
+      "properties": {
+        "action": {
+          "description": "How to handle the attribute",
+          "default": "ignore",
+          "allOf": [
+            {
+              "$ref": "#/definitions/ImportAction"
+            }
+          ]
+        },
+        "template": {
+          "description": "The Jinja2 template to use for the displayname attribute\n\nIf not provided, the default template is `{{ user.name }}`",
+          "default": null,
+          "type": "string"
+        }
+      }
+    },
     "EmailConfig": {
       "description": "Configuration related to sending emails",
       "type": "object",
@@ -683,7 +795,7 @@
       }
     },
     "EmailImportPreference": {
-      "description": "What should be done with the email claim",
+      "description": "What should be done with the email attribute",
       "type": "object",
       "properties": {
         "action": {
@@ -703,6 +815,11 @@
               "$ref": "#/definitions/SetEmailVerification"
             }
           ]
+        },
+        "template": {
+          "description": "The Jinja2 template to use for the email address attribute\n\nIf not provided, the default template is `{{ user.email }}`",
+          "default": null,
+          "type": "string"
         }
       }
     },
@@ -896,21 +1013,6 @@
           ]
         }
       ]
-    },
-    "ImportPreference": {
-      "description": "What should be done with a claim",
-      "type": "object",
-      "properties": {
-        "action": {
-          "description": "How to handle the claim",
-          "default": "ignore",
-          "allOf": [
-            {
-              "$ref": "#/definitions/ImportAction"
-            }
-          ]
-        }
-      }
     },
     "IpNetwork": {
       "oneOf": [
@@ -1277,6 +1379,10 @@
           "description": "A unique name for this listener which will be shown in traces and in metrics labels",
           "type": "string"
         },
+        "prefix": {
+          "description": "HTTP prefix to mount the resources on",
+          "type": "string"
+        },
         "proxy_protocol": {
           "description": "Accept HAProxy's Proxy Protocol V1",
           "default": false,
@@ -1296,6 +1402,26 @@
               "$ref": "#/definitions/TlsConfig"
             }
           ]
+        }
+      }
+    },
+    "LocalpartImportPreference": {
+      "description": "What should be done for the localpart attribute",
+      "type": "object",
+      "properties": {
+        "action": {
+          "description": "How to handle the attribute",
+          "default": "ignore",
+          "allOf": [
+            {
+              "$ref": "#/definitions/ImportAction"
+            }
+          ]
+        },
+        "template": {
+          "description": "The Jinja2 template to use for the localpart attribute\n\nIf not provided, the default template is `{{ user.preferred_username }}`",
+          "default": null,
+          "type": "string"
         }
       }
     },
@@ -1419,6 +1545,32 @@
           }
         }
       }
+    },
+    "PkceMethod": {
+      "description": "Whether to use proof key for code exchange (PKCE) when requesting and exchanging the token.",
+      "oneOf": [
+        {
+          "description": "Use PKCE if the provider supports it\n\nDefaults to no PKCE if provider discovery is disabled",
+          "type": "string",
+          "enum": [
+            "auto"
+          ]
+        },
+        {
+          "description": "Always use PKCE with the S256 challenge method",
+          "type": "string",
+          "enum": [
+            "always"
+          ]
+        },
+        {
+          "description": "Never use PKCE",
+          "type": "string",
+          "enum": [
+            "never"
+          ]
+        }
+      ]
     },
     "PolicyConfig": {
       "description": "Application secrets",
@@ -1599,15 +1751,41 @@
         }
       ],
       "required": [
-        "claims_imports",
         "client_id",
         "id",
         "issuer",
         "scope"
       ],
       "properties": {
+        "authorization_endpoint": {
+          "description": "The URL to use for the provider's authorization endpoint\n\nDefaults to the `authorization_endpoint` provided through discovery",
+          "type": "string",
+          "format": "uri"
+        },
+        "brand_name": {
+          "description": "A brand identifier used to customise the UI, e.g. `apple`, `google`, `github`, etc.\n\nValues supported by the default template are:\n\n- `apple` - `google` - `facebook` - `github` - `gitlab` - `twitter`",
+          "type": "string"
+        },
         "claims_imports": {
           "description": "How claims should be imported from the `id_token` provided by the provider",
+          "default": {
+            "displayname": {
+              "action": "ignore",
+              "template": null
+            },
+            "email": {
+              "action": "ignore",
+              "set_email_verification": "import",
+              "template": null
+            },
+            "localpart": {
+              "action": "ignore",
+              "template": null
+            },
+            "subject": {
+              "template": null
+            }
+          },
           "allOf": [
             {
               "$ref": "#/definitions/ClaimsImports"
@@ -1616,6 +1794,19 @@
         },
         "client_id": {
           "description": "The client ID to use when authenticating with the provider",
+          "type": "string"
+        },
+        "discovery_mode": {
+          "description": "How to discover the provider's configuration\n\nDefaults to use OIDC discovery with strict metadata verification",
+          "default": "oidc",
+          "allOf": [
+            {
+              "$ref": "#/definitions/DiscoveryMode"
+            }
+          ]
+        },
+        "human_name": {
+          "description": "A human-readable name for the provider, that will be shown to users",
           "type": "string"
         },
         "id": {
@@ -1627,9 +1818,28 @@
           "description": "The OIDC issuer URL",
           "type": "string"
         },
+        "jwks_uri": {
+          "description": "The URL to use for getting the provider's public keys\n\nDefaults to the `jwks_uri` provided through discovery",
+          "type": "string",
+          "format": "uri"
+        },
+        "pkce_method": {
+          "description": "Whether to use proof key for code exchange (PKCE) when requesting and exchanging the token.\n\nDefaults to `auto`, which uses PKCE if the provider supports it.",
+          "default": "auto",
+          "allOf": [
+            {
+              "$ref": "#/definitions/PkceMethod"
+            }
+          ]
+        },
         "scope": {
           "description": "The scopes to request from the provider",
           "type": "string"
+        },
+        "token_endpoint": {
+          "description": "The URL to use for the provider's token endpoint\n\nDefaults to the `token_endpoint` provided through discovery",
+          "type": "string",
+          "format": "uri"
         }
       }
     },
@@ -1865,6 +2075,17 @@
         }
       ]
     },
+    "SubjectImportPreference": {
+      "description": "What should be done for the subject attribute",
+      "type": "object",
+      "properties": {
+        "template": {
+          "description": "The Jinja2 template to use for the subject attribute\n\nIf not provided, the default template is `{{ user.sub }}`",
+          "default": null,
+          "type": "string"
+        }
+      }
+    },
     "TelemetryConfig": {
       "description": "Configuration related to sending monitoring data",
       "type": "object",
@@ -1917,6 +2138,11 @@
         "path": {
           "description": "Path to the folder which holds the templates",
           "default": "./templates/",
+          "type": "string"
+        },
+        "translations_path": {
+          "description": "Path to the translations",
+          "default": "./translations/",
           "type": "string"
         }
       }

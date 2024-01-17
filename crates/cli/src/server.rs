@@ -175,6 +175,7 @@ fn on_http_response_labels<B>(res: &Response<B>) -> Vec<KeyValue> {
 pub fn build_router<B>(
     state: AppState,
     resources: &[HttpResource],
+    prefix: Option<&str>,
     name: Option<&str>,
 ) -> Router<(), B>
 where
@@ -242,6 +243,11 @@ where
                 router
             }
         }
+    }
+
+    if let Some(prefix) = prefix {
+        let path = format!("{}/", prefix.trim_end_matches('/'));
+        router = Router::new().nest(&path, router);
     }
 
     router = router.fallback(mas_handlers::fallback);

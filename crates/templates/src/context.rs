@@ -14,19 +14,25 @@
 
 //! Contexts used in templates
 
+mod branding;
+
+use std::fmt::Formatter;
+
 use chrono::{DateTime, Utc};
 use http::{Method, Uri, Version};
 use mas_data_model::{
     AuthorizationGrant, BrowserSession, Client, CompatSsoLogin, CompatSsoLoginState,
     UpstreamOAuthLink, UpstreamOAuthProvider, User, UserEmail, UserEmailVerification,
 };
-use mas_router::{PostAuthAction, Route};
+use mas_i18n::DataLocale;
+use mas_router::{Account, GraphQL, PostAuthAction, UrlBuilder};
 use rand::Rng;
 use serde::{ser::SerializeStruct, Deserialize, Serialize};
 use ulid::Ulid;
 use url::Url;
 
-use crate::{FormField, FormState};
+pub use self::branding::SiteBranding;
+use crate::{FieldError, FormField, FormState};
 
 /// Helper trait to construct context wrappers
 pub trait TemplateContext: Serialize {
@@ -68,6 +74,17 @@ pub trait TemplateContext: Serialize {
         }
     }
 
+    /// Attach a language to the template context
+    fn with_language(self, lang: DataLocale) -> WithLanguage<Self>
+    where
+        Self: Sized,
+    {
+        WithLanguage {
+            lang: lang.to_string(),
+            inner: self,
+        }
+    }
+
     /// Generate sample values for this context type
     ///
     /// This is then used to check for template validity in unit tests and in
@@ -83,6 +100,45 @@ impl TemplateContext for () {
         Self: Sized,
     {
         Vec::new()
+    }
+}
+
+/// Context with a specified locale in it
+#[derive(Serialize)]
+pub struct WithLanguage<T> {
+    lang: String,
+
+    #[serde(flatten)]
+    inner: T,
+}
+
+impl<T> WithLanguage<T> {
+    /// Get the language of this context
+    pub fn language(&self) -> &str {
+        &self.lang
+    }
+}
+
+impl<T> std::ops::Deref for WithLanguage<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<T: TemplateContext> TemplateContext for WithLanguage<T> {
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        T::sample(now, rng)
+            .into_iter()
+            .map(|inner| WithLanguage {
+                lang: "en".into(),
+                inner,
+            })
+            .collect()
     }
 }
 
@@ -223,30 +279,29 @@ impl TemplateContext for IndexContext {
 
 /// Config used by the frontend app
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AppConfig {
     root: String,
-}
-
-impl Default for AppConfig {
-    fn default() -> Self {
-        Self {
-            root: "/account/".into(),
-        }
-    }
+    graphql_endpoint: String,
 }
 
 /// Context used by the `app.html` template
-#[derive(Serialize, Default)]
+#[derive(Serialize)]
 pub struct AppContext {
     app_config: AppConfig,
 }
 
 impl AppContext {
-    /// Constructs the context for the app page with the given app root
+    /// Constructs the context given the [`UrlBuilder`]
     #[must_use]
-    pub fn with_app_root(root: String) -> Self {
+    pub fn from_url_builder(url_builder: &UrlBuilder) -> Self {
+        let root = url_builder.relative_url_for(&Account::default());
+        let graphql_endpoint = url_builder.relative_url_for(&GraphQL);
         Self {
-            app_config: AppConfig { root },
+            app_config: AppConfig {
+                root,
+                graphql_endpoint,
+            },
         }
     }
 }
@@ -256,7 +311,8 @@ impl TemplateContext for AppContext {
     where
         Self: Sized,
     {
-        vec![Self::default()]
+        let url_builder = UrlBuilder::new("https://example.com/".parse().unwrap(), None, None);
+        vec![Self::from_url_builder(&url_builder)]
     }
 }
 
@@ -348,6 +404,26 @@ impl TemplateContext for LoginContext {
             },
             LoginContext {
                 form: FormState::default(),
+                next: None,
+                password_disabled: false,
+                providers: Vec::new(),
+            },
+            LoginContext {
+                form: FormState::default()
+                    .with_error_on_field(LoginFormField::Username, FieldError::Required)
+                    .with_error_on_field(
+                        LoginFormField::Password,
+                        FieldError::Policy {
+                            message: "password too short".to_owned(),
+                        },
+                    ),
+                next: None,
+                password_disabled: false,
+                providers: Vec::new(),
+            },
+            LoginContext {
+                form: FormState::default()
+                    .with_error_on_field(LoginFormField::Username, FieldError::Exists),
                 next: None,
                 password_disabled: false,
                 providers: Vec::new(),
@@ -842,68 +918,108 @@ impl TemplateContext for UpstreamSuggestLink {
     }
 }
 
+/// User-editeable fields of the upstream account link form
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum UpstreamRegisterFormField {
+    /// The username field
+    Username,
+}
+
+impl FormField for UpstreamRegisterFormField {
+    fn keep(&self) -> bool {
+        match self {
+            Self::Username => true,
+        }
+    }
+}
+
 /// Context used by the `pages/upstream_oauth2/do_register.html`
 /// templates
-#[derive(Serialize)]
+#[derive(Serialize, Default)]
 pub struct UpstreamRegister {
-    login_link: String,
-    suggested_localpart: Option<String>,
+    imported_localpart: Option<String>,
     force_localpart: bool,
-    suggested_display_name: Option<String>,
+    imported_display_name: Option<String>,
     force_display_name: bool,
-    suggested_email: Option<String>,
+    imported_email: Option<String>,
     force_email: bool,
+    form_state: FormState<UpstreamRegisterFormField>,
 }
 
 impl UpstreamRegister {
     /// Constructs a new context with an existing linked user
     #[must_use]
-    pub fn new(link: &UpstreamOAuthLink) -> Self {
-        Self::for_link_id(link.id)
+    pub fn new() -> Self {
+        Self::default()
     }
 
-    /// Set the suggested localpart
+    /// Set the imported localpart
     pub fn set_localpart(&mut self, localpart: String, force: bool) {
-        self.suggested_localpart = Some(localpart);
+        self.imported_localpart = Some(localpart);
         self.force_localpart = force;
     }
 
-    /// Set the suggested display name
+    /// Set the imported localpart
+    #[must_use]
+    pub fn with_localpart(self, localpart: String, force: bool) -> Self {
+        Self {
+            imported_localpart: Some(localpart),
+            force_localpart: force,
+            ..self
+        }
+    }
+
+    /// Set the imported display name
     pub fn set_display_name(&mut self, display_name: String, force: bool) {
-        self.suggested_display_name = Some(display_name);
+        self.imported_display_name = Some(display_name);
         self.force_display_name = force;
     }
 
-    /// Set the suggested email
+    /// Set the imported display name
+    #[must_use]
+    pub fn with_display_name(self, display_name: String, force: bool) -> Self {
+        Self {
+            imported_display_name: Some(display_name),
+            force_display_name: force,
+            ..self
+        }
+    }
+
+    /// Set the imported email
     pub fn set_email(&mut self, email: String, force: bool) {
-        self.suggested_email = Some(email);
+        self.imported_email = Some(email);
         self.force_email = force;
     }
 
-    fn for_link_id(id: Ulid) -> Self {
-        let login_link = mas_router::Login::and_link_upstream(id)
-            .relative_url()
-            .into();
-
+    /// Set the imported email
+    #[must_use]
+    pub fn with_email(self, email: String, force: bool) -> Self {
         Self {
-            login_link,
-            suggested_localpart: None,
-            force_localpart: false,
-            suggested_display_name: None,
-            force_display_name: false,
-            suggested_email: None,
-            force_email: false,
+            imported_email: Some(email),
+            force_email: force,
+            ..self
         }
+    }
+
+    /// Set the form state
+    pub fn set_form_state(&mut self, form_state: FormState<UpstreamRegisterFormField>) {
+        self.form_state = form_state;
+    }
+
+    /// Set the form state
+    #[must_use]
+    pub fn with_form_state(self, form_state: FormState<UpstreamRegisterFormField>) -> Self {
+        Self { form_state, ..self }
     }
 }
 
 impl TemplateContext for UpstreamRegister {
-    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
-        let id = Ulid::from_datetime_with_source(now.into(), rng);
-        vec![Self::for_link_id(id)]
+        vec![Self::new()]
     }
 }
 
@@ -946,6 +1062,24 @@ pub struct ErrorContext {
     code: Option<&'static str>,
     description: Option<String>,
     details: Option<String>,
+    lang: Option<String>,
+}
+
+impl std::fmt::Display for ErrorContext {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if let Some(code) = &self.code {
+            writeln!(f, "code: {code}")?;
+        }
+        if let Some(description) = &self.description {
+            writeln!(f, "{description}")?;
+        }
+
+        if let Some(details) = &self.details {
+            writeln!(f, "details: {details}")?;
+        }
+
+        Ok(())
+    }
 }
 
 impl TemplateContext for ErrorContext {
@@ -989,6 +1123,13 @@ impl ErrorContext {
     #[must_use]
     pub fn with_details(mut self, details: String) -> Self {
         self.details = Some(details);
+        self
+    }
+
+    /// Add the language to the context
+    #[must_use]
+    pub fn with_language(mut self, lang: &DataLocale) -> Self {
+        self.lang = Some(lang.to_string());
         self
     }
 

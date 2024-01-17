@@ -14,6 +14,7 @@
 
 import { Button } from "@vector-im/compound-web";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import ConfirmationModal from "../ConfirmationModal/ConfirmationModal";
 import LoadingSpinner from "../LoadingSpinner/LoadingSpinner";
@@ -30,8 +31,9 @@ const EndSessionButton: React.FC<{
    * When falsy, ONE is used as default
    */
   sessionCount?: number;
-}> = ({ endSession, sessionCount }) => {
+}> = ({ endSession, sessionCount = 1 }) => {
   const [inProgress, setInProgress] = useState(false);
+  const { t } = useTranslation();
 
   const onConfirm = async (): Promise<void> => {
     setInProgress(true);
@@ -46,25 +48,18 @@ const EndSessionButton: React.FC<{
   // NOOP so we render cancel button
   const onDeny = (): void => {};
 
-  const title =
-    sessionCount && sessionCount > 1
-      ? `Are you sure you want to end ${sessionCount} sessions?`
-      : "Are you sure you want to end this session?";
-  const buttonLabel =
-    sessionCount && sessionCount > 1
-      ? `End ${sessionCount} sessions`
-      : "End session";
-
   return (
     <>
       <ConfirmationModal
         onDeny={onDeny}
         onConfirm={onConfirm}
-        title={title}
+        title={t("frontend.end_session_button.confirmation_modal_title", {
+          count: sessionCount,
+        })}
         trigger={
           <Button kind="destructive" size="sm" disabled={inProgress}>
             {inProgress && <LoadingSpinner inline />}
-            {buttonLabel}
+            {t("frontend.end_session_button.text", { count: sessionCount })}
           </Button>
         }
       />

@@ -2,15 +2,23 @@ version: 2
 updates:
   - package-ecosystem: "cargo"
     directory: "/"
+    labels:
+      - "A-Dependencies"
+      - "Z-Deps-Backend"
     schedule:
       interval: "daily"
     groups:
+      apalis:
+        patterns:
+          - "apalis"
+          - "apalis-*"
       aws:
         patterns:
           - "aws-*"
       opentelemetry:
         patterns:
           - "opentelemetry"
+          - "opentelemetry_sdk"
           - "opentelemetry-*"
           - "tracing-opentelemetry"
       sentry:
@@ -22,14 +30,24 @@ updates:
           - "tracing-*"
         exclude-patterns:
           - "tracing-opentelemetry"
+      icu:
+        patterns:
+          - "icu"
+          - "icu_*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
+    labels:
+      - "A-Dependencies"
+      - "Z-Deps-CI"
     schedule:
       interval: "daily"
 
   - package-ecosystem: "npm"
     directory: "/frontend/"
+    labels:
+      - "A-Dependencies"
+      - "Z-Deps-Frontend"
     schedule:
       interval: "daily"
     groups:
@@ -46,10 +64,17 @@ updates:
           - "vite"
           - "@vitejs/*"
           - "vite-*"
+      i18next:
+        patterns:
+          - "i18next"
+          - "i18next-*"
+          - "react-i18next"
       react:
         patterns:
           - "react"
           - "react-*"
+        exclude-patterns:
+          - "react-i18next"
       jotai:
         patterns:
           - "jotai"
@@ -64,3 +89,23 @@ updates:
       graphql-codegen:
         patterns:
           - "@graphql-codegen/*"
+      types:
+        patterns:
+          - "@types/*"
+
+  - package-ecosystem: "npm"
+    directory: "/tools/syn2mas/"
+    labels:
+      - "A-Dependencies"
+      - "Z-Deps-Syn2Mas"
+    schedule:
+      interval: "weekly"
+    ignore:
+      # Ignore @types/node until we can upgrade to Node 20
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+    groups:
+      production:
+        dependency-type: "production"
+      development:
+        dependency-type: "development"

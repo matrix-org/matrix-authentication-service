@@ -17,5 +17,5 @@ export { default as Link } from "./Link";
 export type { Route, Location } from "./routes";
 export { pathToRoute, routeToPath } from "./routes";
 export { getRouteActionRedirection } from "./actions";
-export { routeAtom, locationAtom, appConfigAtom } from "./atoms";
+export { routeAtom, locationAtom, appConfigAtom, history } from "./atoms";
 export { useNavigationLink } from "./useNavigationLink";

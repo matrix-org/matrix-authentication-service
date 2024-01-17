@@ -1,10 +1,10 @@
-/* Copyright 2023 The Matrix.org Foundation C.I.C.
+/* Copyright 2023 The Matrix.cpd-form-org Foundation C.cpd-form-I.cpd-form-C.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.cpd-form-apache.cpd-form-org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,81 +14,115 @@
  */
 
 /**
+ * ROOT: Form Element
+ */
+
+.cpd-form-root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cpd-space-5x);
+}
+
+/**
  * FIELD: Wrapper around label, control and message
  */
 
-.cpd-field {
+.cpd-form-field {
   display: flex;
   flex-direction: column;
+  gap: var(--cpd-space-1x);
+}
+
+.cpd-form-inline-field {
+  display: flex;
+  flex-direction: row;
+  gap: var(--cpd-space-3x);
+}
+
+.cpd-form-inline-field-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.cpd-form-inline-field-control {
+  /* The control should have the same height as the label */
+  block-size: calc(
+    var(--cpd-font-size-body-md) * var(--cpd-font-line-height-regular)
+  );
+
+  /* Align the control in the middle of the label */
+  display: flex;
+  align-items: center;
 }
 
 /**
  * LABEL
  */
 
-.cpd-label {
-  font-weight: var(--cpd-font-weight-medium);
+.cpd-form-label {
+  font: var(--cpd-font-body-md-medium);
+  letter-spacing: var(--cpd-font-letter-spacing-body-md);
 }
 
-.cpd-label[for] {
+.cpd-form-label[for] {
   cursor: pointer;
 }
 
-.cpd-label[data-invalid] {
+.cpd-form-label[data-invalid] {
   color: var(--cpd-color-text-critical-primary);
 }
 
+.cpd-form-inline-field-body .cpd-form-label {
+  /* When the label is inline, it should be using regular font weight, not medium */
+  font: var(--cpd-font-body-md-regular);
+}
+
 /* Currently working everywhere but on Firefox (only behind a labs flag)
-https://developer.mozilla.org/en-US/docs/Web/CSS/:has#browser_compatibility */
-.cpd-label:has(~ .cpd-control[disabled]) {
+https://developer.cpd-form-mozilla.cpd-form-org/en-US/docs/Web/CSS/:has#browser_compatibility */
+.cpd-form-label:has(~ * input[disabled]),
+.cpd-form-label:has(~ input[disabled]),
+.cpd-form-inline-field-control:has(input[disabled])
+  ~ .cpd-form-inline-field-body
+  .cpd-form-label {
   color: var(--cpd-color-text-disabled);
   cursor: not-allowed;
 }
 
 /**
- * CONTROL
+ * Help and error messages
  */
 
-.cpd-control {
-  border: 1px solid var(--cpd-color-border-interactive-primary);
-  background: var(--cpd-color-bg-canvas-default);
-  border-radius: 0.5rem;
-  padding: var(--cpd-space-3x) var(--cpd-space-4x);
-  box-sizing: border-box;
+.cpd-form-message {
+  font: var(--cpd-font-body-sm-regular);
+  letter-spacing: var(--cpd-font-letter-spacing-body-sm);
+  margin-block-start: var(--cpd-space-1x);
 }
 
-/* Disabling the descending specificity rule to allow for selectors like below
- * It is using the "fake" element hack to style checkboxes, radio, mfa codes ...
- */
-
-/* stylelint-disable no-descending-specificity */
-@media (hover) {
-  .cpd-control:hover,
-  input:hover ~ .cpd-control {
-    border-color: var(--cpd-color-border-interactive-hovered);
-  }
+.cpd-form-help-message {
+  color: var(--cpd-color-text-secondary);
 }
 
-.cpd-control:active,
-input:active ~ .cpd-control {
-  border-color: var(--cpd-color-border-interactive-hovered);
+.cpd-form-error-message {
+  color: var(--cpd-color-text-critical-primary);
 }
 
-.cpd-control:focus,
-input:focus ~ .cpd-control {
-  outline: 2px solid var(--cpd-color-border-focused);
-  border-color: transparent;
-}
-
-.cpd-control[data-invalid],
-input[data-invalid] ~ .cpd-control {
-  border-color: var(--cpd-color-text-critical-primary);
-}
-
-.cpd-control:disabled,
-input:disabled ~ .cpd-control {
-  background: var(--cpd-color-bg-canvas-disabled);
-  border-color: var(--cpd-color-border-disabled);
+/* Currently working everywhere but on Firefox (only behind a labs flag)
+https://developer.cpd-form-mozilla.cpd-form-org/en-US/docs/Web/CSS/:has#browser_compatibility */
+input[disabled] ~ .cpd-form-message,
+*:has(input[disabled]) ~ .cpd-form-message,
+.cpd-form-inline-field-control:has(input[disabled])
+  ~ .cpd-form-inline-field-body
+  .cpd-form-message {
   color: var(--cpd-color-text-disabled);
-  cursor: not-allowed;
+}
+
+.cpd-form-message > svg {
+  display: inline-block;
+  vertical-align: bottom;
+  margin-inline-end: var(--cpd-space-2x);
+
+  /* Calculate the size of the icon based on the font size and line height */
+  block-size: calc(1em * var(--cpd-font-line-height-regular));
+  inline-size: calc(1em * var(--cpd-font-line-height-regular));
 }

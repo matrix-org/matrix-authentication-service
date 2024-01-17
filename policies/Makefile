@@ -1,6 +1,6 @@
 # Set to 1 to run OPA through Docker
 DOCKER := 0
-OPA_DOCKER_IMAGE := docker.io/openpolicyagent/opa:0.55.0-debug
+OPA_DOCKER_IMAGE := docker.io/openpolicyagent/opa:0.59.0-debug
 
 INPUTS := \
 	client_registration.rego \

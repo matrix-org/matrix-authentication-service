@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { ReactNode } from "react";
+import { Translation } from "react-i18next";
+
 import styles from "./LoadingSpinner.module.css";
 
 const LoadingSpinner: React.FC<{ inline?: boolean }> = ({ inline }) => (
@@ -27,7 +30,9 @@ const LoadingSpinner: React.FC<{ inline?: boolean }> = ({ inline }) => (
         fill="currentFill"
       />
     </svg>
-    <span className="sr-only">Loading...</span>
+    <span className="sr-only">
+      <Translation>{(t): ReactNode => t("common.loading")}</Translation>
+    </span>
   </div>
 );
 

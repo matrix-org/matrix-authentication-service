@@ -22,7 +22,7 @@ use mas_storage::{
 };
 use oauth2_types::scope::{Scope, ScopeToken};
 use sea_query::{
-    Alias, ColumnRef, CommonTableExpression, Expr, PostgresQueryBuilder, Query, UnionType,
+    Alias, ColumnRef, CommonTableExpression, Expr, PgFunc, PostgresQueryBuilder, Query, UnionType,
 };
 use sea_query_binder::SqlxBinder;
 use sqlx::PgConnection;
@@ -269,6 +269,12 @@ impl<'c> AppSessionRepository for PgAppSessionRepository<'c> {
                     Expr::col((OAuth2Sessions::Table, OAuth2Sessions::FinishedAt)).is_not_null()
                 }
             }))
+            .and_where_option(filter.device().map(|device| {
+                Expr::val(device.to_scope_token().to_string()).eq(PgFunc::any(Expr::col((
+                    OAuth2Sessions::Table,
+                    OAuth2Sessions::ScopeList,
+                ))))
+            }))
             .clone();
 
         let compat_session_select = Query::select()
@@ -323,6 +329,9 @@ impl<'c> AppSessionRepository for PgAppSessionRepository<'c> {
                     Expr::col((CompatSessions::Table, CompatSessions::FinishedAt)).is_not_null()
                 }
             }))
+            .and_where_option(filter.device().map(|device| {
+                Expr::col((CompatSessions::Table, CompatSessions::DeviceId)).eq(device.to_string())
+            }))
             .clone();
 
         let common_table_expression = CommonTableExpression::new()
@@ -376,6 +385,12 @@ impl<'c> AppSessionRepository for PgAppSessionRepository<'c> {
                     Expr::col((OAuth2Sessions::Table, OAuth2Sessions::FinishedAt)).is_not_null()
                 }
             }))
+            .and_where_option(filter.device().map(|device| {
+                Expr::val(device.to_scope_token().to_string()).eq(PgFunc::any(Expr::col((
+                    OAuth2Sessions::Table,
+                    OAuth2Sessions::ScopeList,
+                ))))
+            }))
             .clone();
 
         let compat_session_select = Query::select()
@@ -390,6 +405,9 @@ impl<'c> AppSessionRepository for PgAppSessionRepository<'c> {
                 } else {
                     Expr::col((CompatSessions::Table, CompatSessions::FinishedAt)).is_not_null()
                 }
+            }))
+            .and_where_option(filter.device().map(|device| {
+                Expr::col((CompatSessions::Table, CompatSessions::DeviceId)).eq(device.to_string())
             }))
             .clone();
 
@@ -475,7 +493,7 @@ mod tests {
         let device = Device::generate(&mut rng);
         let compat_session = repo
             .compat_session()
-            .add(&mut rng, &clock, &user, device, false)
+            .add(&mut rng, &clock, &user, device.clone(), false)
             .await
             .unwrap();
 
@@ -552,7 +570,8 @@ mod tests {
             .await
             .unwrap();
 
-        let scope = Scope::from_iter([OPENID]);
+        let device2 = Device::generate(&mut rng);
+        let scope = Scope::from_iter([OPENID, device2.to_scope_token()]);
 
         // We're moving the clock forward by 1 minute between each session to ensure
         // we're getting consistent ordering in lists.
@@ -626,6 +645,25 @@ mod tests {
         );
         assert_eq!(
             full_list.edges[1],
+            AppSession::OAuth2(Box::new(oauth_session.clone()))
+        );
+
+        // Query by device
+        let filter = AppSessionFilter::new().for_device(&device);
+        assert_eq!(repo.app_session().count(filter).await.unwrap(), 1);
+        let list = repo.app_session().list(filter, pagination).await.unwrap();
+        assert_eq!(list.edges.len(), 1);
+        assert_eq!(
+            list.edges[0],
+            AppSession::Compat(Box::new(compat_session.clone()))
+        );
+
+        let filter = AppSessionFilter::new().for_device(&device2);
+        assert_eq!(repo.app_session().count(filter).await.unwrap(), 1);
+        let list = repo.app_session().list(filter, pagination).await.unwrap();
+        assert_eq!(list.edges.len(), 1);
+        assert_eq!(
+            list.edges[0],
             AppSession::OAuth2(Box::new(oauth_session.clone()))
         );
 

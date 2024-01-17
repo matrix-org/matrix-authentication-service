@@ -25,7 +25,8 @@ use mas_axum_utils::{
     FancyError, SessionInfoExt,
 };
 use mas_data_model::BrowserSession;
-use mas_router::{Route, UpstreamOAuth2Authorize};
+use mas_i18n::DataLocale;
+use mas_router::{UpstreamOAuth2Authorize, UrlBuilder};
 use mas_storage::{
     upstream_oauth2::UpstreamOAuthProviderRepository,
     user::{BrowserSessionRepository, UserPasswordRepository, UserRepository},
@@ -39,7 +40,7 @@ use serde::{Deserialize, Serialize};
 use zeroize::Zeroizing;
 
 use super::shared::OptionalPostAuthAction;
-use crate::{passwords::PasswordManager, BoundActivityTracker};
+use crate::{passwords::PasswordManager, BoundActivityTracker, PreferredLanguage};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct LoginForm {
@@ -55,8 +56,10 @@ impl ToFormState for LoginForm {
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
+    PreferredLanguage(locale): PreferredLanguage,
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
+    State(url_builder): State<UrlBuilder>,
     mut repo: BoxRepository,
     activity_tracker: BoundActivityTracker,
     Query(query): Query<OptionalPostAuthAction>,
@@ -72,7 +75,7 @@ pub(crate) async fn get(
             .record_browser_session(&clock, &session)
             .await;
 
-        let reply = query.go_next();
+        let reply = query.go_next(&url_builder);
         return Ok((cookie_jar, reply).into_response());
     };
 
@@ -89,10 +92,11 @@ pub(crate) async fn get(
             destination = destination.and_then(action);
         };
 
-        return Ok((cookie_jar, destination.go()).into_response());
+        return Ok((cookie_jar, url_builder.redirect(&destination)).into_response());
     };
 
     let content = render(
+        locale,
         LoginContext::default()
             // XXX: we might want to have a site-wide config in the templates context instead?
             .with_password_login(password_manager.is_enabled())
@@ -111,8 +115,10 @@ pub(crate) async fn get(
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
+    PreferredLanguage(locale): PreferredLanguage,
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
+    State(url_builder): State<UrlBuilder>,
     mut repo: BoxRepository,
     activity_tracker: BoundActivityTracker,
     Query(query): Query<OptionalPostAuthAction>,
@@ -148,6 +154,7 @@ pub(crate) async fn post(
     if !state.is_valid() {
         let providers = repo.upstream_oauth_provider().all().await?;
         let content = render(
+            locale,
             LoginContext::default()
                 .with_form_state(state)
                 .with_upstream_providers(providers),
@@ -180,13 +187,14 @@ pub(crate) async fn post(
                 .await;
 
             let cookie_jar = cookie_jar.set_session(&session_info);
-            let reply = query.go_next();
+            let reply = query.go_next(&url_builder);
             Ok((cookie_jar, reply).into_response())
         }
         Err(e) => {
             let state = state.with_error_on_form(e);
 
             let content = render(
+                locale,
                 LoginContext::default().with_form_state(state),
                 query,
                 csrf_token,
@@ -275,6 +283,7 @@ async fn login(
 }
 
 async fn render(
+    locale: DataLocale,
     ctx: LoginContext,
     action: OptionalPostAuthAction,
     csrf_token: CsrfToken,
@@ -287,9 +296,9 @@ async fn render(
     } else {
         ctx
     };
-    let ctx = ctx.with_csrf(csrf_token.form_value());
+    let ctx = ctx.with_csrf(csrf_token.form_value()).with_language(locale);
 
-    let content = templates.render_login(&ctx).await?;
+    let content = templates.render_login(&ctx)?;
     Ok(content)
 }
 
@@ -302,7 +311,10 @@ mod test {
     use mas_data_model::UpstreamOAuthProviderClaimsImports;
     use mas_iana::oauth::OAuthClientAuthenticationMethod;
     use mas_router::Route;
-    use mas_storage::{upstream_oauth2::UpstreamOAuthProviderRepository, RepositoryAccess};
+    use mas_storage::{
+        upstream_oauth2::{UpstreamOAuthProviderParams, UpstreamOAuthProviderRepository},
+        RepositoryAccess,
+    };
     use mas_templates::escape_html;
     use oauth2_types::scope::OPENID;
     use sqlx::PgPool;
@@ -328,7 +340,7 @@ mod test {
         let response = state.request(Request::get("/login").empty()).await;
         response.assert_status(StatusCode::OK);
         response.assert_header_value(CONTENT_TYPE, "text/html; charset=utf-8");
-        assert!(response.body().contains("No login method available"));
+        assert!(response.body().contains("No login methods available"));
 
         // Adding an upstream provider should redirect to it
         let mut repo = state.repository().await.unwrap();
@@ -337,13 +349,22 @@ mod test {
             .add(
                 &mut rng,
                 &state.clock,
-                "https://first.com/".into(),
-                [OPENID].into_iter().collect(),
-                OAuthClientAuthenticationMethod::None,
-                None,
-                "first_client".into(),
-                None,
-                UpstreamOAuthProviderClaimsImports::default(),
+                UpstreamOAuthProviderParams {
+                    issuer: "https://first.com/".to_owned(),
+                    human_name: Some("First Ltd.".to_owned()),
+                    brand_name: None,
+                    scope: [OPENID].into_iter().collect(),
+                    token_endpoint_auth_method: OAuthClientAuthenticationMethod::None,
+                    token_endpoint_signing_alg: None,
+                    client_id: "client".to_owned(),
+                    encrypted_client_secret: None,
+                    claims_imports: UpstreamOAuthProviderClaimsImports::default(),
+                    authorization_endpoint_override: None,
+                    token_endpoint_override: None,
+                    jwks_uri_override: None,
+                    discovery_mode: mas_data_model::UpstreamOAuthProviderDiscoveryMode::Oidc,
+                    pkce_mode: mas_data_model::UpstreamOAuthProviderPkceMode::Auto,
+                },
             )
             .await
             .unwrap();
@@ -353,7 +374,7 @@ mod test {
 
         let response = state.request(Request::get("/login").empty()).await;
         response.assert_status(StatusCode::SEE_OTHER);
-        response.assert_header_value(LOCATION, &first_provider_login.relative_url());
+        response.assert_header_value(LOCATION, &first_provider_login.path_and_query());
 
         // Adding a second provider should show a login page with both providers
         let mut repo = state.repository().await.unwrap();
@@ -362,13 +383,22 @@ mod test {
             .add(
                 &mut rng,
                 &state.clock,
-                "https://second.com/".into(),
-                [OPENID].into_iter().collect(),
-                OAuthClientAuthenticationMethod::None,
-                None,
-                "second_client".into(),
-                None,
-                UpstreamOAuthProviderClaimsImports::default(),
+                UpstreamOAuthProviderParams {
+                    issuer: "https://second.com/".to_owned(),
+                    human_name: None,
+                    brand_name: None,
+                    scope: [OPENID].into_iter().collect(),
+                    token_endpoint_auth_method: OAuthClientAuthenticationMethod::None,
+                    token_endpoint_signing_alg: None,
+                    client_id: "client".to_owned(),
+                    encrypted_client_secret: None,
+                    claims_imports: UpstreamOAuthProviderClaimsImports::default(),
+                    authorization_endpoint_override: None,
+                    token_endpoint_override: None,
+                    jwks_uri_override: None,
+                    discovery_mode: mas_data_model::UpstreamOAuthProviderDiscoveryMode::Oidc,
+                    pkce_mode: mas_data_model::UpstreamOAuthProviderPkceMode::Auto,
+                },
             )
             .await
             .unwrap();
@@ -379,18 +409,14 @@ mod test {
         let response = state.request(Request::get("/login").empty()).await;
         response.assert_status(StatusCode::OK);
         response.assert_header_value(CONTENT_TYPE, "text/html; charset=utf-8");
+        assert!(response.body().contains(&escape_html("First Ltd.")));
         assert!(response
             .body()
-            .contains(&escape_html(&first_provider.issuer)));
+            .contains(&escape_html(&first_provider_login.path_and_query())));
+        assert!(response.body().contains(&escape_html("second.com")));
         assert!(response
             .body()
-            .contains(&escape_html(&first_provider_login.relative_url())));
-        assert!(response
-            .body()
-            .contains(&escape_html(&second_provider.issuer)));
-        assert!(response
-            .body()
-            .contains(&escape_html(&second_provider_login.relative_url())));
+            .contains(&escape_html(&second_provider_login.path_and_query())));
     }
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]

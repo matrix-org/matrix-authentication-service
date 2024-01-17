@@ -164,7 +164,7 @@ impl CallbackDestination {
                     params,
                 };
                 let ctx = FormPostContext::new(redirect_uri, merged);
-                let rendered = templates.render_form_post(&ctx).await?;
+                let rendered = templates.render_form_post(&ctx)?;
                 Ok(Html(rendered).into_response())
             }
         }

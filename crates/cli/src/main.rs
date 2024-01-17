@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![forbid(unsafe_code)]
-#![deny(clippy::all, clippy::str_to_string)]
-#![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 
 use std::{io::IsTerminal, sync::Arc};
@@ -109,7 +106,6 @@ async fn try_main() -> anyhow::Result<()> {
         tracing_opentelemetry::layer()
             .with_tracer(tracer)
             .with_tracked_inactivity(false)
-            .with_exception_fields(true)
             .with_filter(LevelFilter::INFO)
     });
 

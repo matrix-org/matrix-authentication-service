@@ -28,7 +28,7 @@ pub struct JsonWebSignatureHeader {
     jku: Option<Url>,
 
     #[serde(default)]
-    jwk: Option<PublicJsonWebKey>,
+    jwk: Option<Box<PublicJsonWebKey>>,
 
     #[serde(default)]
     kid: Option<String>,
@@ -91,12 +91,16 @@ impl JsonWebSignatureHeader {
 
     #[must_use]
     pub const fn jwk(&self) -> Option<&PublicJsonWebKey> {
-        self.jwk.as_ref()
+        // Can't use as_deref because it's not a const fn
+        match &self.jwk {
+            Some(jwk) => Some(jwk),
+            None => None,
+        }
     }
 
     #[must_use]
     pub fn with_jwk(mut self, jwk: PublicJsonWebKey) -> Self {
-        self.jwk = Some(jwk);
+        self.jwk = Some(Box::new(jwk));
         self
     }
 

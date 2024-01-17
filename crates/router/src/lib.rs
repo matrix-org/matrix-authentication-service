@@ -12,14 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![forbid(unsafe_code)]
-#![deny(
-    clippy::all,
-    clippy::pedantic,
-    clippy::str_to_string,
-    rustdoc::broken_intra_doc_links
-)]
-
 pub(crate) mod endpoints;
 pub(crate) mod traits;
 mod url_builder;
@@ -38,13 +30,13 @@ mod tests {
     #[test]
     fn test_relative_urls() {
         assert_eq!(
-            OidcConfiguration.relative_url(),
+            OidcConfiguration.path_and_query(),
             Cow::Borrowed("/.well-known/openid-configuration")
         );
-        assert_eq!(Index.relative_url(), Cow::Borrowed("/"));
+        assert_eq!(Index.path_and_query(), Cow::Borrowed("/"));
         assert_eq!(
-            Login::and_continue_grant(Ulid::nil()).relative_url(),
-            Cow::Borrowed("/login?next=continue_authorization_grant&id=00000000000000000000000000")
+            Login::and_continue_grant(Ulid::nil()).path_and_query(),
+            Cow::Borrowed("/login?kind=continue_authorization_grant&id=00000000000000000000000000")
         );
     }
 

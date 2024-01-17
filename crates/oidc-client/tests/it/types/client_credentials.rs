@@ -41,7 +41,7 @@ use crate::{client_credentials, init_test, now, ACCESS_TOKEN, CLIENT_ID, CLIENT_
 async fn pass_none() {
     let (http_service, mock_server, issuer) = init_test().await;
     let client_credentials =
-        client_credentials(OAuthClientAuthenticationMethod::None, &issuer, None);
+        client_credentials(&OAuthClientAuthenticationMethod::None, &issuer, None);
     let token_endpoint = issuer.join("token").unwrap();
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(42);
 
@@ -90,7 +90,7 @@ async fn pass_none() {
 async fn pass_client_secret_basic() {
     let (http_service, mock_server, issuer) = init_test().await;
     let client_credentials = client_credentials(
-        OAuthClientAuthenticationMethod::ClientSecretBasic,
+        &OAuthClientAuthenticationMethod::ClientSecretBasic,
         &issuer,
         None,
     );
@@ -135,7 +135,7 @@ async fn pass_client_secret_basic() {
 async fn pass_client_secret_post() {
     let (http_service, mock_server, issuer) = init_test().await;
     let client_credentials = client_credentials(
-        OAuthClientAuthenticationMethod::ClientSecretPost,
+        &OAuthClientAuthenticationMethod::ClientSecretPost,
         &issuer,
         None,
     );
@@ -195,7 +195,7 @@ async fn pass_client_secret_post() {
 async fn pass_client_secret_jwt() {
     let (http_service, mock_server, issuer) = init_test().await;
     let client_credentials = client_credentials(
-        OAuthClientAuthenticationMethod::ClientSecretJwt,
+        &OAuthClientAuthenticationMethod::ClientSecretJwt,
         &issuer,
         None,
     );
@@ -225,12 +225,9 @@ async fn pass_client_secret_jwt() {
                 return false;
             }
 
-            let jwt = match query_pairs.get("client_assertion") {
-                Some(jwt) => jwt,
-                None => {
-                    println!("Missing client assertion");
-                    return false;
-                }
+            let Some(jwt) = query_pairs.get("client_assertion") else {
+                println!("Missing client assertion");
+                return false;
             };
 
             let jwt = Jwt::<HashMap<String, Value>>::try_from(jwt.as_ref()).unwrap();
@@ -279,7 +276,7 @@ async fn pass_client_secret_jwt() {
 async fn pass_private_key_jwt_with_keystore() {
     let (http_service, mock_server, issuer) = init_test().await;
     let client_credentials = client_credentials(
-        OAuthClientAuthenticationMethod::PrivateKeyJwt,
+        &OAuthClientAuthenticationMethod::PrivateKeyJwt,
         &issuer,
         None,
     );
@@ -319,12 +316,9 @@ async fn pass_private_key_jwt_with_keystore() {
                 return false;
             }
 
-            let jwt = match query_pairs.get("client_assertion") {
-                Some(jwt) => jwt,
-                None => {
-                    println!("Missing client assertion");
-                    return false;
-                }
+            let Some(jwt) = query_pairs.get("client_assertion") else {
+                println!("Missing client assertion");
+                return false;
             };
 
             let jwt = Jwt::<HashMap<String, Value>>::try_from(jwt.as_ref()).unwrap();
@@ -370,7 +364,7 @@ async fn pass_private_key_jwt_with_keystore() {
 async fn pass_private_key_jwt_with_custom_signing() {
     let (http_service, mock_server, issuer) = init_test().await;
     let client_credentials = client_credentials(
-        OAuthClientAuthenticationMethod::PrivateKeyJwt,
+        &OAuthClientAuthenticationMethod::PrivateKeyJwt,
         &issuer,
         Some(Box::new(|_claims, _alg| Ok("fake.signed.jwt".to_owned()))),
     );
@@ -439,7 +433,7 @@ async fn pass_private_key_jwt_with_custom_signing() {
 async fn fail_private_key_jwt_with_custom_signing() {
     let (http_service, _, issuer) = init_test().await;
     let client_credentials = client_credentials(
-        OAuthClientAuthenticationMethod::PrivateKeyJwt,
+        &OAuthClientAuthenticationMethod::PrivateKeyJwt,
         &issuer,
         Some(Box::new(|_claims, _alg| Err("Something went wrong".into()))),
     );

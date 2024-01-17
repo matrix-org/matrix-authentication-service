@@ -22,6 +22,7 @@ use axum::{
     async_trait,
     body::{Bytes, HttpBody},
     extract::{FromRef, FromRequestParts},
+    response::{IntoResponse, IntoResponseParts},
 };
 use cookie_store::{CookieStore, RawCookie};
 use futures_util::future::BoxFuture;
@@ -31,15 +32,18 @@ use hyper::{
     Request, Response, StatusCode,
 };
 use mas_axum_utils::{
-    cookies::CookieManager, http_client_factory::HttpClientFactory, ErrorWrapper,
+    cookies::{CookieJar, CookieManager},
+    http_client_factory::HttpClientFactory,
+    ErrorWrapper,
 };
+use mas_i18n::Translator;
 use mas_keystore::{Encrypter, JsonWebKey, JsonWebKeySet, Keystore, PrivateKey};
 use mas_matrix::{HomeserverConnection, MockHomeserverConnection};
 use mas_policy::{InstantiateError, Policy, PolicyFactory};
 use mas_router::{SimpleRoute, UrlBuilder};
 use mas_storage::{clock::MockClock, BoxClock, BoxRepository, BoxRng, Repository};
 use mas_storage_pg::{DatabaseError, PgRepository};
-use mas_templates::Templates;
+use mas_templates::{SiteBranding, Templates};
 use rand::SeedableRng;
 use rand_chacha::ChaChaRng;
 use serde::{de::DeserializeOwned, Serialize};
@@ -115,10 +119,14 @@ impl TestState {
 
         let url_builder = UrlBuilder::new("https://example.com/".parse()?, None, None);
 
+        let site_branding = SiteBranding::new("example.com").with_service_name("Example");
+
         let templates = Templates::load(
             workspace_root.join("templates"),
             url_builder.clone(),
             workspace_root.join("frontend/dist/manifest.json"),
+            workspace_root.join("translations"),
+            site_branding,
         )
         .await?;
 
@@ -259,6 +267,11 @@ impl TestState {
             _ => panic!("Unexpected status code: {}", response.status()),
         }
     }
+
+    /// Get an empty cookie jar
+    pub fn cookie_jar(&self) -> CookieJar {
+        self.cookie_manager.cookie_jar()
+    }
 }
 
 struct TestGraphQLState {
@@ -315,6 +328,12 @@ impl FromRef<TestState> for mas_graphql::Schema {
 impl FromRef<TestState> for Templates {
     fn from_ref(input: &TestState) -> Self {
         input.templates.clone()
+    }
+}
+
+impl FromRef<TestState> for Arc<Translator> {
+    fn from_ref(input: &TestState) -> Self {
+        input.templates.translator()
     }
 }
 
@@ -619,6 +638,11 @@ impl CookieHelper {
                 }),
             &url,
         );
+    }
+
+    pub fn import(&self, res: impl IntoResponseParts) {
+        let response = (res, "").into_response();
+        self.save_cookies(&response);
     }
 }
 

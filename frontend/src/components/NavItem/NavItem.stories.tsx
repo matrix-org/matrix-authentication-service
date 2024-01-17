@@ -35,7 +35,7 @@ const meta = {
 
 const WithHomePage: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
   useHydrateAtoms([
-    [appConfigAtom, { root: "/" }],
+    [appConfigAtom, { root: "/", graphqlEndpoint: "/graphql" }],
     [locationAtom, { pathname: "/" }],
   ]);
   return <>{children}</>;

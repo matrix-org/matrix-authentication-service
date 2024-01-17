@@ -12,10 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![forbid(unsafe_code)]
-#![deny(clippy::all, clippy::str_to_string, rustdoc::broken_intra_doc_links)]
-#![warn(clippy::pedantic)]
-
 use http::{header::AUTHORIZATION, request::Builder, Method, Request, StatusCode};
 use mas_axum_utils::http_client_factory::HttpClientFactory;
 use mas_http::{EmptyBody, HttpServiceExt};
@@ -54,8 +50,8 @@ impl SynapseConnection {
             .uri(
                 self.endpoint
                     .join(url)
-                    .map(Url::into)
-                    .unwrap_or(String::new()),
+                    .map(String::from)
+                    .unwrap_or_default(),
             )
             .header(AUTHORIZATION, format!("Bearer {}", self.access_token))
     }
@@ -133,6 +129,9 @@ struct SetDisplayNameRequest<'a> {
 struct SynapseDeactivateUserRequest {
     erase: bool,
 }
+
+#[derive(Serialize)]
+struct SynapseAllowCrossSigningResetRequest {}
 
 #[async_trait::async_trait]
 impl HomeserverConnection for SynapseConnection {
@@ -369,5 +368,38 @@ impl HomeserverConnection for SynapseConnection {
     )]
     async fn unset_displayname(&self, mxid: &str) -> Result<(), Self::Error> {
         self.set_displayname(mxid, "").await
+    }
+
+    #[tracing::instrument(
+        name = "homeserver.allow_cross_signing_reset",
+        skip_all,
+        fields(
+            matrix.homeserver = self.homeserver,
+            matrix.mxid = mxid,
+        ),
+        err(Display),
+    )]
+    async fn allow_cross_signing_reset(&self, mxid: &str) -> Result<(), Self::Error> {
+        let mut client = self
+            .http_client_factory
+            .client("homeserver.allow_cross_signing_reset")
+            .request_bytes_to_body()
+            .json_request();
+
+        let request = self
+            .post(&format!(
+                "_synapse/admin/v1/users/{mxid}/_allow_cross_signing_replacement_without_uia"
+            ))
+            .body(SynapseAllowCrossSigningResetRequest {})?;
+
+        let response = client.ready().await?.call(request).await?;
+
+        if response.status() != StatusCode::OK {
+            return Err(anyhow::anyhow!(
+                "Failed to allow cross signing reset in Synapse"
+            ));
+        }
+
+        Ok(())
     }
 }

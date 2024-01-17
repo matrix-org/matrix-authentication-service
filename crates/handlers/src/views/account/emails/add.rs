@@ -22,7 +22,7 @@ use mas_axum_utils::{
     FancyError, SessionInfoExt,
 };
 use mas_policy::Policy;
-use mas_router::Route;
+use mas_router::UrlBuilder;
 use mas_storage::{
     job::{JobRepositoryExt, VerifyEmailJob},
     user::UserEmailRepository,
@@ -31,7 +31,7 @@ use mas_storage::{
 use mas_templates::{EmailAddContext, ErrorContext, TemplateContext, Templates};
 use serde::Deserialize;
 
-use crate::{views::shared::OptionalPostAuthAction, BoundActivityTracker};
+use crate::{views::shared::OptionalPostAuthAction, BoundActivityTracker, PreferredLanguage};
 
 #[derive(Deserialize, Debug)]
 pub struct EmailForm {
@@ -42,7 +42,9 @@ pub struct EmailForm {
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
+    PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
+    State(url_builder): State<UrlBuilder>,
     activity_tracker: BoundActivityTracker,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
@@ -54,7 +56,7 @@ pub(crate) async fn get(
 
     let Some(session) = maybe_session else {
         let login = mas_router::Login::default();
-        return Ok((cookie_jar, login.go()).into_response());
+        return Ok((cookie_jar, url_builder.redirect(&login)).into_response());
     };
 
     activity_tracker
@@ -63,9 +65,10 @@ pub(crate) async fn get(
 
     let ctx = EmailAddContext::new()
         .with_session(session)
-        .with_csrf(csrf_token.form_value());
+        .with_csrf(csrf_token.form_value())
+        .with_language(locale);
 
-    let content = templates.render_account_add_email(&ctx).await?;
+    let content = templates.render_account_add_email(&ctx)?;
 
     Ok((cookie_jar, Html(content)).into_response())
 }
@@ -75,8 +78,10 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
+    PreferredLanguage(locale): PreferredLanguage,
     mut policy: Policy,
     cookie_jar: CookieJar,
+    State(url_builder): State<UrlBuilder>,
     activity_tracker: BoundActivityTracker,
     Query(query): Query<OptionalPostAuthAction>,
     Form(form): Form<ProtectedForm<EmailForm>>,
@@ -88,7 +93,7 @@ pub(crate) async fn post(
 
     let Some(session) = maybe_session else {
         let login = mas_router::Login::default();
-        return Ok((cookie_jar, login.go()).into_response());
+        return Ok((cookie_jar, url_builder.redirect(&login)).into_response());
     };
 
     // XXX: we really should show human readable errors on the form here
@@ -122,7 +127,7 @@ pub(crate) async fn post(
     // verify page
     let next = if user_email.confirmed_at.is_none() {
         repo.job()
-            .schedule_job(VerifyEmailJob::new(&user_email))
+            .schedule_job(VerifyEmailJob::new(&user_email).with_language(locale.to_string()))
             .await?;
 
         let next = mas_router::AccountVerifyEmail::new(user_email.id);
@@ -132,9 +137,9 @@ pub(crate) async fn post(
             next
         };
 
-        next.go()
+        url_builder.redirect(&next)
     } else {
-        query.go_next_or_default(&mas_router::Account::default())
+        query.go_next_or_default(&url_builder, &mas_router::Account::default())
     };
 
     repo.save().await?;

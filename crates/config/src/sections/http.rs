@@ -312,6 +312,10 @@ pub struct ListenerConfig {
     /// List of resources to mount
     pub resources: Vec<Resource>,
 
+    /// HTTP prefix to mount the resources on
+    #[serde(default)]
+    pub prefix: Option<String>,
+
     /// List of sockets to bind
     pub binds: Vec<BindConfig>,
 
@@ -359,6 +363,7 @@ impl Default for HttpConfig {
                             path: http_listener_assets_path_default(),
                         },
                     ],
+                    prefix: None,
                     tls: None,
                     proxy_protocol: false,
                     binds: vec![BindConfig::Address {
@@ -368,6 +373,7 @@ impl Default for HttpConfig {
                 ListenerConfig {
                     name: Some("internal".to_owned()),
                     resources: vec![Resource::Health],
+                    prefix: None,
                     tls: None,
                     proxy_protocol: false,
                     binds: vec![BindConfig::Listen {

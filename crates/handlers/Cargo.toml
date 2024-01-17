@@ -6,21 +6,25 @@ edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
+publish = false
+
+[lints]
+workspace = true
 
 [dependencies]
 # Async runtime
-tokio = { version = "1.32.0", features = ["macros"] }
-futures-util = "0.3.28"
+tokio = { version = "1.34.0", features = ["macros"] }
+futures-util = "0.3.29"
 
 # Logging and tracing
 tracing.workspace = true
-opentelemetry = "0.20.0"
-opentelemetry-semantic-conventions = "0.12.0"
+opentelemetry.workspace = true
+opentelemetry-semantic-conventions.workspace = true
 
 # Error management
 thiserror.workspace = true
 anyhow.workspace = true
-sentry = { version = "0.31.7", default-features = false }
+sentry = { version = "0.31.8", default-features = false }
 
 # Web server
 hyper = { version = "0.14.27", features = ["full"] }
@@ -30,17 +34,17 @@ axum = "0.6.20"
 axum-macros = "0.3.8"
 axum-extra = { version = "0.8.0", features = ["cookie-private"] }
 
-async-graphql = { version = "6.0.7", features = ["tracing", "apollo_tracing"] }
+async-graphql = { version = "6.0.11", features = ["tracing", "apollo_tracing"] }
 
 # Emails
-lettre = { version = "0.10.4", default-features = false, features = ["builder"] }
+lettre = { version = "0.11.2", default-features = false, features = ["builder"] }
 
 # Database access
-sqlx = { version = "0.7.1", features = ["runtime-tokio-rustls", "postgres"] }
+sqlx = { version = "0.7.3", features = ["runtime-tokio-rustls", "postgres"] }
 
 # Various structure (de)serialization
 serde.workspace = true
-serde_with = { version = "3.3.0", features = ["hex", "chrono"] }
+serde_with = { version = "3.4.0", features = ["hex", "chrono"] }
 serde_json.workspace = true
 serde_urlencoded = "0.7.1"
 
@@ -48,40 +52,43 @@ serde_urlencoded = "0.7.1"
 argon2 = { version = "0.5.2", features = ["password-hash", "std"] }
 bcrypt = "0.15.0"
 pbkdf2 = { version = "0.12.2", features = ["password-hash", "std", "simple", "parallel"] }
-zeroize = "1.6.0"
+zeroize = "1.7.0"
 
 # Various data types and utilities
-camino = "1.1.6"
+base64ct = "1.6.0"
+camino.workspace = true
 chrono.workspace = true
-psl = "2.1.4"
-time = "0.3.29"
+psl = "2.1.12"
+time = "0.3.30"
 url.workspace = true
 mime = "0.3.17"
+minijinja.workspace = true
 rand.workspace = true
 rand_chacha = "0.3.1"
 headers = "0.3.9"
 ulid.workspace = true
 
-mas-axum-utils = { path = "../axum-utils", default-features = false }
-mas-data-model = { path = "../data-model" }
-mas-graphql = { path = "../graphql" }
-mas-http = { path = "../http", default-features = false }
-mas-iana = { path = "../iana" }
-mas-jose = { path = "../jose" }
-mas-keystore = { path = "../keystore" }
-mas-matrix = { path = "../matrix" }
-mas-oidc-client = { path = "../oidc-client" }
-mas-policy = { path = "../policy" }
-mas-router = { path = "../router" }
-mas-spa = { path = "../spa" }
-mas-storage = { path = "../storage" }
-mas-storage-pg = { path = "../storage-pg" }
-mas-templates = { path = "../templates" }
-oauth2-types = { path = "../oauth2-types" }
+mas-axum-utils = { workspace = true, default-features = false }
+mas-data-model.workspace = true
+mas-graphql.workspace = true
+mas-http = { workspace = true, default-features = false }
+mas-i18n.workspace = true
+mas-iana.workspace = true
+mas-jose.workspace = true
+mas-keystore.workspace = true
+mas-matrix.workspace = true
+mas-oidc-client.workspace = true
+mas-policy.workspace = true
+mas-router.workspace = true
+mas-spa.workspace = true
+mas-storage.workspace = true
+mas-storage-pg.workspace = true
+mas-templates.workspace = true
+oauth2-types.workspace = true
 
 [dev-dependencies]
-insta = "1.32.0"
-tracing-subscriber = "0.3.17"
+insta = "1.34.0"
+tracing-subscriber.workspace = true
 cookie_store = "0.20.0"
 
 [features]

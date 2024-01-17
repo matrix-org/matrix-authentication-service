@@ -1,5 +1,6 @@
 [package]
 name = "mas-tower"
+description = "Tower layers used by the Matrix Authentication Service"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -7,13 +8,16 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 http.workspace = true
 tracing.workspace = true
-tracing-opentelemetry = "0.21.0"
+tracing-opentelemetry.workspace = true
 tower = "0.4.13"
-tokio = { version = "1.32.0", features = ["time"] }
-opentelemetry = { version = "0.20.0", features = ["metrics"] }
-opentelemetry-http = "0.9.0"
-opentelemetry-semantic-conventions = "0.12.0"
+tokio = { version = "1.34.0", features = ["time"] }
+opentelemetry.workspace = true
+opentelemetry-http = "0.10.0"
+opentelemetry-semantic-conventions.workspace = true
 pin-project-lite = "0.2.13"

@@ -13,7 +13,15 @@
 // limitations under the License.
 
 import { Alert } from "@vector-im/compound-web";
+import { ReactNode } from "react";
+import { Translation } from "react-i18next";
 
-const NotFound: React.FC = () => <Alert type="critical" title="Not found." />;
+const NotFound: React.FC = () => (
+  <Translation>
+    {(t): ReactNode => (
+      <Alert type="critical" title={t("frontend.not_found_alert_title")} />
+    )}
+  </Translation>
+);
 
 export default NotFound;

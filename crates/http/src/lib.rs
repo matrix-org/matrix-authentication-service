@@ -14,14 +14,7 @@
 
 //! [`tower`] layers and services to help building HTTP client and servers
 
-#![forbid(unsafe_code)]
-#![deny(
-    clippy::all,
-    clippy::str_to_string,
-    rustdoc::missing_crate_level_docs,
-    rustdoc::broken_intra_doc_links
-)]
-#![warn(clippy::pedantic)]
+#![deny(rustdoc::missing_crate_level_docs)]
 #![allow(clippy::module_name_repetitions)]
 
 #[cfg(feature = "client")]

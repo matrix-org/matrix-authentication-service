@@ -40,7 +40,11 @@ impl Device {
     #[must_use]
     pub fn to_scope_token(&self) -> ScopeToken {
         // SAFETY: the inner id should only have valid scope characters
-        format!("{DEVICE_SCOPE_PREFIX}{}", self.id).parse().unwrap()
+        let Ok(scope_token) = format!("{DEVICE_SCOPE_PREFIX}{}", self.id).parse() else {
+            unreachable!()
+        };
+
+        scope_token
     }
 
     /// Get the corresponding [`Device`] from a [`ScopeToken`]

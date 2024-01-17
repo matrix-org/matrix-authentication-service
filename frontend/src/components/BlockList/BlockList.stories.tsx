@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { Meta, StoryObj } from "@storybook/react";
-import { H2, Body } from "@vector-im/compound-web";
+import { H2, Text } from "@vector-im/compound-web";
 
 import Block from "../Block";
 
@@ -33,11 +33,11 @@ export const Basic: Story = {
     <BlockList {...args}>
       <Block>
         <H2>Block 1</H2>
-        <Body>Body 1</Body>
+        <Text>Body 1</Text>
       </Block>
       <Block>
         <H2>Block 2</H2>
-        <Body>Body 2</Body>
+        <Text>Body 2</Text>
       </Block>
     </BlockList>
   ),

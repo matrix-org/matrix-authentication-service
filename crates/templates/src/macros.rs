@@ -54,14 +54,20 @@ macro_rules! register_templates {
         impl Templates {
             $(
                 $(#[$attr])?
-                pub async fn $name
+                ///
+                /// # Errors
+                ///
+                /// Returns an error if the template fails to render.
+                pub fn $name
                     $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
                     (&self, context: &$param)
                 -> Result<String, TemplateError> {
-                    let ctx = Context::from_serialize(context)
-                        .map_err(|source| TemplateError::Context { template: $template, source })?;
+                    let ctx = ::minijinja::value::Value::from_serializable(context);
 
-                    self.tera.read().await.render($template, &ctx)
+                    let env = self.environment.load();
+                    let tmpl = env.get_template($template)
+                        .map_err(|source| TemplateError::Missing { template: $template, source })?;
+                    tmpl.render(ctx)
                         .map_err(|source| TemplateError::Render { template: $template, source })
                 }
             )*
@@ -73,7 +79,11 @@ macro_rules! register_templates {
 
             $(
                 #[doc = concat!("Render the `", $template, "` template with sample contexts")]
-                pub async fn $name
+                ///
+                /// # Errors
+                ///
+                /// Returns an error if the template fails to render with any of the sample.
+                pub fn $name
                     $(< $( $lt $( : $clt $(+ $dlt )* + TemplateContext )? ),+ >)?
                     (templates: &Templates, now: chrono::DateTime<chrono::Utc>, rng: &mut impl rand::Rng)
                 -> anyhow::Result<()> {
@@ -84,7 +94,6 @@ macro_rules! register_templates {
                         let context = serde_json::to_value(&sample)?;
                         ::tracing::info!(name, %context, "Rendering template");
                         templates. $name (&sample)
-                            .await
                             .with_context(|| format!("Failed to render template {:?} with context {}", name, context))?;
                     }
 

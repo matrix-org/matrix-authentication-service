@@ -6,24 +6,28 @@ edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
+publish = false
+
+[lints]
+workspace = true
 
 [dependencies]
-async-trait = "0.1.73"
+async-trait = "0.1.74"
 chrono.workspace = true
 thiserror.workspace = true
-futures-util = "0.3.28"
+futures-util = "0.3.29"
 
-apalis-core = { version = "0.4.4", features = ["tokio-comp"] }
-opentelemetry = "0.20.0"
+apalis-core = { version = "0.4.7", features = ["tokio-comp"] }
+opentelemetry.workspace = true
 rand_core = "0.6.4"
 serde.workspace = true
 serde_json.workspace = true
 tracing.workspace = true
-tracing-opentelemetry = "0.21.0"
+tracing-opentelemetry.workspace = true
 url.workspace = true
 ulid.workspace = true
 
-oauth2-types = { path = "../oauth2-types" }
-mas-data-model = { path = "../data-model" }
-mas-iana = { path = "../iana" }
-mas-jose = { path = "../jose" }
+oauth2-types.workspace = true
+mas-data-model.workspace = true
+mas-iana.workspace = true
+mas-jose.workspace = true

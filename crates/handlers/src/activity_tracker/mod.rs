@@ -154,7 +154,7 @@ impl ActivityTracker {
         let res = self.channel.send(Message::Flush(tx)).await;
 
         match res {
-            Ok(_) => {
+            Ok(()) => {
                 if let Err(e) = rx.await {
                     tracing::error!("Failed to flush activity tracker: {}", e);
                 }
@@ -172,12 +172,12 @@ impl ActivityTracker {
                 biased;
 
                 // First check if the channel is closed, then check if the timer expired
-                _ = self.channel.closed() => {
+                () = self.channel.closed() => {
                     // The channel was closed, so we should exit
                     break;
                 }
 
-                _ = tokio::time::sleep(interval) => {
+                () = tokio::time::sleep(interval) => {
                     self.flush().await;
                 }
             }
@@ -192,7 +192,7 @@ impl ActivityTracker {
         let res = self.channel.send(Message::Shutdown(tx)).await;
 
         match res {
-            Ok(_) => {
+            Ok(()) => {
                 if let Err(e) = rx.await {
                     tracing::error!("Failed to shutdown activity tracker: {}", e);
                 }

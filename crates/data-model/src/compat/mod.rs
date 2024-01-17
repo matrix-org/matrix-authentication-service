@@ -72,6 +72,11 @@ impl CompatRefreshTokenState {
         matches!(self, Self::Consumed { .. })
     }
 
+    /// Consume the refresh token, returning a new state.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the refresh token is already consumed.
     pub fn consume(self, consumed_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
         match self {
             Self::Valid => Ok(Self::Consumed { consumed_at }),
@@ -99,6 +104,11 @@ impl std::ops::Deref for CompatRefreshToken {
 }
 
 impl CompatRefreshToken {
+    /// Consume the refresh token and return the consumed token.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the refresh token is already consumed.
     pub fn consume(mut self, consumed_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
         self.state = self.state.consume(consumed_at)?;
         Ok(self)

@@ -1,0 +1,146 @@
+{
+  "action": {
+    "cancel": "Annuler",
+    "continue": "Continuer",
+    "create_account": "Créer un compte",
+    "sign_in": "Se connecter",
+    "sign_out": "Se déconnecter",
+    "submit": "Soumettre"
+  },
+  "app": {
+    "human_name": "Matrix Authentication Service",
+    "name": "matrix-authentication-service",
+    "technical_description": "Document de découverte OpenID Connect : <a class=\"cpd-link\" data-kind=\"primary\" href=\"%(discovery_url)s\">%(discovery_url)s</a>"
+  },
+  "branding": {
+    "privacy_policy": {
+      "alt": "Lien vers la politique de confidentialité",
+      "link": "Politique de confidentialité"
+    },
+    "terms_and_conditions": {
+      "alt": "Lien vers les conditions d'utilisation",
+      "link": "Conditions d'utilisation"
+    }
+  },
+  "common": {
+    "display_name": "Pseudonyme",
+    "email_address": "Adresse e-mail",
+    "mxid": "Matrix ID",
+    "password": "Mot de passe",
+    "password_confirm": "Confirmer le mot de passe",
+    "username": "Nom d’utilisateur"
+  },
+  "error": {
+    "unexpected": "Erreur inattendue"
+  },
+  "mas": {
+    "add_email": {
+      "description": "Entrez une adresse e-mail qui sera utilisée pour récupérer votre compte au cas où vous perdriez l'accès à celui-ci.",
+      "heading": "Ajouter une adresse e-mail"
+    },
+    "back_to_homepage": "Retourner sur la page d'accueil",
+    "change_password": {
+      "change": "Changer de mot de passe",
+      "confirm": "Confirmer le mot de passe",
+      "current": "Mot de passe actuel",
+      "description": "Cela modifiera le mot de passe de votre compte.",
+      "heading": "Modifier mon mot de passe",
+      "new": "Nouveau mot de passe"
+    },
+    "emails": {
+      "greeting": "Bonjour %(username)s,",
+      "verify": {
+        "body_html": "Votre code de vérification pour confirmer cette adresse e-mail est : <strong>%(code)s</strong>",
+        "body_text": "Votre code de vérification pour confirmer cette adresse e-mail est : %(code)s",
+        "subject": "Votre code de vérification est : %(code)s"
+      }
+    },
+    "errors": {
+      "denied_policy": "Refusé par la politique du serveur : %(policy)s",
+      "field_required": "Ce champ est requis",
+      "invalid_credentials": "Identifiants invalides",
+      "password_mismatch": "Les champs du mot de passe ne correspondent pas.",
+      "username_taken": "Ce nom d'utilisateur est déjà utilisé"
+    },
+    "login": {
+      "call_to_register": "Vous n’avez pas encore de compte ?",
+      "continue_with_provider": "Poursuivre avec %(provider)s",
+      "description": "Veuillez vous connecter pour continuer :",
+      "headline": "Se connecter",
+      "link": {
+        "description": "Associer votre compte <span class=\"break-keep text-links\">%(provider)s</span>",
+        "headline": "Se connecter pour associer"
+      },
+      "no_login_methods": "Aucune méthode de connexion n'est disponible.",
+      "separator": "Ou"
+    },
+    "navbar": {
+      "my_account": "Mon compte",
+      "register": "Créer un compte",
+      "signed_in_as": "Connecté en tant que <span class=\"font-semibold\">%(username)s</span>"
+    },
+    "not_found": {
+      "description": "La page que vous recherchez n’existe pas ou a été déplacée",
+      "heading": "Page introuvable"
+    },
+    "not_you": "Vous n'êtes pas %(username)s ?",
+    "or_separator": "Ou",
+    "policy_violation": {
+      "description": "Cela peut être dû à l'application auteur de la demande, à l'utilisateur actuellement connecté ou à la demande elle-même.",
+      "heading": "La demande d'autorisation a été refusée, conformément à la politique appliquée par ce service.",
+      "logged_as": "Connecté en tant que <span class=\"font-semibold\">%(username)s</span>"
+    },
+    "register": {
+      "call_to_login": "Vous avez déjà un compte ?",
+      "create_account": {
+        "description": "Créer un compte pour commencer :",
+        "heading": "Créer un compte"
+      },
+      "sign_in_instead": "Se connecter"
+    },
+    "scope": {
+      "edit_profile": "Modifiez votre profil et vos coordonnées",
+      "manage_sessions": "Gérez vos appareils et vos sessions",
+      "mas_admin": "Administrez n'importe quel utilisateur dans matrix-authentication-service",
+      "send_messages": "Envoyez de nouveaux messages en votre nom",
+      "synapse_admin": "Administrer le serveur d’accueil Synapse",
+      "view_messages": "Afficher vos messages et données existants",
+      "view_profile": "Voir les informations de votre profil et vos coordonnées"
+    },
+    "upstream_oauth2": {
+      "link_mismatch": {
+        "heading": "Ce compte est déjà associé à un autre compte."
+      },
+      "register": {
+        "choose_username": {
+          "description": "Cela ne peut pas être modifié ultérieurement.",
+          "heading": "Choisissez votre nom d'utilisateur"
+        },
+        "create_account": "Créer un nouveau compte",
+        "enforced_by_policy": "Importé selon la politique du serveur",
+        "forced_display_name": "Utilisera le pseudonyme suivant",
+        "forced_email": "Utilisera l’adresse e-mail suivante",
+        "forced_localpart": "Utilisera le nom d'utilisateur suivant",
+        "import_data": {
+          "description": "Confirmez les informations qui seront associées à votre nouveau compte %(server_name)s.",
+          "heading": "Importez vos données"
+        },
+        "imported_from_upstream": "Importé de votre compte en amont",
+        "link_existing": "Associer un compte existant",
+        "suggested_display_name": "Importer le pseudonyme",
+        "suggested_email": "Importer l’adresse email",
+        "use": "Importer"
+      },
+      "suggest_link": {
+        "action": "Associer",
+        "heading": "Associer votre compte existant"
+      }
+    },
+    "verify_email": {
+      "6_digit_code": "Code à 6 chiffres",
+      "code": "Code",
+      "description": "Veuillez saisir le code à 6 chiffres envoyé à : <em>%(email)s</em>",
+      "headline": "Vérifiez votre adresse e-mail"
+    }
+  }
+}
