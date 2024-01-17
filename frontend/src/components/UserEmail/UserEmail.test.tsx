@@ -54,9 +54,7 @@ describe("<UserEmail />", () => {
     // no make primary button
     expect(screen.queryByText("Make primary")).toBeFalsy();
     // cannot be removed
-    expect(
-      screen.getByLabelText("Remove email address").hasAttribute("disabled"),
-    ).toBeTruthy();
+    expect(screen.getByRole("button").hasAttribute("disabled")).toBeTruthy();
   });
 
   it("renders a confirmed email", () => {
