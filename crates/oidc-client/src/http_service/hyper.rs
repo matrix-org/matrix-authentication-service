@@ -21,7 +21,10 @@ use std::time::Duration;
 use http::{header::USER_AGENT, HeaderValue};
 use http_body::Full;
 use hyper::client::{connect::dns::GaiResolver, HttpConnector};
+#[cfg(feature = "hyper")]
 use hyper_rustls::{ConfigBuilderExt, HttpsConnectorBuilder};
+#[cfg(feature = "hyper-tls")]
+use hyper_tls::HttpsConnector;
 use mas_http::BodyToBytesResponseLayer;
 use tower::{BoxError, ServiceBuilder};
 use tower_http::{timeout::TimeoutLayer, ServiceBuilderExt};
@@ -40,17 +43,25 @@ pub fn hyper_service() -> HttpService {
     let mut http = HttpConnector::new_with_resolver(resolver);
     http.enforce_http(false);
 
+    #[cfg(all(feature = "hyper", feature = "hyper-tls"))]
+    compile_error!("feature:hyper uses rustls and feature:hyper-tls uses native-tls. Pick one.");
+
+    #[cfg(feature = "hyper")]
     let tls_config = rustls::ClientConfig::builder()
         .with_safe_defaults()
         .with_native_roots()
         .with_no_client_auth();
 
+    #[cfg(feature = "hyper")]
     let https = HttpsConnectorBuilder::new()
         .with_tls_config(tls_config)
         .https_or_http()
         .enable_http1()
         .enable_http2()
         .wrap_connector(http);
+
+    #[cfg(feature = "hyper-tls")]
+    let https = HttpsConnector::new_with_connector(http);
 
     let client = hyper::Client::builder().build(https);
 
