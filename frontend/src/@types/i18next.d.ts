@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import "i18next";
-import type frontend from "../../public/locales/en.json";
+import type frontend from "../../locales/en.json";
 
 declare module "i18next" {
   interface CustomTypeOptions {
