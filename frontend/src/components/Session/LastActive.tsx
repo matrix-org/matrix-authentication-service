@@ -27,7 +27,9 @@ const INACTIVE_MIN_AGE = 60 * 60 * 24 * 90;
 const LastActive: React.FC<{
   lastActive: Date | string;
   now?: Date | string;
-}> = ({ lastActive: lastActiveProps, now: nowProps }) => {
+  // If true will prefix relativeDate with `Active` for context
+  activePrefix?: boolean;
+}> = ({ lastActive: lastActiveProps, now: nowProps, activePrefix }) => {
   const { t } = useTranslation();
 
   const lastActive =
@@ -59,7 +61,9 @@ const LastActive: React.FC<{
   const relativeDate = formatReadableDate(lastActive, now);
   return (
     <span title={formattedDate}>
-      {t("frontend.last_active.active_date", { relativeDate })}
+      {activePrefix
+        ? t("frontend.last_active.active_date", { relativeDate })
+        : relativeDate}
     </span>
   );
 };

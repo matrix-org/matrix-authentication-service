@@ -117,7 +117,7 @@
       "finished_label": "Finished",
       "id_label": "ID",
       "ip_label": "IP Address",
-      "last_active_label": "Last Active",
+      "last_active_label": "Last Activity",
       "last_auth_label": "Last Authentication",
       "scopes_label": "Scopes",
       "signed_in_date": "Signed in <datetime/>",

@@ -100,7 +100,7 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
           <p
             class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
           >
-            Last Active
+            Last Activity
           </p>
           <p
             class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
@@ -297,7 +297,7 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
           <p
             class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
           >
-            Last Active
+            Last Activity
           </p>
           <p
             class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"

@@ -85,7 +85,7 @@ const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
         )}
         {!!lastActiveAt && (
           <SessionMetadata>
-            <LastActive lastActive={lastActiveAt} />
+            <LastActive lastActive={lastActiveAt} activePrefix />
           </SessionMetadata>
         )}
         {!!lastActiveIp && <SessionMetadata>{lastActiveIp}</SessionMetadata>}

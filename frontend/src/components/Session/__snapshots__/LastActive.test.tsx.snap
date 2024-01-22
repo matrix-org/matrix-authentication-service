@@ -5,7 +5,7 @@ exports[`<LastActive > renders a default timestamp 1`] = `
   <span
     title="Fri, 15 Sept 2023, 01:12"
   >
-    Active Fri, 15 Sept 2023, 01:12
+    Fri, 15 Sept 2023, 01:12
   </span>
 </div>
 `;
@@ -15,7 +15,7 @@ exports[`<LastActive > renders a relative timestamp 1`] = `
   <span
     title="Mon, 18 Sept 2023, 00:12"
   >
-    Active 1 hour ago
+    1 hour ago
   </span>
 </div>
 `;
