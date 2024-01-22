@@ -58,30 +58,38 @@ const CompatSessionDetail: React.FC<Props> = ({ session }) => {
   const finishedAt = data.finishedAt
     ? [
         {
-          label: "Finished",
+          label: t("frontend.session.finished_label"),
           value: <DateTime datetime={parseISO(data.finishedAt)} />,
         },
       ]
     : [];
 
   const lastActiveIp = data.lastActiveIp
-    ? [{ label: "IP Address", value: <code>{data.lastActiveIp}</code> }]
+    ? [
+        {
+          label: t("frontend.session.ip_label"),
+          value: <code>{data.lastActiveIp}</code>,
+        },
+      ]
     : [];
 
   const lastActiveAt = data.lastActiveAt
     ? [
         {
-          label: "Last Active",
+          label: t("frontend.session.last_active_label"),
           value: <LastActive lastActive={parseISO(data.lastActiveAt)} />,
         },
       ]
     : [];
 
   const sessionDetails = [
-    { label: "ID", value: <code>{data.id}</code> },
-    { label: "Device ID", value: <code>{data.deviceId}</code> },
+    { label: t("frontend.session.id_label"), value: <code>{data.id}</code> },
     {
-      label: "Signed in",
+      label: t("frontend.session.device_id_label"),
+      value: <code>{data.deviceId}</code>,
+    },
+    {
+      label: t("frontend.session.signed_in_label"),
       value: <DateTime datetime={parseISO(data.createdAt)} />,
     },
     ...finishedAt,
@@ -97,7 +105,7 @@ const CompatSessionDetail: React.FC<Props> = ({ session }) => {
       value: simplifyUrl(data.ssoLogin.redirectUri),
     });
     clientDetails.push({
-      label: "Uri",
+      label: t("frontend.session.uri_label"),
       value: (
         <ExternalLink target="_blank" href={data.ssoLogin?.redirectUri}>
           {data.ssoLogin?.redirectUri}

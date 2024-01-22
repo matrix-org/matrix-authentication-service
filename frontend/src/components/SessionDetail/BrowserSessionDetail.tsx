@@ -70,20 +70,25 @@ const BrowserSessionDetail: React.FC<Props> = ({ session }) => {
   const finishedAt = data.finishedAt
     ? [
         {
-          label: "Finished",
+          label: t("frontend.session.finished_label"),
           value: <DateTime datetime={parseISO(data.finishedAt)} />,
         },
       ]
     : [];
 
   const lastActiveIp = data.lastActiveIp
-    ? [{ label: "IP Address", value: <code>{data.lastActiveIp}</code> }]
+    ? [
+        {
+          label: t("frontend.session.ip_label"),
+          value: <code>{data.lastActiveIp}</code>,
+        },
+      ]
     : [];
 
   const lastActiveAt = data.lastActiveAt
     ? [
         {
-          label: "Last Active",
+          label: t("frontend.session.last_active_label"),
           value: <LastActive lastActive={parseISO(data.lastActiveAt)} />,
         },
       ]
@@ -92,7 +97,7 @@ const BrowserSessionDetail: React.FC<Props> = ({ session }) => {
   const lastAuthentication = data.lastAuthentication
     ? [
         {
-          label: "Last Authentication",
+          label: t("frontend.session.last_auth_label"),
           value: (
             <DateTime datetime={parseISO(data.lastAuthentication.createdAt)} />
           ),
@@ -101,10 +106,19 @@ const BrowserSessionDetail: React.FC<Props> = ({ session }) => {
     : [];
 
   const sessionDetails = [
-    { label: "ID", value: <code>{data.id}</code> },
-    { label: "User ID", value: <code>{data.user.id}</code> },
-    { label: "User Name", value: <code>{data.user.username}</code> },
-    { label: "Signed in", value: <DateTime datetime={data.createdAt} /> },
+    { label: t("frontend.session.id_label"), value: <code>{data.id}</code> },
+    {
+      label: t("frontend.session.user_id_label"),
+      value: <code>{data.user.id}</code>,
+    },
+    {
+      label: t("frontend.session.username_label"),
+      value: <code>{data.user.username}</code>,
+    },
+    {
+      label: t("frontend.session.signed_in_label"),
+      value: <DateTime datetime={data.createdAt} />,
+    },
     ...finishedAt,
     ...lastActiveAt,
     ...lastActiveIp,
