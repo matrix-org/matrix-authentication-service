@@ -200,7 +200,11 @@ export async function migrate(): Promise<void> {
     );
   }
 
-  const synapseUsers = await synapse.select("*").from<SUser>("users");
+  // Get all Synapse users, except appservice owned users who don't need to be migrated
+  const synapseUsers = await synapse
+    .select("*")
+    .from<SUser>("users")
+    .whereNull("appservice_id");
   log.info(`Found ${synapseUsers.length} users in Synapse`);
   for (const user of synapseUsers) {
     const localpart = user.name.split(":")[0].substring(1);
