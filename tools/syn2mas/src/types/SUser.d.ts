@@ -21,4 +21,5 @@ export interface SUser {
   is_guest: number;
   deactivated: number;
   creation_ts: UnixTimestamp;
+  appservice_id?: string;
 }
