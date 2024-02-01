@@ -267,4 +267,6 @@ export async function advisor(): Promise<void> {
       "Synapse config has login_via_existing_session enabled which must to be disabled or removed after migration",
     );
   }
+
+  process.exit(errors.length > 0 ? 1 : 0);
 }
