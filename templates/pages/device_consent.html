@@ -31,13 +31,30 @@ limitations under the License.
 
       <div class="header">
         <h1 class="title">Allow access to your account?</h1>
+
+        <div class="consent-device-card">
+          <div class="device">
+            {{ icon.web_browser() }}
+            {# TODO: Infer from the user agent #}
+            <div class="name">Device</div>
+          </div>
+          <div class="meta">
+            {# TODO: add the IP address #}
+            <div>
+              <div class="key">Access requested</div>
+              <div class="value">{{ _.relative_date(grant.created_at) | title }} {{ _.short_time(grant.created_at) }}</div>
+            </div>
+            <div>
+              <div class="key">Code</div>
+              <div class="value">{{ grant.user_code }}</div>
+            </div>
+          </div>
+        </div>
+
         <p class="text">
-          {% if client.client_uri %}
-            <a target="_blank" href="{{ client.client_uri }}">{{ client_name }}</a>
-          {% else %}
-            {{ client_name }}
-          {% endif %}
-          wants to access your account. This will allow <span class="whitespace-nowrap">{{ client_name }}</span> to:</p>
+          Another device wants to access your account.
+          This will allow <span class="whitespace-nowrap">{{ client_name }}</span> to:
+        </p>
       </div>
     </header>
 
@@ -45,7 +62,7 @@ limitations under the License.
       {{ scope.list(scopes=grant.scope) }}
     </section>
 
-    <section class="text-center cpd-text-secondary cpd-text-body-md-regular">
+    <section class="text-center text-balance cpd-text-secondary cpd-text-body-md-regular">
       <span class="font-semibold cpd-text-primary">Make sure that you trust <span class="whitespace-nowrap">{{ client_name }}</span>.</span>
       You may be sharing sensitive information with this site or app.
       {% if client.policy_uri or client.tos_uri %}
@@ -60,10 +77,6 @@ limitations under the License.
           <a target="_blank" href="{{ client.tos_uri }}" class="cpd-link" data-kind="primary">terms of service</a>.
         {% endif %}
       {% endif %}
-    </section>
-
-    <section class="cpd-text-primary cpd-text-body-md-regular">
-      This request was made on another device, which should display the following code: {{ grant.user_code }}.
     </section>
 
     <section class="flex flex-col gap-6">
