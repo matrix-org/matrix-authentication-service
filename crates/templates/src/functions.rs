@@ -325,6 +325,93 @@ impl Object for TranslateFunc {
 
         Ok(Value::from_safe_string(buf))
     }
+
+    fn call_method(&self, _state: &State, name: &str, args: &[Value]) -> Result<Value, Error> {
+        match name {
+            "relative_date" => {
+                let (date,): (String,) = from_args(args)?;
+                let date: chrono::DateTime<chrono::Utc> = date.parse().map_err(|e| {
+                    Error::new(
+                        ErrorKind::InvalidOperation,
+                        "Invalid date while calling function `relative_date`",
+                    )
+                    .with_source(e)
+                })?;
+
+                // TODO: grab the clock somewhere
+                #[allow(clippy::disallowed_methods)]
+                let now = chrono::Utc::now();
+
+                let diff = (date - now).num_days();
+
+                Ok(Value::from(
+                    self.translator
+                        .relative_date(&self.lang, diff)
+                        .map_err(|_e| {
+                            Error::new(
+                                ErrorKind::InvalidOperation,
+                                "Failed to format relative date",
+                            )
+                        })?,
+                ))
+            }
+
+            "short_time" => {
+                let (date,): (String,) = from_args(args)?;
+                let date: chrono::DateTime<chrono::Utc> = date.parse().map_err(|e| {
+                    Error::new(
+                        ErrorKind::InvalidOperation,
+                        "Invalid date while calling function `time`",
+                    )
+                    .with_source(e)
+                })?;
+
+                // TODO: we should use the user's timezone here
+                let time = date.time();
+
+                Ok(Value::from(
+                    self.translator
+                        .short_time(&self.lang, &TimeAdapter(time))
+                        .map_err(|_e| {
+                            Error::new(ErrorKind::InvalidOperation, "Failed to format time")
+                        })?,
+                ))
+            }
+
+            _ => Err(Error::new(
+                ErrorKind::InvalidOperation,
+                "Invalid method on include_asset",
+            )),
+        }
+    }
+}
+
+/// An adapter to make a [`Timelike`] implement [`IsoTimeInput`]
+///
+/// [`Timelike`]: chrono::Timelike
+/// [`IsoTimeInput`]: mas_i18n::icu_datetime::input::IsoTimeInput
+struct TimeAdapter<T>(T);
+
+impl<T: chrono::Timelike> mas_i18n::icu_datetime::input::IsoTimeInput for TimeAdapter<T> {
+    fn hour(&self) -> Option<mas_i18n::icu_calendar::types::IsoHour> {
+        let hour: usize = chrono::Timelike::hour(&self.0).try_into().ok()?;
+        hour.try_into().ok()
+    }
+
+    fn minute(&self) -> Option<mas_i18n::icu_calendar::types::IsoMinute> {
+        let minute: usize = chrono::Timelike::minute(&self.0).try_into().ok()?;
+        minute.try_into().ok()
+    }
+
+    fn second(&self) -> Option<mas_i18n::icu_calendar::types::IsoSecond> {
+        let second: usize = chrono::Timelike::second(&self.0).try_into().ok()?;
+        second.try_into().ok()
+    }
+
+    fn nanosecond(&self) -> Option<mas_i18n::icu_calendar::types::NanoSecond> {
+        let nanosecond: usize = chrono::Timelike::nanosecond(&self.0).try_into().ok()?;
+        nanosecond.try_into().ok()
+    }
 }
 
 struct IncludeAsset {
