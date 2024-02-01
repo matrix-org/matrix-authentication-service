@@ -50,6 +50,7 @@ pub struct Translator {
     plural_provider: LocaleFallbackProvider<icu_plurals::provider::Baked>,
     list_provider: LocaleFallbackProvider<icu_list::provider::Baked>,
     fallbacker: LocaleFallbacker,
+    default_locale: DataLocale,
 }
 
 impl Translator {
@@ -71,6 +72,8 @@ impl Translator {
             plural_provider,
             list_provider,
             fallbacker,
+            // TODO: make this configurable
+            default_locale: icu_locid::locale!("en").into(),
         }
     }
 
@@ -135,9 +138,10 @@ impl Translator {
                 return Some((message, iter.take()));
             }
 
-            // Stop if we hit the `und` locale
+            // Try the defaut locale if we hit the `und` locale
             if locale.is_und() {
-                return None;
+                let message = self.message(&self.default_locale, key).ok()?;
+                return Some((message, self.default_locale.clone()));
             }
 
             iter.step();
