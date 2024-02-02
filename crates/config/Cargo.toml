@@ -12,27 +12,28 @@ publish = false
 workspace = true
 
 [dependencies]
-tokio = { version = "1.34.0", features = ["fs", "rt"] }
+tokio = { version = "1.35.1", features = ["fs", "rt"] }
 tracing.workspace = true
-async-trait = "0.1.74"
+async-trait = "0.1.77"
 
 thiserror.workspace = true
 anyhow.workspace = true
 
 camino = { workspace = true, features = ["serde1"] }
 chrono.workspace = true
-figment = { version = "0.10.12", features = ["env", "yaml", "test"] }
+figment = { version = "0.10.14", features = ["env", "yaml", "test"] }
 ipnetwork = { version = "0.20.0", features = ["serde", "schemars"] }
 schemars = { version = "0.8.16", features = ["url", "chrono"] }
 ulid.workspace = true
 url.workspace = true
 
 serde.workspace = true
-serde_with = { version = "3.4.0", features = ["hex", "chrono"] }
+serde_with = { version = "3.5.1", features = ["hex", "chrono"] }
 serde_json.workspace = true
 
 pem-rfc7468 = "0.7.0"
-rustls-pemfile = "1.0.4"
+rustls-pki-types = "1.1.0"
+rustls-pemfile = "2.0.0"
 rand.workspace = true
 rand_chacha = "0.3.1"
 

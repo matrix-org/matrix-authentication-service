@@ -285,11 +285,8 @@ where
 
 pub fn build_tls_server_config(config: &HttpTlsConfig) -> Result<ServerConfig, anyhow::Error> {
     let (key, chain) = config.load()?;
-    let key = rustls::PrivateKey(key);
-    let chain = chain.into_iter().map(rustls::Certificate).collect();
 
     let mut config = rustls::ServerConfig::builder()
-        .with_safe_defaults()
         .with_no_client_auth()
         .with_single_cert(chain, key)
         .context("failed to build TLS server config")?;

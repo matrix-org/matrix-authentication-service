@@ -43,8 +43,7 @@ fn load_tls_roots_blocking() -> Result<rustls::RootCertStore, NativeRootsLoadErr
     let mut roots = rustls::RootCertStore::empty();
     let certs = rustls_native_certs::load_native_certs()?;
     for cert in certs {
-        let cert = rustls::Certificate(cert.0);
-        roots.add(&cert)?;
+        roots.add(cert)?;
     }
 
     if roots.is_empty() {
@@ -75,15 +74,11 @@ async fn tls_roots() -> Result<rustls::RootCertStore, NativeRootsInitError> {
 #[cfg(feature = "webpki-roots")]
 #[allow(clippy::unused_async)]
 async fn tls_roots() -> Result<rustls::RootCertStore, Infallible> {
-    let mut roots = rustls::RootCertStore::empty();
-    roots.add_trust_anchors(webpki_roots::TLS_SERVER_ROOTS.iter().map(|ta| {
-        rustls::OwnedTrustAnchor::from_subject_spki_name_constraints(
-            ta.subject,
-            ta.spki,
-            ta.name_constraints,
-        )
-    }));
-    Ok(roots)
+    let root_store = rustls::RootCertStore {
+        roots: webpki_roots::TLS_SERVER_ROOTS.to_vec(),
+    };
+
+    Ok(root_store)
 }
 
 #[cfg(feature = "native-roots")]
@@ -131,7 +126,6 @@ pub enum NativeRootsLoadError {
 async fn make_tls_config() -> Result<rustls::ClientConfig, ClientInitError> {
     let roots = tls_roots().await?;
     let tls_config = rustls::ClientConfig::builder()
-        .with_safe_defaults()
         .with_root_certificates(roots)
         .with_no_client_auth();
 
