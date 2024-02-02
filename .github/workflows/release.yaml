@@ -46,6 +46,7 @@ jobs:
       - name: Set the crates version
         run: |
           sed -i "s/^package.version = .*/package.version = \"${{ steps.next.outputs.version }}\"/" Cargo.toml
+          sed -i "/path = \".\/crates\//s/version = \".*\"/version = \"=${{ steps.next.outputs.version }}\"/" Cargo.toml
 
       - name: Run `cargo metadata` to make sure the lockfile is up to date
         run: cargo metadata --format-version 1
