@@ -13,24 +13,24 @@ workspace = true
 
 [dependencies]
 bytes = "1.5.0"
-event-listener = "4.0.0"
-futures-util = "0.3.29"
+event-listener = "4.0.3"
+futures-util = "0.3.30"
 http-body = "0.4.5"
 hyper = { version = "0.14.27", features = ["server", "http1", "http2", "tcp"] }
-libc = "0.2.150"
+libc = "0.2.152"
 pin-project-lite = "0.2.13"
 socket2 = "0.5.5"
 thiserror.workspace = true
-tokio = { version = "1.34.0", features = ["net", "rt", "macros", "signal", "time"] }
-tokio-rustls = "0.24.1"
+tokio = { version = "1.35.1", features = ["net", "rt", "macros", "signal", "time"] }
+tokio-rustls = "0.25.0"
 tower-http = { version = "0.4.4", features = ["add-extension"] }
 tower-service = "0.3.2"
 tracing.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
-rustls-pemfile = "1.0.4"
-tokio = { version = "1.34.0", features = ["net", "rt", "macros", "signal", "time", "rt-multi-thread"] }
+rustls-pemfile = "2.0.0"
+tokio = { version = "1.35.1", features = ["net", "rt", "macros", "signal", "time", "rt-multi-thread"] }
 tokio-test = "0.4.3"
 tracing-subscriber.workspace = true
 

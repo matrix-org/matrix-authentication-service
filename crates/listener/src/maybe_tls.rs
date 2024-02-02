@@ -20,7 +20,10 @@ use std::{
 
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 use tokio_rustls::{
-    rustls::{Certificate, ProtocolVersion, ServerConfig, ServerConnection, SupportedCipherSuite},
+    rustls::{
+        pki_types::CertificateDer, ProtocolVersion, ServerConfig, ServerConnection,
+        SupportedCipherSuite,
+    },
     TlsAcceptor,
 };
 
@@ -31,7 +34,7 @@ pub struct TlsStreamInfo {
     pub negotiated_cipher_suite: SupportedCipherSuite,
     pub sni_hostname: Option<String>,
     pub alpn_protocol: Option<Vec<u8>>,
-    pub peer_certificates: Option<Vec<Certificate>>,
+    pub peer_certificates: Option<Vec<CertificateDer<'static>>>,
 }
 
 impl TlsStreamInfo {
@@ -98,7 +101,13 @@ impl<T> MaybeTlsStream<T> {
 
         let sni_hostname = conn.server_name().map(ToOwned::to_owned);
         let alpn_protocol = conn.alpn_protocol().map(ToOwned::to_owned);
-        let peer_certificates = conn.peer_certificates().map(ToOwned::to_owned);
+        let peer_certificates = conn.peer_certificates().map(|certs| {
+            certs
+                .iter()
+                .cloned()
+                .map(CertificateDer::into_owned)
+                .collect()
+        });
         Some(TlsStreamInfo {
             protocol_version,
             negotiated_cipher_suite,

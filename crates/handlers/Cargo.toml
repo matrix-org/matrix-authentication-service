@@ -13,8 +13,8 @@ workspace = true
 
 [dependencies]
 # Async runtime
-tokio = { version = "1.34.0", features = ["macros"] }
-futures-util = "0.3.29"
+tokio = { version = "1.35.1", features = ["macros"] }
+futures-util = "0.3.30"
 
 # Logging and tracing
 tracing.workspace = true
@@ -37,19 +37,19 @@ axum-extra = { version = "0.8.0", features = ["cookie-private"] }
 async-graphql = { version = "6.0.11", features = ["tracing", "apollo_tracing"] }
 
 # Emails
-lettre = { version = "0.11.2", default-features = false, features = ["builder"] }
+lettre = { version = "0.11.4", default-features = false, features = ["builder"] }
 
 # Database access
 sqlx = { version = "0.7.3", features = ["runtime-tokio-rustls", "postgres"] }
 
 # Various structure (de)serialization
 serde.workspace = true
-serde_with = { version = "3.4.0", features = ["hex", "chrono"] }
+serde_with = { version = "3.5.1", features = ["hex", "chrono"] }
 serde_json.workspace = true
 serde_urlencoded = "0.7.1"
 
 # Password hashing
-argon2 = { version = "0.5.2", features = ["password-hash", "std"] }
+argon2 = { version = "0.5.3", features = ["password-hash", "std"] }
 bcrypt = "0.15.0"
 pbkdf2 = { version = "0.12.2", features = ["password-hash", "std", "simple", "parallel"] }
 zeroize = "1.7.0"
@@ -58,8 +58,8 @@ zeroize = "1.7.0"
 base64ct = "1.6.0"
 camino.workspace = true
 chrono.workspace = true
-psl = "2.1.12"
-time = "0.3.30"
+psl = "2.1.16"
+time = "0.3.31"
 url.workspace = true
 mime = "0.3.17"
 minijinja.workspace = true
@@ -68,10 +68,10 @@ rand_chacha = "0.3.1"
 headers = "0.3.9"
 ulid.workspace = true
 
-mas-axum-utils = { workspace = true, default-features = false }
+mas-axum-utils.workspace = true
 mas-data-model.workspace = true
 mas-graphql.workspace = true
-mas-http = { workspace = true, default-features = false }
+mas-http.workspace = true
 mas-i18n.workspace = true
 mas-iana.workspace = true
 mas-jose.workspace = true
@@ -92,8 +92,6 @@ tracing-subscriber.workspace = true
 cookie_store = "0.20.0"
 
 [features]
-default = ["webpki-roots"]
-
 # Use the native root certificates
 native-roots = ["mas-axum-utils/native-roots", "mas-http/native-roots"]
 # Use the webpki root certificates

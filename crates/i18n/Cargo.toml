@@ -20,8 +20,8 @@ icu_plurals = { version = "1.4.0", features = ["compiled_data", "std"] }
 icu_provider = { version = "1.4.0", features = ["std", "sync"] }
 icu_provider_adapters = { version = "1.4.0", features = ["std"] }
 pad = "0.1.6"
-pest = "2.7.5"
-pest_derive = "2.7.5"
+pest = "2.7.6"
+pest_derive = "2.7.6"
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
