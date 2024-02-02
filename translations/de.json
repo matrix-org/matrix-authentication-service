@@ -1,0 +1,146 @@
+{
+  "action": {
+    "cancel": "Abbrechen",
+    "continue": "Weiter",
+    "create_account": "Konto erstellen",
+    "sign_in": "Anmelden",
+    "sign_out": "Abmelden",
+    "submit": "Absenden"
+  },
+  "app": {
+    "human_name": "Matrix Authentication Service",
+    "name": "matrix-authentication-service",
+    "technical_description": "OpenID Connect discovery document: <a class=\"cpd-link\" data-kind=\"primary\" href=\"%(discovery_url)s\">%(discovery_url)s</a>"
+  },
+  "branding": {
+    "privacy_policy": {
+      "alt": "Link zur Datenschutzerklärung des Dienstes",
+      "link": "Datenschutzerklärung"
+    },
+    "terms_and_conditions": {
+      "alt": "Link zu den Allgemeinen Geschäftsbedingungen des Dienstes",
+      "link": "Allgemeine Geschäftsbedingungen"
+    }
+  },
+  "common": {
+    "display_name": "Anzeigename",
+    "email_address": "E-Mail-Adresse",
+    "mxid": "Matrix-ID",
+    "password": "Passwort",
+    "password_confirm": "Passwort wiederholen",
+    "username": "Benutzername"
+  },
+  "error": {
+    "unexpected": "Unerwarteter Fehler"
+  },
+  "mas": {
+    "add_email": {
+      "description": "Geben Sie eine E-Mail-Adresse ein, um Ihr Konto wiederherzustellen, falls Sie den Zugriff darauf verlieren.",
+      "heading": "E-Mail-Adresse hinzufügen"
+    },
+    "back_to_homepage": "Zurück",
+    "change_password": {
+      "change": "Passwort ändern",
+      "confirm": "Passwort wiederholen",
+      "current": "Aktuelles Passwort",
+      "description": "Hiermit wird das Passwort für Ihr Konto geändert.",
+      "heading": "Mein Passwort ändern",
+      "new": "Neues Passwort"
+    },
+    "emails": {
+      "greeting": "Hallo %(username)s,",
+      "verify": {
+        "body_html": "Ihr Code zur Bestätigung dieser E-Mail-Adresse lautet: <strong>%(code)s</strong>",
+        "body_text": "Ihr Code zur Bestätigung dieser E-Mail-Adresse lautet: %(code)s",
+        "subject": "Ihr E-Mail-Bestätigungscode lautet: %(code)s"
+      }
+    },
+    "errors": {
+      "denied_policy": "Abgelehnt durch Richtlinie: %(policy)s",
+      "field_required": "Dieses Feld ist ein Pflichtfeld",
+      "invalid_credentials": "Ungültige Anmeldeinformationen",
+      "password_mismatch": "Die Passwortfelder stimmen nicht überein",
+      "username_taken": "Dieser Benutzername ist bereits vergeben"
+    },
+    "login": {
+      "call_to_register": "Sie haben noch kein Konto?",
+      "continue_with_provider": "Weiter mit %(provider)s",
+      "description": "Bitte melden Sie sich an, um fortzufahren:",
+      "headline": "Anmelden",
+      "link": {
+        "description": "Ihr <span class=\"break-keep text-links\">%(provider)s</span> Konto verknüpfen",
+        "headline": "Melden Sie sich zum Verbinden an"
+      },
+      "no_login_methods": "Keine Anmeldemethoden verfügbar.",
+      "separator": "Oder"
+    },
+    "navbar": {
+      "my_account": "Mein Konto",
+      "register": "Konto erstellen",
+      "signed_in_as": "Angemeldet als <span class=\"font-semibold\">%(username)s</span>."
+    },
+    "not_found": {
+      "description": "Die Seite, nach der Sie gesucht haben, existiert nicht oder wurde verschoben",
+      "heading": "Seite nicht gefunden"
+    },
+    "not_you": "Nicht %(username)s?",
+    "or_separator": "Oder",
+    "policy_violation": {
+      "description": "Dies kann am Client liegen, der die Anfrage erstellt hat, am aktuell angemeldeten Benutzer oder an der Anfrage selbst.",
+      "heading": "Die Autorisierungsanfrage wurde durch eine Richtlinie dieses Dienstes abgelehnt",
+      "logged_as": "Eingeloggt als <span class=\"font-semibold\">%(username)s</span>"
+    },
+    "register": {
+      "call_to_login": "Sie haben bereits ein Konto?",
+      "create_account": {
+        "description": "Bitte erstellen Sie ein Konto, um loszulegen:",
+        "heading": "Konto erstellen"
+      },
+      "sign_in_instead": "Stattdessen anmelden"
+    },
+    "scope": {
+      "edit_profile": "Ihr Profil und Ihre Kontaktdaten bearbeiten",
+      "manage_sessions": "Ihre Geräte und Sitzungen verwalten",
+      "mas_admin": "Beliebige Benutzer verwalten",
+      "send_messages": "Nachrichten in Ihrem Namen senden",
+      "synapse_admin": "Den Synapse-Homeserver verwalten",
+      "view_messages": "Ihre vorhandenen Nachrichten und Daten anzeigen",
+      "view_profile": "Ihre Profilinformationen und Kontaktdaten anzeigen"
+    },
+    "upstream_oauth2": {
+      "link_mismatch": {
+        "heading": "Dieses Konto ist bereits mit einem anderen Konto verknüpft."
+      },
+      "register": {
+        "choose_username": {
+          "description": "Dies kann später nicht mehr geändert werden.",
+          "heading": "Wählen Sie Ihren Benutzernamen"
+        },
+        "create_account": "Neues Konto erstellen",
+        "enforced_by_policy": "Erzwungen durch Server-Richtlinie",
+        "forced_display_name": "Verwendet den folgenden Anzeigenamen",
+        "forced_email": "Verwendet die folgende E-Mail-Adresse",
+        "forced_localpart": "Verwendet den folgenden Benutzernamen",
+        "import_data": {
+          "description": "Bestätigen Sie die Informationen, die mit Ihrem neuen %(server_name)s Konto verknüpft werden.",
+          "heading": "Ihre Daten importieren"
+        },
+        "imported_from_upstream": "Von Ihrem Konto importiert",
+        "link_existing": "Mit einem bestehenden Konto verknüpfen",
+        "suggested_display_name": "Anzeigenamen importieren",
+        "suggested_email": "E-Mail-Adresse importieren",
+        "use": "Verwenden"
+      },
+      "suggest_link": {
+        "action": "Link",
+        "heading": "Mit Ihrem bestehenden Konto verknüpfen"
+      }
+    },
+    "verify_email": {
+      "6_digit_code": "6-stelliger Code",
+      "code": "Code",
+      "description": "Geben Sie den 6-stelligen Code ein, der an <em>%(email)s</em> gesendet wurde",
+      "headline": "Bestätigen Sie Ihre E-Mail-Adresse"
+    }
+  }
+}

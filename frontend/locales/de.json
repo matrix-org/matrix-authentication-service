@@ -1,0 +1,187 @@
+{
+  "action": {
+    "back": "Zurück",
+    "cancel": "Abbrechen",
+    "continue": "Fortfahren",
+    "save": "Speichern"
+  },
+  "branding": {
+    "privacy_policy": {
+      "alt": "Link zur Datenschutzerklärung des Dienstes",
+      "link": "Datenschutzerklärung"
+    },
+    "terms_and_conditions": {
+      "alt": "Link zu den Nutzungsbedingungen des Dienstes",
+      "link": "Nutzungsbedingungen"
+    }
+  },
+  "common": {
+    "add": "Hinzufügen",
+    "error": "Fehler",
+    "loading": "Lade …",
+    "next": "Weiter",
+    "previous": "Zurück"
+  },
+  "frontend": {
+    "add_email_form": {
+      "email_denied_alert": {
+        "text": "Die eingegebene E-Mail-Adresse wird von der Serverrichtlinie nicht zugelassen.",
+        "title": "E-Mail-Adresse durch Richtlinie abgelehnt"
+      },
+      "email_exists_alert": {
+        "text": "Die eingegebene E-Mail-Adresse ist diesem Konto bereits zugeordnet",
+        "title": "Diese E-Mailadresse existiert bereits"
+      },
+      "email_field_label": "E-Mail-Adresse hinzufügen",
+      "email_invalid_alert": {
+        "text": "Die eingegebene E-Mail-Adresse ist ungültig",
+        "title": "Ungültige Email-Adresse"
+      }
+    },
+    "app_sessions_list": {
+      "error": "App-Sitzungen konnten nicht geladen werden",
+      "heading": "Anwendungen"
+    },
+    "browser_session_details": {
+      "current_badge": "Aktuell",
+      "session_details_title": "Sitzung"
+    },
+    "browser_sessions_overview": {
+      "body:one": "{{count}} aktive Sitzung",
+      "body:other": "{{count}} aktive Sitzungen",
+      "heading": "Browser",
+      "view_all_button": "Alle anzeigen"
+    },
+    "compat_session_detail": {
+      "client_details_title": "Client",
+      "name": "Name",
+      "session_details_title": "Sitzung"
+    },
+    "device_type_icon_label": {
+      "desktop": "Desktop",
+      "mobile": "Mobil",
+      "unknown": "Unbekannter Gerätetyp",
+      "web": "Web"
+    },
+    "end_session_button": {
+      "confirmation_modal_title": "Sind Sie sicher, dass Sie diese Sitzung abmelden möchten?",
+      "text": "Sitzung beenden"
+    },
+    "error_boundary_title": "Etwas ist schief gelaufen",
+    "last_active": {
+      "active_date": "Aktiv {{relativeDate}}",
+      "active_now": "Jetzt aktiv",
+      "inactive_90_days": "Seit über 90 Tagen inaktiv"
+    },
+    "nav": {
+      "profile": "Profil",
+      "sessions": "Sitzungen"
+    },
+    "not_found_alert_title": "Nicht gefunden.",
+    "not_logged_in_alert": "Sie sind nicht angemeldet.",
+    "oauth2_client_detail": {
+      "details_title": "Client",
+      "id": "Client-ID",
+      "name": "Name",
+      "policy": "Richtlinie",
+      "terms": "Nutzungsbedingungen"
+    },
+    "oauth2_session_detail": {
+      "client_details_name": "Name",
+      "client_title": "Client",
+      "session_details_title": "Sitzung"
+    },
+    "pagination_controls": {
+      "total": "Gesamt: {{totalCount}}"
+    },
+    "reset_cross_signing": {
+      "button": "Zurücksetzen der Kryptoidentität zulassen",
+      "description": "Wenn Sie nirgendwo anders angemeldet sind und alle Wiederherstellungsoptionen vergessen oder verloren haben, müssen Sie Ihre Krypto-Identität zurücksetzen. Das bedeutet, dass Sie ihren bestehenden Nachrichtenverlauf verlieren, andere Nutzer sehen, dass Sie ihre Identität zurückgesetzt haben und Sie ihre vorhandenen Geräte erneut verifizieren müssen.",
+      "failure": {
+        "description": "Dies könnte ein vorübergehendes Problem sein. Bitte versuchen Sie es später erneut. Wenn das Problem weiterhin besteht, wenden Sie sich bitte an Ihren Administrator.",
+        "title": "Krypto-Identität konnte nicht zugelassen werden"
+      },
+      "heading": "Krypto-Identität zurücksetzen",
+      "success": {
+        "description": "Ein Client kann jetzt die Krypto-Identität Ihres Kontos vorübergehend zurücksetzen. Folgen Sie den Anweisungen in Ihrem Client, um den Vorgang abzuschließen.",
+        "title": "Das Zurücksetzen der Krypto-Identität ist vorübergehend erlaubt"
+      }
+    },
+    "selectable_session": {
+      "label": "Sitzung auswählen"
+    },
+    "session": {
+      "current_badge": "Aktuell",
+      "device_id_label": "Device ID",
+      "finished_date": "Beendet <datetime/>",
+      "finished_label": "Finished",
+      "id_label": "ID",
+      "ip_label": "IP Address",
+      "last_active_label": "Last Active",
+      "last_auth_label": "Last Authentication",
+      "scopes_label": "Scopes",
+      "signed_in_date": "Angemeldet <datetime/>",
+      "signed_in_label": "Signed in",
+      "uri_label": "Uri",
+      "user_id_label": "User ID",
+      "username_label": "User name"
+    },
+    "session_detail": {
+      "alert": {
+        "button": "Zurück",
+        "text": "Diese Sitzung existiert nicht oder ist nicht mehr aktiv.",
+        "title": "Sitzung kann nicht gefunden werden: {{deviceId}}"
+      }
+    },
+    "unknown_route": "Unbekannte Route {{route}}",
+    "unverified_email_alert": {
+      "button": "Überprüfen und verifizieren",
+      "text:one": "Sie haben {{count}} nicht verifizierte E-Mail-Adresse.",
+      "text:other": "Sie haben {{count}} nicht verifizierte E-Mail-Adressen.",
+      "title": "Nicht verifizierte E-Mail-Adresse"
+    },
+    "user_email": {
+      "delete_button_confirmation_modal": {
+        "body": "Möchten Sie diese E-Mail-Adresse wirklich entfernen?"
+      },
+      "delete_button_title": "E-Mail-Adresse entfernen",
+      "email": "E-Mail",
+      "make_primary_button": "Als primäre Adresse festlegen",
+      "primary_email": "Primäre E-Mail-Adresse",
+      "retry_button": "Verifizierung wiederholen",
+      "unverified": "Nicht verifiziert"
+    },
+    "user_email_list": {
+      "heading": "E-Mails",
+      "no_primary_email_alert": "Keine primäre E-Mail-Adresse"
+    },
+    "user_greeting": {
+      "error": "Fehler beim Laden des Benutzers"
+    },
+    "user_name": {
+      "display_name_field_label": "Anzeigename"
+    },
+    "user_sessions_overview": {
+      "heading": "Wo Sie angemeldet sind"
+    },
+    "verify_email": {
+      "code_field_error": "Code nicht erkannt",
+      "code_field_label": "6-stelliger Code",
+      "code_field_wrong_shape": "Der Code muss 6-stellig sein",
+      "email_sent_alert": {
+        "description": "Geben Sie unten den neuen Code ein.",
+        "title": "Neuer Code gesendet"
+      },
+      "enter_code_prompt": "Geben Sie den 6-stelligen Code ein, der an <email>{{email}}</email> gesendet wurde",
+      "heading": "Verifizieren Sie Ihre E-Mail-Adresse",
+      "invalid_code_alert": {
+        "description": "Überprüfen Sie den Code, der an Ihre E-Mail-Adresse gesendet wurde, und aktualisieren Sie die folgenden Felder, um fortzufahren.",
+        "title": "Sie haben einen falschen Code eingegeben"
+      },
+      "resend_code": "Code erneut senden",
+      "resend_email": "E-Mail erneut senden",
+      "sent": "Gesendet!",
+      "unknown_email": "Unbekannte E-Mail-Adresse"
+    }
+  }
+}
