@@ -72,5 +72,11 @@ CREATE TABLE "oauth2_device_code_grant" (
     -- The browser session ID that the user used to authenticate
     -- This means "fulfilled_at" or "rejected_at" has also been set
     "user_session_id" UUID
-        REFERENCES "user_sessions" ("user_session_id")
+        REFERENCES "user_sessions" ("user_session_id"),
+
+    -- The IP address of the user when they authenticated
+    "ip_address" INET,
+
+    -- The user agent of the user when they authenticated
+    "user_agent" TEXT
 );

@@ -14,7 +14,7 @@
 
 use axum::{extract::State, response::IntoResponse, Json, TypedHeader};
 use chrono::Duration;
-use headers::{CacheControl, Pragma};
+use headers::{CacheControl, Pragma, UserAgent};
 use hyper::StatusCode;
 use mas_axum_utils::{
     client_authorization::{ClientAuthorization, CredentialsVerificationError},
@@ -32,7 +32,7 @@ use oauth2_types::{
 use rand::distributions::{Alphanumeric, DistString};
 use thiserror::Error;
 
-use crate::impl_from_error_for_route;
+use crate::{impl_from_error_for_route, BoundActivityTracker};
 
 #[derive(Debug, Error)]
 pub(crate) enum RouteError {
@@ -84,6 +84,8 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
+    user_agent: Option<TypedHeader<UserAgent>>,
+    activity_tracker: BoundActivityTracker,
     State(url_builder): State<UrlBuilder>,
     State(http_client_factory): State<HttpClientFactory>,
     State(encrypter): State<Encrypter>,
@@ -123,6 +125,9 @@ pub(crate) async fn post(
 
     let expires_in = Duration::minutes(20);
 
+    let user_agent = user_agent.map(|ua| ua.0.to_string());
+    let ip_address = activity_tracker.ip();
+
     let device_code = Alphanumeric.sample_string(&mut rng, 32);
     let user_code = Alphanumeric.sample_string(&mut rng, 6).to_uppercase();
 
@@ -137,6 +142,8 @@ pub(crate) async fn post(
                 device_code,
                 user_code,
                 expires_in,
+                user_agent,
+                ip_address,
             },
         )
         .await?;

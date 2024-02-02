@@ -758,6 +758,8 @@ mod tests {
                     device_code: device_code.to_owned(),
                     user_code: user_code.to_owned(),
                     expires_in: Duration::minutes(5),
+                    ip_address: None,
+                    user_agent: None,
                 },
             )
             .await
@@ -861,6 +863,8 @@ mod tests {
                     device_code: "second_devicecode".to_owned(),
                     user_code: "second_usercode".to_owned(),
                     expires_in: Duration::minutes(5),
+                    ip_address: None,
+                    user_agent: None,
                 },
             )
             .await

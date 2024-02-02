@@ -16,7 +16,10 @@
 
 mod branding;
 
-use std::fmt::Formatter;
+use std::{
+    fmt::Formatter,
+    net::{IpAddr, Ipv4Addr},
+};
 
 use chrono::{DateTime, Duration, Utc};
 use http::{Method, Uri, Version};
@@ -622,6 +625,8 @@ impl TemplateContext for PolicyViolationContext {
                         device_code: Alphanumeric.sample_string(rng, 32),
                         created_at: now - Duration::minutes(5),
                         expires_at: now + Duration::minutes(25),
+                        ip_address: None,
+                        user_agent: None,
                     },
                     client,
                 );
@@ -1152,6 +1157,8 @@ impl TemplateContext for DeviceConsentContext {
                     device_code: Alphanumeric.sample_string(rng, 32),
                     created_at: now - Duration::minutes(5),
                     expires_at: now + Duration::minutes(25),
+                    ip_address: Some(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1))),
+                    user_agent: Some("Mozilla/5.0".to_owned()),
                 };
                 Self { grant, client }
             })

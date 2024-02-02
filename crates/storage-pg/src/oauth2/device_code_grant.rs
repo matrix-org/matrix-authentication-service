@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::net::IpAddr;
+
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mas_data_model::{BrowserSession, DeviceCodeGrant, DeviceCodeGrantState, Session};
@@ -54,6 +56,8 @@ struct OAuth2DeviceGrantLookup {
     exchanged_at: Option<DateTime<Utc>>,
     user_session_id: Option<Uuid>,
     oauth2_session_id: Option<Uuid>,
+    ip_address: Option<IpAddr>,
+    user_agent: Option<String>,
 }
 
 impl TryFrom<OAuth2DeviceGrantLookup> for DeviceCodeGrant {
@@ -73,6 +77,8 @@ impl TryFrom<OAuth2DeviceGrantLookup> for DeviceCodeGrant {
             exchanged_at,
             user_session_id,
             oauth2_session_id,
+            ip_address,
+            user_agent,
         }: OAuth2DeviceGrantLookup,
     ) -> Result<Self, Self::Error> {
         let id = Ulid::from(oauth2_device_code_grant_id);
@@ -133,6 +139,8 @@ impl TryFrom<OAuth2DeviceGrantLookup> for DeviceCodeGrant {
             device_code,
             created_at,
             expires_at,
+            ip_address,
+            user_agent,
         })
     }
 }
@@ -176,9 +184,11 @@ impl<'c> OAuth2DeviceCodeGrantRepository for PgOAuth2DeviceCodeGrantRepository<'
                     , user_code
                     , created_at
                     , expires_at
+                    , ip_address
+                    , user_agent
                     )
                 VALUES
-                    ($1, $2, $3, $4, $5, $6, $7)
+                    ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             "#,
             Uuid::from(id),
             Uuid::from(client_id),
@@ -187,6 +197,8 @@ impl<'c> OAuth2DeviceCodeGrantRepository for PgOAuth2DeviceCodeGrantRepository<'
             &params.user_code,
             created_at,
             expires_at,
+            params.ip_address as Option<IpAddr>,
+            params.user_agent.as_deref(),
         )
         .traced()
         .execute(&mut *self.conn)
@@ -201,6 +213,8 @@ impl<'c> OAuth2DeviceCodeGrantRepository for PgOAuth2DeviceCodeGrantRepository<'
             device_code: params.device_code,
             created_at,
             expires_at,
+            ip_address: params.ip_address,
+            user_agent: params.user_agent,
         })
     }
 
@@ -229,6 +243,8 @@ impl<'c> OAuth2DeviceCodeGrantRepository for PgOAuth2DeviceCodeGrantRepository<'
                      , exchanged_at
                      , user_session_id
                      , oauth2_session_id
+                     , ip_address as "ip_address: IpAddr"
+                     , user_agent
                 FROM 
                     oauth2_device_code_grant
 
@@ -273,6 +289,8 @@ impl<'c> OAuth2DeviceCodeGrantRepository for PgOAuth2DeviceCodeGrantRepository<'
                      , exchanged_at
                      , user_session_id
                      , oauth2_session_id
+                     , ip_address as "ip_address: IpAddr"
+                     , user_agent
                 FROM 
                     oauth2_device_code_grant
 
@@ -317,6 +335,8 @@ impl<'c> OAuth2DeviceCodeGrantRepository for PgOAuth2DeviceCodeGrantRepository<'
                      , exchanged_at
                      , user_session_id
                      , oauth2_session_id
+                     , ip_address as "ip_address: IpAddr"
+                     , user_agent
                 FROM 
                     oauth2_device_code_grant
 

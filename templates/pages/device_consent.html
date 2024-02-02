@@ -33,13 +33,18 @@ limitations under the License.
         <h1 class="title">Allow access to your account?</h1>
 
         <div class="consent-device-card">
-          <div class="device">
+          <div class="device" {%- if grant.user_agent %} title="{{ grant.user_agent }}"{% endif %}>
             {{ icon.web_browser() }}
             {# TODO: Infer from the user agent #}
             <div class="name">Device</div>
           </div>
           <div class="meta">
-            {# TODO: add the IP address #}
+            {% if grant.ip_address %}
+              <div>
+                <div class="key">IP address</div>
+                <div class="value">{{ grant.ip_address }}</div>
+              </div>
+            {% endif %}
             <div>
               <div class="key">Access requested</div>
               <div class="value">{{ _.relative_date(grant.created_at) | title }} {{ _.short_time(grant.created_at) }}</div>
