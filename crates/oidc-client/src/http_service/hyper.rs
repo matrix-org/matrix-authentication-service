@@ -32,6 +32,10 @@ static MAS_USER_AGENT: HeaderValue = HeaderValue::from_static("mas-oidc-client/0
 
 /// Constructs a [`HttpService`] using [hyper] as a backend.
 ///
+/// # Panics
+///
+/// If the native TLS root certificates fail to load
+///
 /// [hyper]: https://crates.io/crates/hyper
 #[must_use]
 pub fn hyper_service() -> HttpService {
@@ -41,8 +45,8 @@ pub fn hyper_service() -> HttpService {
     http.enforce_http(false);
 
     let tls_config = rustls::ClientConfig::builder()
-        .with_safe_defaults()
         .with_native_roots()
+        .expect("Failed to load native TLS")
         .with_no_client_auth();
 
     let https = HttpsConnectorBuilder::new()

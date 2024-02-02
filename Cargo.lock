@@ -161,9 +161,9 @@ checksum = "080e9890a082662b09c1ad45f567faeeb47f22b5fb23895fbe1e651e718e25ca"
 
 [[package]]
 name = "apalis-core"
-version = "0.4.9"
+version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1deb48475efcdece1f23a0553209ee842f264c2a5e9bcc4928bfa6a15a044cde"
+checksum = "5dbe998f2a77a65433e3e893f7ffba5b0c4835a9601ccab02aa868d1d3ed71eb"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -184,9 +184,9 @@ dependencies = [
 
 [[package]]
 name = "apalis-cron"
-version = "0.4.9"
+version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43310b7e0132f9520b09224fb6faafb32eec82a672aa79c09e46b5b488ed505b"
+checksum = "9fc57450bd6a857d2370bb5504cf3d7f2a1fb85c7b68bdb7f92f50aac0e26aac"
 dependencies = [
  "apalis-core",
  "async-stream",
@@ -2252,7 +2252,7 @@ dependencies = [
  "http 0.2.11",
  "hyper",
  "rustls 0.22.2",
- "rustls-native-certs 0.7.0",
+ "rustls-native-certs",
  "rustls-pki-types",
  "tokio",
  "tokio-rustls",
@@ -2910,6 +2910,7 @@ dependencies = [
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "rustls-pemfile 2.0.0",
+ "rustls-pki-types",
  "schemars",
  "serde",
  "serde_json",
@@ -3053,7 +3054,7 @@ dependencies = [
  "once_cell",
  "opentelemetry",
  "rustls 0.22.2",
- "rustls-native-certs 0.6.3",
+ "rustls-native-certs",
  "serde",
  "serde_json",
  "serde_urlencoded",
@@ -4441,9 +4442,9 @@ checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
 
 [[package]]
 name = "psl"
-version = "2.1.18"
+version = "2.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e109d6dd5679c4dce63a1c6bd7b61ed6758368af1ccf0701dfb02c021fbb9d0d"
+checksum = "9667155e4837711406c6a5d26be83cdf53932f182d2ce8785529fd2c1a7e9e97"
 dependencies = [
  "psl-types",
 ]
@@ -4802,18 +4803,6 @@ dependencies = [
  "rustls-webpki 0.102.1",
  "subtle",
  "zeroize",
-]
-
-[[package]]
-name = "rustls-native-certs"
-version = "0.6.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9aace74cb666635c918e9c12bc0d348266037aa8eb599b5cba565709a8dff00"
-dependencies = [
- "openssl-probe",
- "rustls-pemfile 1.0.4",
- "schannel",
- "security-framework",
 ]
 
 [[package]]
