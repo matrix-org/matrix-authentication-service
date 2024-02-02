@@ -43,8 +43,7 @@ fn load_tls_roots_blocking() -> Result<rustls::RootCertStore, NativeRootsLoadErr
     let mut roots = rustls::RootCertStore::empty();
     let certs = rustls_native_certs::load_native_certs()?;
     for cert in certs {
-        let cert = rustls::Certificate(cert.0);
-        roots.add(&cert)?;
+        roots.add(cert)?;
     }
 
     if roots.is_empty() {

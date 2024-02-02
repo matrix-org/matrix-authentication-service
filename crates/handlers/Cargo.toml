@@ -68,10 +68,10 @@ rand_chacha = "0.3.1"
 headers = "0.3.9"
 ulid.workspace = true
 
-mas-axum-utils = { workspace = true, default-features = false }
+mas-axum-utils.workspace = true
 mas-data-model.workspace = true
 mas-graphql.workspace = true
-mas-http = { workspace = true, default-features = false }
+mas-http.workspace = true
 mas-i18n.workspace = true
 mas-iana.workspace = true
 mas-jose.workspace = true
@@ -92,8 +92,6 @@ tracing-subscriber.workspace = true
 cookie_store = "0.20.0"
 
 [features]
-default = ["webpki-roots"]
-
 # Use the native root certificates
 native-roots = ["mas-axum-utils/native-roots", "mas-http/native-roots"]
 # Use the webpki root certificates

@@ -56,8 +56,8 @@ mas-config.workspace = true
 mas-data-model.workspace = true
 mas-email.workspace = true
 mas-graphql.workspace = true
-mas-handlers = { workspace = true, default-features = false }
-mas-http = { workspace = true, default-features = false, features = ["axum", "client"] }
+mas-handlers = { workspace = true }
+mas-http = { workspace = true, features = ["axum", "client"] }
 mas-i18n.workspace = true
 mas-iana.workspace = true
 mas-keystore.workspace = true
