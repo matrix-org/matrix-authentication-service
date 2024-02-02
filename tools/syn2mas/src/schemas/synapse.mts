@@ -36,7 +36,7 @@ const databaseConfig = z.union([sqlite3DatabaseConfig, psycopg2DatabaseConfig]);
 
 const oidcProviderConfig = z.object({
   idp_id: z.string(),
-  idp_name: z.string(),
+  idp_name: z.string().nullish(),
   issuer: z.string(),
   client_id: z.string(),
   scopes: z.array(z.string()),
