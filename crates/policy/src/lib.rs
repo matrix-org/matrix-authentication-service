@@ -14,7 +14,7 @@
 
 pub mod model;
 
-use mas_data_model::{AuthorizationGrant, Client, User};
+use mas_data_model::{AuthorizationGrant, Client, DeviceCodeGrant, User};
 use oauth2_types::{registration::VerifiedClientMetadata, scope::Scope};
 use opa_wasm::Runtime;
 use thiserror::Error;
@@ -346,6 +346,42 @@ impl Policy {
             client,
             scope,
             grant_type: GrantType::ClientCredentials,
+        };
+
+        let [res]: [EvaluationResult; 1] = self
+            .instance
+            .evaluate(
+                &mut self.store,
+                &self.entrypoints.authorization_grant,
+                &input,
+            )
+            .await?;
+
+        Ok(res)
+    }
+
+    #[tracing::instrument(
+        name = "policy.evaluate.device_code_grant",
+        skip_all,
+        fields(
+            input.device_code_grant.id = %device_code_grant.id,
+            input.scope = %device_code_grant.scope,
+            input.client.id = %client.id,
+            input.user.id = %user.id,
+        ),
+        err,
+    )]
+    pub async fn evaluate_device_code_grant(
+        &mut self,
+        device_code_grant: &DeviceCodeGrant,
+        client: &Client,
+        user: &User,
+    ) -> Result<EvaluationResult, EvaluationError> {
+        let input = AuthorizationGrantInput {
+            user: Some(user),
+            client,
+            scope: &device_code_grant.scope,
+            grant_type: GrantType::DeviceCode,
         };
 
         let [res]: [EvaluationResult; 1] = self

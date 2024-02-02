@@ -165,7 +165,7 @@ pub(crate) async fn get(
             warn!(violation = ?res, "Authorization grant for client {} denied by policy", client.id);
 
             let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
-            let ctx = PolicyViolationContext::new(grant, client)
+            let ctx = PolicyViolationContext::for_authorization_grant(grant, client)
                 .with_session(session)
                 .with_csrf(csrf_token.form_value())
                 .with_language(locale);
@@ -280,7 +280,7 @@ pub(crate) async fn complete(
             url_builder,
             &key_store,
             client,
-            &grant,
+            Some(&grant),
             browser_session,
             None,
             Some(&valid_authentication),

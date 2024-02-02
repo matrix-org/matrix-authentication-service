@@ -33,6 +33,12 @@ impl Bound {
         Self { tracker, ip }
     }
 
+    /// Get the IP address bound to this activity tracker.
+    #[must_use]
+    pub fn ip(&self) -> Option<IpAddr> {
+        self.ip
+    }
+
     /// Record activity in an OAuth 2.0 session.
     pub async fn record_oauth2_session(&self, clock: &dyn Clock, session: &Session) {
         self.tracker

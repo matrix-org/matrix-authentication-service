@@ -18,12 +18,14 @@
 mod access_token;
 mod authorization_grant;
 mod client;
+mod device_code_grant;
 mod refresh_token;
 mod session;
 
 pub use self::{
     access_token::PgOAuth2AccessTokenRepository,
     authorization_grant::PgOAuth2AuthorizationGrantRepository, client::PgOAuth2ClientRepository,
+    device_code_grant::PgOAuth2DeviceCodeGrantRepository,
     refresh_token::PgOAuth2RefreshTokenRepository, session::PgOAuth2SessionRepository,
 };
 
@@ -33,7 +35,7 @@ mod tests {
     use mas_data_model::AuthorizationCode;
     use mas_storage::{
         clock::MockClock,
-        oauth2::{OAuth2SessionFilter, OAuth2SessionRepository},
+        oauth2::{OAuth2DeviceCodeGrantParams, OAuth2SessionFilter, OAuth2SessionRepository},
         Clock, Pagination, Repository,
     };
     use oauth2_types::{
@@ -689,5 +691,231 @@ mod tests {
         assert_eq!(list.edges.len(), 1);
         assert_eq!(list.edges[0], session11);
         assert_eq!(repo.oauth2_session().count(filter).await.unwrap(), 1);
+    }
+
+    /// Test the [`OAuth2DeviceCodeGrantRepository`] implementation
+    #[sqlx::test(migrator = "crate::MIGRATOR")]
+    async fn test_device_code_grant_repository(pool: PgPool) {
+        let mut rng = ChaChaRng::seed_from_u64(42);
+        let clock = MockClock::default();
+        let mut repo = PgRepository::from_pool(&pool).await.unwrap().boxed();
+
+        // Provision a client
+        let client = repo
+            .oauth2_client()
+            .add(
+                &mut rng,
+                &clock,
+                vec!["https://example.com/redirect".parse().unwrap()],
+                None,
+                None,
+                vec![GrantType::AuthorizationCode],
+                Vec::new(), // TODO: contacts are not yet saved
+                // vec!["contact@example.com".to_owned()],
+                Some("Example".to_owned()),
+                Some("https://example.com/logo.png".parse().unwrap()),
+                Some("https://example.com/".parse().unwrap()),
+                Some("https://example.com/policy".parse().unwrap()),
+                Some("https://example.com/tos".parse().unwrap()),
+                Some("https://example.com/jwks.json".parse().unwrap()),
+                None,
+                None,
+                None,
+                None,
+                None,
+                Some("https://example.com/login".parse().unwrap()),
+            )
+            .await
+            .unwrap();
+
+        // Provision a user
+        let user = repo
+            .user()
+            .add(&mut rng, &clock, "john".to_owned())
+            .await
+            .unwrap();
+
+        // Provision a browser session
+        let browser_session = repo
+            .browser_session()
+            .add(&mut rng, &clock, &user, None)
+            .await
+            .unwrap();
+
+        let user_code = "usercode";
+        let device_code = "devicecode";
+        let scope = Scope::from_iter([OPENID, EMAIL]);
+
+        // Create a device code grant
+        let grant = repo
+            .oauth2_device_code_grant()
+            .add(
+                &mut rng,
+                &clock,
+                OAuth2DeviceCodeGrantParams {
+                    client: &client,
+                    scope: scope.clone(),
+                    device_code: device_code.to_owned(),
+                    user_code: user_code.to_owned(),
+                    expires_in: Duration::minutes(5),
+                    ip_address: None,
+                    user_agent: None,
+                },
+            )
+            .await
+            .unwrap();
+
+        assert!(grant.is_pending());
+
+        // Check that we can find the grant by ID
+        let id = grant.id;
+        let lookup = repo.oauth2_device_code_grant().lookup(id).await.unwrap();
+        assert_eq!(lookup.as_ref(), Some(&grant));
+
+        // Check that we can find the grant by device code
+        let lookup = repo
+            .oauth2_device_code_grant()
+            .find_by_device_code(device_code)
+            .await
+            .unwrap();
+        assert_eq!(lookup.as_ref(), Some(&grant));
+
+        // Check that we can find the grant by user code
+        let lookup = repo
+            .oauth2_device_code_grant()
+            .find_by_user_code(user_code)
+            .await
+            .unwrap();
+        assert_eq!(lookup.as_ref(), Some(&grant));
+
+        // Let's mark it as fulfilled
+        let grant = repo
+            .oauth2_device_code_grant()
+            .fulfill(&clock, grant, &browser_session)
+            .await
+            .unwrap();
+        assert!(!grant.is_pending());
+        assert!(grant.is_fulfilled());
+
+        // Check that we can't mark it as rejected now
+        let res = repo
+            .oauth2_device_code_grant()
+            .reject(&clock, grant, &browser_session)
+            .await;
+        assert!(res.is_err());
+
+        // Look it up again
+        let grant = repo
+            .oauth2_device_code_grant()
+            .lookup(id)
+            .await
+            .unwrap()
+            .unwrap();
+
+        // We can't mark it as fulfilled again
+        let res = repo
+            .oauth2_device_code_grant()
+            .fulfill(&clock, grant, &browser_session)
+            .await;
+        assert!(res.is_err());
+
+        // Look it up again
+        let grant = repo
+            .oauth2_device_code_grant()
+            .lookup(id)
+            .await
+            .unwrap()
+            .unwrap();
+
+        // Create an OAuth 2.0 session
+        let session = repo
+            .oauth2_session()
+            .add_from_browser_session(&mut rng, &clock, &client, &browser_session, scope.clone())
+            .await
+            .unwrap();
+
+        // We can mark it as exchanged
+        let grant = repo
+            .oauth2_device_code_grant()
+            .exchange(&clock, grant, &session)
+            .await
+            .unwrap();
+        assert!(!grant.is_pending());
+        assert!(!grant.is_fulfilled());
+        assert!(grant.is_exchanged());
+
+        // We can't mark it as exchanged again
+        let res = repo
+            .oauth2_device_code_grant()
+            .exchange(&clock, grant, &session)
+            .await;
+        assert!(res.is_err());
+
+        // Do a new grant to reject it
+        let grant = repo
+            .oauth2_device_code_grant()
+            .add(
+                &mut rng,
+                &clock,
+                OAuth2DeviceCodeGrantParams {
+                    client: &client,
+                    scope: scope.clone(),
+                    device_code: "second_devicecode".to_owned(),
+                    user_code: "second_usercode".to_owned(),
+                    expires_in: Duration::minutes(5),
+                    ip_address: None,
+                    user_agent: None,
+                },
+            )
+            .await
+            .unwrap();
+
+        let id = grant.id;
+
+        // We can mark it as rejected
+        let grant = repo
+            .oauth2_device_code_grant()
+            .reject(&clock, grant, &browser_session)
+            .await
+            .unwrap();
+        assert!(!grant.is_pending());
+        assert!(grant.is_rejected());
+
+        // We can't mark it as rejected again
+        let res = repo
+            .oauth2_device_code_grant()
+            .reject(&clock, grant, &browser_session)
+            .await;
+        assert!(res.is_err());
+
+        // Look it up again
+        let grant = repo
+            .oauth2_device_code_grant()
+            .lookup(id)
+            .await
+            .unwrap()
+            .unwrap();
+
+        // We can't mark it as fulfilled
+        let res = repo
+            .oauth2_device_code_grant()
+            .fulfill(&clock, grant, &browser_session)
+            .await;
+        assert!(res.is_err());
+
+        // Look it up again
+        let grant = repo
+            .oauth2_device_code_grant()
+            .lookup(id)
+            .await
+            .unwrap()
+            .unwrap();
+
+        // We can't mark it as exchanged
+        let res = repo
+            .oauth2_device_code_grant()
+            .exchange(&clock, grant, &session)
+            .await;
+        assert!(res.is_err());
     }
 }

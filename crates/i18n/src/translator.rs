@@ -24,6 +24,7 @@ use icu_provider::{
     DataRequest, DataRequestMetadata,
 };
 use icu_provider_adapters::fallback::LocaleFallbackProvider;
+use icu_relativetime::{options::Numeric, RelativeTimeFormatter, RelativeTimeFormatterOptions};
 use thiserror::Error;
 use writeable::Writeable;
 
@@ -49,6 +50,7 @@ pub struct Translator {
     plural_provider: LocaleFallbackProvider<icu_plurals::provider::Baked>,
     list_provider: LocaleFallbackProvider<icu_list::provider::Baked>,
     fallbacker: LocaleFallbacker,
+    default_locale: DataLocale,
 }
 
 impl Translator {
@@ -70,6 +72,8 @@ impl Translator {
             plural_provider,
             list_provider,
             fallbacker,
+            // TODO: make this configurable
+            default_locale: icu_locid::locale!("en").into(),
         }
     }
 
@@ -134,9 +138,10 @@ impl Translator {
                 return Some((message, iter.take()));
             }
 
-            // Stop if we hit the `und` locale
+            // Try the defaut locale if we hit the `und` locale
             if locale.is_und() {
-                return None;
+                let message = self.message(&self.default_locale, key).ok()?;
+                return Some((message, self.default_locale.clone()));
             }
 
             iter.step();
@@ -296,6 +301,58 @@ impl Translator {
 
         let list = formatter.format_to_string(items);
         Ok(list)
+    }
+
+    /// Format a relative date
+    ///
+    /// # Parameters
+    ///
+    /// * `locale` - The locale to use.
+    /// * `days` - The number of days to format, where 0 = today, 1 = tomorrow,
+    ///   -1 = yesterday, etc.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the requested locale is not found.
+    pub fn relative_date(
+        &self,
+        locale: &DataLocale,
+        days: i64,
+    ) -> Result<String, icu_relativetime::RelativeTimeError> {
+        // TODO: this is not using the fallbacker
+        let formatter = RelativeTimeFormatter::try_new_long_day(
+            locale,
+            RelativeTimeFormatterOptions {
+                numeric: Numeric::Auto,
+            },
+        )?;
+
+        let date = formatter.format(days.into());
+        Ok(date.write_to_string().into_owned())
+    }
+
+    /// Format time
+    ///
+    /// # Parameters
+    ///
+    /// * `locale` - The locale to use.
+    /// * `time` - The time to format.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the requested locale is not found.
+    pub fn short_time<T: icu_datetime::input::IsoTimeInput>(
+        &self,
+        locale: &DataLocale,
+        time: &T,
+    ) -> Result<String, icu_datetime::DateTimeError> {
+        // TODO: this is not using the fallbacker
+        let formatter = icu_datetime::TimeFormatter::try_new_with_length(
+            locale,
+            icu_datetime::options::length::Time::Short,
+        )?;
+
+        Ok(formatter.format_to_string(time))
     }
 
     /// Get a list of available locales.

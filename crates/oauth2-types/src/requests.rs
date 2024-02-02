@@ -376,32 +376,32 @@ pub const DEFAULT_DEVICE_AUTHORIZATION_INTERVAL_SECONDS: i64 = 5;
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct DeviceAuthorizationResponse {
     /// The device verification code.
-    device_code: String,
+    pub device_code: String,
 
     /// The end-user verification code.
-    user_code: String,
+    pub user_code: String,
 
     /// The end-user verification URI on the authorization server.
     ///
     /// The URI should be short and easy to remember as end users will be asked
     /// to manually type it into their user agent.
-    verification_uri: Url,
+    pub verification_uri: Url,
 
     /// A verification URI that includes the `user_code` (or other information
     /// with the same function as the `user_code`), which is designed for
     /// non-textual transmission.
-    verification_uri_complete: Option<Url>,
+    pub verification_uri_complete: Option<Url>,
 
     /// The lifetime of the `device_code` and `user_code`.
     #[serde_as(as = "DurationSeconds<i64>")]
-    expires_in: Duration,
+    pub expires_in: Duration,
 
     /// The minimum amount of time in seconds that the client should wait
     /// between polling requests to the token endpoint.
     ///
     /// Defaults to [`DEFAULT_DEVICE_AUTHORIZATION_INTERVAL_SECONDS`].
     #[serde_as(as = "Option<DurationSeconds<i64>>")]
-    interval: Option<Duration>,
+    pub interval: Option<Duration>,
 }
 
 impl DeviceAuthorizationResponse {
@@ -500,7 +500,7 @@ pub struct ClientCredentialsGrant {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct DeviceCodeGrant {
     /// The device verification code, from the device authorization response.
-    pub device_code: Option<Scope>,
+    pub device_code: String,
 }
 
 impl fmt::Debug for DeviceCodeGrant {
@@ -559,6 +559,7 @@ pub enum GrantType {
 /// [Token Endpoint]: https://www.rfc-editor.org/rfc/rfc6749#section-3.2
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(tag = "grant_type", rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum AccessTokenRequest {
     /// A request in the Authorization Code flow.
     AuthorizationCode(AuthorizationCodeGrant),

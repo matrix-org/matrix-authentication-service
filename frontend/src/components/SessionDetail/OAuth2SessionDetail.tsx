@@ -67,34 +67,45 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
   const finishedAt = data.finishedAt
     ? [
         {
-          label: "Finished",
+          label: t("frontend.session.finished_label"),
           value: <DateTime datetime={parseISO(data.finishedAt)} />,
         },
       ]
     : [];
 
   const lastActiveIp = data.lastActiveIp
-    ? [{ label: "IP Address", value: <code>{data.lastActiveIp}</code> }]
+    ? [
+        {
+          label: t("frontend.session.ip_label"),
+          value: <code>{data.lastActiveIp}</code>,
+        },
+      ]
     : [];
 
   const lastActiveAt = data.lastActiveAt
     ? [
         {
-          label: "Last Active",
+          label: t("frontend.session.last_active_label"),
           value: <LastActive lastActive={parseISO(data.lastActiveAt)} />,
         },
       ]
     : [];
 
   const sessionDetails = [
-    { label: "ID", value: <code>{data.id}</code> },
-    { label: "Device ID", value: <code>{deviceId}</code> },
-    { label: "Signed in", value: <DateTime datetime={data.createdAt} /> },
+    { label: t("frontend.session.id_label"), value: <code>{data.id}</code> },
+    {
+      label: t("frontend.session.device_id_label"),
+      value: <code>{deviceId}</code>,
+    },
+    {
+      label: t("frontend.session.signed_in_label"),
+      value: <DateTime datetime={data.createdAt} />,
+    },
     ...finishedAt,
     ...lastActiveAt,
     ...lastActiveIp,
     {
-      label: "Scopes",
+      label: t("frontend.session.scopes_label"),
       value: (
         <span>
           {scopes.map((scope) => (
@@ -124,9 +135,12 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
         </>
       ),
     },
-    { label: "ID", value: <code>{data.client.clientId}</code> },
     {
-      label: "Uri",
+      label: t("frontend.session.id_label"),
+      value: <code>{data.client.clientId}</code>,
+    },
+    {
+      label: t("frontend.session.uri_label"),
       value: (
         <a target="_blank" href={data.client.clientUri || undefined}>
           {data.client.clientUri}

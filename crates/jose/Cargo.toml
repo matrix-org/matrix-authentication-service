@@ -19,16 +19,16 @@ ecdsa = { version = "0.16.9", features = ["signing", "verifying"] }
 elliptic-curve = "0.13.8"
 generic-array = "0.14.7"
 hmac = "0.12.1"
-k256 = { version = "0.13.2", features = ["ecdsa"] }
+k256 = { version = "0.13.3", features = ["ecdsa"] }
 p256 = { version = "0.13.2", features = ["ecdsa"] }
 p384 = { version = "0.13.0", features = ["ecdsa"] }
 rand.workspace = true
-rsa = "0.9.4"
+rsa = "0.9.6"
 schemars = "0.8.16"
 sec1 = "0.7.3"
 serde.workspace = true
 serde_json.workspace = true
-serde_with = "3.4.0"
+serde_with = "3.5.1"
 sha2 = { version = "0.10.8", features = ["oid"] }
 signature = "2.2.0"
 thiserror.workspace = true

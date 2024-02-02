@@ -112,8 +112,19 @@
     },
     "session": {
       "current_badge": "Current",
+      "device_id_label": "Device ID",
       "finished_date": "Finished <datetime/>",
-      "signed_in_date": "Signed in <datetime/>"
+      "finished_label": "Finished",
+      "id_label": "ID",
+      "ip_label": "IP Address",
+      "last_active_label": "Last Active",
+      "last_auth_label": "Last Authentication",
+      "scopes_label": "Scopes",
+      "signed_in_date": "Signed in <datetime/>",
+      "signed_in_label": "Signed in",
+      "uri_label": "Uri",
+      "user_id_label": "User ID",
+      "username_label": "User name"
     },
     "session_detail": {
       "alert": {

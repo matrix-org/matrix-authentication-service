@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021-2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,17 +16,25 @@
 
 mod branding;
 
-use std::fmt::Formatter;
+use std::{
+    fmt::Formatter,
+    net::{IpAddr, Ipv4Addr},
+};
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use http::{Method, Uri, Version};
 use mas_data_model::{
     AuthorizationGrant, BrowserSession, Client, CompatSsoLogin, CompatSsoLoginState,
-    UpstreamOAuthLink, UpstreamOAuthProvider, User, UserEmail, UserEmailVerification,
+    DeviceCodeGrant, UpstreamOAuthLink, UpstreamOAuthProvider, User, UserEmail,
+    UserEmailVerification,
 };
 use mas_i18n::DataLocale;
 use mas_router::{Account, GraphQL, PostAuthAction, UrlBuilder};
-use rand::Rng;
+use oauth2_types::scope::OPENID;
+use rand::{
+    distributions::{Alphanumeric, DistString},
+    Rng,
+};
 use serde::{ser::SerializeStruct, Deserialize, Serialize};
 use ulid::Ulid;
 use url::Url;
@@ -104,7 +112,7 @@ impl TemplateContext for () {
 }
 
 /// Context with a specified locale in it
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct WithLanguage<T> {
     lang: String,
 
@@ -143,7 +151,7 @@ impl<T: TemplateContext> TemplateContext for WithLanguage<T> {
 }
 
 /// Context with a CSRF token in it
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct WithCsrf<T> {
     csrf_token: String,
 
@@ -344,6 +352,12 @@ pub enum PostAuthContextInner {
     ContinueAuthorizationGrant {
         /// The authorization grant that will be continued after authentication
         grant: Box<AuthorizationGrant>,
+    },
+
+    /// Continue a device code grant
+    ContinueDeviceCodeGrant {
+        /// The device code grant that will be continued after authentication
+        grant: Box<DeviceCodeGrant>,
     },
 
     /// Continue legacy login
@@ -570,10 +584,19 @@ impl ConsentContext {
     }
 }
 
+#[derive(Serialize)]
+#[serde(tag = "grant_type")]
+enum PolicyViolationGrant {
+    #[serde(rename = "authorization_code")]
+    Authorization(AuthorizationGrant),
+    #[serde(rename = "urn:ietf:params:oauth:grant-type:device_code")]
+    DeviceCode(DeviceCodeGrant),
+}
+
 /// Context used by the `policy_violation.html` template
 #[derive(Serialize)]
 pub struct PolicyViolationContext {
-    grant: AuthorizationGrant,
+    grant: PolicyViolationGrant,
     client: Client,
     action: PostAuthAction,
 }
@@ -585,28 +608,55 @@ impl TemplateContext for PolicyViolationContext {
     {
         Client::samples(now, rng)
             .into_iter()
-            .map(|client| {
+            .flat_map(|client| {
                 let mut grant = AuthorizationGrant::sample(now, rng);
-                let action = PostAuthAction::continue_grant(grant.id);
                 // XXX
                 grant.client_id = client.id;
-                Self {
-                    grant,
+
+                let authorization_grant =
+                    PolicyViolationContext::for_authorization_grant(grant, client.clone());
+                let device_code_grant = PolicyViolationContext::for_device_code_grant(
+                    DeviceCodeGrant {
+                        id: Ulid::from_datetime_with_source(now.into(), rng),
+                        state: mas_data_model::DeviceCodeGrantState::Pending,
+                        client_id: client.id,
+                        scope: [OPENID].into_iter().collect(),
+                        user_code: Alphanumeric.sample_string(rng, 6).to_uppercase(),
+                        device_code: Alphanumeric.sample_string(rng, 32),
+                        created_at: now - Duration::minutes(5),
+                        expires_at: now + Duration::minutes(25),
+                        ip_address: None,
+                        user_agent: None,
+                    },
                     client,
-                    action,
-                }
+                );
+
+                [authorization_grant, device_code_grant]
             })
             .collect()
     }
 }
 
 impl PolicyViolationContext {
-    /// Constructs a context for the policy violation page
+    /// Constructs a context for the policy violation page for an authorization
+    /// grant
     #[must_use]
-    pub const fn new(grant: AuthorizationGrant, client: Client) -> Self {
+    pub const fn for_authorization_grant(grant: AuthorizationGrant, client: Client) -> Self {
         let action = PostAuthAction::continue_grant(grant.id);
         Self {
-            grant,
+            grant: PolicyViolationGrant::Authorization(grant),
+            client,
+            action,
+        }
+    }
+
+    /// Constructs a context for the policy violation page for a device code
+    /// grant
+    #[must_use]
+    pub const fn for_device_code_grant(grant: DeviceCodeGrant, client: Client) -> Self {
+        let action = PostAuthAction::continue_device_code_grant(grant.id);
+        Self {
+            grant: PolicyViolationGrant::DeviceCode(grant),
             client,
             action,
         }
@@ -1020,6 +1070,99 @@ impl TemplateContext for UpstreamRegister {
         Self: Sized,
     {
         vec![Self::new()]
+    }
+}
+
+/// Form fields on the device link page
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum DeviceLinkFormField {
+    /// The device code field
+    Code,
+}
+
+impl FormField for DeviceLinkFormField {
+    fn keep(&self) -> bool {
+        match self {
+            Self::Code => true,
+        }
+    }
+}
+
+/// Context used by the `device_link.html` template
+#[derive(Serialize, Default, Debug)]
+pub struct DeviceLinkContext {
+    form_state: FormState<DeviceLinkFormField>,
+}
+
+impl DeviceLinkContext {
+    /// Constructs a new context with an existing linked user
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Set the form state
+    #[must_use]
+    pub fn with_form_state(mut self, form_state: FormState<DeviceLinkFormField>) -> Self {
+        self.form_state = form_state;
+        self
+    }
+}
+
+impl TemplateContext for DeviceLinkContext {
+    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        vec![
+            Self::new(),
+            Self::new().with_form_state(
+                FormState::default()
+                    .with_error_on_field(DeviceLinkFormField::Code, FieldError::Required),
+            ),
+        ]
+    }
+}
+
+/// Context used by the `device_consent.html` template
+#[derive(Serialize, Debug)]
+pub struct DeviceConsentContext {
+    grant: DeviceCodeGrant,
+    client: Client,
+}
+
+impl DeviceConsentContext {
+    /// Constructs a new context with an existing linked user
+    #[must_use]
+    pub fn new(grant: DeviceCodeGrant, client: Client) -> Self {
+        Self { grant, client }
+    }
+}
+
+impl TemplateContext for DeviceConsentContext {
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        Client::samples(now, rng)
+            .into_iter()
+            .map(|client| {
+                let grant = DeviceCodeGrant {
+                    id: Ulid::from_datetime_with_source(now.into(), rng),
+                    state: mas_data_model::DeviceCodeGrantState::Pending,
+                    client_id: client.id,
+                    scope: [OPENID].into_iter().collect(),
+                    user_code: Alphanumeric.sample_string(rng, 6).to_uppercase(),
+                    device_code: Alphanumeric.sample_string(rng, 32),
+                    created_at: now - Duration::minutes(5),
+                    expires_at: now + Duration::minutes(25),
+                    ip_address: Some(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1))),
+                    user_agent: Some("Mozilla/5.0".to_owned()),
+                };
+                Self { grant, client }
+            })
+            .collect()
     }
 }
 

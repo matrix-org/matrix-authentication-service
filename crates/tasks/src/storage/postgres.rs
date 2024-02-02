@@ -230,7 +230,7 @@ where
             }
 
             // Worker not seen in 5 minutes yet has running jobs
-            StorageWorkerPulse::ReenqueueOrphaned { count } => {
+            StorageWorkerPulse::ReenqueueOrphaned { count, .. } => {
                 let job_type = T::NAME;
                 let mut conn = self
                     .pool

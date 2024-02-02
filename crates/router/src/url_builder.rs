@@ -154,6 +154,24 @@ impl UrlBuilder {
         self.absolute_url_for(&crate::endpoints::OAuth2RegistrationEndpoint)
     }
 
+    /// OAuth 2.0 device authorization endpoint
+    #[must_use]
+    pub fn oauth_device_authorization_endpoint(&self) -> Url {
+        self.absolute_url_for(&crate::endpoints::OAuth2DeviceAuthorizationEndpoint)
+    }
+
+    /// OAuth 2.0 device code link
+    #[must_use]
+    pub fn device_code_link(&self) -> Url {
+        self.absolute_url_for(&crate::endpoints::DeviceCodeLink::default())
+    }
+
+    /// OAuth 2.0 device code link full URL
+    #[must_use]
+    pub fn device_code_link_full(&self, code: String) -> Url {
+        self.absolute_url_for(&crate::endpoints::DeviceCodeLink::with_code(code))
+    }
+
     // OIDC userinfo endpoint
     #[must_use]
     pub fn oidc_userinfo_endpoint(&self) -> Url {

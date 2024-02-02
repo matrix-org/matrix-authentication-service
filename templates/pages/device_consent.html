@@ -1,0 +1,142 @@
+{#
+Copyright 2023 The Matrix.org Foundation C.I.C.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+#}
+
+{% extends "base.html" %}
+
+{% block content %}
+  {% set client_name = client.client_name or client.client_id %}
+
+  {% if grant.state == "pending" %}
+    <header class="page-heading">
+      {% if client.logo_uri %}
+        <img class="consent-client-icon image" referrerpolicy="no-referrer" src="{{ client.logo_uri }}" />
+      {% else %}
+      <div class="consent-client-icon generic">
+        {{ icon.web_browser() }}
+      </div>
+      {% endif %}
+
+      <div class="header">
+        <h1 class="title">Allow access to your account?</h1>
+
+        <div class="consent-device-card">
+          <div class="device" {%- if grant.user_agent %} title="{{ grant.user_agent }}"{% endif %}>
+            {{ icon.web_browser() }}
+            {# TODO: Infer from the user agent #}
+            <div class="name">Device</div>
+          </div>
+          <div class="meta">
+            {% if grant.ip_address %}
+              <div>
+                <div class="key">IP address</div>
+                <div class="value">{{ grant.ip_address }}</div>
+              </div>
+            {% endif %}
+            <div>
+              <div class="key">Access requested</div>
+              <div class="value">{{ _.relative_date(grant.created_at) | title }} {{ _.short_time(grant.created_at) }}</div>
+            </div>
+            <div>
+              <div class="key">Code</div>
+              <div class="value">{{ grant.user_code }}</div>
+            </div>
+          </div>
+        </div>
+
+        <p class="text">
+          Another device wants to access your account.
+          This will allow <span class="whitespace-nowrap">{{ client_name }}</span> to:
+        </p>
+      </div>
+    </header>
+
+    <section class="consent-scope-list">
+      {{ scope.list(scopes=grant.scope) }}
+    </section>
+
+    <section class="text-center text-balance cpd-text-secondary cpd-text-body-md-regular">
+      <span class="font-semibold cpd-text-primary">Make sure that you trust <span class="whitespace-nowrap">{{ client_name }}</span>.</span>
+      You may be sharing sensitive information with this site or app.
+      {% if client.policy_uri or client.tos_uri %}
+        Find out how {{ client_name }} will handle your data by reviewing its
+        {% if client.policy_uri %}
+          <a target="_blank" href="{{ client.policy_uri }}" class="cpd-link" data-kind="primary">privacy policy</a>{% if not client.tos_uri %}.{% endif %}
+        {% endif %}
+        {% if client.policy_uri and client.tos_uri%}
+          and
+        {% endif %}
+        {% if client.tos_uri %}
+          <a target="_blank" href="{{ client.tos_uri }}" class="cpd-link" data-kind="primary">terms of service</a>.
+        {% endif %}
+      {% endif %}
+    </section>
+
+    <section class="flex flex-col gap-6">
+      <form method="POST" class="cpd-form-root">
+        <input type="hidden" name="csrf" value="{{ csrf_token }}" />
+        <button type="submit" name="action" value="consent" class="cpd-button" data-kind="primary" data-size="lg">
+          {{ _("action.continue") }}
+        </button>
+        <button type="submit" name="action" value="reject" class="cpd-button" data-kind="destructive" data-size="lg">
+          {{ _("action.cancel") }}
+        </button>
+      </form>
+
+      <div class="flex gap-1 justify-center items-center">
+        <p class="cpd-text-secondary cpd-text-body-md-regular">
+          {{ _("mas.not_you", username=current_session.user.username) }}
+        </p>
+
+        {{ logout.button(text=_("action.sign_out"), csrf_token=csrf_token, post_logout_action=action, as_link=true) }}
+      </div>
+    </section>
+  {% elif grant.state == "rejected" %}
+    <header class="page-heading">
+      <div class="icon invalid">
+        {{ icon.block() }}
+      </div>
+
+      <div class="header">
+        <h1 class="title">Access denied</h1>
+        <p class="text">
+          You denied access to
+          {% if client.client_uri %}
+            <a target="_blank" href="{{ client.client_uri }}">{{ client_name }}</a>
+          {%- else %}
+            {{ client_name -}}
+          {% endif -%}. You can now close this window.
+      </div>
+    </header>
+  {% else %}
+    <header class="page-heading">
+      <div class="icon success">
+        {{ icon.check() }}
+      </div>
+
+      <div class="header">
+        <h1 class="title">Access granted</h1>
+        <p class="text">
+          You granted access to
+          {% if client.client_uri %}
+            <a target="_blank" href="{{ client.client_uri }}">{{ client_name }}</a>
+          {%- else %}
+            {{ client_name -}}
+          {% endif -%}. You can now close this window.
+      </div>
+    </header>
+  {% endif %}
+{% endblock content %}
+
