@@ -98,7 +98,8 @@
 
   & .meta {
     display: flex;
-    gap: var(--cpd-space-10x);
+    flex-wrap: wrap;
+    gap: var(--cpd-space-4x) var(--cpd-space-10x);
 
     & .key {
       font: var(--cpd-font-body-sm-regular);
