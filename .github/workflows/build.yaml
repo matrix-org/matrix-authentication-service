@@ -57,7 +57,7 @@ jobs:
             aarch64-apple-darwin
 
       - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.3
+        uses: mozilla-actions/sccache-action@v0.0.4
 
       - name: Install zig
         uses: goto-bus-stop/setup-zig@v2
