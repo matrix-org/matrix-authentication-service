@@ -12,21 +12,21 @@ publish = false
 workspace = true
 
 [dependencies]
-async-trait = "0.1.74"
+async-trait = "0.1.77"
 sqlx = { version = "0.7.3", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "json", "uuid", "ipnetwork"] }
-sea-query = { version = "0.30.3", features = ["derive", "attr", "with-uuid", "with-chrono", "postgres-array"] }
+sea-query = { version = "0.30.7", features = ["derive", "attr", "with-uuid", "with-chrono", "postgres-array"] }
 sea-query-binder = { version = "0.5.0", features = ["sqlx-postgres", "with-uuid", "with-chrono", "postgres-array"] }
 chrono.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
-futures-util = "0.3.29"
+futures-util = "0.3.30"
 
 rand.workspace = true
 rand_chacha = "0.3.1"
 url.workspace = true
-uuid = "1.6.1"
+uuid = "1.7.0"
 ulid = { workspace = true, features = ["uuid"] }
 
 oauth2-types.workspace = true

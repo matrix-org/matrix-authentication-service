@@ -13,7 +13,7 @@ workspace = true
 
 [dependencies]
 anyhow.workspace = true
-async-trait = "0.1.74"
+async-trait = "0.1.77"
 http.workspace = true
 serde.workspace = true
 tower = { version = "0.4.13", features = ["util"] }
