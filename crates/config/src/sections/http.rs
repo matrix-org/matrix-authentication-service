@@ -14,7 +14,7 @@
 
 #![allow(deprecated)]
 
-use std::{borrow::Cow, io::Cursor, ops::Deref};
+use std::{borrow::Cow, io::Cursor};
 
 use anyhow::bail;
 use async_trait::async_trait;
@@ -22,6 +22,7 @@ use camino::Utf8PathBuf;
 use ipnetwork::IpNetwork;
 use mas_keystore::PrivateKey;
 use rand::Rng;
+use rustls_pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
@@ -197,7 +198,9 @@ impl TlsConfig {
     ///   - a password was provided but the key was not encrypted
     ///   - decoding the certificate chain as PEM
     ///   - the certificate chain is empty
-    pub fn load(&self) -> Result<(Vec<u8>, Vec<Vec<u8>>), anyhow::Error> {
+    pub fn load(
+        &self,
+    ) -> Result<(PrivateKeyDer<'static>, Vec<CertificateDer<'static>>), anyhow::Error> {
         let password = match &self.password {
             Some(PasswordOrFile::Password(password)) => Some(Cow::Borrowed(password.as_str())),
             Some(PasswordOrFile::PasswordFile(path)) => {
@@ -230,9 +233,7 @@ impl TlsConfig {
 
         // Re-serialize the key to PKCS#8 DER, so rustls can consume it
         let key = key.to_pkcs8_der()?;
-        // This extracts the Vec out of the Zeroizing by copying it
-        // XXX: maybe we should keep that zeroizing?
-        let key = key.deref().clone();
+        let key = PrivatePkcs8KeyDer::from(key.to_vec()).into();
 
         let certificate_chain_pem = match &self.certificate {
             CertificateOrFile::Certificate(pem) => Cow::Borrowed(pem.as_str()),
@@ -240,7 +241,9 @@ impl TlsConfig {
         };
 
         let mut certificate_chain_reader = Cursor::new(certificate_chain_pem.as_bytes());
-        let certificate_chain = rustls_pemfile::certs(&mut certificate_chain_reader)?;
+        let certificate_chain: Result<Vec<_>, _> =
+            rustls_pemfile::certs(&mut certificate_chain_reader).collect();
+        let certificate_chain = certificate_chain?;
 
         if certificate_chain.is_empty() {
             bail!("TLS certificate chain is empty (or invalid)")

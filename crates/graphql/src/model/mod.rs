@@ -30,7 +30,7 @@ pub use self::{
     compat_sessions::{CompatSession, CompatSsoLogin},
     cursor::{Cursor, NodeCursor},
     node::{Node, NodeType},
-    oauth::{OAuth2Client, OAuth2Consent, OAuth2Session},
+    oauth::{OAuth2Client, OAuth2Session},
     upstream_oauth::{UpstreamOAuth2Link, UpstreamOAuth2Provider},
     users::{User, UserEmail},
     viewer::{Anonymous, Viewer, ViewerSession},
