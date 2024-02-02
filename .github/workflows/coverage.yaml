@@ -130,7 +130,7 @@ jobs:
         run: make
 
       - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.3
+        uses: mozilla-actions/sccache-action@v0.0.4
 
       - name: Download grcov
         run: |
