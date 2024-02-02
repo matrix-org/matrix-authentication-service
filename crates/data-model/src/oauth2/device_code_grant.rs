@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::net::IpAddr;
+
 use chrono::{DateTime, Utc};
 use oauth2_types::scope::Scope;
 use serde::Serialize;
@@ -193,6 +195,12 @@ pub struct DeviceCodeGrant {
 
     /// The time at which this device code grant will expire.
     pub expires_at: DateTime<Utc>,
+
+    /// The IP address of the client which requested this device code grant.
+    pub ip_address: Option<IpAddr>,
+
+    /// The user agent used to request this device code grant.
+    pub user_agent: Option<String>,
 }
 
 impl std::ops::Deref for DeviceCodeGrant {

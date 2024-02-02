@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::net::IpAddr;
+
 use async_trait::async_trait;
 use chrono::Duration;
 use mas_data_model::{BrowserSession, Client, DeviceCodeGrant, Session};
@@ -37,6 +39,12 @@ pub struct OAuth2DeviceCodeGrantParams<'a> {
 
     /// After how long the device code expires
     pub expires_in: Duration,
+
+    /// IP address from which the request was made
+    pub ip_address: Option<IpAddr>,
+
+    /// The user agent from which the request was made
+    pub user_agent: Option<String>,
 }
 
 /// An [`OAuth2DeviceCodeGrantRepository`] helps interacting with
