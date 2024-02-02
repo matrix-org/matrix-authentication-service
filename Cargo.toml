@@ -27,7 +27,6 @@ broken_intra_doc_links = "deny"
 [workspace.dependencies]
 
 # Workspace crates
-# TODO: we need to automate the publishing of the workspace crates and version bumps
 mas-axum-utils = { path = "./crates/axum-utils/", version = "=0.7.0" }
 mas-cli = { path = "./crates/cli/", version = "=0.7.0" }
 mas-config = { path = "./crates/config/", version = "=0.7.0" }
