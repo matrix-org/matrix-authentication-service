@@ -36,7 +36,7 @@ jobs:
         run: make coverage
 
       - name: Upload to codecov.io
-        uses: codecov/codecov-action@v3.1.4
+        uses: codecov/codecov-action@v4.0.1
         with:
           files: policies/coverage.json
           flags: policies
@@ -66,7 +66,7 @@ jobs:
         run: npm run coverage
 
       - name: Upload to codecov.io
-        uses: codecov/codecov-action@v3.1.4
+        uses: codecov/codecov-action@v4.0.1
         with:
           directory: frontend/coverage/
           flags: frontend
@@ -153,7 +153,7 @@ jobs:
           grcov . --binary-path ./target/debug/deps/ -s . -t lcov --branch --ignore-not-existing --ignore '../*' --ignore "/*" -o target/coverage/tests.lcov
 
       - name: Upload to codecov.io
-        uses: codecov/codecov-action@v3.1.4
+        uses: codecov/codecov-action@v4.0.1
         with:
           files: target/coverage/*.lcov
           flags: unit
