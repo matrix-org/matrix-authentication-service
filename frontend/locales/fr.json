@@ -112,8 +112,19 @@
     },
     "session": {
       "current_badge": "Cet appareil",
+      "device_id_label": "ID de l’appareil",
       "finished_date": "Terminé <datetime/>",
-      "signed_in_date": "Connecté <datetime/>"
+      "finished_label": "Terminée",
+      "id_label": "ID",
+      "ip_label": "Adresse IP",
+      "last_active_label": "Dernière activité",
+      "last_auth_label": "Dernière authentification",
+      "scopes_label": "Scopes",
+      "signed_in_date": "Connecté <datetime/>",
+      "signed_in_label": "Connecté",
+      "uri_label": "Uri",
+      "user_id_label": "User ID",
+      "username_label": "Nom d'utilisateur"
     },
     "session_detail": {
       "alert": {

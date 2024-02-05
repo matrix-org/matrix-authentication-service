@@ -12,12 +12,12 @@ publish = false
 workspace = true
 
 [dependencies]
-async-trait = "0.1.74"
+async-trait = "0.1.77"
 chrono.workspace = true
 thiserror.workspace = true
-futures-util = "0.3.29"
+futures-util = "0.3.30"
 
-apalis-core = { version = "0.4.7", features = ["tokio-comp"] }
+apalis-core = { version = "0.4.9", features = ["tokio-comp"] }
 opentelemetry.workspace = true
 rand_core = "0.6.4"
 serde.workspace = true

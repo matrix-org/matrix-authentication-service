@@ -21,7 +21,7 @@ use mas_axum_utils::{
     http_client_factory::HttpClientFactory,
     sentry::SentryEventID,
 };
-use mas_data_model::{AuthorizationGrantStage, Client, Device, TokenType};
+use mas_data_model::{AuthorizationGrantStage, Client, Device, DeviceCodeGrantState, TokenType};
 use mas_keystore::{Encrypter, Keystore};
 use mas_oidc_client::types::scope::ScopeToken;
 use mas_policy::Policy;
@@ -40,7 +40,7 @@ use oauth2_types::{
     pkce::CodeChallengeError,
     requests::{
         AccessTokenRequest, AccessTokenResponse, AuthorizationCodeGrant, ClientCredentialsGrant,
-        GrantType, RefreshTokenGrant,
+        DeviceCodeGrant, GrantType, RefreshTokenGrant,
     },
     scope,
 };
@@ -123,6 +123,18 @@ pub(crate) enum RouteError {
 
     #[error("failed to load oauth session")]
     NoSuchOAuthSession,
+
+    #[error("device code grant expired")]
+    DeviceCodeExpired,
+
+    #[error("device code grant is still pending")]
+    DeviceCodePending,
+
+    #[error("device code grant was rejected")]
+    DeviceCodeRejected,
+
+    #[error("device code grant was already exchanged")]
+    DeviceCodeExchanged,
 }
 
 impl IntoResponse for RouteError {
@@ -165,7 +177,20 @@ impl IntoResponse for RouteError {
                     ),
                 ),
             ),
+            Self::DeviceCodeRejected => (
+                StatusCode::FORBIDDEN,
+                Json(ClientError::from(ClientErrorCode::AccessDenied)),
+            ),
+            Self::DeviceCodeExpired => (
+                StatusCode::FORBIDDEN,
+                Json(ClientError::from(ClientErrorCode::ExpiredToken)),
+            ),
+            Self::DeviceCodePending => (
+                StatusCode::FORBIDDEN,
+                Json(ClientError::from(ClientErrorCode::AuthorizationPending)),
+            ),
             Self::InvalidGrant
+            | Self::DeviceCodeExchanged
             | Self::RefreshTokenNotFound
             | Self::RefreshTokenInvalid(_)
             | Self::SessionInvalid(_)
@@ -262,6 +287,20 @@ pub(crate) async fn post(
                 &site_config,
                 repo,
                 policy,
+            )
+            .await?
+        }
+        AccessTokenRequest::DeviceCode(grant) => {
+            device_code_grant(
+                &mut rng,
+                &clock,
+                &activity_tracker,
+                &grant,
+                &client,
+                &key_store,
+                &url_builder,
+                &site_config,
+                repo,
             )
             .await?
         }
@@ -397,7 +436,7 @@ async fn authorization_code_grant(
             url_builder,
             key_store,
             client,
-            &authz_grant,
+            Some(&authz_grant),
             &browser_session,
             Some(&access_token),
             last_authentication.as_ref(),
@@ -575,6 +614,137 @@ async fn client_credentials_grant(
     Ok((params, repo))
 }
 
+async fn device_code_grant(
+    rng: &mut BoxRng,
+    clock: &impl Clock,
+    activity_tracker: &BoundActivityTracker,
+    grant: &DeviceCodeGrant,
+    client: &Client,
+    key_store: &Keystore,
+    url_builder: &UrlBuilder,
+    site_config: &SiteConfig,
+    mut repo: BoxRepository,
+) -> Result<(AccessTokenResponse, BoxRepository), RouteError> {
+    // Check that the client is allowed to use this grant type
+    if !client.grant_types.contains(&GrantType::DeviceCode) {
+        return Err(RouteError::UnauthorizedClient);
+    }
+
+    let grant = repo
+        .oauth2_device_code_grant()
+        .find_by_device_code(&grant.device_code)
+        .await?
+        .ok_or(RouteError::GrantNotFound)?;
+
+    // Check that the client match
+    if client.id != grant.client_id {
+        return Err(RouteError::ClientIDMismatch {
+            expected: grant.client_id,
+            actual: client.id,
+        });
+    }
+
+    if grant.expires_at < clock.now() {
+        return Err(RouteError::DeviceCodeExpired);
+    }
+
+    let browser_session_id = match &grant.state {
+        DeviceCodeGrantState::Pending => {
+            return Err(RouteError::DeviceCodePending);
+        }
+        DeviceCodeGrantState::Rejected { .. } => {
+            return Err(RouteError::DeviceCodeRejected);
+        }
+        DeviceCodeGrantState::Exchanged { .. } => {
+            return Err(RouteError::DeviceCodeExchanged);
+        }
+        DeviceCodeGrantState::Fulfilled {
+            browser_session_id, ..
+        } => browser_session_id,
+    };
+
+    let browser_session = repo
+        .browser_session()
+        .lookup(*browser_session_id)
+        .await?
+        .ok_or(RouteError::NoSuchBrowserSession)?;
+
+    // Start the session
+    let session = repo
+        .oauth2_session()
+        .add_from_browser_session(rng, clock, client, &browser_session, grant.scope)
+        .await?;
+
+    let ttl = site_config.access_token_ttl;
+    let access_token_str = TokenType::AccessToken.generate(rng);
+
+    let access_token = repo
+        .oauth2_access_token()
+        .add(rng, clock, &session, access_token_str, Some(ttl))
+        .await?;
+
+    let mut params =
+        AccessTokenResponse::new(access_token.access_token.clone()).with_expires_in(ttl);
+
+    // If the client uses the refresh token grant type, we also generate a refresh
+    // token
+    if client.grant_types.contains(&GrantType::RefreshToken) {
+        let refresh_token_str = TokenType::RefreshToken.generate(rng);
+
+        let refresh_token = repo
+            .oauth2_refresh_token()
+            .add(rng, clock, &session, &access_token, refresh_token_str)
+            .await?;
+
+        params = params.with_refresh_token(refresh_token.refresh_token);
+    }
+
+    // If the client asked for an ID token, we generate one
+    if session.scope.contains(&scope::OPENID) {
+        let id_token = generate_id_token(
+            rng,
+            clock,
+            url_builder,
+            key_store,
+            client,
+            None,
+            &browser_session,
+            Some(&access_token),
+            None,
+        )?;
+
+        params = params.with_id_token(id_token);
+    }
+
+    // Look for device to provision
+    for scope in &*session.scope {
+        if let Some(device) = Device::from_scope_token(scope) {
+            // Note that we're not waiting for the job to finish, we just schedule it. We
+            // might get in a situation where the provisioning job is not finished when the
+            // client does its first request to the Homeserver. This is fine for now, since
+            // Synapse still provision devices on-the-fly if it doesn't find them in the
+            // database.
+            repo.job()
+                .schedule_job(ProvisionDeviceJob::new(&browser_session.user, &device))
+                .await?;
+        }
+    }
+
+    // XXX: there is a potential (but unlikely) race here, where the activity for
+    // the session is recorded before the transaction is committed. We would have to
+    // save the repository here to fix that.
+    activity_tracker
+        .record_oauth2_session(clock, &session)
+        .await;
+
+    if !session.scope.is_empty() {
+        // We only return the scope if it's not empty
+        params = params.with_scope(session.scope);
+    }
+
+    Ok((params, repo))
+}
+
 #[cfg(test)]
 mod tests {
     use hyper::Request;
@@ -582,7 +752,7 @@ mod tests {
     use mas_router::SimpleRoute;
     use oauth2_types::{
         registration::ClientRegistrationResponse,
-        requests::ResponseMode,
+        requests::{DeviceAuthorizationResponse, ResponseMode},
         scope::{Scope, OPENID},
     };
     use sqlx::PgPool;
@@ -1046,6 +1216,192 @@ mod tests {
 
         let response = state.request(request).await;
         response.assert_status(StatusCode::OK);
+    }
+
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_device_code_grant(pool: PgPool) {
+        init_tracing();
+        let state = TestState::from_pool(pool).await.unwrap();
+
+        // Provision a client
+        let request =
+            Request::post(mas_router::OAuth2RegistrationEndpoint::PATH).json(serde_json::json!({
+                "client_uri": "https://example.com/",
+                "contacts": ["contact@example.com"],
+                "token_endpoint_auth_method": "none",
+                "grant_types": ["urn:ietf:params:oauth:grant-type:device_code", "refresh_token"],
+                "response_types": [],
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::CREATED);
+
+        let response: ClientRegistrationResponse = response.json();
+        let client_id = response.client_id;
+
+        // Start a device code grant
+        let request = Request::post(mas_router::OAuth2DeviceAuthorizationEndpoint::PATH).form(
+            serde_json::json!({
+                "client_id": client_id,
+                "scope": "openid",
+            }),
+        );
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+
+        let device_grant: DeviceAuthorizationResponse = response.json();
+
+        // Poll the token endpoint, it should be pending
+        let request =
+            Request::post(mas_router::OAuth2TokenEndpoint::PATH).form(serde_json::json!({
+                "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+                "device_code": device_grant.device_code,
+                "client_id": client_id,
+            }));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::FORBIDDEN);
+
+        let ClientError { error, .. } = response.json();
+        assert_eq!(error, ClientErrorCode::AuthorizationPending);
+
+        // Let's provision a user and create a browser session for them. This part is
+        // hard to test with just HTTP requests, so we'll use the repository
+        // directly.
+        let mut repo = state.repository().await.unwrap();
+
+        let user = repo
+            .user()
+            .add(&mut state.rng(), &state.clock, "alice".to_owned())
+            .await
+            .unwrap();
+
+        let browser_session = repo
+            .browser_session()
+            .add(&mut state.rng(), &state.clock, &user, None)
+            .await
+            .unwrap();
+
+        // Find the grant
+        let grant = repo
+            .oauth2_device_code_grant()
+            .find_by_user_code(&device_grant.user_code)
+            .await
+            .unwrap()
+            .unwrap();
+
+        // And fulfill it
+        let grant = repo
+            .oauth2_device_code_grant()
+            .fulfill(&state.clock, grant, &browser_session)
+            .await
+            .unwrap();
+
+        repo.save().await.unwrap();
+
+        // Now call the token endpoint to get an access token.
+        let request =
+            Request::post(mas_router::OAuth2TokenEndpoint::PATH).form(serde_json::json!({
+                "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+                "device_code": grant.device_code,
+                "client_id": client_id,
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+
+        let response: AccessTokenResponse = response.json();
+
+        // Check that the token is valid
+        assert!(state.is_access_token_valid(&response.access_token).await);
+        // We advertised the refresh token grant type, so we should have a refresh token
+        assert!(response.refresh_token.is_some());
+        // We asked for the openid scope, so we should have an ID token
+        assert!(response.id_token.is_some());
+
+        // Do another grant and make it expire
+        let request = Request::post(mas_router::OAuth2DeviceAuthorizationEndpoint::PATH).form(
+            serde_json::json!({
+                "client_id": client_id,
+                "scope": "openid",
+            }),
+        );
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+
+        let device_grant: DeviceAuthorizationResponse = response.json();
+
+        // Poll the token endpoint, it should be pending
+        let request =
+            Request::post(mas_router::OAuth2TokenEndpoint::PATH).form(serde_json::json!({
+                "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+                "device_code": device_grant.device_code,
+                "client_id": client_id,
+            }));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::FORBIDDEN);
+
+        let ClientError { error, .. } = response.json();
+        assert_eq!(error, ClientErrorCode::AuthorizationPending);
+
+        state.clock.advance(Duration::hours(1));
+
+        // Poll again, it should be expired
+        let request =
+            Request::post(mas_router::OAuth2TokenEndpoint::PATH).form(serde_json::json!({
+                "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+                "device_code": device_grant.device_code,
+                "client_id": client_id,
+            }));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::FORBIDDEN);
+
+        let ClientError { error, .. } = response.json();
+        assert_eq!(error, ClientErrorCode::ExpiredToken);
+
+        // Do another grant and reject it
+        let request = Request::post(mas_router::OAuth2DeviceAuthorizationEndpoint::PATH).form(
+            serde_json::json!({
+                "client_id": client_id,
+                "scope": "openid",
+            }),
+        );
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+
+        let device_grant: DeviceAuthorizationResponse = response.json();
+
+        // Find the grant and reject it
+        let mut repo = state.repository().await.unwrap();
+
+        // Find the grant
+        let grant = repo
+            .oauth2_device_code_grant()
+            .find_by_user_code(&device_grant.user_code)
+            .await
+            .unwrap()
+            .unwrap();
+
+        // And reject it
+        let grant = repo
+            .oauth2_device_code_grant()
+            .reject(&state.clock, grant, &browser_session)
+            .await
+            .unwrap();
+
+        repo.save().await.unwrap();
+
+        // Poll the token endpoint, it should be rejected
+        let request =
+            Request::post(mas_router::OAuth2TokenEndpoint::PATH).form(serde_json::json!({
+                "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+                "device_code": grant.device_code,
+                "client_id": client_id,
+            }));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::FORBIDDEN);
+
+        let ClientError { error, .. } = response.json();
+        assert_eq!(error, ClientErrorCode::AccessDenied);
     }
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]

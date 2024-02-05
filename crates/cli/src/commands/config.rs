@@ -90,7 +90,13 @@ pub(super) struct Options {
 #[derive(Parser, Debug)]
 enum Subcommand {
     /// Dump the current config as YAML
-    Dump,
+    Dump {
+        /// The path to the config file to dump
+        ///
+        /// If not specified, the config will be written to stdout
+        #[clap(short, long)]
+        output: Option<Utf8PathBuf>,
+    },
 
     /// Check a config file
     Check,
@@ -121,12 +127,20 @@ impl Options {
     pub async fn run(self, root: &super::Options) -> anyhow::Result<()> {
         use Subcommand as SC;
         match self.subcommand {
-            SC::Dump => {
+            SC::Dump { output } => {
                 let _span = info_span!("cli.config.dump").entered();
 
                 let config: RootConfig = root.load_config()?;
+                let config = serde_yaml::to_string(&config)?;
 
-                serde_yaml::to_writer(std::io::stdout(), &config)?;
+                if let Some(output) = output {
+                    info!("Writing configuration to {output:?}");
+                    let mut file = tokio::fs::File::create(output).await?;
+                    file.write_all(config.as_bytes()).await?;
+                } else {
+                    info!("Writing configuration to standard output");
+                    tokio::io::stdout().write_all(config.as_bytes()).await?;
+                }
             }
 
             SC::Check => {

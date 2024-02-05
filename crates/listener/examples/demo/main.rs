@@ -24,10 +24,7 @@ use anyhow::Context;
 use hyper::{service::service_fn, Request, Response};
 use mas_listener::{server::Server, shutdown::ShutdownStream, ConnectionInfo};
 use tokio::signal::unix::SignalKind;
-use tokio_rustls::rustls::{
-    server::AllowAnyAnonymousOrAuthenticatedClient, Certificate, PrivateKey, RootCertStore,
-    ServerConfig,
-};
+use tokio_rustls::rustls::{server::WebPkiClientVerifier, RootCertStore, ServerConfig};
 
 static CA_CERT_PEM: &[u8] = include_bytes!("./certs/ca.pem");
 static SERVER_CERT_PEM: &[u8] = include_bytes!("./certs/server.pem");
@@ -75,27 +72,30 @@ async fn main() -> Result<(), anyhow::Error> {
 
 fn load_tls_config() -> Result<Arc<ServerConfig>, anyhow::Error> {
     let mut ca_cert_reader = BufReader::new(CA_CERT_PEM);
-    let ca_cert = rustls_pemfile::certs(&mut ca_cert_reader).context("Invalid CA certificate")?;
+    let ca_cert = rustls_pemfile::certs(&mut ca_cert_reader)
+        .collect::<Result<Vec<_>, _>>()
+        .context("Invalid CA certificate")?;
     let mut ca_cert_store = RootCertStore::empty();
-    ca_cert_store.add_parsable_certificates(&ca_cert);
+    ca_cert_store.add_parsable_certificates(ca_cert);
 
     let mut server_cert_reader = BufReader::new(SERVER_CERT_PEM);
     let server_cert: Vec<_> = rustls_pemfile::certs(&mut server_cert_reader)
-        .context("Invalid server certificate")?
-        .into_iter()
-        .map(Certificate)
-        .collect();
+        .collect::<Result<Vec<_>, _>>()
+        .context("Invalid server certificate")?;
 
     let mut server_key_reader = BufReader::new(SERVER_KEY_PEM);
-    let mut server_key = rustls_pemfile::rsa_private_keys(&mut server_key_reader)
+    let server_key = rustls_pemfile::rsa_private_keys(&mut server_key_reader)
+        .next()
+        .context("No RSA private key found")?
         .context("Invalid server TLS keys")?;
-    let server_key = PrivateKey(server_key.pop().context("Missing server TLS key")?);
 
-    let client_cert_verifier = Arc::new(AllowAnyAnonymousOrAuthenticatedClient::new(ca_cert_store));
+    let client_cert_verifier = WebPkiClientVerifier::builder(Arc::new(ca_cert_store))
+        .allow_unauthenticated()
+        .build()?;
+
     let mut config = ServerConfig::builder()
-        .with_safe_defaults()
         .with_client_cert_verifier(client_cert_verifier)
-        .with_single_cert(server_cert, server_key)?;
+        .with_single_cert(server_cert, server_key.into())?;
     config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
 
     Ok(Arc::new(config))

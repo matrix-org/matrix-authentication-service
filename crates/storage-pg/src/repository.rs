@@ -24,7 +24,7 @@ use mas_storage::{
     job::JobRepository,
     oauth2::{
         OAuth2AccessTokenRepository, OAuth2AuthorizationGrantRepository, OAuth2ClientRepository,
-        OAuth2RefreshTokenRepository, OAuth2SessionRepository,
+        OAuth2DeviceCodeGrantRepository, OAuth2RefreshTokenRepository, OAuth2SessionRepository,
     },
     upstream_oauth2::{
         UpstreamOAuthLinkRepository, UpstreamOAuthProviderRepository,
@@ -45,7 +45,8 @@ use crate::{
     job::PgJobRepository,
     oauth2::{
         PgOAuth2AccessTokenRepository, PgOAuth2AuthorizationGrantRepository,
-        PgOAuth2ClientRepository, PgOAuth2RefreshTokenRepository, PgOAuth2SessionRepository,
+        PgOAuth2ClientRepository, PgOAuth2DeviceCodeGrantRepository,
+        PgOAuth2RefreshTokenRepository, PgOAuth2SessionRepository,
     },
     upstream_oauth2::{
         PgUpstreamOAuthLinkRepository, PgUpstreamOAuthProviderRepository,
@@ -218,6 +219,12 @@ where
         &'c mut self,
     ) -> Box<dyn OAuth2RefreshTokenRepository<Error = Self::Error> + 'c> {
         Box::new(PgOAuth2RefreshTokenRepository::new(self.conn.as_mut()))
+    }
+
+    fn oauth2_device_code_grant<'c>(
+        &'c mut self,
+    ) -> Box<dyn OAuth2DeviceCodeGrantRepository<Error = Self::Error> + 'c> {
+        Box::new(PgOAuth2DeviceCodeGrantRepository::new(self.conn.as_mut()))
     }
 
     fn compat_session<'c>(

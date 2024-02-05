@@ -37,6 +37,16 @@ test_matrix_scopes {
 		with input.client as client
 		with input.grant_type as "authorization_code"
 		with input.scope as "urn:matrix:org.matrix.msc2967.client:api:*"
+
+	allow with input.user as user
+		with input.client as client
+		with input.grant_type as "urn:ietf:params:oauth:grant-type:device_code"
+		with input.scope as "urn:matrix:org.matrix.msc2967.client:api:*"
+
+	not allow with input.user as user
+		with input.client as client
+		with input.grant_type as "client_credentials"
+		with input.scope as "urn:matrix:org.matrix.msc2967.client:api:*"
 }
 
 test_device_scopes {
@@ -78,6 +88,12 @@ test_device_scopes {
 		with input.grant_type as "authorization_code"
 		with input.scope as "urn:matrix:org.matrix.msc2967.client:device:AAbbCCdd01 urn:matrix:org.matrix.msc2967.client:device:AAbbCCdd02"
 
+	# Allowed with the device code grant
+	allow with input.user as user
+		with input.client as client
+		with input.grant_type as "urn:ietf:params:oauth:grant-type:device_code"
+		with input.scope as "urn:matrix:org.matrix.msc2967.client:device:AAbbCCdd01"
+
 	# Not allowed for the client credentials grant
 	not allow with input.client as client
 		with input.grant_type as "client_credentials"
@@ -91,10 +107,22 @@ test_synapse_admin_scopes {
 		with input.grant_type as "authorization_code"
 		with input.scope as "urn:synapse:admin:*"
 
+	allow with input.user as user
+		with input.client as client
+		with data.admin_users as ["john"]
+		with input.grant_type as "urn:ietf:params:oauth:grant-type:device_code"
+		with input.scope as "urn:synapse:admin:*"
+
 	not allow with input.user as user
 		with input.client as client
 		with data.admin_users as []
 		with input.grant_type as "authorization_code"
+		with input.scope as "urn:synapse:admin:*"
+
+	not allow with input.user as user
+		with input.client as client
+		with data.admin_users as []
+		with input.grant_type as "urn:ietf:params:oauth:grant-type:device_code"
 		with input.scope as "urn:synapse:admin:*"
 
 	allow with input.user as user
@@ -104,11 +132,25 @@ test_synapse_admin_scopes {
 		with input.grant_type as "authorization_code"
 		with input.scope as "urn:synapse:admin:*"
 
+	allow with input.user as user
+		with input.user.can_request_admin as true
+		with input.client as client
+		with data.admin_users as []
+		with input.grant_type as "urn:ietf:params:oauth:grant-type:device_code"
+		with input.scope as "urn:synapse:admin:*"
+
 	not allow with input.user as user
 		with input.user.can_request_admin as false
 		with input.client as client
 		with data.admin_users as []
 		with input.grant_type as "authorization_code"
+		with input.scope as "urn:synapse:admin:*"
+
+	not allow with input.user as user
+		with input.user.can_request_admin as false
+		with input.client as client
+		with data.admin_users as []
+		with input.grant_type as "urn:ietf:params:oauth:grant-type:device_code"
 		with input.scope as "urn:synapse:admin:*"
 }
 

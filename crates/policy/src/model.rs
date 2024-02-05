@@ -98,6 +98,8 @@ pub struct ClientRegistrationInput<'a> {
 pub enum GrantType {
     AuthorizationCode,
     ClientCredentials,
+    #[serde(rename = "urn:ietf:params:oauth:grant-type:device_code")]
+    DeviceCode,
 }
 
 /// Input for the authorization grant policy.

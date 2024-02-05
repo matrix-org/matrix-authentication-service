@@ -17,7 +17,7 @@ limitations under the License.
 {% extends "base.html" %}
 
 {% block content %}
-  {% set client_name = client.client_name | default(client.client_id) %}
+  {% set client_name = client.client_name or client.client_id %}
   <header class="page-heading">
     {% if client.logo_uri %}
     <img class="consent-client-icon image" referrerpolicy="no-referrer" src="{{ client.logo_uri }}" />

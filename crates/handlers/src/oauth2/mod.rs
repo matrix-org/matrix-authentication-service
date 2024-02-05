@@ -32,6 +32,7 @@ use thiserror::Error;
 
 pub mod authorization;
 pub mod consent;
+pub mod device;
 pub mod discovery;
 pub mod introspection;
 pub mod keys;
@@ -58,7 +59,7 @@ pub(crate) fn generate_id_token(
     url_builder: &UrlBuilder,
     key_store: &Keystore,
     client: &Client,
-    grant: &AuthorizationGrant,
+    grant: Option<&AuthorizationGrant>,
     browser_session: &BrowserSession,
     access_token: Option<&AccessToken>,
     last_authentication: Option<&Authentication>,
@@ -71,8 +72,8 @@ pub(crate) fn generate_id_token(
     claims::IAT.insert(&mut claims, now)?;
     claims::EXP.insert(&mut claims, now + Duration::hours(1))?;
 
-    if let Some(ref nonce) = grant.nonce {
-        claims::NONCE.insert(&mut claims, nonce.clone())?;
+    if let Some(nonce) = grant.and_then(|grant| grant.nonce.as_ref()) {
+        claims::NONCE.insert(&mut claims, nonce)?;
     }
 
     if let Some(last_authentication) = last_authentication {
@@ -91,7 +92,7 @@ pub(crate) fn generate_id_token(
         claims::AT_HASH.insert(&mut claims, hash_token(&alg, &access_token.access_token)?)?;
     }
 
-    if let Some(ref code) = grant.code {
+    if let Some(code) = grant.and_then(|grant| grant.code.as_ref()) {
         claims::C_HASH.insert(&mut claims, hash_token(&alg, &code.code)?)?;
     }
 

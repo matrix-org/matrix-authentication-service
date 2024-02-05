@@ -23,6 +23,10 @@ can_request_admin(user) {
 	user.can_request_admin
 }
 
+interactive_grant_type("authorization_code") = true
+
+interactive_grant_type("urn:ietf:params:oauth:grant-type:device_code") = true
+
 # Special case to make empty scope work
 allowed_scope("") = true
 
@@ -32,8 +36,10 @@ allowed_scope("email") = true
 
 # This grants access to Synapse's admin API endpoints
 allowed_scope("urn:synapse:admin:*") {
-	# Synapse doesn't support user-less tokens yet, so access to the admin API can only be used with an authorization_code grant as the user is present
-	input.grant_type == "authorization_code"
+	# Synapse doesn't support user-less tokens yet, so access to the admin API
+	# can only be used with an authorization_code grant or a device code grant
+	# as the user is present
+	interactive_grant_type(input.grant_type)
 	can_request_admin(input.user)
 }
 
@@ -42,7 +48,7 @@ allowed_scope("urn:mas:graphql:*") = true
 
 # This makes it possible to query and do anything in the GraphQL API as an admin
 allowed_scope("urn:mas:admin") {
-	input.grant_type == "authorization_code"
+	interactive_grant_type(input.grant_type)
 	can_request_admin(input.user)
 }
 
@@ -55,13 +61,13 @@ allowed_scope("urn:mas:admin") {
 
 allowed_scope(scope) {
 	# Grant access to the C-S API only if there is a user
-	input.grant_type == "authorization_code"
+	interactive_grant_type(input.grant_type)
 	regex.match("urn:matrix:org.matrix.msc2967.client:device:[A-Za-z0-9-]{10,}", scope)
 }
 
 allowed_scope("urn:matrix:org.matrix.msc2967.client:api:*") {
 	# Grant access to the C-S API only if there is a user
-	input.grant_type == "authorization_code"
+	interactive_grant_type(input.grant_type)
 }
 
 violation[{"msg": msg}] {

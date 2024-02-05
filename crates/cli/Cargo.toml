@@ -18,17 +18,17 @@ camino.workspace = true
 clap.workspace = true
 dotenvy = "0.15.7"
 httpdate = "1.0.3"
-hyper = { version = "0.14.27", features = ["full"] }
+hyper = { version = "0.14.28", features = ["full"] }
 ipnetwork = "0.20.0"
-itertools = "0.11.0"
+itertools = "0.12.1"
 listenfd = "1.0.1"
 rand.workspace = true
 rand_chacha = "0.3.1"
-rustls = "0.21.9"
+rustls = "0.22.2"
 serde_json.workspace = true
-serde_yaml = "0.9.27"
+serde_yaml = "0.9.30"
 sqlx = { version = "0.7.3", features = ["runtime-tokio-rustls", "postgres"] }
-tokio = { version = "1.34.0", features = ["full"] }
+tokio = { version = "1.35.1", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.4.4", features = ["fs"] }
 url.workspace = true
@@ -45,7 +45,7 @@ opentelemetry-otlp = { version = "0.14.0", features = ["trace", "metrics"] }
 opentelemetry-prometheus = "0.14.1"
 opentelemetry-semantic-conventions.workspace = true
 opentelemetry-stdout = { version = "0.2.0", features = ["trace", "metrics"] }
-opentelemetry_sdk = { version = "0.21.1", features = ["trace", "metrics", "rt-tokio"] }
+opentelemetry_sdk = { version = "0.21.2", features = ["trace", "metrics", "rt-tokio"] }
 opentelemetry-zipkin = { version = "0.19.0", default-features = false }
 prometheus = "0.13.3"
 sentry = { version = "0.31.8", default-features = false, features = ["backtrace", "contexts", "panic", "tower"] }
@@ -56,8 +56,8 @@ mas-config.workspace = true
 mas-data-model.workspace = true
 mas-email.workspace = true
 mas-graphql.workspace = true
-mas-handlers = { workspace = true, default-features = false }
-mas-http = { workspace = true, default-features = false, features = ["axum", "client"] }
+mas-handlers = { workspace = true }
+mas-http = { workspace = true, features = ["axum", "client"] }
 mas-i18n.workspace = true
 mas-iana.workspace = true
 mas-keystore.workspace = true

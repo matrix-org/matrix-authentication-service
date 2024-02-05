@@ -24,6 +24,9 @@ pub enum PostAuthAction {
     ContinueAuthorizationGrant {
         id: Ulid,
     },
+    ContinueDeviceCodeGrant {
+        id: Ulid,
+    },
     ContinueCompatSsoLogin {
         id: Ulid,
     },
@@ -41,6 +44,11 @@ impl PostAuthAction {
     #[must_use]
     pub const fn continue_grant(id: Ulid) -> Self {
         PostAuthAction::ContinueAuthorizationGrant { id }
+    }
+
+    #[must_use]
+    pub const fn continue_device_code_grant(id: Ulid) -> Self {
+        PostAuthAction::ContinueDeviceCodeGrant { id }
     }
 
     #[must_use]
@@ -62,6 +70,9 @@ impl PostAuthAction {
         match self {
             Self::ContinueAuthorizationGrant { id } => {
                 url_builder.redirect(&ContinueAuthorizationGrant(*id))
+            }
+            Self::ContinueDeviceCodeGrant { id } => {
+                url_builder.redirect(&DeviceCodeConsent::new(*id))
             }
             Self::ContinueCompatSsoLogin { id } => {
                 url_builder.redirect(&CompatLoginSsoComplete::new(*id, None))
@@ -204,6 +215,13 @@ impl Login {
     }
 
     #[must_use]
+    pub const fn and_continue_device_code_grant(id: Ulid) -> Self {
+        Self {
+            post_auth_action: Some(PostAuthAction::continue_device_code_grant(id)),
+        }
+    }
+
+    #[must_use]
     pub const fn and_continue_compat_sso_login(id: Ulid) -> Self {
         Self {
             post_auth_action: Some(PostAuthAction::continue_compat_sso_login(id)),
@@ -263,6 +281,13 @@ impl Reauth {
     pub fn and_continue_grant(data: Ulid) -> Self {
         Self {
             post_auth_action: Some(PostAuthAction::continue_grant(data)),
+        }
+    }
+
+    #[must_use]
+    pub fn and_continue_device_code_grant(data: Ulid) -> Self {
+        Self {
+            post_auth_action: Some(PostAuthAction::continue_device_code_grant(data)),
         }
     }
 
@@ -687,6 +712,62 @@ impl Route for UpstreamOAuth2Link {
     fn path(&self) -> std::borrow::Cow<'static, str> {
         format!("/upstream/link/{}", self.id).into()
     }
+}
+
+/// `GET|POST /link`
+#[derive(Default, Serialize, Deserialize, Debug, Clone)]
+pub struct DeviceCodeLink {
+    code: Option<String>,
+}
+
+impl DeviceCodeLink {
+    #[must_use]
+    pub fn with_code(code: String) -> Self {
+        Self { code: Some(code) }
+    }
+}
+
+impl Route for DeviceCodeLink {
+    type Query = DeviceCodeLink;
+    fn route() -> &'static str {
+        "/link"
+    }
+
+    fn query(&self) -> Option<&Self::Query> {
+        Some(self)
+    }
+}
+
+/// `GET|POST /device/:device_code_id`
+#[derive(Default, Serialize, Deserialize, Debug, Clone)]
+pub struct DeviceCodeConsent {
+    id: Ulid,
+}
+
+impl Route for DeviceCodeConsent {
+    type Query = ();
+    fn route() -> &'static str {
+        "/device/:device_code_id"
+    }
+
+    fn path(&self) -> std::borrow::Cow<'static, str> {
+        format!("/device/{}", self.id).into()
+    }
+}
+
+impl DeviceCodeConsent {
+    #[must_use]
+    pub fn new(id: Ulid) -> Self {
+        Self { id }
+    }
+}
+
+/// `POST /oauth2/device`
+#[derive(Default, Serialize, Deserialize, Debug, Clone)]
+pub struct OAuth2DeviceAuthorizationEndpoint;
+
+impl SimpleRoute for OAuth2DeviceAuthorizationEndpoint {
+    const PATH: &'static str = "/oauth2/device";
 }
 
 /// `GET /assets`

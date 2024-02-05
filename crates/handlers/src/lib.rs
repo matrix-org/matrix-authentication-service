@@ -225,6 +225,10 @@ where
             mas_router::OAuth2RegistrationEndpoint::route(),
             post(self::oauth2::registration::post),
         )
+        .route(
+            mas_router::OAuth2DeviceAuthorizationEndpoint::route(),
+            post(self::oauth2::device::authorize::post),
+        )
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
@@ -403,6 +407,14 @@ where
         .route(
             mas_router::UpstreamOAuth2Link::route(),
             get(self::upstream_oauth2::link::get).post(self::upstream_oauth2::link::post),
+        )
+        .route(
+            mas_router::DeviceCodeLink::route(),
+            get(self::oauth2::device::link::get).post(self::oauth2::device::link::post),
+        )
+        .route(
+            mas_router::DeviceCodeConsent::route(),
+            get(self::oauth2::device::consent::get).post(self::oauth2::device::consent::post),
         )
         .layer(AndThenLayer::new(
             move |response: axum::response::Response| async move {

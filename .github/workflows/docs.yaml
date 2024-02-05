@@ -28,7 +28,7 @@ jobs:
           rustup default stable
 
       - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.3
+        uses: mozilla-actions/sccache-action@v0.0.4
 
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v1.2.0
@@ -36,7 +36,7 @@ jobs:
           mdbook-version: '0.4.32'
 
       - name: Install Node
-        uses: actions/setup-node@v4.0.0
+        uses: actions/setup-node@v4.0.1
         with:
           node-version: 18
 
@@ -50,7 +50,7 @@ jobs:
           done
 
       - name: Upload GitHub Pages artifacts
-        uses: actions/upload-pages-artifact@v2.0.0
+        uses: actions/upload-pages-artifact@v3.0.0
         with:
           path: target/book/
 
@@ -71,4 +71,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v2.0.4
+        uses: actions/deploy-pages@v4.0.3

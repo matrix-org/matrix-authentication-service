@@ -414,7 +414,7 @@ pub(crate) async fn get(
                         Err(GrantCompletionError::PolicyViolation(grant, res)) => {
                             warn!(violation = ?res, "Authorization grant for client {} denied by policy", client.id);
 
-                            let ctx = PolicyViolationContext::new(grant, client)
+                            let ctx = PolicyViolationContext::for_authorization_grant(grant, client)
                                 .with_session(user_session)
                                 .with_csrf(csrf_token.form_value())
                                 .with_language(locale);
