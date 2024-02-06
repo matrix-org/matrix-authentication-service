@@ -32,8 +32,8 @@ exports[`<SessionListHeader /> > renders a header with actions 1`] = `
         Apps
       </h5>
       <button
-        class="_button_1t47t_17"
-        data-kind="destructive"
+        class="_button_dyfp8_17 _destructive_dyfp8_99"
+        data-kind="secondary"
         data-size="sm"
         role="button"
         tabindex="0"

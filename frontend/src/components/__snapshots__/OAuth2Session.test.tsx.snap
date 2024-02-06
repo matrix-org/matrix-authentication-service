@@ -136,13 +136,13 @@ exports[`<OAuth2Session /> > renders an active session 1`] = `
     >
       <button
         aria-controls="radix-:r0:"
+        aria-disabled={false}
         aria-expanded={false}
         aria-haspopup="dialog"
-        className="_button_1t47t_17"
-        data-kind="destructive"
+        className="_button_dyfp8_17 _destructive_dyfp8_99"
+        data-kind="secondary"
         data-size="sm"
         data-state="closed"
-        disabled={false}
         onClick={[Function]}
         role="button"
         tabIndex={0}

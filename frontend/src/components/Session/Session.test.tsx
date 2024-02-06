@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// @vitest-environment happy-dom
+
 import { parseISO } from "date-fns";
 import { create } from "react-test-renderer";
 import { describe, expect, it, beforeAll } from "vitest";
