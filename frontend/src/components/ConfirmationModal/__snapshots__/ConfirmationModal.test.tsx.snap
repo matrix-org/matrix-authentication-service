@@ -25,7 +25,7 @@ exports[`<ConfirmationModal /> > opens modal on clicking trigger 1`] = `
     class="_buttons_6bc2cb"
   >
     <button
-      class="_button_1t47t_17"
+      class="_button_dyfp8_17"
       data-kind="tertiary"
       data-size="sm"
       role="button"
@@ -35,8 +35,8 @@ exports[`<ConfirmationModal /> > opens modal on clicking trigger 1`] = `
       Cancel
     </button>
     <button
-      class="_button_1t47t_17"
-      data-kind="destructive"
+      class="_button_dyfp8_17 _destructive_dyfp8_99"
+      data-kind="secondary"
       data-size="sm"
       role="button"
       tabindex="0"

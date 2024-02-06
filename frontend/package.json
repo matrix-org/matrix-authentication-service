@@ -27,7 +27,7 @@
     "@urql/exchange-refocus": "^1.0.2",
     "@urql/exchange-request-policy": "^1.0.2",
     "@vector-im/compound-design-tokens": "^0.0.7",
-    "@vector-im/compound-web": "^0.8.1",
+    "@vector-im/compound-web": "^3.0.1",
     "classnames": "^2.3.2",
     "date-fns": "^2.30.0",
     "graphql": "^16.8.1",
