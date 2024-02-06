@@ -26,6 +26,7 @@ env:
   IMAGE: ghcr.io/matrix-org/matrix-authentication-service
   IMAGE_SYN2MAS: ghcr.io/matrix-org/matrix-authentication-service/syn2mas
   BUILDCACHE: ghcr.io/matrix-org/matrix-authentication-service/buildcache
+  DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
 
 jobs:
   build-binaries:
@@ -187,7 +188,6 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=sha
-
 
       - name: Setup Cosign
         uses: sigstore/cosign-installer@v3.4.0
