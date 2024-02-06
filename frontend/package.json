@@ -57,7 +57,7 @@
     "@types/react": "^18.2.51",
     "@types/react-dom": "^18.2.18",
     "@types/react-test-renderer": "^18.0.7",
-    "@vitejs/plugin-react": "^4.1.1",
+    "@vitejs/plugin-react": "^4.2.1",
     "@vitest/coverage-v8": "^0.34.6",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.54.0",
@@ -78,11 +78,11 @@
     "storybook-react-i18next": "^2.0.9",
     "tailwindcss": "^3.4.1",
     "typescript": "5.3.2",
-    "vite": "^4.5.2",
+    "vite": "^5.0.12",
     "vite-plugin-compression": "^0.5.1",
-    "vite-plugin-graphql-codegen": "^3.3.3",
-    "vite-plugin-manifest-sri": "^0.1.0",
-    "vite-plugin-svgr": "^4.1.0",
+    "vite-plugin-graphql-codegen": "^3.3.6",
+    "vite-plugin-manifest-sri": "^0.2.0",
+    "vite-plugin-svgr": "^4.2.0",
     "vitest": "^0.34.6"
   }
 }
