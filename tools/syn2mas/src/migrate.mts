@@ -337,16 +337,11 @@ export async function migrate(): Promise<void> {
       const synapseAccessTokens = await synapse
         .select("*")
         .from<SAccessToken>("access_tokens")
-        .where({ user_id: user.name });
+        .where({ user_id: user.name })
+        // Skip tokens without devices.
+        // These can be for example short-lived tokens created by puppeting a user over the Synapse admin API.
+        .whereNotNull("device_id");
       for (const accessToken of synapseAccessTokens) {
-        if (!accessToken.device_id) {
-          warningsForUser += 1;
-          warn(
-            `Skipping access token ${accessToken.token} for user ${user.name} with no device_id`,
-          );
-          continue;
-        }
-
         const tokenCreatedAt = accessToken.last_validated
           ? new Date(parseInt(`${accessToken.last_validated}`))
           : masUser.created_at;

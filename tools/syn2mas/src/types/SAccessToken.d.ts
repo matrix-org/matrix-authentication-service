@@ -32,7 +32,7 @@ CREATE TABLE access_tokens (
 export interface SAccessToken {
   id: Id<SAccessToken>;
   user_id: SynapseUserId;
-  device_id?: string;
+  device_id: string;
   token: string;
   valid_until_ms?: number;
   puppets_user_id?: SynapseUserId;
