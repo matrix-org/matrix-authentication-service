@@ -161,7 +161,7 @@ export async function advisor(): Promise<void> {
   );
   if (accessTokensWithoutDeviceId > 0) {
     error(
-      `Synapse database contains ${accessTokensWithoutDeviceId} access tokens without an associated device_id which aren't supported during migration`,
+      `Synapse database contains ${accessTokensWithoutDeviceId} access tokens without an associated device_id which will be skipped during migration`,
     );
   }
 
