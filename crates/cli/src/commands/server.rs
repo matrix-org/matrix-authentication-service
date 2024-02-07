@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{sync::Arc, time::Duration};
+use std::{collections::BTreeSet, sync::Arc, time::Duration};
 
 use anyhow::Context;
 use clap::Parser;
@@ -29,6 +29,7 @@ use rand::{
     distributions::{Alphanumeric, DistString},
     thread_rng,
 };
+use sqlx::migrate::Migrate;
 use tokio::signal::unix::SignalKind;
 use tracing::{info, info_span, warn, Instrument};
 
@@ -42,8 +43,13 @@ use crate::{
 
 #[derive(Parser, Debug, Default)]
 pub(super) struct Options {
-    /// Automatically apply pending migrations
+    /// Do not apply pending migrations on start
     #[arg(long)]
+    no_migrate: bool,
+
+    /// DEPRECATED: default is to apply pending migrations, use `--no-migrate`
+    /// to disable
+    #[arg(long, hide = true)]
     migrate: bool,
 
     /// Do not start the task worker
@@ -57,11 +63,25 @@ impl Options {
         let span = info_span!("cli.run.init").entered();
         let config: AppConfig = root.load_config()?;
 
+        if self.migrate {
+            warn!("The `--migrate` flag is deprecated and will be removed in a future release. Please use `--no-migrate` to disable automatic migrations on startup.");
+        }
+
         // Connect to the database
         info!("Connecting to the database");
         let pool = database_pool_from_config(&config.database).await?;
 
-        if self.migrate {
+        if self.no_migrate {
+            // Check that we applied all the migrations
+            let mut conn = pool.acquire().await?;
+            let applied = conn.list_applied_migrations().await?;
+            let applied: BTreeSet<_> = applied.into_iter().map(|m| m.version).collect();
+            let has_missing_migrations = MIGRATOR.iter().any(|m| !applied.contains(&m.version));
+            if has_missing_migrations {
+                // Refuse to start if there are pending migrations
+                return Err(anyhow::anyhow!("The server is running with `--no-migrate` but there are pending. Please run them first with `mas-cli database migrate`, or omit the `--no-migrate` flag to apply them automatically on startup."));
+            }
+        } else {
             info!("Running pending migrations");
             MIGRATOR
                 .run(&pool)
