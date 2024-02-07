@@ -119,7 +119,9 @@ impl TestState {
 
         let url_builder = UrlBuilder::new("https://example.com/".parse()?, None, None);
 
-        let site_branding = SiteBranding::new("example.com").with_service_name("Example");
+        let site_branding = SiteBranding::new("example.com")
+            .with_service_name("Example")
+            .with_tos_uri("https://example.com/tos");
 
         let templates = Templates::load(
             workspace_root.join("templates"),
@@ -154,7 +156,10 @@ impl TestState {
 
         let http_client_factory = HttpClientFactory::new().await?;
 
-        let site_config = SiteConfig::default();
+        let site_config = SiteConfig {
+            tos_uri: Some("https://example.com/tos".parse().unwrap()),
+            ..SiteConfig::default()
+        };
 
         let clock = Arc::new(MockClock::default());
         let rng = Arc::new(Mutex::new(ChaChaRng::seed_from_u64(42)));

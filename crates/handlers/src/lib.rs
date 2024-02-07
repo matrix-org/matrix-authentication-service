@@ -319,6 +319,7 @@ where
     HttpClientFactory: FromRef<S>,
     PasswordManager: FromRef<S>,
     MetadataCache: FromRef<S>,
+    SiteConfig: FromRef<S>,
     BoxClock: FromRequestParts<S>,
     BoxRng: FromRequestParts<S>,
     Policy: FromRequestParts<S>,

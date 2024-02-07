@@ -160,6 +160,7 @@ impl Options {
         );
 
         let site_config = SiteConfig {
+            tos_uri: config.branding.tos_uri.clone(),
             access_token_ttl: config.experimental.access_token_ttl,
             compat_token_ttl: config.experimental.compat_token_ttl,
         };

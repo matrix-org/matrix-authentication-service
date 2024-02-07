@@ -45,7 +45,9 @@ use tracing::warn;
 use ulid::Ulid;
 
 use super::{template::environment, UpstreamSessionsCookie};
-use crate::{impl_from_error_for_route, views::shared::OptionalPostAuthAction, PreferredLanguage};
+use crate::{
+    impl_from_error_for_route, views::shared::OptionalPostAuthAction, PreferredLanguage, SiteConfig,
+};
 
 const DEFAULT_LOCALPART_TEMPLATE: &str = "{{ user.preferred_username }}";
 const DEFAULT_DISPLAYNAME_TEMPLATE: &str = "{{ user.name }}";
@@ -170,6 +172,8 @@ pub(crate) enum FormData {
         import_email: Option<String>,
         #[serde(default)]
         import_display_name: Option<String>,
+        #[serde(default)]
+        accept_terms: Option<String>,
     },
     Link,
 }
@@ -473,6 +477,7 @@ pub(crate) async fn post(
     PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
+    State(site_config): State<SiteConfig>,
     Path(link_id): Path<Ulid>,
     Form(form): Form<ProtectedForm<FormData>>,
 ) -> Result<Response, RouteError> {
@@ -533,6 +538,7 @@ pub(crate) async fn post(
                 username,
                 import_email,
                 import_display_name,
+                accept_terms,
             },
         ) => {
             // The user got the form to register a new account, and is not logged in.
@@ -543,6 +549,7 @@ pub(crate) async fn post(
             // Those fields are Some("on") if the checkbox is checked
             let import_email = import_email.is_some();
             let import_display_name = import_display_name.is_some();
+            let accept_terms = accept_terms.is_some();
 
             let id_token = upstream_session
                 .id_token()
@@ -695,6 +702,24 @@ pub(crate) async fn post(
                     .into_response());
             }
 
+            // If we need have a TOS in the config, make sure the user has accepted it
+            if site_config.tos_uri.is_some() && !accept_terms {
+                let form_state = form_state.with_error_on_field(
+                    mas_templates::UpstreamRegisterFormField::AcceptTerms,
+                    FieldError::Required,
+                );
+
+                let ctx = ctx
+                    .with_form_state(form_state)
+                    .with_csrf(csrf_token.form_value())
+                    .with_language(locale);
+                return Ok((
+                    cookie_jar,
+                    Html(templates.render_upstream_oauth2_do_register(&ctx)?),
+                )
+                    .into_response());
+            }
+
             // Policy check
             let res = policy
                 .evaluate_upstream_oauth_register(&username, email.as_deref())
@@ -730,6 +755,12 @@ pub(crate) async fn post(
 
             // Now we can create the user
             let user = repo.user().add(&mut rng, &clock, username).await?;
+
+            if let Some(terms_url) = &site_config.tos_uri {
+                repo.user_terms()
+                    .accept_terms(&mut rng, &clock, &user, terms_url.clone())
+                    .await?;
+            }
 
             // And schedule the job to provision it
             let mut job = ProvisionUserJob::new(&user);
@@ -936,6 +967,7 @@ mod tests {
                 "csrf": csrf_token,
                 "action": "register",
                 "import_email": "on",
+                "accept_terms": "on",
             }),
         );
         let request = cookies.with_cookies(request);

@@ -27,7 +27,7 @@ limitations under the License.
   {%- if value %} value="{{ value }}" {% endif %}
 {%- endmacro %}
 
-{% macro field(label, name, form_state=false, class="") %}
+{% macro field(label, name, form_state=false, class="", inline=false) %}
   {% set field_id = new_id() %}
   {% if not form_state %}
     {% set form_state = {"fields": {}} %}
@@ -41,12 +41,24 @@ limitations under the License.
     "value": state.value,
   } %}
 
-  <div class="cpd-form-field {{ class }}">
-    <label class="cpd-form-label" for="{{ field.id }}"
-      {%- if field.errors is not empty %} data-invalid{% endif -%}
-    >{{ label }}</label>
+  <div class="{% if inline %}cpd-form-inline-field{% else %}cpd-form-field{% endif %} {{ class }}">
+    {% if not inline %}
+      <label class="cpd-form-label" for="{{ field.id }}"
+        {%- if field.errors is not empty %} data-invalid{% endif -%}
+      >{{ label }}</label>
 
-    {{ caller(field) }}
+      {{ caller(field) }}
+    {% else %}
+      <div class="cpd-form-inline-field-control">
+        {{ caller(field) }}
+      </div>
+
+      <div class="cpd-form-inline-field-body">
+        <label class="cpd-form-label" for="{{ field.id }}"
+          {%- if field.errors is not empty %} data-invalid{% endif -%}
+        >{{ label }}</label>
+    {% endif %}
+
 
     {% if field.errors is not empty %}
       {% for error in field.errors %}
@@ -64,6 +76,10 @@ limitations under the License.
           </div>
         {% endif %}
       {% endfor %}
+    {% endif %}
+
+    {% if inline %}
+      </div>
     {% endif %}
   </div>
 {% endmacro %}

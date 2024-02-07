@@ -13,12 +13,14 @@
 // limitations under the License.
 
 use chrono::Duration;
+use url::Url;
 
 /// Random site configuration we don't now where to put yet.
 #[derive(Debug, Clone)]
 pub struct SiteConfig {
     pub access_token_ttl: Duration,
     pub compat_token_ttl: Duration,
+    pub tos_uri: Option<Url>,
 }
 
 impl Default for SiteConfig {
@@ -26,6 +28,7 @@ impl Default for SiteConfig {
         Self {
             access_token_ttl: Duration::minutes(5),
             compat_token_ttl: Duration::minutes(5),
+            tos_uri: None,
         }
     }
 }

@@ -2,15 +2,15 @@
   "action": {
     "cancel": "Cancel",
     "@cancel": {
-      "context": "pages/consent.html:72:11-29, pages/device_consent.html:94:13-31, pages/login.html:100:13-31, pages/policy_violation.html:52:13-31, pages/register.html:64:13-31"
+      "context": "pages/consent.html:72:11-29, pages/device_consent.html:94:13-31, pages/login.html:100:13-31, pages/policy_violation.html:52:13-31, pages/register.html:77:13-31"
     },
     "continue": "Continue",
     "@continue": {
-      "context": "pages/account/emails/add.html:45:26-46, pages/account/emails/verify.html:60:26-46, pages/consent.html:60:28-48, pages/device_consent.html:91:13-33, pages/device_link.html:50:26-46, pages/login.html:62:30-50, pages/reauth.html:40:28-48, pages/register.html:59:28-48, pages/sso.html:45:28-48"
+      "context": "pages/account/emails/add.html:45:26-46, pages/account/emails/verify.html:60:26-46, pages/consent.html:60:28-48, pages/device_consent.html:91:13-33, pages/device_link.html:50:26-46, pages/login.html:62:30-50, pages/reauth.html:40:28-48, pages/register.html:72:28-48, pages/sso.html:45:28-48"
     },
     "create_account": "Create Account",
     "@create_account": {
-      "context": "pages/login.html:72:35-61, pages/upstream_oauth2/do_register.html:143:26-52"
+      "context": "pages/login.html:72:35-61, pages/upstream_oauth2/do_register.html:157:26-52"
     },
     "sign_in": "Sign in",
     "@sign_in": {
@@ -167,11 +167,11 @@
     "errors": {
       "denied_policy": "Denied by policy: %(policy)s",
       "@denied_policy": {
-        "context": "components/errors.html:23:7-58, components/field.html:60:17-68"
+        "context": "components/errors.html:23:7-58, components/field.html:72:17-68"
       },
       "field_required": "This field is required",
       "@field_required": {
-        "context": "components/field.html:56:17-47"
+        "context": "components/field.html:68:17-47"
       },
       "invalid_credentials": "Invalid credentials",
       "@invalid_credentials": {
@@ -183,7 +183,7 @@
       },
       "username_taken": "This username is already taken",
       "@username_taken": {
-        "context": "components/field.html:58:17-47"
+        "context": "components/field.html:70:17-47"
       }
     },
     "login": {
@@ -251,7 +251,7 @@
     },
     "or_separator": "Or",
     "@or_separator": {
-      "context": "components/field.html:75:10-31",
+      "context": "components/field.html:91:10-31",
       "description": "Separator between the login methods"
     },
     "policy_violation": {
@@ -273,7 +273,7 @@
     "register": {
       "call_to_login": "Already have an account?",
       "@call_to_login": {
-        "context": "pages/register.html:74:11-42",
+        "context": "pages/register.html:87:11-42",
         "description": "Displayed on the registration page to suggest to log in instead"
       },
       "create_account": {
@@ -288,7 +288,11 @@
       },
       "sign_in_instead": "Sign in instead",
       "@sign_in_instead": {
-        "context": "pages/register.html:78:31-64"
+        "context": "pages/register.html:91:31-64"
+      },
+      "terms_of_service": "I agree to the <a href=\"%s\" data-kind=\"primary\" class=\"cpd-link\">Terms and Conditions</a>",
+      "@terms_of_service": {
+        "context": "pages/register.html:60:37-97, pages/upstream_oauth2/do_register.html:144:35-95"
       }
     },
     "scope": {
