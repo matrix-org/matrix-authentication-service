@@ -17,6 +17,7 @@ You can learn more about Matrix and OIDC at [areweoidcyet.com](https://areweoidc
 - Authentication methods:
   - ✅ Upstream OIDC
   - 🚧 Local password
+  - ‼️ [Application Services login](https://matrix-org.github.io/matrix-authentication-service/as-login.html) (**Encrypted bridges**)
 - Migration support
   - ✅ Compatibility layer for legacy Matrix authentication
   - ✅ Advisor on migration readiness
