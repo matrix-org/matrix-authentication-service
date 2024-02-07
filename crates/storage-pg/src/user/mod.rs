@@ -29,13 +29,14 @@ use crate::{tracing::ExecuteExt, DatabaseError};
 mod email;
 mod password;
 mod session;
+mod terms;
 
 #[cfg(test)]
 mod tests;
 
 pub use self::{
     email::PgUserEmailRepository, password::PgUserPasswordRepository,
-    session::PgBrowserSessionRepository,
+    session::PgBrowserSessionRepository, terms::PgUserTermsRepository,
 };
 
 /// An implementation of [`UserRepository`] for a PostgreSQL connection
