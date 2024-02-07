@@ -517,3 +517,58 @@ async fn test_user_session(pool: PgPool) {
     // This time the session is finished
     assert!(session_lookup.finished_at.is_some());
 }
+
+#[sqlx::test(migrator = "crate::MIGRATOR")]
+async fn test_user_terms(pool: PgPool) {
+    let mut repo = PgRepository::from_pool(&pool).await.unwrap();
+    let mut rng = ChaChaRng::seed_from_u64(42);
+    let clock = MockClock::default();
+
+    let user = repo
+        .user()
+        .add(&mut rng, &clock, "john".to_owned())
+        .await
+        .unwrap();
+
+    // Accepting the terms should work
+    repo.user_terms()
+        .accept_terms(
+            &mut rng,
+            &clock,
+            &user,
+            "https://example.com/terms".parse().unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Accepting a second time should also work
+    repo.user_terms()
+        .accept_terms(
+            &mut rng,
+            &clock,
+            &user,
+            "https://example.com/terms".parse().unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Accepting a different terms should also work
+    repo.user_terms()
+        .accept_terms(
+            &mut rng,
+            &clock,
+            &user,
+            "https://example.com/terms?v=2".parse().unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let mut conn = repo.into_inner();
+
+    // We should have two rows, as the first terms was deduped
+    let res: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM user_terms")
+        .fetch_one(&mut *conn)
+        .await
+        .unwrap();
+    assert_eq!(res, 2);
+}
