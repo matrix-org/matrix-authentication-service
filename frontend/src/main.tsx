@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { TooltipProvider } from "@vector-im/compound-web";
 import { Provider } from "jotai";
 import { DevTools } from "jotai-devtools";
 import { Suspense, StrictMode } from "react";
@@ -33,11 +34,13 @@ createRoot(document.getElementById("root") as HTMLElement).render(
       <HydrateAtoms>
         <Suspense fallback={<LoadingScreen />}>
           <I18nextProvider i18n={i18n}>
-            <Layout>
-              <Suspense fallback={<LoadingSpinner />}>
-                <Router />
-              </Suspense>
-            </Layout>
+            <TooltipProvider>
+              <Layout>
+                <Suspense fallback={<LoadingSpinner />}>
+                  <Router />
+                </Suspense>
+              </Layout>
+            </TooltipProvider>
           </I18nextProvider>
         </Suspense>
       </HydrateAtoms>
