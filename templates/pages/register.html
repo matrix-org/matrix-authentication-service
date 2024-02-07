@@ -56,6 +56,19 @@ limitations under the License.
         <input {{ field.attributes(f) }} class="cpd-text-control" type="password" autocomplete="new-password" required />
       {% endcall %}
 
+      {% if branding.tos_uri %}
+        {% call(f) field.field(label=_("mas.register.terms_of_service", tos_uri=branding.tos_uri), name="accept_terms", form_state=form, inline=true, class="my-4") %}
+          <div class="cpd-form-inline-field-control">
+            <div class="cpd-checkbox-container">
+              <input {{ field.attributes(f) }} class="cpd-checkbox-input" type="checkbox" required />
+              <div class="cpd-checkbox-ui">
+                {{ icon.check() }}
+              </div>
+            </div>
+          </div>
+        {% endcall %}
+      {% endif %}
+
       {{ button.button(text=_("action.continue")) }}
     </form>
 

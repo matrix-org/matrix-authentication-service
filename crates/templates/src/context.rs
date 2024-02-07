@@ -493,12 +493,15 @@ pub enum RegisterFormField {
 
     /// The password confirmation field
     PasswordConfirm,
+
+    /// The terms of service agreement field
+    AcceptTerms,
 }
 
 impl FormField for RegisterFormField {
     fn keep(&self) -> bool {
         match self {
-            Self::Username | Self::Email => true,
+            Self::Username | Self::Email | Self::AcceptTerms => true,
             Self::Password | Self::PasswordConfirm => false,
         }
     }
@@ -974,12 +977,15 @@ impl TemplateContext for UpstreamSuggestLink {
 pub enum UpstreamRegisterFormField {
     /// The username field
     Username,
+
+    /// Accept the terms of service
+    AcceptTerms,
 }
 
 impl FormField for UpstreamRegisterFormField {
     fn keep(&self) -> bool {
         match self {
-            Self::Username => true,
+            Self::Username | Self::AcceptTerms => true,
         }
     }
 }

@@ -19,7 +19,8 @@ use url::Url;
 
 use crate::{repository_impl, Clock};
 
-/// A [`UserTermsRepository`] helps interacting with the terms of service agreed by a [`User`]
+/// A [`UserTermsRepository`] helps interacting with the terms of service agreed
+/// by a [`User`]
 #[async_trait]
 pub trait UserTermsRepository: Send + Sync {
     /// The error type returned by the repository

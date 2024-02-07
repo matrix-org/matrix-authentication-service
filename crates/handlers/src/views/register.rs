@@ -43,7 +43,7 @@ use serde::{Deserialize, Serialize};
 use zeroize::Zeroizing;
 
 use super::shared::OptionalPostAuthAction;
-use crate::{passwords::PasswordManager, BoundActivityTracker, PreferredLanguage};
+use crate::{passwords::PasswordManager, BoundActivityTracker, PreferredLanguage, SiteConfig};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct RegisterForm {
@@ -51,6 +51,8 @@ pub(crate) struct RegisterForm {
     email: String,
     password: String,
     password_confirm: String,
+    #[serde(default)]
+    accept_terms: String,
 }
 
 impl ToFormState for RegisterForm {
@@ -108,6 +110,7 @@ pub(crate) async fn post(
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
+    State(site_config): State<SiteConfig>,
     mut policy: Policy,
     mut repo: BoxRepository,
     activity_tracker: BoundActivityTracker,
@@ -153,6 +156,11 @@ pub(crate) async fn post(
             state.add_error_on_form(FormError::PasswordMismatch);
             state.add_error_on_field(RegisterFormField::Password, FieldError::Unspecified);
             state.add_error_on_field(RegisterFormField::PasswordConfirm, FieldError::Unspecified);
+        }
+
+        // If the site has terms of service, the user must accept them
+        if site_config.tos_uri.is_some() && form.accept_terms != "on" {
+            state.add_error_on_field(RegisterFormField::AcceptTerms, FieldError::Required);
         }
 
         let res = policy
@@ -203,6 +211,13 @@ pub(crate) async fn post(
     }
 
     let user = repo.user().add(&mut rng, &clock, form.username).await?;
+
+    if let Some(tos_uri) = &site_config.tos_uri {
+        repo.user_terms()
+            .accept_terms(&mut rng, &clock, &user, tos_uri.clone())
+            .await?;
+    }
+
     let password = Zeroizing::new(form.password.into_bytes());
     let (version, hashed_password) = password_manager.hash(&mut rng, password).await?;
     let user_password = repo
