@@ -51,17 +51,11 @@ database:
 ## Database migrations
 
 The service manages the database schema with embedded migrations.
-Those migrations need to be run before the service can be started, and every time the service is upgraded.
+Those migrations are run automatically when the service starts, but it is also possible to run them manually.
 This is done using the [`database migrate`](../usage/cli/database.md#database-migrate) command:
 
 ```sh
 mas-cli database migrate
-```
-
-It is also possible to run any pending migrations on service start, by setting the `--migrate` option to the [`server`](../usage/cli/server.md#server) command:
-
-```sh
-mas-cli server --migrate
 ```
 
 ## Next steps
