@@ -8,11 +8,10 @@ Features that are provided to support this include:
 
 - Ability to import existing password hashes from Synapse
 - Ability to import existing sessions and devices
-- Ability to import existing access tokens
+- Ability to import existing access tokens linked to devices (ie not including short-lived admin puppeted access tokens)
 - Ability to import existing upstream IdP subject ID mappings
 - Provides a compatibility layer for legacy Matrix authentication
 
-If
 There will be tools to help with the migration process itself. But these aren't quite ready yet.
 
 ## Preparing for the migration
