@@ -20,6 +20,7 @@ use mas_config::ConfigurationSection;
 mod config;
 mod database;
 mod debug;
+mod doctor;
 mod manage;
 mod server;
 mod templates;
@@ -46,7 +47,11 @@ enum Subcommand {
     Templates(self::templates::Options),
 
     /// Debug utilities
+    #[clap(hide = true)]
     Debug(self::debug::Options),
+
+    /// Run diagnostics on the deployment
+    Doctor(self::doctor::Options),
 }
 
 #[derive(Parser, Debug)]
@@ -70,6 +75,7 @@ impl Options {
             Some(S::Manage(c)) => c.run(&self).await,
             Some(S::Templates(c)) => c.run(&self).await,
             Some(S::Debug(c)) => c.run(&self).await,
+            Some(S::Doctor(c)) => c.run(&self).await,
             None => self::server::Options::default().run(&self).await,
         }
     }

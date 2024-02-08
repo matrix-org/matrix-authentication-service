@@ -49,3 +49,9 @@ mas-cli server
 ```
 
 It is advised to run the service as a non-root user, using a tool like [`systemd`](https://www.freedesktop.org/wiki/Software/systemd/) to manage the service lifecycle.
+
+
+## Troubleshoot common issues
+
+Once the service is running, it is possible to check its configuration using the [`mas-cli doctor`](../usage/cli/doctor.md) command.
+This should help diagnose common issues with the service configuration and deployment.

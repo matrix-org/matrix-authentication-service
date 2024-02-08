@@ -94,6 +94,7 @@ features = ["derive"] # Most of the time, if we need serde, we need derive
 # JSON serialization and deserialization
 [workspace.dependencies.serde_json]
 version = "1.0.112"
+features = ["preserve_order"]
 
 # Custom error types
 [workspace.dependencies.thiserror]

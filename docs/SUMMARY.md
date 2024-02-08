@@ -27,6 +27,7 @@
     - [`manage`](./usage/cli/manage.md)
     - [`server`](./usage/cli/server.md)
     - [`templates`](./usage/cli/templates.md)
+    - [`doctor`](./usage/cli/doctor.md)
 
 # Development
 
