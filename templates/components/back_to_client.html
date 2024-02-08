@@ -14,11 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 #}
 
-{% macro link(text, uri, mode, params, type="button", kind="primary") %}
+{% macro link(text, uri, mode, params, type="button", kind="primary", destructive=False) %}
   {% if type == "button" %}
-    {% set class = "cpd-button" %}
+    {% if destructive %}
+      {% set class = "cpd-button destructive" %}
+    {% else %}
+      {% set class = "cpd-button" %}
+    {% endif %}
   {% elif type == "link" %}
-      {% set class = "cpd-link" %}
+    {% set class = "cpd-link" %}
+    {% if destructive %}
+      {% set kind = "critical" %}
+    {% endif %}
   {% else %}
       {{ throw(message="Invalid type") }}
   {% endif %}

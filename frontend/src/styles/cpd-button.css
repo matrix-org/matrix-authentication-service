@@ -23,11 +23,22 @@
   gap: var(--cpd-space-2x);
   box-sizing: border-box;
   font: var(--cpd-font-body-md-semibold);
+  transition-duration: 0.1s;
+  transition-property: color, background-color, border-color;
+}
+
+.cpd-button > svg {
+  transition: color 0.1s;
 }
 
 .cpd-button[disabled] {
   cursor: not-allowed;
   pointer-events: all !important;
+  color: var(--cpd-color-text-disabled) !important;
+}
+
+.cpd-button[disabled] > svg {
+  color: var(--cpd-color-icon-disabled) !important;
 }
 
 /**
@@ -46,12 +57,12 @@
 
 .cpd-button[data-size="sm"] {
   padding-block: var(--cpd-space-1x);
-  padding-inline: var(--cpd-space-6x);
+  padding-inline: var(--cpd-space-5x);
   min-block-size: var(--cpd-space-9x);
 }
 
 .cpd-button[data-size="sm"].has-icon {
-  padding-inline-start: var(--cpd-space-5x);
+  padding-inline-start: var(--cpd-space-4x);
 }
 
 /**
@@ -64,25 +75,50 @@
   border-width: 0;
 }
 
+.cpd-button[data-kind="primary"] > svg {
+  color: var(--cpd-color-icon-on-solid-primary);
+}
+
 @media (hover) {
   .cpd-button[data-kind="primary"]:hover {
     background: var(--cpd-color-bg-action-primary-hovered);
   }
 }
 
-.cpd-button[data-kind="primary"]:active {
+.cpd-button[data-kind="primary"]:active,
+.cpd-button[data-kind="primary"][aria-expanded="true"] {
   background: var(--cpd-color-bg-action-primary-pressed);
 }
 
 .cpd-button[data-kind="primary"][disabled] {
-  color: var(--cpd-color-text-disabled);
-  background: var(--cpd-color-bg-subtle-primary);
+  /* !important to override destructive background */
+  background: var(--cpd-color-bg-subtle-primary) !important;
+}
+
+.cpd-button[data-kind="primary"].destructive {
+  background: var(--cpd-color-bg-critical-primary);
+}
+
+@media (hover) {
+  .cpd-button[data-kind="primary"].destructive:hover {
+    background: var(--cpd-color-bg-critical-hovered);
+  }
+}
+
+.cpd-button[data-kind="primary"].destructive:active,
+.cpd-button[data-kind="primary"].destructive[aria-expanded="true"] {
+  /* TODO: We're waiting for this value to be formalized as a semantic token */
+  background: var(--cpd-color-red-1100);
 }
 
 .cpd-button[data-kind="secondary"] {
-  border: 1px solid var(--cpd-color-border-interactive-primary);
+  border: 1px solid var(--cpd-color-border-interactive-secondary);
   color: var(--cpd-color-text-primary);
   background: var(--cpd-color-bg-canvas-default);
+}
+
+.button[data-kind="secondary"] > svg {
+  color: var(--cpd-color-icon-primary);
 }
 
 @media (hover) {
@@ -92,15 +128,38 @@
   }
 }
 
-.cpd-button[data-kind="secondary"]:active {
+.cpd-button[data-kind="secondary"]:active,
+.cpd-button[data-kind="secondary"][aria-expanded="true"] {
   border-color: var(--cpd-color-border-interactive-hovered);
   background: var(--cpd-color-bg-subtle-primary);
 }
 
 .cpd-button[data-kind="secondary"][disabled] {
-  border-color: var(--cpd-color-border-interactive-secondary);
-  color: var(--cpd-color-text-disabled);
-  background: var(--cpd-color-bg-subtle-secondary);
+  /* !important to override destructive values */
+  border-color: var(--cpd-color-border-interactive-secondary) !important;
+  background: var(--cpd-color-bg-subtle-secondary) !important;
+}
+
+.cpd-button[data-kind="secondary"].destructive {
+  border-color: var(--cpd-color-border-critical-subtle);
+  color: var(--cpd-color-text-critical-primary);
+}
+
+.cpd-button[data-kind="secondary"].destructive > svg {
+  color: var(--cpd-color-icon-critical-primary);
+}
+
+@media (hover) {
+  .cpd-button[data-kind="secondary"].destructive:hover {
+    border-color: var(--cpd-color-border-critical-hovered);
+    background: var(--cpd-color-bg-critical-subtle);
+  }
+}
+
+.cpd-button[data-kind="secondary"].destructive:active,
+.cpd-button[data-kind="secondary"].destructive[aria-expanded="true"] {
+  border-color: var(--cpd-color-border-critical-hovered);
+  background: var(--cpd-color-bg-critical-subtle-hovered);
 }
 
 .cpd-button[data-kind="tertiary"] {
@@ -116,34 +175,29 @@
   }
 }
 
-.cpd-button[data-kind="tertiary"]:active {
+.cpd-button[data-kind="tertiary"]:active,
+.cpd-button[data-kind="tertiary"][aria-expanded="true"] {
   background: var(--cpd-color-bg-subtle-primary);
 }
 
 .cpd-button[data-kind="tertiary"][disabled] {
   color: var(--cpd-color-text-disabled);
+
+  /* !important to override destructive background */
+  background: transparent !important;
 }
 
-.cpd-button[data-kind="destructive"] {
-  border: 1px solid var(--cpd-color-border-critical-primary);
+.cpd-button[data-kind="tertiary"].destructive {
   color: var(--cpd-color-text-critical-primary);
-  background: var(--cpd-color-bg-canvas-default);
 }
 
 @media (hover) {
-  .cpd-button[data-kind="destructive"]:hover {
-    border-color: var(--cpd-color-border-critical-hovered);
+  .cpd-button[data-kind="tertiary"].destructive:hover {
     background: var(--cpd-color-bg-critical-subtle);
   }
 }
 
-.cpd-button[data-kind="destructive"]:active {
-  border-color: var(--cpd-color-border-critical-hovered);
+.cpd-button[data-kind="tertiary"].destructive:active,
+.cpd-button[data-kind="tertiary"].destructive[aria-expanded="true"] {
   background: var(--cpd-color-bg-critical-subtle-hovered);
-}
-
-.cpd-button[data-kind="destructive"][disabled] {
-  border-color: var(--cpd-color-border-interactive-secondary);
-  color: var(--cpd-color-text-disabled);
-  background: var(--cpd-color-bg-subtle-secondary);
 }
