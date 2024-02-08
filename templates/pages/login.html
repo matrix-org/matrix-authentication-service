@@ -98,7 +98,8 @@ limitations under the License.
     {% if next and next.kind == "continue_authorization_grant" %}
       {{ back_to_client.link(
         text=_("action.cancel"),
-        kind="destructive",
+        kind="secondary",
+        destructive=True,
         uri=next.grant.redirect_uri,
         mode=next.grant.response_mode,
         params=dict(error="access_denied", state=next.grant.state)

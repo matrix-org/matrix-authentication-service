@@ -50,7 +50,7 @@ limitations under the License.
     {% if grant.grant_type == "authorization_code" %}
       {{ back_to_client.link(
         text=_("action.cancel"),
-        kind="destructive",
+        destructive=True,
         uri=grant.redirect_uri,
         mode=grant.response_mode,
         params=dict(error="access_denied", state=grant.state)
