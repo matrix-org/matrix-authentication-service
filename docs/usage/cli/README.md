@@ -18,23 +18,19 @@ It can be repeated multiple times to merge multiple files together.
 ---
 
 ```
-mas-cli
+Usage: mas-cli [OPTIONS] [COMMAND]
 
-USAGE:
-    mas-cli [OPTIONS] [SUBCOMMAND]
+Commands:
+  config     Configuration-related commands
+  database   Manage the database
+  server     Runs the web server
+  worker     Run the worker
+  manage     Manage the instance
+  templates  Templates-related commands
+  doctor     Run diagnostics on the deployment
+  help       Print this message or the help of the given subcommand(s)
 
-FLAGS:
-    -h, --help       Print help information
-    -V, --version    Print version information
-
-OPTIONS:
-    -c, --config <CONFIG>...    Path to the configuration file [default: config.yaml]
-
-SUBCOMMANDS:
-    config       Configuration-related commands
-    database     Manage the database
-    help         Print this message or the help of the given subcommand(s)
-    manage       Manage the instance
-    server       Runs the web server
-    templates    Templates-related commands
+Options:
+  -c, --config <CONFIG>  Path to the configuration file
+  -h, --help             Print help
 ```
