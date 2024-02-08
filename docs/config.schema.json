@@ -11,11 +11,11 @@
     "branding": {
       "description": "Configuration section for tweaking the branding of the service",
       "default": {
-        "imprint": null,
-        "logo_uri": null,
-        "policy_uri": null,
         "service_name": null,
-        "tos_uri": null
+        "policy_uri": null,
+        "tos_uri": null,
+        "imprint": null,
+        "logo_uri": null
       },
       "allOf": [
         {
@@ -34,12 +34,12 @@
     "database": {
       "description": "Database connection configuration",
       "default": {
+        "uri": "postgresql://",
+        "max_connections": 10,
+        "min_connections": 0,
         "connect_timeout": 30,
         "idle_timeout": 600,
-        "max_connections": 10,
-        "max_lifetime": 1800,
-        "min_connections": 0,
-        "uri": "postgresql://"
+        "max_lifetime": 1800
       },
       "allOf": [
         {
@@ -75,16 +75,9 @@
     "http": {
       "description": "Configuration of the HTTP server",
       "default": {
-        "issuer": "http://[::]:8080/",
         "listeners": [
           {
-            "binds": [
-              {
-                "address": "[::]:8080"
-              }
-            ],
             "name": "web",
-            "proxy_protocol": false,
             "resources": [
               {
                 "name": "discovery"
@@ -106,25 +99,30 @@
                 "name": "assets",
                 "path": "./frontend/dist/"
               }
-            ]
+            ],
+            "binds": [
+              {
+                "address": "[::]:8080"
+              }
+            ],
+            "proxy_protocol": false
           },
           {
+            "name": "internal",
+            "resources": [
+              {
+                "name": "health"
+              }
+            ],
             "binds": [
               {
                 "host": "localhost",
                 "port": 8081
               }
             ],
-            "name": "internal",
-            "proxy_protocol": false,
-            "resources": [
-              {
-                "name": "health"
-              }
-            ]
+            "proxy_protocol": false
           }
         ],
-        "public_base": "http://[::]:8080/",
         "trusted_proxies": [
           "192.128.0.0/16",
           "172.16.0.0/12",
@@ -132,7 +130,9 @@
           "127.0.0.1/8",
           "fd00::/8",
           "::1/128"
-        ]
+        ],
+        "public_base": "http://[::]:8080/",
+        "issuer": "http://[::]:8080/"
       },
       "allOf": [
         {
@@ -154,8 +154,8 @@
         "enabled": true,
         "schemes": [
           {
-            "algorithm": "argon2id",
-            "version": 1
+            "version": 1,
+            "algorithm": "argon2id"
           }
         ]
       },
@@ -168,13 +168,13 @@
     "policy": {
       "description": "Configuration related to the OPA policies",
       "default": {
-        "authorization_grant_entrypoint": "authorization_grant/violation",
+        "wasm_module": "./policies/policy.wasm",
         "client_registration_entrypoint": "client_registration/violation",
-        "data": null,
-        "email_entrypoint": "email/violation",
-        "password_entrypoint": "password/violation",
         "register_entrypoint": "register/violation",
-        "wasm_module": "./policies/policy.wasm"
+        "authorization_grant_entrypoint": "authorization_grant/violation",
+        "password_entrypoint": "password/violation",
+        "email_entrypoint": "email/violation",
+        "data": null
       },
       "allOf": [
         {
@@ -193,15 +193,15 @@
     "telemetry": {
       "description": "Configuration related to sending monitoring data",
       "default": {
+        "tracing": {
+          "exporter": "none",
+          "propagators": []
+        },
         "metrics": {
           "exporter": "none"
         },
         "sentry": {
           "dsn": null
-        },
-        "tracing": {
-          "exporter": "none",
-          "propagators": []
         }
       },
       "allOf": [
@@ -213,8 +213,8 @@
     "templates": {
       "description": "Configuration related to templates",
       "default": {
-        "assets_manifest": "./frontend/dist/manifest.json",
         "path": "./templates/",
+        "assets_manifest": "./frontend/dist/manifest.json",
         "translations_path": "./translations/"
       },
       "allOf": [
@@ -363,8 +363,8 @@
           "description": "Import the email address of the user based on the `email` and `email_verified` claims",
           "default": {
             "action": "ignore",
-            "set_email_verification": "import",
-            "template": null
+            "template": null,
+            "set_email_verification": "import"
           },
           "allOf": [
             {
@@ -1535,8 +1535,8 @@
         "schemes": {
           "default": [
             {
-              "algorithm": "argon2id",
-              "version": 1
+              "version": 1,
+              "algorithm": "argon2id"
             }
           ],
           "type": "array",
@@ -1769,21 +1769,21 @@
         "claims_imports": {
           "description": "How claims should be imported from the `id_token` provided by the provider",
           "default": {
-            "displayname": {
-              "action": "ignore",
-              "template": null
-            },
-            "email": {
-              "action": "ignore",
-              "set_email_verification": "import",
+            "subject": {
               "template": null
             },
             "localpart": {
               "action": "ignore",
               "template": null
             },
-            "subject": {
+            "displayname": {
+              "action": "ignore",
               "template": null
+            },
+            "email": {
+              "action": "ignore",
+              "template": null,
+              "set_email_verification": "import"
             }
           },
           "allOf": [
