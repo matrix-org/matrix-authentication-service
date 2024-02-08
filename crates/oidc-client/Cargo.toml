@@ -55,7 +55,7 @@ oauth2-types.workspace = true
 http-body = { version = "0.4.5", optional = true }
 rustls = { version = "0.22.2", optional = true }
 [dependencies.hyper-rustls]
-version = "0.25.0"
+version = "0.26.0"
 features = ["http1", "http2", "rustls-native-certs"]
 default-features = false
 optional = true
