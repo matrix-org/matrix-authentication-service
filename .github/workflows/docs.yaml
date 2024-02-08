@@ -50,7 +50,7 @@ jobs:
           done
 
       - name: Upload GitHub Pages artifacts
-        uses: actions/upload-pages-artifact@v3.0.0
+        uses: actions/upload-pages-artifact@v3.0.1
         with:
           path: target/book/
 
