@@ -24,8 +24,9 @@ import { initReactI18next } from "react-i18next";
 //   "../locales/en.json": "/whatever/assets/root/locales/en-aabbcc.json",
 //   ...
 // }
-const locales = import.meta.glob("../locales/*.json", {
-  as: "url",
+const locales = import.meta.glob<string>("../locales/*.json", {
+  query: "?url",
+  import: "default",
   eager: true,
 });
 
