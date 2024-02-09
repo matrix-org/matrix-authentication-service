@@ -18,32 +18,49 @@ import { DevTools } from "jotai-devtools";
 import { Suspense, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { I18nextProvider } from "react-i18next";
+import { Provider as UrqlProvider } from "urql";
 
-import { HydrateAtoms } from "./atoms";
+import { HydrateAtoms, useCurrentUserId } from "./atoms";
+import ErrorBoundary from "./components/ErrorBoundary";
 import Layout from "./components/Layout";
 import LoadingScreen from "./components/LoadingScreen";
 import LoadingSpinner from "./components/LoadingSpinner";
+import NotLoggedIn from "./components/NotLoggedIn";
+import { client } from "./graphql";
 import i18n from "./i18n";
 import { Router } from "./routing";
 import "./main.css";
 
+const App: React.FC = () => {
+  const userId = useCurrentUserId();
+  if (userId === null) return <NotLoggedIn />;
+
+  return (
+    <Layout userId={userId}>
+      <Suspense fallback={<LoadingSpinner />}>
+        <Router userId={userId} />
+      </Suspense>
+    </Layout>
+  );
+};
+
 createRoot(document.getElementById("root") as HTMLElement).render(
   <StrictMode>
-    <Provider>
-      {import.meta.env.DEV && <DevTools />}
-      <HydrateAtoms>
-        <Suspense fallback={<LoadingScreen />}>
-          <I18nextProvider i18n={i18n}>
-            <TooltipProvider>
-              <Layout>
-                <Suspense fallback={<LoadingSpinner />}>
-                  <Router />
-                </Suspense>
-              </Layout>
-            </TooltipProvider>
-          </I18nextProvider>
-        </Suspense>
-      </HydrateAtoms>
-    </Provider>
+    <ErrorBoundary>
+      <UrqlProvider value={client}>
+        <Provider>
+          {import.meta.env.DEV && <DevTools />}
+          <HydrateAtoms>
+            <Suspense fallback={<LoadingScreen />}>
+              <I18nextProvider i18n={i18n}>
+                <TooltipProvider>
+                  <App />
+                </TooltipProvider>
+              </I18nextProvider>
+            </Suspense>
+          </HydrateAtoms>
+        </Provider>
+      </UrqlProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );

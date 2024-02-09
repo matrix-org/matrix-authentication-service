@@ -132,6 +132,7 @@ const exchanges = [
 
 export const client = createClient({
   url: appConfig.graphqlEndpoint,
+  suspense: true,
   // Add the devtools exchange in development
   exchanges: import.meta.env.DEV ? [devtoolsExchange, ...exchanges] : exchanges,
 });

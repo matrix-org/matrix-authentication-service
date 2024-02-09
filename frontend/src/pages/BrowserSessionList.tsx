@@ -12,27 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useAtomValue } from "jotai";
-
-import { currentUserIdAtom } from "../atoms";
 import List from "../components/BrowserSessionList";
-import ErrorBoundary from "../components/ErrorBoundary";
-import GraphQLError from "../components/GraphQLError";
-import NotLoggedIn from "../components/NotLoggedIn";
-import { isErr, unwrapErr, unwrapOk } from "../result";
 
-const BrowserSessionList: React.FC = () => {
-  const result = useAtomValue(currentUserIdAtom);
-  if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
-
-  const userId = unwrapOk(result);
-  if (userId === null) return <NotLoggedIn />;
-
-  return (
-    <ErrorBoundary>
-      <List userId={userId} />
-    </ErrorBoundary>
-  );
+const BrowserSessionList: React.FC<{ userId: string }> = ({ userId }) => {
+  return <List userId={userId} />;
 };
 
 export default BrowserSessionList;

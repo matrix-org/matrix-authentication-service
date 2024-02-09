@@ -12,11 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { CombinedError } from "@urql/core";
-import { useAtomValue } from "jotai";
+import { useQuery } from "urql";
 
-import { currentBrowserSessionIdAtom } from "../../atoms";
-import { isOk, unwrapOk, unwrapErr, isErr } from "../../result";
+import { graphql } from "../../gql";
+
+const CURRENT_VIEWER_SESSION_QUERY = graphql(/* GraphQL */ `
+  query CurrentViewerSessionQuery {
+    viewerSession {
+      __typename
+      ... on BrowserSession {
+        id
+      }
+    }
+  }
+`);
 
 /**
  * Query the current browser session id
@@ -24,16 +33,10 @@ import { isOk, unwrapOk, unwrapErr, isErr } from "../../result";
  * throws error when error result
  */
 export const useCurrentBrowserSessionId = (): string | null => {
-  const currentSessionIdResult = useAtomValue(currentBrowserSessionIdAtom);
-
-  if (isErr(currentSessionIdResult)) {
-    // eslint-disable-next-line no-throw-literal
-    throw unwrapErr<CombinedError>(currentSessionIdResult) as Error;
-  }
-
-  if (isOk<string | null, unknown>(currentSessionIdResult)) {
-    return unwrapOk<string | null>(currentSessionIdResult);
-  }
-
-  return null;
+  const [result] = useQuery({ query: CURRENT_VIEWER_SESSION_QUERY });
+  if (result.error) throw result.error;
+  if (!result.data) throw new Error(); // Suspense mode is enabled
+  return result.data.viewer.__typename === "User"
+    ? result.data.viewer.id
+    : null;
 };

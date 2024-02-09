@@ -12,17 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useAtomValue } from "jotai";
-import { atomFamily } from "jotai/utils";
-import { atomWithQuery } from "jotai-urql";
+import { useQuery } from "urql";
 
-import { mapQueryAtom } from "../atoms";
 import ErrorBoundary from "../components/ErrorBoundary";
 import GraphQLError from "../components/GraphQLError";
 import NotFound from "../components/NotFound";
 import BrowserSessionDetail from "../components/SessionDetail/BrowserSessionDetail";
 import { graphql } from "../gql";
-import { isErr, unwrapErr, unwrapOk } from "../result";
 
 const QUERY = graphql(/* GraphQL */ `
   query BrowserSessionQuery($id: ID!) {
@@ -33,25 +29,15 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-const browserSessionFamily = atomFamily((id: string) => {
-  const browserSessionQueryAtom = atomWithQuery({
-    query: QUERY,
-    getVariables: () => ({ id }),
-  });
-
-  const browserSessionAtom = mapQueryAtom(
-    browserSessionQueryAtom,
-    (data) => data?.browserSession,
-  );
-
-  return browserSessionAtom;
-});
-
 const BrowserSession: React.FC<{ id: string }> = ({ id }) => {
-  const result = useAtomValue(browserSessionFamily(id));
-  if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
+  const [result] = useQuery({
+    query: QUERY,
+    variables: { id },
+  });
+  if (result.error) return <GraphQLError error={result.error} />;
+  if (!result.data) throw new Error(); // Suspense mode is enabled
 
-  const browserSession = unwrapOk(result);
+  const browserSession = result.data.browserSession;
   if (!browserSession) return <NotFound />;
 
   return (

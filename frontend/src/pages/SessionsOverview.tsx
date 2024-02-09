@@ -12,16 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useAtomValue } from "jotai";
-import { atomWithQuery } from "jotai-urql";
+import { useQuery } from "urql";
 
-import { mapQueryAtom } from "../atoms";
 import ErrorBoundary from "../components/ErrorBoundary";
 import GraphQLError from "../components/GraphQLError";
 import NotLoggedIn from "../components/NotLoggedIn";
 import UserSessionsOverview from "../components/UserSessionsOverview";
 import { graphql } from "../gql";
-import { isErr, unwrapErr, unwrapOk } from "../result";
 
 const QUERY = graphql(/* GraphQL */ `
   query SessionsOverviewQuery {
@@ -36,23 +33,13 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-const sessionsOverviewQueryAtom = atomWithQuery({
-  query: QUERY,
-});
-
-const sessionsOverviewAtom = mapQueryAtom(sessionsOverviewQueryAtom, (data) => {
-  if (data.viewer?.__typename === "User") {
-    return data.viewer;
-  }
-
-  return null;
-});
-
 const SessionsOverview: React.FC = () => {
-  const result = useAtomValue(sessionsOverviewAtom);
-  if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
+  const [result] = useQuery({ query: QUERY });
+  if (result.error) return <GraphQLError error={result.error} />;
+  if (!result.data) throw new Error(); // Suspense mode is enabled
 
-  const data = unwrapOk(result);
+  const data =
+    result.data.viewer.__typename === "User" ? result.data.viewer : null;
   if (data === null) return <NotLoggedIn />;
 
   return (

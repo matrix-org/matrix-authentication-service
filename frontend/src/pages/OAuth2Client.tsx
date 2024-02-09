@@ -12,17 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useAtomValue } from "jotai";
-import { atomFamily } from "jotai/utils";
-import { atomWithQuery } from "jotai-urql";
+import { useQuery } from "urql";
 
-import { mapQueryAtom } from "../atoms";
 import OAuth2ClientDetail from "../components/Client/OAuth2ClientDetail";
 import ErrorBoundary from "../components/ErrorBoundary";
 import GraphQLError from "../components/GraphQLError";
 import NotFound from "../components/NotFound";
 import { graphql } from "../gql";
-import { isErr, unwrapErr, unwrapOk } from "../result";
 
 const QUERY = graphql(/* GraphQL */ `
   query OAuth2ClientQuery($id: ID!) {
@@ -32,25 +28,15 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-const oauth2ClientFamily = atomFamily((id: string) => {
-  const oauth2ClientQueryAtom = atomWithQuery({
-    query: QUERY,
-    getVariables: () => ({ id }),
-  });
-
-  const oauth2ClientAtom = mapQueryAtom(
-    oauth2ClientQueryAtom,
-    (data) => data?.oauth2Client,
-  );
-
-  return oauth2ClientAtom;
-});
-
 const OAuth2Client: React.FC<{ id: string }> = ({ id }) => {
-  const result = useAtomValue(oauth2ClientFamily(id));
-  if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
+  const [result] = useQuery({
+    query: QUERY,
+    variables: { id },
+  });
+  if (result.error) return <GraphQLError error={result.error} />;
+  if (!result.data) throw new Error(); // Suspense mode is enabled
 
-  const oauth2Client = unwrapOk(result);
+  const oauth2Client = result.data.oauth2Client;
   if (!oauth2Client) return <NotFound />;
 
   return (

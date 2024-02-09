@@ -12,17 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useAtomValue } from "jotai";
-import { atomFamily } from "jotai/utils";
-import { atomWithQuery } from "jotai-urql";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "urql";
 
-import { mapQueryAtom } from "../atoms";
 import ErrorBoundary from "../components/ErrorBoundary";
 import GraphQLError from "../components/GraphQLError";
 import VerifyEmailComponent from "../components/VerifyEmail";
 import { graphql } from "../gql";
-import { isErr, unwrapErr, unwrapOk } from "../result";
 
 const QUERY = graphql(/* GraphQL */ `
   query VerifyEmailQuery($id: ID!) {
@@ -32,27 +28,14 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-const verifyEmailFamily = atomFamily((id: string) => {
-  const verifyEmailQueryAtom = atomWithQuery({
-    query: QUERY,
-    getVariables: () => ({ id }),
-  });
-
-  const verifyEmailAtom = mapQueryAtom(
-    verifyEmailQueryAtom,
-    (data) => data?.userEmail,
-  );
-
-  return verifyEmailAtom;
-});
-
 const VerifyEmail: React.FC<{ id: string }> = ({ id }) => {
-  const result = useAtomValue(verifyEmailFamily(id));
+  const [result] = useQuery({ query: QUERY, variables: { id } });
   const { t } = useTranslation();
 
-  if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
+  if (result.error) return <GraphQLError error={result.error} />;
+  if (!result.data) throw new Error(); // Suspense mode is enabled
 
-  const email = unwrapOk(result);
+  const email = result.data.userEmail;
   if (email == null) return <>{t("frontend.verify_email.unknown_email")}</>;
 
   return (
