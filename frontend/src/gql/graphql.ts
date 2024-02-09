@@ -1111,21 +1111,7 @@ export type CurrentViewerQueryQueryVariables = Exact<{ [key: string]: never }>;
 
 export type CurrentViewerQueryQuery = {
   __typename?: "Query";
-  viewer:
-    | { __typename: "Anonymous"; id: string }
-    | { __typename: "User"; id: string };
-};
-
-export type CurrentViewerSessionQueryQueryVariables = Exact<{
-  [key: string]: never;
-}>;
-
-export type CurrentViewerSessionQueryQuery = {
-  __typename?: "Query";
-  viewerSession:
-    | { __typename: "Anonymous"; id: string }
-    | { __typename: "BrowserSession"; id: string }
-    | { __typename: "Oauth2Session" };
+  viewer: { __typename: "Anonymous" } | { __typename: "User"; id: string };
 };
 
 export type BrowserSession_SessionFragment = {
@@ -1680,6 +1666,18 @@ export type VerifyEmailQueryQuery = {
     | null;
 };
 
+export type CurrentViewerSessionQueryQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type CurrentViewerSessionQueryQuery = {
+  __typename?: "Query";
+  viewerSession:
+    | { __typename: "Anonymous" }
+    | { __typename: "BrowserSession"; id: string }
+    | { __typename: "Oauth2Session" };
+};
+
 export const BrowserSession_SessionFragmentDoc = {
   kind: "Document",
   definitions: [
@@ -2090,19 +2088,6 @@ export const CurrentViewerQueryDocument = {
                     ],
                   },
                 },
-                {
-                  kind: "InlineFragment",
-                  typeCondition: {
-                    kind: "NamedType",
-                    name: { kind: "Name", value: "Anonymous" },
-                  },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                    ],
-                  },
-                },
               ],
             },
           },
@@ -2113,60 +2098,6 @@ export const CurrentViewerQueryDocument = {
 } as unknown as DocumentNode<
   CurrentViewerQueryQuery,
   CurrentViewerQueryQueryVariables
->;
-export const CurrentViewerSessionQueryDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "query",
-      name: { kind: "Name", value: "CurrentViewerSessionQuery" },
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "viewerSession" },
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "__typename" } },
-                {
-                  kind: "InlineFragment",
-                  typeCondition: {
-                    kind: "NamedType",
-                    name: { kind: "Name", value: "BrowserSession" },
-                  },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                    ],
-                  },
-                },
-                {
-                  kind: "InlineFragment",
-                  typeCondition: {
-                    kind: "NamedType",
-                    name: { kind: "Name", value: "Anonymous" },
-                  },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                    ],
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<
-  CurrentViewerSessionQueryQuery,
-  CurrentViewerSessionQueryQueryVariables
 >;
 export const EndBrowserSessionDocument = {
   kind: "Document",
@@ -4434,4 +4365,45 @@ export const VerifyEmailQueryDocument = {
 } as unknown as DocumentNode<
   VerifyEmailQueryQuery,
   VerifyEmailQueryQueryVariables
+>;
+export const CurrentViewerSessionQueryDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "CurrentViewerSessionQuery" },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "viewerSession" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "__typename" } },
+                {
+                  kind: "InlineFragment",
+                  typeCondition: {
+                    kind: "NamedType",
+                    name: { kind: "Name", value: "BrowserSession" },
+                  },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  CurrentViewerSessionQueryQuery,
+  CurrentViewerSessionQueryQueryVariables
 >;

@@ -18,7 +18,6 @@ import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
 import { useCallback } from "react";
 
-import { currentBrowserSessionIdAtom, currentUserIdAtom } from "../atoms";
 import { FragmentType, graphql, useFragment } from "../gql";
 import {
   parseUserAgent,
@@ -74,21 +73,12 @@ export const useEndBrowserSession = (
 ): (() => Promise<void>) => {
   const endSession = useSetAtom(endBrowserSessionFamily(sessionId));
 
-  // Pull those atoms to reset them when the current session is ended
-  const currentUserId = useSetAtom(currentUserIdAtom);
-  const currentBrowserSessionId = useSetAtom(currentBrowserSessionIdAtom);
-
   const onSessionEnd = useCallback(async (): Promise<void> => {
     await endSession();
     if (isCurrent) {
-      currentBrowserSessionId({
-        requestPolicy: "network-only",
-      });
-      currentUserId({
-        requestPolicy: "network-only",
-      });
+      window.location.reload();
     }
-  }, [isCurrent, endSession, currentBrowserSessionId, currentUserId]);
+  }, [isCurrent, endSession]);
 
   return onSessionEnd;
 };

@@ -15,36 +15,24 @@
 import { useAtomValue } from "jotai";
 import { useTranslation } from "react-i18next";
 
-import { currentUserIdAtom } from "../../atoms";
-import { isErr, unwrapErr, unwrapOk } from "../../result";
 import { appConfigAtom, routeAtom } from "../../routing";
 import Footer from "../Footer";
-import GraphQLError from "../GraphQLError";
 import NavBar from "../NavBar";
 import NavItem from "../NavItem";
-import NotLoggedIn from "../NotLoggedIn";
 import UserGreeting from "../UserGreeting";
 
 import styles from "./Layout.module.css";
 
-const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+const Layout: React.FC<{
+  userId: string;
+  children?: React.ReactNode;
+}> = ({ userId, children }) => {
   const route = useAtomValue(routeAtom);
   const appConfig = useAtomValue(appConfigAtom);
-  const result = useAtomValue(currentUserIdAtom);
   const { t } = useTranslation();
-
-  if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
 
   // Hide the nav bar & user greeting on the verify-email page
   const shouldHideNavBar = route.type === "verify-email";
-
-  const userId = unwrapOk(result);
-  if (userId === null)
-    return (
-      <div className={styles.container}>
-        <NotLoggedIn />
-      </div>
-    );
 
   return (
     <div className={styles.layoutContainer}>

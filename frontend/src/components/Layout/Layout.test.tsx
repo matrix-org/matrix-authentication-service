@@ -15,28 +15,17 @@
 // @vitest-environment happy-dom
 
 import { render } from "@testing-library/react";
-import { describe, expect, it, vi, afterAll, beforeEach } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { currentUserIdAtom, GqlResult } from "../../atoms";
 import { WithLocation } from "../../test-utils/WithLocation";
 
 import Layout from "./Layout";
 
 describe("<Layout />", () => {
-  beforeEach(() => {
-    vi.spyOn(currentUserIdAtom, "read").mockResolvedValue(
-      "abc123" as unknown as GqlResult<string | null>,
-    );
-  });
-
-  afterAll(() => {
-    vi.restoreAllMocks();
-  });
-
   it("renders app navigation correctly", async () => {
     const component = render(
       <WithLocation path="/">
-        <Layout />
+        <Layout userId="abc123" />
       </WithLocation>,
     );
 

@@ -15,8 +15,9 @@
 import { AnyVariables, CombinedError, OperationContext } from "@urql/core";
 import { atom, WritableAtom } from "jotai";
 import { useHydrateAtoms } from "jotai/utils";
-import { AtomWithQuery, atomWithQuery, clientAtom } from "jotai-urql";
+import { AtomWithQuery, clientAtom } from "jotai-urql";
 import type { ReactElement } from "react";
+import { useQuery } from "urql";
 
 import { graphql } from "./gql";
 import { client } from "./graphql";
@@ -73,51 +74,15 @@ const CURRENT_VIEWER_QUERY = graphql(/* GraphQL */ `
       ... on User {
         id
       }
-
-      ... on Anonymous {
-        id
-      }
     }
   }
 `);
 
-const currentViewerAtom = atomWithQuery({ query: CURRENT_VIEWER_QUERY });
-
-export const currentUserIdAtom: GqlAtom<string | null> = mapQueryAtom(
-  currentViewerAtom,
-  (data) => {
-    if (data.viewer.__typename === "User") {
-      return data.viewer.id;
-    }
-    return null;
-  },
-);
-
-const CURRENT_VIEWER_SESSION_QUERY = graphql(/* GraphQL */ `
-  query CurrentViewerSessionQuery {
-    viewerSession {
-      __typename
-      ... on BrowserSession {
-        id
-      }
-
-      ... on Anonymous {
-        id
-      }
-    }
-  }
-`);
-
-const currentViewerSessionAtom = atomWithQuery({
-  query: CURRENT_VIEWER_SESSION_QUERY,
-});
-
-export const currentBrowserSessionIdAtom: GqlAtom<string | null> = mapQueryAtom(
-  currentViewerSessionAtom,
-  (data) => {
-    if (data.viewerSession.__typename === "BrowserSession") {
-      return data.viewerSession.id;
-    }
-    return null;
-  },
-);
+export const useCurrentUserId = (): string | null => {
+  const [result] = useQuery({ query: CURRENT_VIEWER_QUERY });
+  if (result.error) throw result.error;
+  if (!result.data) throw new Error(); // Suspense mode is enabled
+  return result.data.viewer.__typename === "User"
+    ? result.data.viewer.id
+    : null;
+};

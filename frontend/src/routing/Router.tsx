@@ -55,7 +55,7 @@ const unknownRoute = (route: never): never => {
   throw new Error(`Invalid route: ${JSON.stringify(route)}`);
 };
 
-const Router: React.FC = () => {
+const Router: React.FC<{ userId: string }> = ({ userId }) => {
   const [route, redirecting] = useRouteWithRedirect();
   const { t } = useTranslation();
 
@@ -65,13 +65,13 @@ const Router: React.FC = () => {
 
   switch (route.type) {
     case "profile":
-      return <Profile />;
+      return <Profile userId={userId} />;
     case "sessions-overview":
       return <SessionsOverview />;
     case "session":
-      return <SessionDetail deviceId={route.id} />;
+      return <SessionDetail userId={userId} deviceId={route.id} />;
     case "browser-session-list":
-      return <BrowserSessionList />;
+      return <BrowserSessionList userId={userId} />;
     case "client":
       return <OAuth2Client id={route.id} />;
     case "browser-session":
