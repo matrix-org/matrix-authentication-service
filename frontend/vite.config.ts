@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { readFile, writeFile } from "fs/promises";
 import { resolve } from "path";
 
 import react from "@vitejs/plugin-react";
-import { PluginOption } from "vite";
+import browserslistToEsbuild from "browserslist-to-esbuild";
+import type { Manifest, PluginOption } from "vite";
 import compression from "vite-plugin-compression";
 import codegen from "vite-plugin-graphql-codegen";
 import manifestSRI from "vite-plugin-manifest-sri";
@@ -51,11 +53,12 @@ export default defineConfig((env) => ({
   },
 
   build: {
-    manifest: true,
+    manifest: "manifest.json",
     assetsDir: "",
     assetsInlineLimit: 0,
     sourcemap: true,
     modulePreload: false,
+    target: browserslistToEsbuild(),
 
     // We don't exactly handle CSS code splitting well if we're lazy loading components.
     // We disabled lazy loading for now, but we should fix this at some point.
@@ -98,6 +101,52 @@ export default defineConfig((env) => ({
         ],
       },
     }),
+
+    // Custom plugin to make sure that each asset has an entry in the manifest
+    // This is needed so that the preloading & asset integrity generation works
+    {
+      name: "manifest-missing-assets",
+
+      apply: "build",
+      enforce: "post",
+      writeBundle: {
+        // This needs to be executed sequentially before the manifestSRI plugin
+        sequential: true,
+        order: "pre",
+        async handler({ dir }): Promise<void> {
+          const manifestPath = resolve(dir, "manifest.json");
+
+          const manifest: Manifest | undefined = await readFile(
+            manifestPath,
+            "utf-8",
+          ).then(JSON.parse, () => undefined);
+
+          if (manifest) {
+            const existing: Set<string> = new Set();
+            const needs: Set<string> = new Set();
+
+            for (const chunk of Object.values(manifest)) {
+              existing.add(chunk.file);
+              for (const css of chunk.css ?? []) needs.add(css);
+              for (const sub of chunk.assets ?? []) needs.add(sub);
+            }
+
+            const missing = Array.from(needs).filter((a) => !existing.has(a));
+
+            if (missing.length > 0) {
+              for (const asset of missing) {
+                manifest[asset] = {
+                  file: asset,
+                  integrity: "",
+                };
+              }
+
+              await writeFile(manifestPath, JSON.stringify(manifest, null, 2));
+            }
+          }
+        },
+      },
+    },
 
     manifestSRI(),
 
