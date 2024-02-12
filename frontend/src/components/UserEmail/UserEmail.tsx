@@ -14,11 +14,9 @@
 
 import IconDelete from "@vector-im/compound-design-tokens/icons/delete.svg?react";
 import { Form, IconButton, Text, Tooltip } from "@vector-im/compound-web";
-import { atom, useSetAtom } from "jotai";
-import { atomFamily } from "jotai/utils";
-import { atomWithMutation } from "jotai-urql";
-import { useTransition, ComponentProps, ReactNode } from "react";
+import { ComponentProps, ReactNode } from "react";
 import { Translation, useTranslation } from "react-i18next";
+import { useMutation } from "urql";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
 import { Link } from "../../routing";
@@ -29,7 +27,7 @@ import styles from "./UserEmail.module.css";
 // This component shows a single user email address, with controls to verify it,
 // resend the verification email, remove it, and set it as the primary email address.
 
-export const FRAGMENT = graphql(/* GraphQL */ `
+const FRAGMENT = graphql(/* GraphQL */ `
   fragment UserEmail_email on UserEmail {
     id
     email
@@ -62,30 +60,6 @@ const SET_PRIMARY_EMAIL_MUTATION = graphql(/* GraphQL */ `
     }
   }
 `);
-
-const removeEmailFamily = atomFamily((id: string) => {
-  const removeEmail = atomWithMutation(REMOVE_EMAIL_MUTATION);
-
-  // A proxy atom which pre-sets the id variable in the mutation
-  const removeEmailAtom = atom(
-    (get) => get(removeEmail),
-    (_get, set) => set(removeEmail, { id }),
-  );
-
-  return removeEmailAtom;
-});
-
-const setPrimaryEmailFamily = atomFamily((id: string) => {
-  const setPrimaryEmail = atomWithMutation(SET_PRIMARY_EMAIL_MUTATION);
-
-  // A proxy atom which pre-sets the id variable in the mutation
-  const setPrimaryEmailAtom = atom(
-    (get) => get(setPrimaryEmail),
-    (_get, set) => set(setPrimaryEmail, { id }),
-  );
-
-  return setPrimaryEmailAtom;
-});
 
 const DeleteButton: React.FC<{ disabled?: boolean; onClick?: () => void }> = ({
   disabled,
@@ -139,29 +113,29 @@ const UserEmail: React.FC<{
   onRemove?: () => void;
   onSetPrimary?: () => void;
   isPrimary?: boolean;
-  highlight?: boolean;
-}> = ({ email, isPrimary, highlight, onSetPrimary, onRemove }) => {
-  const [pending, startTransition] = useTransition();
-  const data = useFragment(FRAGMENT, email);
-  const setPrimaryEmail = useSetAtom(setPrimaryEmailFamily(data.id));
-  const removeEmail = useSetAtom(removeEmailFamily(data.id));
+}> = ({ email, isPrimary, onSetPrimary, onRemove }) => {
   const { t } = useTranslation();
+  const data = useFragment(FRAGMENT, email);
+
+  const [setPrimaryResult, setPrimary] = useMutation(
+    SET_PRIMARY_EMAIL_MUTATION,
+  );
+  const [removeResult, removeEmail] = useMutation(REMOVE_EMAIL_MUTATION);
+  // Handle errors with the error boundary
+  if (setPrimaryResult.error) throw setPrimaryResult.error;
+  if (removeResult.error) throw removeResult.error;
 
   const onRemoveClick = (): void => {
-    startTransition(() => {
-      removeEmail().then(() => {
-        // Call the onRemove callback if provided
-        onRemove?.();
-      });
+    removeEmail({ id: data.id }).then(() => {
+      // Call the onRemove callback if provided
+      onRemove?.();
     });
   };
 
   const onSetPrimaryClick = (): void => {
-    startTransition(() => {
-      setPrimaryEmail().then(() => {
-        // Call the onSetPrimary callback if provided
-        onSetPrimary?.();
-      });
+    setPrimary({ id: data.id }).then(() => {
+      // Call the onSetPrimary callback if provided
+      onSetPrimary?.();
     });
   };
 
@@ -181,7 +155,7 @@ const UserEmail: React.FC<{
             className={styles.userEmailField}
           />
           <DeleteButtonWithConfirmation
-            disabled={isPrimary || pending}
+            disabled={isPrimary || removeResult.fetching}
             onClick={onRemoveClick}
           />
         </div>
@@ -189,8 +163,9 @@ const UserEmail: React.FC<{
         <Form.HelpMessage>
           {data.confirmedAt && !isPrimary && (
             <button
+              type="button"
               className={styles.link}
-              disabled={pending}
+              disabled={setPrimaryResult.fetching}
               onClick={onSetPrimaryClick}
             >
               {t("frontend.user_email.make_primary_button")}

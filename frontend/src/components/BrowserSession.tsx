@@ -13,10 +13,8 @@
 // limitations under the License.
 
 import { parseISO } from "date-fns";
-import { atom, useSetAtom } from "jotai";
-import { atomFamily } from "jotai/utils";
-import { atomWithMutation } from "jotai-urql";
 import { useCallback } from "react";
+import { useMutation } from "urql";
 
 import { FragmentType, graphql, useFragment } from "../gql";
 import {
@@ -55,30 +53,18 @@ const END_SESSION_MUTATION = graphql(/* GraphQL */ `
   }
 `);
 
-export const endBrowserSessionFamily = atomFamily((id: string) => {
-  const endSession = atomWithMutation(END_SESSION_MUTATION);
-
-  // A proxy atom which pre-sets the id variable in the mutation
-  const endSessionAtom = atom(
-    (get) => get(endSession),
-    (get, set) => set(endSession, { id }),
-  );
-
-  return endSessionAtom;
-});
-
 export const useEndBrowserSession = (
   sessionId: string,
   isCurrent: boolean,
 ): (() => Promise<void>) => {
-  const endSession = useSetAtom(endBrowserSessionFamily(sessionId));
+  const [, endSession] = useMutation(END_SESSION_MUTATION);
 
   const onSessionEnd = useCallback(async (): Promise<void> => {
-    await endSession();
+    await endSession({ id: sessionId });
     if (isCurrent) {
       window.location.reload();
     }
-  }, [isCurrent, endSession]);
+  }, [isCurrent, endSession, sessionId]);
 
   return onSessionEnd;
 };

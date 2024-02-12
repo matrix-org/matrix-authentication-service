@@ -13,15 +13,15 @@
 // limitations under the License.
 
 import { parseISO } from "date-fns";
-import { useSetAtom } from "jotai";
 import { useTranslation } from "react-i18next";
+import { useMutation } from "urql";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
 import { Link } from "../../routing";
 import { getDeviceIdFromScope } from "../../utils/deviceIdFromScope";
 import BlockList from "../BlockList/BlockList";
 import DateTime from "../DateTime";
-import { endSessionFamily } from "../OAuth2Session";
+import { END_SESSION_MUTATION } from "../OAuth2Session";
 import ClientAvatar from "../Session/ClientAvatar";
 import EndSessionButton from "../Session/EndSessionButton";
 import LastActive from "../Session/LastActive";
@@ -53,11 +53,11 @@ type Props = {
 
 const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
   const data = useFragment(FRAGMENT, session);
-  const endSession = useSetAtom(endSessionFamily(data.id));
+  const [, endSession] = useMutation(END_SESSION_MUTATION);
   const { t } = useTranslation();
 
   const onSessionEnd = async (): Promise<void> => {
-    await endSession();
+    await endSession({ id: data.id });
   };
 
   const deviceId = getDeviceIdFromScope(data.scope);

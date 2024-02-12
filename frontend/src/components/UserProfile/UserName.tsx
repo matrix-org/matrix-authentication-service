@@ -13,11 +13,10 @@
 // limitations under the License.
 
 import { Alert, Button, Form } from "@vector-im/compound-web";
-import { useAtom, atom } from "jotai";
-import { atomFamily } from "jotai/utils";
-import { atomWithMutation } from "jotai-urql";
+import { useAtom } from "jotai";
 import { useState, ChangeEventHandler } from "react";
 import { useTranslation } from "react-i18next";
+import { useMutation } from "urql";
 
 import { graphql } from "../../gql";
 import LoadingSpinner from "../LoadingSpinner/LoadingSpinner";
@@ -39,19 +38,6 @@ const SET_DISPLAYNAME_MUTATION = graphql(/* GraphQL */ `
   }
 `);
 
-const setDisplayNameFamily = atomFamily((userId: string) => {
-  const setDisplayName = atomWithMutation(SET_DISPLAYNAME_MUTATION);
-
-  // A proxy atom which pre-sets the id variable in the mutation
-  const setDisplayNameAtom = atom(
-    (get) => get(setDisplayName),
-    (get, set, displayName: string | null) =>
-      set(setDisplayName, { userId, displayName }),
-  );
-
-  return setDisplayNameAtom;
-});
-
 const getErrorMessage = (result: {
   error?: unknown;
   data?: { setDisplayName: { status: string } };
@@ -70,10 +56,9 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
   );
   const displayName = userGreeting.data?.user?.matrix.displayName || "";
 
-  const [setDisplayNameResult, setDisplayName] = useAtom(
-    setDisplayNameFamily(userId),
+  const [setDisplayNameResult, setDisplayName] = useMutation(
+    SET_DISPLAYNAME_MUTATION,
   );
-  const [inProgress, setInProgress] = useState(false);
 
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -100,8 +85,7 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
       return;
     }
 
-    setInProgress(true);
-    setDisplayName(newDisplayName).then((result) => {
+    setDisplayName({ displayName: newDisplayName, userId }).then((result) => {
       if (!result.data) {
         console.error("Failed to set display name", result.error);
       } else if (result.data.setDisplayName.status === "SET") {
@@ -115,7 +99,6 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
       }
 
       setHasChanges(false);
-      setInProgress(false);
     });
   };
 
@@ -125,7 +108,7 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
     <Form.Root onSubmit={onSubmit} className={styles.form}>
       <Form.Field
         name="displayname"
-        serverInvalid={!inProgress && !!errorMessage}
+        serverInvalid={!setDisplayNameResult.fetching && !!errorMessage}
       >
         <Form.Label>
           {t("frontend.user_name.display_name_field_label")}
@@ -137,7 +120,7 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
           max={250}
         />
       </Form.Field>
-      {!inProgress && errorMessage && (
+      {!setDisplayNameResult.fetching && errorMessage && (
         <Alert type="critical" title={t("common.error")}>
           {errorMessage}
         </Alert>
@@ -145,12 +128,12 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
 
       <Button
         className="self-start"
-        disabled={inProgress || !hasChanges}
+        disabled={setDisplayNameResult.fetching || !hasChanges}
         kind="primary"
         size="sm"
         type="submit"
       >
-        {!!inProgress && <LoadingSpinner inline />}
+        {!!setDisplayNameResult.fetching && <LoadingSpinner inline />}
         {t("action.save")}
       </Button>
     </Form.Root>

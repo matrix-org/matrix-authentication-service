@@ -13,9 +13,7 @@
 // limitations under the License.
 
 import { parseISO } from "date-fns";
-import { atom, useSetAtom } from "jotai";
-import { atomFamily } from "jotai/utils";
-import { atomWithMutation } from "jotai-urql";
+import { useMutation } from "urql";
 
 import { FragmentType, graphql, useFragment } from "../gql";
 import { Oauth2ApplicationType } from "../gql/graphql";
@@ -43,7 +41,7 @@ export const FRAGMENT = graphql(/* GraphQL */ `
   }
 `);
 
-const END_SESSION_MUTATION = graphql(/* GraphQL */ `
+export const END_SESSION_MUTATION = graphql(/* GraphQL */ `
   mutation EndOAuth2Session($id: ID!) {
     endOauth2Session(input: { oauth2SessionId: $id }) {
       status
@@ -67,28 +65,16 @@ const getDeviceTypeFromClientAppType = (
   return DeviceType.Unknown;
 };
 
-export const endSessionFamily = atomFamily((id: string) => {
-  const endSession = atomWithMutation(END_SESSION_MUTATION);
-
-  // A proxy atom which pre-sets the id variable in the mutation
-  const endSessionAtom = atom(
-    (get) => get(endSession),
-    (get, set) => set(endSession, { id }),
-  );
-
-  return endSessionAtom;
-});
-
 type Props = {
   session: FragmentType<typeof FRAGMENT>;
 };
 
 const OAuth2Session: React.FC<Props> = ({ session }) => {
   const data = useFragment(FRAGMENT, session);
-  const endSession = useSetAtom(endSessionFamily(data.id));
+  const [, endSession] = useMutation(END_SESSION_MUTATION);
 
   const onSessionEnd = async (): Promise<void> => {
-    await endSession();
+    await endSession({ id: data.id });
   };
 
   const deviceId = getDeviceIdFromScope(data.scope);

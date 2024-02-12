@@ -13,12 +13,12 @@
 // limitations under the License.
 
 import { parseISO } from "date-fns";
-import { useSetAtom } from "jotai";
 import { useTranslation } from "react-i18next";
+import { useMutation } from "urql";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
 import BlockList from "../BlockList/BlockList";
-import { endCompatSessionFamily, simplifyUrl } from "../CompatSession";
+import { END_SESSION_MUTATION, simplifyUrl } from "../CompatSession";
 import DateTime from "../DateTime";
 import ExternalLink from "../ExternalLink/ExternalLink";
 import EndSessionButton from "../Session/EndSessionButton";
@@ -48,11 +48,11 @@ type Props = {
 
 const CompatSessionDetail: React.FC<Props> = ({ session }) => {
   const data = useFragment(FRAGMENT, session);
-  const endSession = useSetAtom(endCompatSessionFamily(data.id));
+  const [, endSession] = useMutation(END_SESSION_MUTATION);
   const { t } = useTranslation();
 
   const onSessionEnd = async (): Promise<void> => {
-    await endSession();
+    await endSession({ id: data.id });
   };
 
   const finishedAt = data.finishedAt
