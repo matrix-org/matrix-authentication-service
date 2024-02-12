@@ -13,10 +13,8 @@
 // limitations under the License.
 
 import { Heading, Text, Avatar } from "@vector-im/compound-web";
-import { useAtomValue } from "jotai";
-import { atomFamily } from "jotai/utils";
-import { atomWithQuery } from "jotai-urql";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "urql";
 
 import { graphql } from "../gql";
 
@@ -38,17 +36,8 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-export const userGreetingFamily = atomFamily((userId: string) => {
-  const userGreeting = atomWithQuery({
-    query: QUERY,
-    getVariables: () => ({ userId }),
-  });
-
-  return userGreeting;
-});
-
 const UserGreeting: React.FC<{ userId: string }> = ({ userId }) => {
-  const result = useAtomValue(userGreetingFamily(userId));
+  const [result] = useQuery({ query: QUERY, variables: { userId } });
   const { t } = useTranslation();
 
   if (result.data?.user) {
