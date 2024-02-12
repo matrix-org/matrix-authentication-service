@@ -13,11 +13,8 @@
 // limitations under the License.
 
 import { Alert } from "@vector-im/compound-web";
-import { useAtomValue } from "jotai";
-import { atomFamily } from "jotai/utils";
-import { atomWithQuery } from "jotai-urql";
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "urql";
 
 import { graphql } from "../../gql";
 import { Link } from "../../routing";
@@ -35,17 +32,6 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-const sessionFamily = atomFamily(
-  ({ userId, deviceId }: { userId: string; deviceId: string }) => {
-    const sessionQueryAtom = atomWithQuery({
-      query: QUERY,
-      getVariables: () => ({ userId, deviceId }),
-    });
-
-    return sessionQueryAtom;
-  },
-);
-
 // A type-safe way to ensure we've handled all session types
 const unknownSessionType = (type: never): never => {
   throw new Error(`Unknown session type: ${type}`);
@@ -55,11 +41,7 @@ const SessionDetail: React.FC<{
   deviceId: string;
   userId: string;
 }> = ({ deviceId, userId }) => {
-  const sessionFamilyAtomWithProps = useMemo(
-    () => sessionFamily({ deviceId, userId }),
-    [deviceId, userId],
-  );
-  const result = useAtomValue(sessionFamilyAtomWithProps);
+  const [result] = useQuery({ query: QUERY, variables: { deviceId, userId } });
   const { t } = useTranslation();
 
   const session = result.data?.session;
