@@ -13,8 +13,6 @@ import { TypedDocumentNode as DocumentNode } from "@graphql-typed-document-node/
  * Therefore it is highly recommended to use the babel or swc plugin for production.
  */
 const documents = {
-  "\n  query CurrentViewerQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n      }\n    }\n  }\n":
-    types.CurrentViewerQueryDocument,
   "\n  fragment BrowserSession_session on BrowserSession {\n    id\n    createdAt\n    finishedAt\n    userAgent\n    lastActiveIp\n    lastActiveAt\n    lastAuthentication {\n      id\n      createdAt\n    }\n  }\n":
     types.BrowserSession_SessionFragmentDoc,
   "\n  mutation EndBrowserSession($id: ID!) {\n    endBrowserSession(input: { browserSessionId: $id }) {\n      status\n      browserSession {\n        id\n        ...BrowserSession_session\n      }\n    }\n  }\n":
@@ -57,6 +55,8 @@ const documents = {
     types.UserEmailListQueryDocument,
   "\n  query UserPrimaryEmail($userId: ID!) {\n    user(id: $userId) {\n      id\n      primaryEmail {\n        id\n      }\n    }\n  }\n":
     types.UserPrimaryEmailDocument,
+  "\n  query UserDisplayName($userId: ID!) {\n    user(id: $userId) {\n      id\n      matrix {\n        displayName\n      }\n    }\n  }\n":
+    types.UserDisplayNameDocument,
   "\n  mutation SetDisplayName($userId: ID!, $displayName: String) {\n    setDisplayName(input: { userId: $userId, displayName: $displayName }) {\n      status\n      user {\n        id\n        matrix {\n          displayName\n        }\n      }\n    }\n  }\n":
     types.SetDisplayNameDocument,
   "\n  query AppSessionList(\n    $userId: ID!\n    $state: SessionState\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      appSessions(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n        state: $state\n      ) {\n        totalCount\n\n        edges {\n          cursor\n          node {\n            __typename\n            ...CompatSession_session\n            ...OAuth2Session_session\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n":
@@ -79,6 +79,8 @@ const documents = {
     types.VerifyEmailQueryDocument,
   "\n  query CurrentViewerSessionQuery {\n    viewerSession {\n      __typename\n      ... on BrowserSession {\n        id\n      }\n    }\n  }\n":
     types.CurrentViewerSessionQueryDocument,
+  "\n  query CurrentViewerQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n      }\n    }\n  }\n":
+    types.CurrentViewerQueryDocument,
 };
 
 /**
@@ -95,12 +97,6 @@ const documents = {
  */
 export function graphql(source: string): unknown;
 
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(
-  source: "\n  query CurrentViewerQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n      }\n    }\n  }\n",
-): (typeof documents)["\n  query CurrentViewerQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -231,6 +227,12 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
+  source: "\n  query UserDisplayName($userId: ID!) {\n    user(id: $userId) {\n      id\n      matrix {\n        displayName\n      }\n    }\n  }\n",
+): (typeof documents)["\n  query UserDisplayName($userId: ID!) {\n    user(id: $userId) {\n      id\n      matrix {\n        displayName\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
   source: "\n  mutation SetDisplayName($userId: ID!, $displayName: String) {\n    setDisplayName(input: { userId: $userId, displayName: $displayName }) {\n      status\n      user {\n        id\n        matrix {\n          displayName\n        }\n      }\n    }\n  }\n",
 ): (typeof documents)["\n  mutation SetDisplayName($userId: ID!, $displayName: String) {\n    setDisplayName(input: { userId: $userId, displayName: $displayName }) {\n      status\n      user {\n        id\n        matrix {\n          displayName\n        }\n      }\n    }\n  }\n"];
 /**
@@ -293,6 +295,12 @@ export function graphql(
 export function graphql(
   source: "\n  query CurrentViewerSessionQuery {\n    viewerSession {\n      __typename\n      ... on BrowserSession {\n        id\n      }\n    }\n  }\n",
 ): (typeof documents)["\n  query CurrentViewerSessionQuery {\n    viewerSession {\n      __typename\n      ... on BrowserSession {\n        id\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  query CurrentViewerQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n      }\n    }\n  }\n",
+): (typeof documents)["\n  query CurrentViewerQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n      }\n    }\n  }\n"];
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};

@@ -38,7 +38,6 @@
     "jotai": "^2.6.4",
     "jotai-devtools": "^0.7.1",
     "jotai-location": "^0.5.2",
-    "jotai-urql": "^0.7.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-i18next": "^14.0.5",

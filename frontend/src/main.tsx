@@ -20,7 +20,6 @@ import { createRoot } from "react-dom/client";
 import { I18nextProvider } from "react-i18next";
 import { Provider as UrqlProvider } from "urql";
 
-import { HydrateAtoms, useCurrentUserId } from "./atoms";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Layout from "./components/Layout";
 import LoadingScreen from "./components/LoadingScreen";
@@ -30,6 +29,7 @@ import { client } from "./graphql";
 import i18n from "./i18n";
 import { Router } from "./routing";
 import "./main.css";
+import { useCurrentUserId } from "./utils/useCurrentUserId";
 
 const App: React.FC = () => {
   const userId = useCurrentUserId();
@@ -50,15 +50,13 @@ createRoot(document.getElementById("root") as HTMLElement).render(
       <UrqlProvider value={client}>
         <Provider>
           {import.meta.env.DEV && <DevTools />}
-          <HydrateAtoms>
-            <Suspense fallback={<LoadingScreen />}>
-              <I18nextProvider i18n={i18n}>
-                <TooltipProvider>
-                  <App />
-                </TooltipProvider>
-              </I18nextProvider>
-            </Suspense>
-          </HydrateAtoms>
+          <Suspense fallback={<LoadingScreen />}>
+            <I18nextProvider i18n={i18n}>
+              <TooltipProvider>
+                <App />
+              </TooltipProvider>
+            </I18nextProvider>
+          </Suspense>
         </Provider>
       </UrqlProvider>
     </ErrorBoundary>

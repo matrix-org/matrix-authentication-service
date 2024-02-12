@@ -13,21 +13,12 @@
 // limitations under the License.
 
 import { H5 } from "@vector-im/compound-web";
-import { atom, useAtomValue, useSetAtom } from "jotai";
-import { atomFamily } from "jotai/utils";
-import { atomWithQuery } from "jotai-urql";
 import { useTransition } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "urql";
 
-import { mapQueryAtom } from "../../atoms";
 import { graphql } from "../../gql";
-import { SessionState, PageInfo } from "../../gql/graphql";
-import {
-  atomForCurrentPagination,
-  atomWithPagination,
-  Pagination,
-} from "../../pagination";
-import { isOk, unwrap, unwrapOk } from "../../result";
+import { Pagination, usePages, usePagination } from "../../pagination";
 import BlockList from "../BlockList";
 import CompatSession from "../CompatSession";
 import OAuth2Session from "../OAuth2Session";
@@ -73,44 +64,6 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-const filterAtom = atom<SessionState | null>(SessionState.Active);
-const currentPaginationAtom = atomForCurrentPagination();
-
-export const appSessionListFamily = atomFamily((userId: string) => {
-  const appSessionListQuery = atomWithQuery({
-    query: QUERY,
-    getVariables: (get) => ({
-      userId,
-      state: get(filterAtom),
-      ...get(currentPaginationAtom),
-    }),
-  });
-
-  const appSessionList = mapQueryAtom(
-    appSessionListQuery,
-    (data) => data.user?.appSessions || null,
-  );
-
-  return appSessionList;
-});
-
-const pageInfoFamily = atomFamily((userId: string) => {
-  const pageInfoAtom = atom(async (get): Promise<PageInfo | null> => {
-    const result = await get(appSessionListFamily(userId));
-    return (isOk(result) && unwrapOk(result)?.pageInfo) || null;
-  });
-  return pageInfoAtom;
-});
-
-const paginationFamily = atomFamily((userId: string) => {
-  const paginationAtom = atomWithPagination(
-    currentPaginationAtom,
-    pageInfoFamily(userId),
-  );
-
-  return paginationAtom;
-});
-
 // A type-safe way to ensure we've handled all session types
 const unknownSessionType = (type: never): never => {
   throw new Error(`Unknown session type: ${type}`);
@@ -118,13 +71,16 @@ const unknownSessionType = (type: never): never => {
 
 const AppSessionsList: React.FC<{ userId: string }> = ({ userId }) => {
   const [pending, startTransition] = useTransition();
-  const result = useAtomValue(appSessionListFamily(userId));
-  const setPagination = useSetAtom(currentPaginationAtom);
-  const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
+  const [pagination, setPagination] = usePagination();
+  const [result] = useQuery({
+    query: QUERY,
+    variables: { userId, ...pagination },
+  });
+  if (result.error) throw result.error;
+  const appSessions = result.data?.user?.appSessions;
+  if (!appSessions) throw new Error(); // Suspense mode is enabled
+  const [prevPage, nextPage] = usePages(pagination, appSessions.pageInfo);
   const { t } = useTranslation();
-
-  const appSessions = unwrap(result);
-  if (!appSessions) return <>{t("frontend.app_sessions_list.error")}</>;
 
   const paginate = (pagination: Pagination): void => {
     startTransition(() => {

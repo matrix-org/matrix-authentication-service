@@ -13,16 +13,25 @@
 // limitations under the License.
 
 import { Alert, Button, Form } from "@vector-im/compound-web";
-import { useAtom } from "jotai";
 import { useState, ChangeEventHandler } from "react";
 import { useTranslation } from "react-i18next";
-import { useMutation } from "urql";
+import { useMutation, useQuery } from "urql";
 
 import { graphql } from "../../gql";
 import LoadingSpinner from "../LoadingSpinner/LoadingSpinner";
-import { userGreetingFamily } from "../UserGreeting";
 
 import styles from "./UserName.module.css";
+
+const QUERY = graphql(/* GraphQL */ `
+  query UserDisplayName($userId: ID!) {
+    user(id: $userId) {
+      id
+      matrix {
+        displayName
+      }
+    }
+  }
+`);
 
 const SET_DISPLAYNAME_MUTATION = graphql(/* GraphQL */ `
   mutation SetDisplayName($userId: ID!, $displayName: String) {
@@ -51,10 +60,11 @@ const getErrorMessage = (result: {
 };
 
 const UserName: React.FC<{ userId: string }> = ({ userId }) => {
-  const [userGreeting, refreshUserGreeting] = useAtom(
-    userGreetingFamily(userId),
-  );
-  const displayName = userGreeting.data?.user?.matrix.displayName || "";
+  const [result, refreshUserGreeting] = useQuery({
+    query: QUERY,
+    variables: { userId },
+  });
+  const displayName = result.data?.user?.matrix.displayName || "";
 
   const [setDisplayNameResult, setDisplayName] = useMutation(
     SET_DISPLAYNAME_MUTATION,

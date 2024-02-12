@@ -13,19 +13,17 @@
 // limitations under the License.
 
 import { Alert, H3 } from "@vector-im/compound-web";
-import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
-import { atomFamily } from "jotai/utils";
-import { atomWithQuery } from "jotai-urql";
+import { useSetAtom } from "jotai";
 import { useTransition } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "urql";
 
 import { graphql } from "../../gql";
-import { PageInfo } from "../../gql/graphql";
 import {
-  atomForCurrentPagination,
-  atomWithPagination,
   FIRST_PAGE,
   Pagination,
+  usePages,
+  usePagination,
 } from "../../pagination";
 import { routeAtom } from "../../routing";
 import BlockList from "../BlockList";
@@ -76,67 +74,31 @@ const PRIMARY_EMAIL_QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-export const primaryEmailResultFamily = atomFamily((userId: string) => {
-  const primaryEmailResult = atomWithQuery({
-    query: PRIMARY_EMAIL_QUERY,
-    getVariables: () => ({ userId }),
-  });
-  return primaryEmailResult;
-});
-
-const primaryEmailIdFamily = atomFamily((userId: string) => {
-  const primaryEmailIdAtom = atom(
-    async (get) => {
-      const result = await get(primaryEmailResultFamily(userId));
-      return result.data?.user?.primaryEmail?.id ?? null;
-    },
-    (get, set) => {
-      set(primaryEmailResultFamily(userId));
-    },
-  );
-
-  return primaryEmailIdAtom;
-});
-
-export const currentPaginationAtom = atomForCurrentPagination();
-
-export const emailPageResultFamily = atomFamily((userId: string) => {
-  const emailPageResult = atomWithQuery({
-    query: QUERY,
-    getVariables: (get) => ({ userId, ...get(currentPaginationAtom) }),
-  });
-  return emailPageResult;
-});
-
-const pageInfoFamily = atomFamily((userId: string) => {
-  const pageInfoAtom = atom(async (get): Promise<PageInfo | null> => {
-    const result = await get(emailPageResultFamily(userId));
-    return result.data?.user?.emails?.pageInfo ?? null;
-  });
-
-  return pageInfoAtom;
-});
-
-const paginationFamily = atomFamily((userId: string) => {
-  const paginationAtom = atomWithPagination(
-    currentPaginationAtom,
-    pageInfoFamily(userId),
-  );
-  return paginationAtom;
-});
-
 const UserEmailList: React.FC<{
   userId: string;
 }> = ({ userId }) => {
-  const [pending, startTransition] = useTransition();
-  const [result, refreshList] = useAtom(emailPageResultFamily(userId));
-  const setPagination = useSetAtom(currentPaginationAtom);
-  const setRoute = useSetAtom(routeAtom);
-  const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
-  const [primaryEmailId, refreshPrimaryEmailId] = useAtom(
-    primaryEmailIdFamily(userId),
-  );
   const { t } = useTranslation();
+  const [pending, startTransition] = useTransition();
+
+  const [pagination, setPagination] = usePagination();
+  const [result, refreshList] = useQuery({
+    query: QUERY,
+    variables: { userId, ...pagination },
+  });
+  if (result.error) throw result.error;
+  const emails = result.data?.user?.emails;
+  if (!emails) throw new Error(); // Suspense mode is enabled
+
+  const setRoute = useSetAtom(routeAtom);
+  const [prevPage, nextPage] = usePages(pagination, emails.pageInfo);
+
+  const [primaryEmailResult, refreshPrimaryEmail] = useQuery({
+    query: PRIMARY_EMAIL_QUERY,
+    variables: { userId },
+  });
+  if (primaryEmailResult.error) throw primaryEmailResult.error;
+  if (!result.data) throw new Error(); // Suspense mode is enabled
+  const primaryEmailId = primaryEmailResult.data?.user?.primaryEmail?.id;
 
   const paginate = (pagination: Pagination): void => {
     startTransition(() => {
@@ -168,19 +130,19 @@ const UserEmailList: React.FC<{
           title={t("frontend.user_email_list.no_primary_email_alert")}
         />
       )}
-      {result.data?.user?.emails?.edges?.map((edge) => (
+      {emails.edges.map((edge) => (
         <UserEmail
           email={edge.node}
           key={edge.cursor}
           isPrimary={primaryEmailId === edge.node.id}
-          onSetPrimary={refreshPrimaryEmailId}
+          onSetPrimary={refreshPrimaryEmail}
           onRemove={onRemove}
         />
       ))}
 
       <PaginationControls
         autoHide
-        count={result.data?.user?.emails?.totalCount ?? 0}
+        count={emails.totalCount ?? 0}
         onPrev={prevPage ? (): void => paginate(prevPage) : null}
         onNext={nextPage ? (): void => paginate(nextPage) : null}
         disabled={pending}

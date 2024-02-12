@@ -15,7 +15,9 @@
 // @vitest-environment happy-dom
 
 import { render, cleanup } from "@testing-library/react";
+import { Provider } from "urql";
 import { describe, expect, it, afterEach, beforeAll } from "vitest";
+import { never } from "wonka";
 
 import { makeFragmentData } from "../../gql";
 import { WithLocation } from "../../test-utils/WithLocation";
@@ -24,6 +26,10 @@ import { mockLocale } from "../../test-utils/mockLocale";
 import CompatSessionDetail, { FRAGMENT } from "./CompatSessionDetail";
 
 describe("<CompatSessionDetail>", () => {
+  const mockClient = {
+    executeQuery: (): typeof never => never,
+  };
+
   const baseSession = {
     id: "session-id",
     deviceId: "abcd1234",
@@ -43,9 +49,11 @@ describe("<CompatSessionDetail>", () => {
     const data = makeFragmentData(baseSession, FRAGMENT);
 
     const { container } = render(
-      <WithLocation>
-        <CompatSessionDetail session={data} />
-      </WithLocation>,
+      <Provider value={mockClient}>
+        <WithLocation>
+          <CompatSessionDetail session={data} />
+        </WithLocation>
+      </Provider>,
     );
 
     expect(container).toMatchSnapshot();
@@ -61,9 +69,11 @@ describe("<CompatSessionDetail>", () => {
     );
 
     const { container } = render(
-      <WithLocation>
-        <CompatSessionDetail session={data} />
-      </WithLocation>,
+      <Provider value={mockClient}>
+        <WithLocation>
+          <CompatSessionDetail session={data} />
+        </WithLocation>
+      </Provider>,
     );
 
     expect(container).toMatchSnapshot();
@@ -79,9 +89,11 @@ describe("<CompatSessionDetail>", () => {
     );
 
     const { getByText, queryByText } = render(
-      <WithLocation>
-        <CompatSessionDetail session={data} />
-      </WithLocation>,
+      <Provider value={mockClient}>
+        <WithLocation>
+          <CompatSessionDetail session={data} />
+        </WithLocation>
+      </Provider>,
     );
 
     expect(getByText("Finished")).toBeTruthy();
