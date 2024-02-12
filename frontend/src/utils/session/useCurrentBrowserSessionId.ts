@@ -36,7 +36,7 @@ export const useCurrentBrowserSessionId = (): string | null => {
   const [result] = useQuery({ query: CURRENT_VIEWER_SESSION_QUERY });
   if (result.error) throw result.error;
   if (!result.data) throw new Error(); // Suspense mode is enabled
-  return result.data.viewer.__typename === "User"
-    ? result.data.viewer.id
+  return result.data.viewerSession.__typename === "BrowserSession"
+    ? result.data.viewerSession.id
     : null;
 };

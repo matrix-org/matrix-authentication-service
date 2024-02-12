@@ -13,11 +13,8 @@
 // limitations under the License.
 
 import { Alert, Button, H3, Text } from "@vector-im/compound-web";
-import { atom, useAtom } from "jotai";
-import { atomFamily } from "jotai/utils";
-import { atomWithMutation } from "jotai-urql";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useMutation } from "urql";
 
 import { graphql } from "../../gql";
 import BlockList from "../BlockList";
@@ -33,29 +30,12 @@ const ALLOW_CROSS_SIGING_RESET_MUTATION = graphql(/* GraphQL */ `
   }
 `);
 
-const allowCrossSigningResetFamily = atomFamily((id: string) => {
-  const allowCrossSigingReset = atomWithMutation(
-    ALLOW_CROSS_SIGING_RESET_MUTATION,
-  );
-
-  // A proxy atom which pre-sets the id variable in the mutation
-  const allowCrossSigningResetAtom = atom(
-    (get) => get(allowCrossSigingReset),
-    (_get, set) => set(allowCrossSigingReset, { userId: id }),
-  );
-
-  return allowCrossSigningResetAtom;
-});
-
 const CrossSigningReset: React.FC<{ userId: string }> = ({ userId }) => {
   const { t } = useTranslation();
-  const [result, allowReset] = useAtom(allowCrossSigningResetFamily(userId));
-  const [inProgress, setInProgress] = useState(false);
+  const [result, allowReset] = useMutation(ALLOW_CROSS_SIGING_RESET_MUTATION);
 
   const onClick = (): void => {
-    if (inProgress) return;
-    setInProgress(true);
-    allowReset().finally(() => setInProgress(false));
+    allowReset({ userId });
   };
 
   return (
@@ -66,8 +46,12 @@ const CrossSigningReset: React.FC<{ userId: string }> = ({ userId }) => {
           <Text className="text-justify">
             {t("frontend.reset_cross_signing.description")}
           </Text>
-          <Button kind="destructive" disabled={inProgress} onClick={onClick}>
-            {!!inProgress && <LoadingSpinner inline />}
+          <Button
+            kind="destructive"
+            disabled={result.fetching}
+            onClick={onClick}
+          >
+            {!!result.fetching && <LoadingSpinner inline />}
             {t("frontend.reset_cross_signing.button")}
           </Button>
         </>

@@ -13,9 +13,7 @@
 // limitations under the License.
 
 import { parseISO } from "date-fns";
-import { atom, useSetAtom } from "jotai";
-import { atomFamily } from "jotai/utils";
-import { atomWithMutation } from "jotai-urql";
+import { useMutation } from "urql";
 
 import { FragmentType, graphql, useFragment } from "../gql";
 
@@ -37,7 +35,7 @@ export const FRAGMENT = graphql(/* GraphQL */ `
   }
 `);
 
-const END_SESSION_MUTATION = graphql(/* GraphQL */ `
+export const END_SESSION_MUTATION = graphql(/* GraphQL */ `
   mutation EndCompatSession($id: ID!) {
     endCompatSession(input: { compatSessionId: $id }) {
       status
@@ -48,18 +46,6 @@ const END_SESSION_MUTATION = graphql(/* GraphQL */ `
     }
   }
 `);
-
-export const endCompatSessionFamily = atomFamily((id: string) => {
-  const endCompatSession = atomWithMutation(END_SESSION_MUTATION);
-
-  // A proxy atom which pre-sets the id variable in the mutation
-  const endCompatSessionAtom = atom(
-    (get) => get(endCompatSession),
-    (get, set) => set(endCompatSession, { id }),
-  );
-
-  return endCompatSessionAtom;
-});
 
 export const simplifyUrl = (url: string): string => {
   let parsed;
@@ -86,10 +72,10 @@ const CompatSession: React.FC<{
   session: FragmentType<typeof FRAGMENT>;
 }> = ({ session }) => {
   const data = useFragment(FRAGMENT, session);
-  const endCompatSession = useSetAtom(endCompatSessionFamily(data.id));
+  const [, endCompatSession] = useMutation(END_SESSION_MUTATION);
 
   const onSessionEnd = async (): Promise<void> => {
-    await endCompatSession();
+    await endCompatSession({ id: data.id });
   };
 
   const clientName = data.ssoLogin?.redirectUri

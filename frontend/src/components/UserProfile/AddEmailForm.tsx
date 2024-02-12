@@ -13,10 +13,9 @@
 // limitations under the License.
 
 import { Alert, Form } from "@vector-im/compound-web";
-import { useAtom } from "jotai";
-import { atomWithMutation } from "jotai-urql";
-import { useRef, useTransition } from "react";
+import { useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { useMutation } from "urql";
 
 import { graphql } from "../../gql";
 
@@ -33,40 +32,36 @@ const ADD_EMAIL_MUTATION = graphql(/* GraphQL */ `
   }
 `);
 
-const addUserEmailAtom = atomWithMutation(ADD_EMAIL_MUTATION);
-
 const AddEmailForm: React.FC<{
   userId: string;
   onAdd?: (id: string) => void;
 }> = ({ userId, onAdd }) => {
+  const { t } = useTranslation();
   const formRef = useRef<HTMLFormElement>(null);
   const fieldRef = useRef<HTMLInputElement>(null);
-  const [addEmailResult, addEmail] = useAtom(addUserEmailAtom);
-  const [pending, startTransition] = useTransition();
-  const { t } = useTranslation();
+  const [addEmailResult, addEmail] = useMutation(ADD_EMAIL_MUTATION);
+  if (addEmailResult.error) throw addEmailResult.error;
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
 
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email") as string;
-    startTransition(() => {
-      addEmail({ userId, email }).then((result) => {
-        // Don't clear the form if the email was invalid or already exists
-        if (result.data?.addEmail.status !== "ADDED") {
-          return;
-        }
+    addEmail({ userId, email }).then((result) => {
+      // Don't clear the form if the email was invalid or already exists
+      if (result.data?.addEmail.status !== "ADDED") {
+        return;
+      }
 
-        if (!result.data?.addEmail.email?.id) {
-          throw new Error("Unexpected response from server");
-        }
+      if (!result.data?.addEmail.email?.id) {
+        throw new Error("Unexpected response from server");
+      }
 
-        // Call the onAdd callback if provided
-        onAdd?.(result.data?.addEmail.email?.id);
+      // Call the onAdd callback if provided
+      onAdd?.(result.data?.addEmail.email?.id);
 
-        // Reset the form
-        formRef.current?.reset();
-      });
+      // Reset the form
+      formRef.current?.reset();
     });
   };
 
@@ -119,14 +114,18 @@ const AddEmailForm: React.FC<{
             {t("frontend.add_email_form.email_field_label")}
           </Form.Label>
           <Form.TextControl
-            disabled={pending}
+            disabled={addEmailResult.fetching}
             type="email"
             autoComplete="email"
             ref={fieldRef}
           />
         </Form.Field>
 
-        <Form.Submit size="sm" disabled={pending} className="self-start">
+        <Form.Submit
+          size="sm"
+          disabled={addEmailResult.fetching}
+          className="self-start"
+        >
           {t("common.add")}
         </Form.Submit>
       </Form.Root>

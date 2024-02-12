@@ -15,11 +15,10 @@
 import IconArrowLeft from "@vector-im/compound-design-tokens/icons/arrow-left.svg?react";
 import IconSend from "@vector-im/compound-design-tokens/icons/send-solid.svg?react";
 import { Button, Form, Alert, H1, Text } from "@vector-im/compound-web";
-import { useSetAtom, atom, useAtom } from "jotai";
-import { atomFamily } from "jotai/utils";
-import { atomWithMutation } from "jotai-urql";
-import { useRef, useTransition } from "react";
+import { useSetAtom } from "jotai";
+import { useRef } from "react";
 import { Trans, useTranslation } from "react-i18next";
+import { useMutation } from "urql";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
 import { routeAtom, useNavigationLink } from "../../routing";
@@ -73,32 +72,6 @@ const RESEND_VERIFICATION_EMAIL_MUTATION = graphql(/* GraphQL */ `
   }
 `);
 
-const verifyEmailFamily = atomFamily((id: string) => {
-  const verifyEmail = atomWithMutation(VERIFY_EMAIL_MUTATION);
-
-  // A proxy atom which pre-sets the id variable in the mutation
-  const verifyEmailAtom = atom(
-    (get) => get(verifyEmail),
-    (get, set, code: string) => set(verifyEmail, { id, code }),
-  );
-
-  return verifyEmailAtom;
-});
-
-const resendVerificationEmailFamily = atomFamily((id: string) => {
-  const resendVerificationEmail = atomWithMutation(
-    RESEND_VERIFICATION_EMAIL_MUTATION,
-  );
-
-  // A proxy atom which pre-sets the id variable in the mutation
-  const resendVerificationEmailAtom = atom(
-    (get) => get(resendVerificationEmail),
-    (_get, set) => set(resendVerificationEmail, { id }),
-  );
-
-  return resendVerificationEmailAtom;
-});
-
 const BackButton: React.FC = () => {
   const { onClick, href, pending } = useNavigationLink({
     type: "profile",
@@ -122,10 +95,9 @@ const VerifyEmail: React.FC<{
   email: FragmentType<typeof FRAGMENT>;
 }> = ({ email }) => {
   const data = useFragment(FRAGMENT, email);
-  const [pending, startTransition] = useTransition();
-  const [verifyEmailResult, verifyEmail] = useAtom(verifyEmailFamily(data.id));
-  const [resendVerificationEmailResult, resendVerificationEmail] = useAtom(
-    resendVerificationEmailFamily(data.id),
+  const [verifyEmailResult, verifyEmail] = useMutation(VERIFY_EMAIL_MUTATION);
+  const [resendVerificationEmailResult, resendVerificationEmail] = useMutation(
+    RESEND_VERIFICATION_EMAIL_MUTATION,
   );
   const setRoute = useSetAtom(routeAtom);
   const fieldRef = useRef<HTMLInputElement>(null);
@@ -136,23 +108,19 @@ const VerifyEmail: React.FC<{
     const form = e.currentTarget;
     const formData = new FormData(form);
     const code = formData.get("code") as string;
-    startTransition(() => {
-      verifyEmail(code).then((result) => {
-        // Clear the form
-        form.reset();
+    verifyEmail({ id: data.id, code }).then((result) => {
+      // Clear the form
+      form.reset();
 
-        if (result.data?.verifyEmail.status === "VERIFIED") {
-          setRoute({ type: "profile" });
-        }
-      });
+      if (result.data?.verifyEmail.status === "VERIFIED") {
+        setRoute({ type: "profile" });
+      }
     });
   };
 
   const onResendClick = (): void => {
-    startTransition(() => {
-      resendVerificationEmail().then(() => {
-        fieldRef.current?.focus();
-      });
+    resendVerificationEmail({ id: data.id }).then(() => {
+      fieldRef.current?.focus();
     });
   };
 
@@ -212,13 +180,13 @@ const VerifyEmail: React.FC<{
           </Form.ErrorMessage>
         </Form.Field>
 
-        <Form.Submit type="submit" disabled={pending}>
+        <Form.Submit type="submit" disabled={verifyEmailResult.fetching}>
           {t("action.continue")}
         </Form.Submit>
         <Button
           type="button"
           kind="secondary"
-          disabled={pending}
+          disabled={resendVerificationEmailResult.fetching}
           onClick={onResendClick}
         >
           {t("frontend.verify_email.resend_code")}
