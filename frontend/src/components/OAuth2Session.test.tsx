@@ -15,7 +15,9 @@
 // @vitest-environment happy-dom
 
 import { create } from "react-test-renderer";
+import { Provider } from "urql";
 import { describe, expect, it, beforeAll } from "vitest";
+import { never } from "wonka";
 
 import { makeFragmentData } from "../gql";
 import { Oauth2ApplicationType } from "../gql/graphql";
@@ -25,6 +27,10 @@ import { mockLocale } from "../test-utils/mockLocale";
 import OAuth2Session, { FRAGMENT } from "./OAuth2Session";
 
 describe("<OAuth2Session />", () => {
+  const mockClient = {
+    executeQuery: (): typeof never => never,
+  };
+
   const defaultSession = {
     id: "session-id",
     scope:
@@ -48,9 +54,11 @@ describe("<OAuth2Session />", () => {
     const session = makeFragmentData(defaultSession, FRAGMENT);
 
     const component = create(
-      <WithLocation>
-        <OAuth2Session session={session} />
-      </WithLocation>,
+      <Provider value={mockClient}>
+        <WithLocation>
+          <OAuth2Session session={session} />
+        </WithLocation>
+      </Provider>,
     );
     expect(component.toJSON()).toMatchSnapshot();
   });
@@ -64,9 +72,11 @@ describe("<OAuth2Session />", () => {
       FRAGMENT,
     );
     const component = create(
-      <WithLocation>
-        <OAuth2Session session={session} />
-      </WithLocation>,
+      <Provider value={mockClient}>
+        <WithLocation>
+          <OAuth2Session session={session} />
+        </WithLocation>
+      </Provider>,
     );
     expect(component.toJSON()).toMatchSnapshot();
   });
@@ -84,9 +94,11 @@ describe("<OAuth2Session />", () => {
       FRAGMENT,
     );
     const component = create(
-      <WithLocation>
-        <OAuth2Session session={session} />
-      </WithLocation>,
+      <Provider value={mockClient}>
+        <WithLocation>
+          <OAuth2Session session={session} />
+        </WithLocation>
+      </Provider>,
     );
     expect(component.toJSON()).toMatchSnapshot();
   });

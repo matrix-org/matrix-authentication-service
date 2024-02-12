@@ -39,7 +39,6 @@
       }
     },
     "app_sessions_list": {
-      "error": "Failed to load app sessions",
       "heading": "Apps"
     },
     "browser_session_details": {

@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { atom, Atom, WritableAtom } from "jotai";
+import { useState } from "react";
 
 import { PageInfo } from "./gql/graphql";
 
 export const FIRST_PAGE = Symbol("FIRST_PAGE");
 export const LAST_PAGE = Symbol("LAST_PAGE");
-const EMPTY = Symbol("EMPTY");
 
 export type ForwardPagination = {
   first: number;
@@ -36,99 +35,73 @@ export type Pagination = ForwardPagination | BackwardPagination;
 export const isForwardPagination = (
   pagination: Pagination,
 ): pagination is ForwardPagination => {
-  return pagination.hasOwnProperty("first");
+  return Object.hasOwn(pagination, "first");
 };
 
 // Check if the pagination is backward pagination.
 export const isBackwardPagination = (
   pagination: Pagination,
 ): pagination is BackwardPagination => {
-  return pagination.hasOwnProperty("last");
+  return Object.hasOwn(pagination, "last");
 };
-
-// This atom sets the default page size for pagination.
-export const pageSizeAtom = atom(6);
 
 type Action = typeof FIRST_PAGE | typeof LAST_PAGE | Pagination;
 
-export const atomForCurrentPagination = (): WritableAtom<
-  Pagination,
-  [Action],
-  void
-> => {
-  const dataAtom = atom<typeof EMPTY | Pagination>(EMPTY);
+// Hook to handle pagination state.
+export const usePagination = (
+  pageSize = 6,
+): [Pagination, (action: Action) => void] => {
+  const [pagination, setPagination] = useState<Pagination>({
+    first: pageSize,
+    after: null,
+  });
 
-  const currentPaginationAtom = atom(
-    (get) => {
-      const data = get(dataAtom);
-      if (data === EMPTY) {
-        return {
-          first: get(pageSizeAtom),
-          after: null,
-        };
-      }
-
-      return data;
-    },
-    (get, set, action: Action) => {
-      if (action === FIRST_PAGE) {
-        set(dataAtom, EMPTY);
-      } else if (action === LAST_PAGE) {
-        set(dataAtom, {
-          last: get(pageSizeAtom),
-          before: null,
-        });
-      } else {
-        set(dataAtom, action);
-      }
-    },
-  );
-
-  currentPaginationAtom.onMount = (setAtom): void => {
-    setAtom(FIRST_PAGE);
+  const handlePagination = (action: Action): void => {
+    if (action === FIRST_PAGE) {
+      setPagination({
+        first: pageSize,
+        after: null,
+      });
+    } else if (action === LAST_PAGE) {
+      setPagination({
+        last: pageSize,
+        before: null,
+      });
+    } else {
+      setPagination(action);
+    }
   };
 
-  return currentPaginationAtom;
+  return [pagination, handlePagination];
 };
 
-// This atom is used to create a pagination atom that gives the previous and
-// next pagination objects, given the current pagination and the page info.
-export const atomWithPagination = (
-  currentPaginationAtom: Atom<Pagination>,
-  pageInfoAtom: Atom<Promise<PageInfo | null>>,
-): Atom<Promise<[BackwardPagination | null, ForwardPagination | null]>> => {
-  const paginationAtom = atom(
-    async (
-      get,
-    ): Promise<[BackwardPagination | null, ForwardPagination | null]> => {
-      const currentPagination = get(currentPaginationAtom);
-      const pageInfo = await get(pageInfoAtom);
-      const hasProbablyPreviousPage =
-        isForwardPagination(currentPagination) &&
-        currentPagination.after !== null;
-      const hasProbablyNextPage =
-        isBackwardPagination(currentPagination) &&
-        currentPagination.before !== null;
+// Compute the previous and next pagination based on the current pagination and the page info.
+export const usePages = (
+  currentPagination: Pagination,
+  pageInfo: PageInfo | null,
+  pageSize = 6,
+): [BackwardPagination | null, ForwardPagination | null] => {
+  const hasProbablyPreviousPage =
+    isForwardPagination(currentPagination) && currentPagination.after !== null;
+  const hasProbablyNextPage =
+    isBackwardPagination(currentPagination) &&
+    currentPagination.before !== null;
 
-      let previousPagination: BackwardPagination | null = null;
-      let nextPagination: ForwardPagination | null = null;
-      if (pageInfo?.hasPreviousPage || hasProbablyPreviousPage) {
-        previousPagination = {
-          last: get(pageSizeAtom),
-          before: pageInfo?.startCursor ?? null,
-        };
-      }
+  let previousPagination: BackwardPagination | null = null;
+  let nextPagination: ForwardPagination | null = null;
+  if (pageInfo?.hasPreviousPage || hasProbablyPreviousPage) {
+    previousPagination = {
+      last: pageSize,
+      before: pageInfo?.startCursor ?? null,
+    };
+  }
 
-      if (pageInfo?.hasNextPage || hasProbablyNextPage) {
-        nextPagination = {
-          first: get(pageSizeAtom),
-          after: pageInfo?.endCursor ?? null,
-        };
-      }
+  if (pageInfo?.hasNextPage || hasProbablyNextPage) {
+    nextPagination = {
+      first: pageSize,
+      after: pageInfo?.endCursor ?? null,
+    };
+  }
 
-      return [previousPagination, nextPagination];
-    },
-  );
-
-  return paginationAtom;
+  return [previousPagination, nextPagination];
 };

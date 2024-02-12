@@ -15,7 +15,9 @@
 // @vitest-environment happy-dom
 
 import { render, cleanup } from "@testing-library/react";
+import { Provider } from "urql";
 import { describe, expect, it, afterEach, beforeAll } from "vitest";
+import { never } from "wonka";
 
 import { makeFragmentData } from "../../gql";
 import { WithLocation } from "../../test-utils/WithLocation";
@@ -24,6 +26,10 @@ import { mockLocale } from "../../test-utils/mockLocale";
 import OAuth2SessionDetail, { FRAGMENT } from "./OAuth2SessionDetail";
 
 describe("<OAuth2SessionDetail>", () => {
+  const mockClient = {
+    executeQuery: (): typeof never => never,
+  };
+
   const baseSession = {
     id: "session-id",
     scope:
@@ -46,9 +52,11 @@ describe("<OAuth2SessionDetail>", () => {
     const data = makeFragmentData(baseSession, FRAGMENT);
 
     const { container } = render(
-      <WithLocation>
-        <OAuth2SessionDetail session={data} />
-      </WithLocation>,
+      <Provider value={mockClient}>
+        <WithLocation>
+          <OAuth2SessionDetail session={data} />
+        </WithLocation>
+      </Provider>,
     );
 
     expect(container).toMatchSnapshot();
@@ -64,9 +72,11 @@ describe("<OAuth2SessionDetail>", () => {
     );
 
     const { getByText, queryByText } = render(
-      <WithLocation>
-        <OAuth2SessionDetail session={data} />
-      </WithLocation>,
+      <Provider value={mockClient}>
+        <WithLocation>
+          <OAuth2SessionDetail session={data} />
+        </WithLocation>
+      </Provider>,
     );
 
     expect(getByText("Finished")).toBeTruthy();

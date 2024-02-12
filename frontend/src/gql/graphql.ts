@@ -1107,13 +1107,6 @@ export type Viewer = Anonymous | User;
 /** Represents the current viewer's session */
 export type ViewerSession = Anonymous | BrowserSession | Oauth2Session;
 
-export type CurrentViewerQueryQueryVariables = Exact<{ [key: string]: never }>;
-
-export type CurrentViewerQueryQuery = {
-  __typename?: "Query";
-  viewer: { __typename: "Anonymous" } | { __typename: "User"; id: string };
-};
-
 export type BrowserSession_SessionFragment = {
   __typename?: "BrowserSession";
   id: string;
@@ -1485,6 +1478,19 @@ export type UserPrimaryEmailQuery = {
   } | null;
 };
 
+export type UserDisplayNameQueryVariables = Exact<{
+  userId: Scalars["ID"]["input"];
+}>;
+
+export type UserDisplayNameQuery = {
+  __typename?: "Query";
+  user?: {
+    __typename?: "User";
+    id: string;
+    matrix: { __typename?: "MatrixUser"; displayName?: string | null };
+  } | null;
+};
+
 export type SetDisplayNameMutationVariables = Exact<{
   userId: Scalars["ID"]["input"];
   displayName?: InputMaybe<Scalars["String"]["input"]>;
@@ -1676,6 +1682,13 @@ export type CurrentViewerSessionQueryQuery = {
     | { __typename: "Anonymous" }
     | { __typename: "BrowserSession"; id: string }
     | { __typename: "Oauth2Session" };
+};
+
+export type CurrentViewerQueryQueryVariables = Exact<{ [key: string]: never }>;
+
+export type CurrentViewerQueryQuery = {
+  __typename?: "Query";
+  viewer: { __typename: "Anonymous" } | { __typename: "User"; id: string };
 };
 
 export const BrowserSession_SessionFragmentDoc = {
@@ -2058,47 +2071,6 @@ export const UserEmail_VerifyEmailFragmentDoc = {
     },
   ],
 } as unknown as DocumentNode<UserEmail_VerifyEmailFragment, unknown>;
-export const CurrentViewerQueryDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "query",
-      name: { kind: "Name", value: "CurrentViewerQuery" },
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "viewer" },
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "__typename" } },
-                {
-                  kind: "InlineFragment",
-                  typeCondition: {
-                    kind: "NamedType",
-                    name: { kind: "Name", value: "User" },
-                  },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                    ],
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<
-  CurrentViewerQueryQuery,
-  CurrentViewerQueryQueryVariables
->;
 export const EndBrowserSessionDocument = {
   kind: "Document",
   definitions: [
@@ -3442,6 +3414,70 @@ export const UserPrimaryEmailDocument = {
   UserPrimaryEmailQuery,
   UserPrimaryEmailQueryVariables
 >;
+export const UserDisplayNameDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "UserDisplayName" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "userId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "user" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "userId" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "matrix" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "displayName" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UserDisplayNameQuery,
+  UserDisplayNameQueryVariables
+>;
 export const SetDisplayNameDocument = {
   kind: "Document",
   definitions: [
@@ -4406,4 +4442,45 @@ export const CurrentViewerSessionQueryDocument = {
 } as unknown as DocumentNode<
   CurrentViewerSessionQueryQuery,
   CurrentViewerSessionQueryQueryVariables
+>;
+export const CurrentViewerQueryDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "CurrentViewerQuery" },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "viewer" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "__typename" } },
+                {
+                  kind: "InlineFragment",
+                  typeCondition: {
+                    kind: "NamedType",
+                    name: { kind: "Name", value: "User" },
+                  },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  CurrentViewerQueryQuery,
+  CurrentViewerQueryQueryVariables
 >;

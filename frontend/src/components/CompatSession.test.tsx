@@ -15,7 +15,9 @@
 // @vitest-environment happy-dom
 
 import { create } from "react-test-renderer";
+import { Provider } from "urql";
 import { describe, expect, it, beforeAll } from "vitest";
+import { never } from "wonka";
 
 import { makeFragmentData } from "../gql";
 import { WithLocation } from "../test-utils/WithLocation";
@@ -24,6 +26,10 @@ import { mockLocale } from "../test-utils/mockLocale";
 import CompatSession, { FRAGMENT } from "./CompatSession";
 
 describe("<CompatSession />", () => {
+  const mockClient = {
+    executeQuery: (): typeof never => never,
+  };
+
   const baseSession = {
     id: "session-id",
     deviceId: "abcd1234",
@@ -42,9 +48,11 @@ describe("<CompatSession />", () => {
   it("renders an active session", () => {
     const session = makeFragmentData(baseSession, FRAGMENT);
     const component = create(
-      <WithLocation>
-        <CompatSession session={session} />
-      </WithLocation>,
+      <Provider value={mockClient}>
+        <WithLocation>
+          <CompatSession session={session} />
+        </WithLocation>
+      </Provider>,
     );
     expect(component.toJSON()).toMatchSnapshot();
   });
@@ -58,9 +66,11 @@ describe("<CompatSession />", () => {
       FRAGMENT,
     );
     const component = create(
-      <WithLocation>
-        <CompatSession session={session} />
-      </WithLocation>,
+      <Provider value={mockClient}>
+        <WithLocation>
+          <CompatSession session={session} />
+        </WithLocation>
+      </Provider>,
     );
     expect(component.toJSON()).toMatchSnapshot();
   });

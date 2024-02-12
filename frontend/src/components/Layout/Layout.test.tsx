@@ -15,7 +15,9 @@
 // @vitest-environment happy-dom
 
 import { render } from "@testing-library/react";
+import { Provider } from "urql";
 import { describe, expect, it } from "vitest";
+import { never } from "wonka";
 
 import { WithLocation } from "../../test-utils/WithLocation";
 
@@ -23,10 +25,16 @@ import Layout from "./Layout";
 
 describe("<Layout />", () => {
   it("renders app navigation correctly", async () => {
+    const mockClient = {
+      executeQuery: (): typeof never => never,
+    };
+
     const component = render(
-      <WithLocation path="/">
-        <Layout userId="abc123" />
-      </WithLocation>,
+      <Provider value={mockClient}>
+        <WithLocation path="/">
+          <Layout userId="abc123" />
+        </WithLocation>
+      </Provider>,
     );
 
     expect(await component.findByText("Profile")).toMatchSnapshot();
