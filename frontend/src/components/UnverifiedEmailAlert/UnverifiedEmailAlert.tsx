@@ -17,7 +17,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { FragmentType, useFragment, graphql } from "../../gql";
-import { NewLink } from "../../routing";
+import { Link } from "../../routing";
 
 import styles from "./UnverifiedEmailAlert.module.css";
 
@@ -57,9 +57,9 @@ const UnverifiedEmailAlert: React.FC<{
       {t("frontend.unverified_email_alert.text", {
         count: data.unverifiedEmails.totalCount,
       })}{" "}
-      <NewLink to="/" hash="emails">
+      <Link to="/" hash="emails">
         {t("frontend.unverified_email_alert.button")}
-      </NewLink>
+      </Link>
     </Alert>
   );
 };

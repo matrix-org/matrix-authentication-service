@@ -16,7 +16,6 @@
     "i18n": "i18next"
   },
   "dependencies": {
-    "@emotion/react": "^11.11.3",
     "@fontsource/inconsolata": "^5.0.16",
     "@fontsource/inter": "^5.0.16",
     "@radix-ui/react-alert-dialog": "^1.0.5",
@@ -36,9 +35,6 @@
     "i18next": "^23.8.2",
     "i18next-browser-languagedetector": "^7.2.0",
     "i18next-http-backend": "^2.4.3",
-    "jotai": "^2.6.4",
-    "jotai-devtools": "^0.7.1",
-    "jotai-location": "^0.5.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-i18next": "^14.0.5",

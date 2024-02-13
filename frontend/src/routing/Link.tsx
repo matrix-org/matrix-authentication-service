@@ -19,7 +19,7 @@ import { forwardRef } from "react";
 
 import styles from "./Link.module.css";
 
-export const NewLink: LinkComponent = forwardRef<
+export const Link: LinkComponent = forwardRef<
   HTMLAnchorElement,
   Parameters<typeof useLinkProps>[0]
 >(({ children, ...props }, ref) => {

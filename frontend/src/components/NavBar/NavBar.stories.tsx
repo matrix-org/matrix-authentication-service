@@ -14,7 +14,7 @@
 
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { DumbRouter } from "../../test-utils/router";
+import { DummyRouter } from "../../test-utils/router";
 import NavItem from "../NavItem";
 
 import NavBar from "./NavBar";
@@ -24,12 +24,12 @@ const meta = {
   component: NavBar,
   tags: ["autodocs"],
   render: (): React.ReactElement => (
-    <DumbRouter>
+    <DummyRouter>
       <NavBar>
         <NavItem to="/">Profile</NavItem>
         <NavItem to="/sessions">Sessions</NavItem>
       </NavBar>
-    </DumbRouter>
+    </DummyRouter>
   ),
 } satisfies Meta<typeof NavBar>;
 

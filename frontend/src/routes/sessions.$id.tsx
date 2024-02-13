@@ -21,7 +21,7 @@ import BrowserSessionDetail from "../components/SessionDetail/BrowserSessionDeta
 import CompatSessionDetail from "../components/SessionDetail/CompatSessionDetail";
 import OAuth2SessionDetail from "../components/SessionDetail/OAuth2SessionDetail";
 import { graphql } from "../gql";
-import { NewLink } from "../routing";
+import { Link } from "../routing";
 
 export const Route = createFileRoute("/sessions/$id")({
   component: SessionDetail,
@@ -53,9 +53,9 @@ function SessionDetail(): React.ReactElement {
         title={t("frontend.session_detail.alert.title", { deviceId: id })}
       >
         {t("frontend.session_detail.alert.text")}
-        <NewLink from={Route.fullPath} to="..">
+        <Link from={Route.fullPath} to="..">
           {t("frontend.session_detail.alert.button")}
-        </NewLink>
+        </Link>
       </Alert>
     );
   }

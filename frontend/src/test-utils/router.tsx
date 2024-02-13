@@ -29,6 +29,6 @@ const router = createRouter({
   routeTree: rootRoute,
 });
 
-export const DumbRouter: React.FC<React.PropsWithChildren> = ({ children }) => (
-  <RouterProvider router={router} defaultComponent={() => children} />
-);
+export const DummyRouter: React.FC<React.PropsWithChildren> = ({
+  children,
+}) => <RouterProvider router={router} defaultComponent={() => children} />;

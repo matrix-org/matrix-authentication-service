@@ -18,7 +18,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "urql";
 
 import { graphql } from "../gql";
-import { NewLink } from "../routing";
+import { Link } from "../routing";
 
 export const Route = createFileRoute("/devices/$id")({
   loader: ({ context }) => context.userId,
@@ -55,12 +55,10 @@ function DeviceRedirect(): React.ReactElement {
         title={t("frontend.session_detail.alert.title", { deviceId })}
       >
         {t("frontend.session_detail.alert.text")}
-        <NewLink to="/sessions">
-          {t("frontend.session_detail.alert.button")}
-        </NewLink>
+        <Link to="/sessions">{t("frontend.session_detail.alert.button")}</Link>
       </Alert>
     );
   }
 
-  return <Navigate to="/sessions/$id" params={{ id: session.id }} />;
+  return <Navigate to="/sessions/$id" params={{ id: session.id }} replace />;
 }

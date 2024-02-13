@@ -132,7 +132,6 @@
         "title": "Cannot find session: {{deviceId}}"
       }
     },
-    "unknown_route": "Unknown route {{route}}",
     "unverified_email_alert": {
       "button": "Review and verify",
       "text:one": "You have {{count}} unverified email address.",

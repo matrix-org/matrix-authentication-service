@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useAtomValue } from "jotai";
 import { useTranslation } from "react-i18next";
 
-import { appConfigAtom } from "../../routing";
+import appConfig from "../../config";
 import Footer from "../Footer";
 import NavBar from "../NavBar";
 import NavItem from "../NavItem";
@@ -27,7 +26,6 @@ const Layout: React.FC<{
   user: React.ComponentProps<typeof UserGreeting>["user"];
   children?: React.ReactNode;
 }> = ({ user, children }) => {
-  const appConfig = useAtomValue(appConfigAtom);
   const { t } = useTranslation();
 
   return (

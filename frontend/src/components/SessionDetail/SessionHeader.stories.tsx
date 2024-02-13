@@ -15,7 +15,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { PropsWithChildren } from "react";
 
-import { DumbRouter } from "../../test-utils/router";
+import { DummyRouter } from "../../test-utils/router";
 
 import SessionHeader from "./SessionHeader";
 
@@ -23,9 +23,9 @@ type Props = PropsWithChildren;
 
 const Template: React.FC<Props> = ({ children }) => {
   return (
-    <DumbRouter>
+    <DummyRouter>
       <SessionHeader to="/">{children}</SessionHeader>
-    </DumbRouter>
+    </DummyRouter>
   );
 };
 

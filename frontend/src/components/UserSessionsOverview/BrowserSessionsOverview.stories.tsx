@@ -15,7 +15,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { makeFragmentData } from "../../gql";
-import { DumbRouter } from "../../test-utils/router";
+import { DummyRouter } from "../../test-utils/router";
 
 import BrowserSessionsOverview, { FRAGMENT } from "./BrowserSessionsOverview";
 
@@ -34,9 +34,9 @@ const Template: React.FC<Props> = ({ browserSessions }) => {
     FRAGMENT,
   );
   return (
-    <DumbRouter>
+    <DummyRouter>
       <BrowserSessionsOverview user={data} />
-    </DumbRouter>
+    </DummyRouter>
   );
 };
 

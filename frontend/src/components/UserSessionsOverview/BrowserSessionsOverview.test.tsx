@@ -18,7 +18,7 @@ import { render, cleanup } from "@testing-library/react";
 import { describe, expect, it, afterEach } from "vitest";
 
 import { makeFragmentData } from "../../gql";
-import { DumbRouter } from "../../test-utils/router";
+import { DummyRouter } from "../../test-utils/router";
 
 import BrowserSessionsOverview, { FRAGMENT } from "./BrowserSessionsOverview";
 
@@ -36,9 +36,9 @@ describe("BrowserSessionsOverview", () => {
       FRAGMENT,
     );
     const { container } = render(
-      <DumbRouter>
+      <DummyRouter>
         <BrowserSessionsOverview user={user} />
-      </DumbRouter>,
+      </DummyRouter>,
     );
 
     expect(container).toMatchSnapshot();
@@ -55,9 +55,9 @@ describe("BrowserSessionsOverview", () => {
       FRAGMENT,
     );
     const { container } = render(
-      <DumbRouter>
+      <DummyRouter>
         <BrowserSessionsOverview user={user} />
-      </DumbRouter>,
+      </DummyRouter>,
     );
     expect(container).toMatchSnapshot();
   });

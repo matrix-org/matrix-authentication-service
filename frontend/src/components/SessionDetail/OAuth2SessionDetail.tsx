@@ -17,7 +17,7 @@ import { useTranslation } from "react-i18next";
 import { useMutation } from "urql";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
-import { NewLink } from "../../routing";
+import { Link } from "../../routing";
 import { getDeviceIdFromScope } from "../../utils/deviceIdFromScope";
 import BlockList from "../BlockList/BlockList";
 import DateTime from "../DateTime";
@@ -117,9 +117,9 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
   ];
 
   const clientTitle = (
-    <NewLink to="/clients/$id" params={{ id: data.client.id }}>
+    <Link to="/clients/$id" params={{ id: data.client.id }}>
       {t("frontend.oauth2_session_detail.client_title")}
-    </NewLink>
+    </Link>
   );
   const clientDetails = [
     {

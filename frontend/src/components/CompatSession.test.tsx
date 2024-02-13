@@ -21,7 +21,7 @@ import { never } from "wonka";
 
 import { makeFragmentData } from "../gql";
 import { mockLocale } from "../test-utils/mockLocale";
-import { DumbRouter } from "../test-utils/router";
+import { DummyRouter } from "../test-utils/router";
 
 import CompatSession, { FRAGMENT } from "./CompatSession";
 
@@ -49,9 +49,9 @@ describe("<CompatSession />", () => {
     const session = makeFragmentData(baseSession, FRAGMENT);
     const component = create(
       <Provider value={mockClient}>
-        <DumbRouter>
+        <DummyRouter>
           <CompatSession session={session} />
-        </DumbRouter>
+        </DummyRouter>
       </Provider>,
     );
     expect(component.toJSON()).toMatchSnapshot();
@@ -67,9 +67,9 @@ describe("<CompatSession />", () => {
     );
     const component = create(
       <Provider value={mockClient}>
-        <DumbRouter>
+        <DummyRouter>
           <CompatSession session={session} />
-        </DumbRouter>
+        </DummyRouter>
       </Provider>,
     );
     expect(component.toJSON()).toMatchSnapshot();

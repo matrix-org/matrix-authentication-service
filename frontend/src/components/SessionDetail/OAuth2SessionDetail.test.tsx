@@ -21,7 +21,7 @@ import { never } from "wonka";
 
 import { makeFragmentData } from "../../gql";
 import { mockLocale } from "../../test-utils/mockLocale";
-import { DumbRouter } from "../../test-utils/router";
+import { DummyRouter } from "../../test-utils/router";
 
 import OAuth2SessionDetail, { FRAGMENT } from "./OAuth2SessionDetail";
 
@@ -53,9 +53,9 @@ describe("<OAuth2SessionDetail>", () => {
 
     const { container } = render(
       <Provider value={mockClient}>
-        <DumbRouter>
+        <DummyRouter>
           <OAuth2SessionDetail session={data} />
-        </DumbRouter>
+        </DummyRouter>
       </Provider>,
     );
 
@@ -73,9 +73,9 @@ describe("<OAuth2SessionDetail>", () => {
 
     const { getByText, queryByText } = render(
       <Provider value={mockClient}>
-        <DumbRouter>
+        <DummyRouter>
           <OAuth2SessionDetail session={data} />
-        </DumbRouter>
+        </DummyRouter>
       </Provider>,
     );
 

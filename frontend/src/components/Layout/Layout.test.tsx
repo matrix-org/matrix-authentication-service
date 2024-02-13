@@ -20,7 +20,7 @@ import { describe, expect, it } from "vitest";
 import { never } from "wonka";
 
 import { makeFragmentData } from "../../gql";
-import { DumbRouter } from "../../test-utils/router";
+import { DummyRouter } from "../../test-utils/router";
 import { USER_GREETING_FRAGMENT } from "../UserGreeting";
 
 import Layout from "./Layout";
@@ -45,9 +45,9 @@ describe("<Layout />", () => {
 
     const component = render(
       <Provider value={mockClient}>
-        <DumbRouter>
+        <DummyRouter>
           <Layout user={user} />
-        </DumbRouter>
+        </DummyRouter>
       </Provider>,
     );
 

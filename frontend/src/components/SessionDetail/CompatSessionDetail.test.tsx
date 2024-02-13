@@ -21,7 +21,7 @@ import { never } from "wonka";
 
 import { makeFragmentData } from "../../gql";
 import { mockLocale } from "../../test-utils/mockLocale";
-import { DumbRouter } from "../../test-utils/router";
+import { DummyRouter } from "../../test-utils/router";
 
 import CompatSessionDetail, { FRAGMENT } from "./CompatSessionDetail";
 
@@ -50,9 +50,9 @@ describe("<CompatSessionDetail>", () => {
 
     const { container } = render(
       <Provider value={mockClient}>
-        <DumbRouter>
+        <DummyRouter>
           <CompatSessionDetail session={data} />
-        </DumbRouter>
+        </DummyRouter>
       </Provider>,
     );
 
@@ -70,9 +70,9 @@ describe("<CompatSessionDetail>", () => {
 
     const { container } = render(
       <Provider value={mockClient}>
-        <DumbRouter>
+        <DummyRouter>
           <CompatSessionDetail session={data} />
-        </DumbRouter>
+        </DummyRouter>
       </Provider>,
     );
 
@@ -90,9 +90,9 @@ describe("<CompatSessionDetail>", () => {
 
     const { getByText, queryByText } = render(
       <Provider value={mockClient}>
-        <DumbRouter>
+        <DummyRouter>
           <CompatSessionDetail session={data} />
-        </DumbRouter>
+        </DummyRouter>
       </Provider>,
     );
 

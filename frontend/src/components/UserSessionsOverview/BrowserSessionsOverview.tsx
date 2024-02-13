@@ -16,7 +16,7 @@ import { Body, H5 } from "@vector-im/compound-web";
 import { useTranslation } from "react-i18next";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
-import { NewLink } from "../../routing";
+import { Link } from "../../routing";
 import Block from "../Block";
 
 import styles from "./BrowserSessionsOverview.module.css";
@@ -47,9 +47,9 @@ const BrowserSessionsOverview: React.FC<{
           })}
         </Body>
       </div>
-      <NewLink to="/sessions/browsers">
+      <Link to="/sessions/browsers">
         {t("frontend.browser_sessions_overview.view_all_button")}
-      </NewLink>
+      </Link>
     </Block>
   );
 };
