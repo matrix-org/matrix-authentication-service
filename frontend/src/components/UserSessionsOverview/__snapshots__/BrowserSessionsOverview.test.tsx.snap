@@ -1,33 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`BrowserSessionsOverview > renders with no browser sessions 1`] = `
-<div>
-  <div
-    class="_block_17898c _sessionListBlock_c5c17e"
-  >
-    <div
-      class="_sessionListBlockInfo_c5c17e"
-    >
-      <h5
-        class="_typography_yh5dq_162 _font-body-lg-semibold_yh5dq_83"
-      >
-        Browsers
-      </h5>
-      <p
-        class="_typography_yh5dq_162 _font-body-md-regular_yh5dq_59"
-      >
-        0 active sessions
-      </p>
-    </div>
-    <a
-      class="_linkButton_b80ad8"
-      href="/browser-sessions"
-    >
-      View all
-    </a>
-  </div>
-</div>
-`;
+exports[`BrowserSessionsOverview > renders with no browser sessions 1`] = `<div />`;
 
 exports[`BrowserSessionsOverview > renders with sessions 1`] = `
 <div>
@@ -49,8 +22,10 @@ exports[`BrowserSessionsOverview > renders with sessions 1`] = `
       </p>
     </div>
     <a
-      class="_linkButton_b80ad8"
-      href="/browser-sessions"
+      class="_link_1mzip_17 _linkButton_b80ad8"
+      data-kind="primary"
+      href="/sessions/browsers"
+      rel="noreferrer noopener"
     >
       View all
     </a>

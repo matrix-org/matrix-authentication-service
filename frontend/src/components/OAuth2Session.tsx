@@ -79,10 +79,6 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
 
   const deviceId = getDeviceIdFromScope(data.scope);
 
-  const link = deviceId
-    ? { type: "session" as const, id: deviceId }
-    : undefined;
-
   const createdAt = parseISO(data.createdAt);
   const finishedAt = data.finishedAt ? parseISO(data.finishedAt) : undefined;
   const lastActiveAt = data.lastActiveAt
@@ -104,7 +100,6 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
       deviceType={deviceType}
       lastActiveIp={data.lastActiveIp || undefined}
       lastActiveAt={lastActiveAt}
-      link={link}
     >
       {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
     </Session>

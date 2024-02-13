@@ -12,32 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useTranslation } from "react-i18next";
+import { LinkComponent, useLinkProps } from "@tanstack/react-router";
+import { Link as CompoundLink } from "@vector-im/compound-web";
+import cx from "classnames";
+import { forwardRef } from "react";
 
 import styles from "./Link.module.css";
-import { Route } from "./routes";
-import { useNavigationLink } from "./useNavigationLink";
 
-const Link: React.FC<
-  {
-    route: Route;
-    // adds button-like styling to link element
-    kind?: "button";
-  } & React.HTMLProps<HTMLAnchorElement>
-> = ({ route, children, kind, className, ...props }) => {
-  const { onClick, href, pending } = useNavigationLink(route);
-  const { t } = useTranslation();
-
-  const classNames = [
-    kind === "button" ? styles.linkButton : "",
-    className,
-  ].join("");
+export const NewLink: LinkComponent = forwardRef<
+  HTMLAnchorElement,
+  Parameters<typeof useLinkProps>[0]
+>(({ children, ...props }, ref) => {
+  const { className, ...newProps } = useLinkProps(props);
 
   return (
-    <a href={href} onClick={onClick} className={classNames} {...props}>
-      {pending ? t("common.loading") : children}
-    </a>
+    <CompoundLink
+      kind="primary"
+      ref={ref}
+      className={cx(className, styles.linkButton)}
+      children={children}
+      {...newProps}
+    />
   );
-};
-
-export default Link;
+}) as LinkComponent;

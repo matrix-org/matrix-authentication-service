@@ -12,10 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export { default as Router } from "./Router";
-export { default as Link } from "./Link";
+export { NewLink } from "./Link";
 export type { Route, Location } from "./routes";
 export { pathToRoute, routeToPath } from "./routes";
 export { getRouteActionRedirection } from "./actions";
 export { routeAtom, locationAtom, appConfigAtom, history } from "./atoms";
-export { useNavigationLink } from "./useNavigationLink";

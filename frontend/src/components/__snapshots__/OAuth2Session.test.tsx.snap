@@ -25,9 +25,13 @@ exports[`<OAuth2Session /> > renders a finished session 1`] = `
       title="session-id"
     >
       <a
-        className=""
-        href="/session/abcd1234"
+        href="/sessions/session-id"
         onClick={[Function]}
+        onFocus={[Function]}
+        onMouseEnter={[Function]}
+        onMouseLeave={[Function]}
+        onTouchStart={[Function]}
+        style={{}}
       >
         abcd1234
       </a>
@@ -72,86 +76,7 @@ exports[`<OAuth2Session /> > renders a finished session 1`] = `
 </div>
 `;
 
-exports[`<OAuth2Session /> > renders an active session 1`] = `
-<div
-  className="_block_17898c _session_634806"
->
-  <svg
-    aria-label="Web"
-    className="_icon_e677aa"
-    fill="currentColor"
-    height="1em"
-    viewBox="0 0 24 24"
-    width="1em"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M4 20c-.55 0-1.02-.196-1.413-.587A1.926 1.926 0 0 1 2 18V6c0-.55.196-1.02.587-1.412A1.926 1.926 0 0 1 4 4h16c.55 0 1.02.196 1.413.588.391.391.587.862.587 1.412v12c0 .55-.196 1.02-.587 1.413A1.926 1.926 0 0 1 20 20H4Zm0-2h16V8H4v10Z"
-    />
-  </svg>
-  <div
-    className="_container_634806"
-  >
-    <h6
-      className="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64 _sessionName_634806"
-      title="session-id"
-    >
-      <a
-        className=""
-        href="/session/abcd1234"
-        onClick={[Function]}
-      >
-        abcd1234
-      </a>
-    </h6>
-    <p
-      className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
-    >
-      Signed in 
-      <time
-        dateTime="2023-06-29T03:35:17Z"
-      >
-        Thu, 29 Jun 2023, 03:35
-      </time>
-    </p>
-    <p
-      className="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _sessionMetadata_634806"
-    >
-      1.2.3.4
-    </p>
-    <p
-      className="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _sessionMetadata_634806"
-    >
-       
-      <span
-        className="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _sessionMetadata_634806"
-      >
-        Element
-      </span>
-    </p>
-    <div
-      className="_sessionActions_634806"
-    >
-      <button
-        aria-controls="radix-:r0:"
-        aria-disabled={false}
-        aria-expanded={false}
-        aria-haspopup="dialog"
-        className="_button_dyfp8_17 _destructive_dyfp8_99"
-        data-kind="secondary"
-        data-size="sm"
-        data-state="closed"
-        onClick={[Function]}
-        role="button"
-        tabIndex={0}
-        type="button"
-      >
-        End session
-      </button>
-    </div>
-  </div>
-</div>
-`;
+exports[`<OAuth2Session /> > renders an active session 1`] = `null`;
 
 exports[`<OAuth2Session /> > renders correct icon for a native session 1`] = `
 <div
@@ -178,9 +103,13 @@ exports[`<OAuth2Session /> > renders correct icon for a native session 1`] = `
       title="session-id"
     >
       <a
-        className=""
-        href="/session/abcd1234"
+        href="/sessions/session-id"
         onClick={[Function]}
+        onFocus={[Function]}
+        onMouseEnter={[Function]}
+        onMouseLeave={[Function]}
+        onTouchStart={[Function]}
+        style={{}}
       >
         abcd1234
       </a>

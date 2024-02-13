@@ -116,13 +116,7 @@ const CompatSessionDetail: React.FC<Props> = ({ session }) => {
 
   return (
     <BlockList>
-      <SessionHeader
-        backToRoute={{
-          type: "sessions-overview",
-        }}
-      >
-        {data.deviceId || data.id}
-      </SessionHeader>
+      <SessionHeader to="/sessions">{data.deviceId || data.id}</SessionHeader>
       <SessionDetails
         title={t("frontend.compat_session_detail.session_details_title")}
         details={sessionDetails}

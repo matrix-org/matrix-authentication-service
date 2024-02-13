@@ -19,7 +19,9 @@ import { Provider } from "urql";
 import { describe, expect, it } from "vitest";
 import { never } from "wonka";
 
-import { WithLocation } from "../../test-utils/WithLocation";
+import { makeFragmentData } from "../../gql";
+import { DumbRouter } from "../../test-utils/router";
+import { USER_GREETING_FRAGMENT } from "../UserGreeting";
 
 import Layout from "./Layout";
 
@@ -29,11 +31,23 @@ describe("<Layout />", () => {
       executeQuery: (): typeof never => never,
     };
 
+    const user = makeFragmentData(
+      {
+        id: "abc123",
+        username: "alice",
+        matrix: {
+          mxid: "@alice:example.org",
+          displayName: "Alice",
+        },
+      },
+      USER_GREETING_FRAGMENT,
+    );
+
     const component = render(
       <Provider value={mockClient}>
-        <WithLocation path="/">
-          <Layout userId="abc123" />
-        </WithLocation>
+        <DumbRouter>
+          <Layout user={user} />
+        </DumbRouter>
       </Provider>,
     );
 

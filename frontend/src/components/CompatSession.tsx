@@ -48,7 +48,7 @@ export const END_SESSION_MUTATION = graphql(/* GraphQL */ `
 `);
 
 export const simplifyUrl = (url: string): string => {
-  let parsed;
+  let parsed: URL;
   try {
     parsed = new URL(url);
   } catch (e) {
@@ -97,7 +97,6 @@ const CompatSession: React.FC<{
       clientName={clientName}
       lastActiveIp={data.lastActiveIp || undefined}
       lastActiveAt={lastActiveAt}
-      link={{ type: "session", id: data.deviceId }}
     >
       {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
     </Session>

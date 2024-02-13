@@ -20,8 +20,8 @@ import { describe, expect, it, afterEach, beforeAll } from "vitest";
 import { never } from "wonka";
 
 import { makeFragmentData } from "../../gql";
-import { WithLocation } from "../../test-utils/WithLocation";
 import { mockLocale } from "../../test-utils/mockLocale";
+import { DumbRouter } from "../../test-utils/router";
 
 import OAuth2SessionDetail, { FRAGMENT } from "./OAuth2SessionDetail";
 
@@ -53,9 +53,9 @@ describe("<OAuth2SessionDetail>", () => {
 
     const { container } = render(
       <Provider value={mockClient}>
-        <WithLocation>
+        <DumbRouter>
           <OAuth2SessionDetail session={data} />
-        </WithLocation>
+        </DumbRouter>
       </Provider>,
     );
 
@@ -73,9 +73,9 @@ describe("<OAuth2SessionDetail>", () => {
 
     const { getByText, queryByText } = render(
       <Provider value={mockClient}>
-        <WithLocation>
+        <DumbRouter>
           <OAuth2SessionDetail session={data} />
-        </WithLocation>
+        </DumbRouter>
       </Provider>,
     );
 

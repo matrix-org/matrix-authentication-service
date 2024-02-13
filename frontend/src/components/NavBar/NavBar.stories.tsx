@@ -13,11 +13,9 @@
 // limitations under the License.
 
 import type { Meta, StoryObj } from "@storybook/react";
-import { Provider } from "jotai";
-import { useHydrateAtoms } from "jotai/utils";
 
-import { appConfigAtom, locationAtom } from "../../routing";
-import NavItem, { ExternalLink } from "../NavItem";
+import { DumbRouter } from "../../test-utils/router";
+import NavItem from "../NavItem";
 
 import NavBar from "./NavBar";
 
@@ -25,26 +23,15 @@ const meta = {
   title: "UI/Nav Bar",
   component: NavBar,
   tags: ["autodocs"],
-  render: (props): React.ReactElement => (
-    <Provider>
-      <WithHomePage>
-        <NavBar {...props}>
-          <NavItem route={{ type: "sessions-overview" }}>Sessions</NavItem>
-          <NavItem route={{ type: "profile" }}>Profile</NavItem>
-          <ExternalLink href="https://example.com">External</ExternalLink>
-        </NavBar>
-      </WithHomePage>
-    </Provider>
+  render: (): React.ReactElement => (
+    <DumbRouter>
+      <NavBar>
+        <NavItem to="/">Profile</NavItem>
+        <NavItem to="/sessions">Sessions</NavItem>
+      </NavBar>
+    </DumbRouter>
   ),
 } satisfies Meta<typeof NavBar>;
-
-const WithHomePage: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
-  useHydrateAtoms([
-    [appConfigAtom, { root: "/", graphqlEndpoint: "/graphql" }],
-    [locationAtom, { pathname: "/" }],
-  ]);
-  return <>{children}</>;
-};
 
 export default meta;
 type Story = StoryObj<typeof NavBar>;

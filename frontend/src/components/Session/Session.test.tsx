@@ -19,6 +19,7 @@ import { create } from "react-test-renderer";
 import { describe, expect, it, beforeAll } from "vitest";
 
 import { mockLocale } from "../../test-utils/mockLocale";
+import { DumbRouter } from "../../test-utils/router";
 
 import Session from "./Session";
 
@@ -33,13 +34,19 @@ describe("<Session />", () => {
   beforeAll(() => mockLocale());
 
   it("renders an active session", () => {
-    const component = create(<Session {...defaultProps} />);
+    const component = create(
+      <DumbRouter>
+        <Session {...defaultProps} />
+      </DumbRouter>,
+    );
     expect(component.toJSON()).toMatchSnapshot();
   });
 
   it("renders a finished session", () => {
     const component = create(
-      <Session {...defaultProps} finishedAt={finishedAt} />,
+      <DumbRouter>
+        <Session {...defaultProps} finishedAt={finishedAt} />
+      </DumbRouter>,
     );
     expect(component.toJSON()).toMatchSnapshot();
   });
@@ -47,7 +54,9 @@ describe("<Session />", () => {
   it("uses session name when truthy", () => {
     const name = "test session name";
     const component = create(
-      <Session {...defaultProps} finishedAt={finishedAt} name={name} />,
+      <DumbRouter>
+        <Session {...defaultProps} finishedAt={finishedAt} name={name} />
+      </DumbRouter>,
     );
     expect(component.toJSON()).toMatchSnapshot();
   });
@@ -55,12 +64,14 @@ describe("<Session />", () => {
   it("uses client name when truthy", () => {
     const clientName = "Element";
     const component = create(
-      <Session
-        {...defaultProps}
-        finishedAt={finishedAt}
-        clientName={clientName}
-        clientLogoUri="https://client.org/logo.png"
-      />,
+      <DumbRouter>
+        <Session
+          {...defaultProps}
+          finishedAt={finishedAt}
+          clientName={clientName}
+          clientLogoUri="https://client.org/logo.png"
+        />
+      </DumbRouter>,
     );
     expect(component.toJSON()).toMatchSnapshot();
   });
@@ -68,12 +79,14 @@ describe("<Session />", () => {
   it("renders ip address", () => {
     const clientName = "Element";
     const component = create(
-      <Session
-        {...defaultProps}
-        finishedAt={finishedAt}
-        clientName={clientName}
-        lastActiveIp="127.0.0.1"
-      />,
+      <DumbRouter>
+        <Session
+          {...defaultProps}
+          finishedAt={finishedAt}
+          clientName={clientName}
+          lastActiveIp="127.0.0.1"
+        />
+      </DumbRouter>,
     );
     expect(component.toJSON()).toMatchSnapshot();
   });

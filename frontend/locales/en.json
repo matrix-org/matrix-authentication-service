@@ -154,9 +154,6 @@
       "heading": "Emails",
       "no_primary_email_alert": "No primary email address"
     },
-    "user_greeting": {
-      "error": "Failed to load user"
-    },
     "user_name": {
       "display_name_field_label": "Display Name"
     },

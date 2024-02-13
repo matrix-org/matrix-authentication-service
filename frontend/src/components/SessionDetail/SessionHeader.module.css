@@ -20,3 +20,47 @@
     gap: var(--cpd-space-2x);
     align-items: center;
 }
+
+.back-button {
+    display: block;
+    inline-size: var(--cpd-space-8x);
+    block-size: var(--cpd-space-8x);
+
+    /* the icon is 0.75 the size of the button, so add padding to put it in the middle */
+    padding: var(--cpd-space-1x);
+    aspect-ratio: 1 / 1;
+    color: var(--cpd-color-icon-tertiary);
+    border: 0;
+    appearance: none;
+    cursor: pointer;
+    border-radius: 50%;
+    position: relative;
+    background: transparent;
+    line-height: 0px;
+}
+
+.back-button svg {
+    inline-size: var(--cpd-space-6x);
+    block-size: var(--cpd-space-6x);
+}
+
+.back-button[aria-disabled="true"] {
+    color: var(--cpd-color-icon-disabled);
+    cursor: not-allowed;
+}
+
+/**
+ * Hover state
+ */
+
+@media (hover) {
+    .back-button:not([aria-disabled="true"]):hover {
+        color: var(--cpd-color-icon-primary);
+        background: var(--cpd-color-bg-subtle-primary);
+    }
+}
+
+.back-button:not([aria-disabled="true"]):active {
+    color: var(--cpd-color-icon-primary);
+    background: var(--cpd-color-bg-subtle-primary);
+}

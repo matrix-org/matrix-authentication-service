@@ -15,7 +15,7 @@
 import { useAtomValue } from "jotai";
 import { useTranslation } from "react-i18next";
 
-import { appConfigAtom, routeAtom } from "../../routing";
+import { appConfigAtom } from "../../routing";
 import Footer from "../Footer";
 import NavBar from "../NavBar";
 import NavItem from "../NavItem";
@@ -24,32 +24,20 @@ import UserGreeting from "../UserGreeting";
 import styles from "./Layout.module.css";
 
 const Layout: React.FC<{
-  userId: string;
+  user: React.ComponentProps<typeof UserGreeting>["user"];
   children?: React.ReactNode;
-}> = ({ userId, children }) => {
-  const route = useAtomValue(routeAtom);
+}> = ({ user, children }) => {
   const appConfig = useAtomValue(appConfigAtom);
   const { t } = useTranslation();
 
-  // Hide the nav bar & user greeting on the verify-email page
-  const shouldHideNavBar = route.type === "verify-email";
-
   return (
     <div className={styles.layoutContainer}>
-      {shouldHideNavBar ? null : (
-        <>
-          <UserGreeting userId={userId} />
+      <UserGreeting user={user} />
 
-          <NavBar>
-            <NavItem route={{ type: "profile" }}>
-              {t("frontend.nav.profile")}
-            </NavItem>
-            <NavItem route={{ type: "sessions-overview" }}>
-              {t("frontend.nav.sessions")}
-            </NavItem>
-          </NavBar>
-        </>
-      )}
+      <NavBar>
+        <NavItem to="/">{t("frontend.nav.profile")}</NavItem>
+        <NavItem to="/sessions">{t("frontend.nav.sessions")}</NavItem>
+      </NavBar>
 
       {children}
 

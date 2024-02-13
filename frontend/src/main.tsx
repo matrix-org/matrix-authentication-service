@@ -12,36 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { TooltipProvider } from "@vector-im/compound-web";
 import { Provider } from "jotai";
-import { DevTools } from "jotai-devtools";
 import { Suspense, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { I18nextProvider } from "react-i18next";
 import { Provider as UrqlProvider } from "urql";
 
 import ErrorBoundary from "./components/ErrorBoundary";
-import Layout from "./components/Layout";
 import LoadingScreen from "./components/LoadingScreen";
-import LoadingSpinner from "./components/LoadingSpinner";
 import NotLoggedIn from "./components/NotLoggedIn";
 import { client } from "./graphql";
 import i18n from "./i18n";
-import { Router } from "./routing";
+import { routeTree } from "./routeTree.gen";
 import "./main.css";
 import { useCurrentUserId } from "./utils/useCurrentUserId";
+
+// Create a new router instance
+const router = createRouter({
+  routeTree,
+  basepath: "/account/",
+  context: { userId: "", client },
+});
+
+// Register the router instance for type safety
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router;
+  }
+}
 
 const App: React.FC = () => {
   const userId = useCurrentUserId();
   if (userId === null) return <NotLoggedIn />;
 
-  return (
-    <Layout userId={userId}>
-      <Suspense fallback={<LoadingSpinner />}>
-        <Router userId={userId} />
-      </Suspense>
-    </Layout>
-  );
+  return <RouterProvider router={router} context={{ userId, client }} />;
 };
 
 createRoot(document.getElementById("root") as HTMLElement).render(
@@ -49,7 +55,6 @@ createRoot(document.getElementById("root") as HTMLElement).render(
     <ErrorBoundary>
       <UrqlProvider value={client}>
         <Provider>
-          {import.meta.env.DEV && <DevTools />}
           <Suspense fallback={<LoadingScreen />}>
             <I18nextProvider i18n={i18n}>
               <TooltipProvider>

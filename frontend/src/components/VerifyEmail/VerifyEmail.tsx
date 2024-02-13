@@ -12,16 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { useLinkProps, useNavigate } from "@tanstack/react-router";
 import IconArrowLeft from "@vector-im/compound-design-tokens/icons/arrow-left.svg?react";
 import IconSend from "@vector-im/compound-design-tokens/icons/send-solid.svg?react";
 import { Button, Form, Alert, H1, Text } from "@vector-im/compound-web";
-import { useSetAtom } from "jotai";
 import { useRef } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { useMutation } from "urql";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
-import { routeAtom, useNavigationLink } from "../../routing";
 
 import styles from "./VerifyEmail.module.css";
 
@@ -73,20 +72,12 @@ const RESEND_VERIFICATION_EMAIL_MUTATION = graphql(/* GraphQL */ `
 `);
 
 const BackButton: React.FC = () => {
-  const { onClick, href, pending } = useNavigationLink({
-    type: "profile",
-  });
+  const props = useLinkProps({ to: "/" });
   const { t } = useTranslation();
 
   return (
-    <Button
-      as="a"
-      href={href}
-      onClick={onClick}
-      Icon={IconArrowLeft}
-      kind="tertiary"
-    >
-      {pending ? t("common.loading") : t("action.back")}
+    <Button as="a" Icon={IconArrowLeft} kind="tertiary" {...props}>
+      {t("action.back")}
     </Button>
   );
 };
@@ -99,7 +90,7 @@ const VerifyEmail: React.FC<{
   const [resendVerificationEmailResult, resendVerificationEmail] = useMutation(
     RESEND_VERIFICATION_EMAIL_MUTATION,
   );
-  const setRoute = useSetAtom(routeAtom);
+  const navigate = useNavigate();
   const fieldRef = useRef<HTMLInputElement>(null);
   const { t } = useTranslation();
 
@@ -113,7 +104,7 @@ const VerifyEmail: React.FC<{
       form.reset();
 
       if (result.data?.verifyEmail.status === "VERIFIED") {
-        setRoute({ type: "profile" });
+        navigate({ to: "/" });
       }
     });
   };

@@ -4,6 +4,7 @@ exports[`<Layout /> > renders app navigation correctly 1`] = `
 <a
   aria-current="page"
   class="_navItem_8603fc"
+  data-status="active"
   href="/"
 >
   Profile
@@ -13,7 +14,7 @@ exports[`<Layout /> > renders app navigation correctly 1`] = `
 exports[`<Layout /> > renders app navigation correctly 2`] = `
 <a
   class="_navItem_8603fc"
-  href="/sessions-overview"
+  href="/sessions"
 >
   Sessions
 </a>

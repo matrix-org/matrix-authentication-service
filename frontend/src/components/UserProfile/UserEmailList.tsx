@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { useNavigate } from "@tanstack/react-router";
 import { Alert, H3 } from "@vector-im/compound-web";
-import { useSetAtom } from "jotai";
 import { useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "urql";
@@ -25,7 +25,6 @@ import {
   usePages,
   usePagination,
 } from "../../pagination";
-import { routeAtom } from "../../routing";
 import BlockList from "../BlockList";
 import PaginationControls from "../PaginationControls";
 import UserEmail from "../UserEmail";
@@ -89,7 +88,7 @@ const UserEmailList: React.FC<{
   const emails = result.data?.user?.emails;
   if (!emails) throw new Error(); // Suspense mode is enabled
 
-  const setRoute = useSetAtom(routeAtom);
+  const navigate = useNavigate();
   const [prevPage, nextPage] = usePages(pagination, emails.pageInfo);
 
   const [primaryEmailResult, refreshPrimaryEmail] = useQuery({
@@ -116,14 +115,14 @@ const UserEmailList: React.FC<{
 
   // When adding an email, we want to go to the email verification form
   const onAdd = (id: string): void => {
-    setRoute({ type: "verify-email", id });
+    navigate({ to: "/emails/$id/verify", params: { id } });
   };
 
   const showNoPrimaryEmailAlert = !!result?.data && !primaryEmailId;
 
   return (
     <BlockList>
-      <H3>{t("frontend.user_email_list.heading")}</H3>
+      <H3 id="emails">{t("frontend.user_email_list.heading")}</H3>
       {showNoPrimaryEmailAlert && (
         <Alert
           type="critical"

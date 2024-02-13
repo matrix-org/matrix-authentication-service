@@ -99,7 +99,6 @@ const BrowserSession: React.FC<Props> = ({ session }) => {
       deviceType={deviceInformation?.deviceType}
       lastActiveIp={data.lastActiveIp || undefined}
       lastActiveAt={lastActiveAt}
-      link={{ type: "browser-session", id: data.id }}
     >
       {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
     </Session>

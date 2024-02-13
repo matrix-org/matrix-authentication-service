@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Link } from "@tanstack/react-router";
 import { H6, Text, Badge } from "@vector-im/compound-web";
 import { Trans, useTranslation } from "react-i18next";
 
-import { Route, Link } from "../../routing";
 import { DeviceType } from "../../utils/parseUserAgent";
 import Block from "../Block";
 import DateTime from "../DateTime";
@@ -40,7 +40,6 @@ type SessionProps = {
   deviceType?: DeviceType;
   lastActiveIp?: string;
   lastActiveAt?: Date;
-  link?: Route;
 };
 
 const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
@@ -55,7 +54,6 @@ const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
   isCurrent,
   children,
   deviceType,
-  link,
 }) => {
   const { t } = useTranslation();
 
@@ -67,7 +65,9 @@ const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
           <Badge kind="success">{t("frontend.session.current_badge")}</Badge>
         )}
         <H6 className={styles.sessionName} title={id}>
-          {link ? <Link route={link}>{name || id}</Link> : name || id}
+          <Link to="/sessions/$id" params={{ id }}>
+            {name || id}
+          </Link>
         </H6>
         <SessionMetadata weight="semibold">
           <Trans

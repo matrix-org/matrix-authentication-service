@@ -17,7 +17,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "urql";
 
 import { graphql } from "../../gql";
-import { Link } from "../../routing";
+import { NewLink } from "../../routing";
 
 import CompatSessionDetail from "./CompatSessionDetail";
 import OAuth2SessionDetail from "./OAuth2SessionDetail";
@@ -53,9 +53,9 @@ const SessionDetail: React.FC<{
         title={t("frontend.session_detail.alert.title", { deviceId })}
       >
         {t("frontend.session_detail.alert.text")}
-        <Link kind="button" route={{ type: "sessions-overview" }}>
+        <NewLink to="/sessions">
           {t("frontend.session_detail.alert.button")}
-        </Link>
+        </NewLink>
       </Alert>
     );
   }

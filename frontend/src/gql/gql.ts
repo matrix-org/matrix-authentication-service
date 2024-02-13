@@ -45,8 +45,8 @@ const documents = {
     types.RemoveEmailDocument,
   "\n  mutation SetPrimaryEmail($id: ID!) {\n    setPrimaryEmail(input: { userEmailId: $id }) {\n      status\n      user {\n        id\n        primaryEmail {\n          id\n        }\n      }\n    }\n  }\n":
     types.SetPrimaryEmailDocument,
-  "\n  query UserGreeting($userId: ID!) {\n    user(id: $userId) {\n      id\n      username\n      matrix {\n        mxid\n        displayName\n      }\n\n      ...UnverifiedEmailAlert\n    }\n  }\n":
-    types.UserGreetingDocument,
+  "\n  fragment UserGreeting_user on User {\n    id\n    username\n    matrix {\n      mxid\n      displayName\n    }\n\n    ...UnverifiedEmailAlert\n  }\n":
+    types.UserGreeting_UserFragmentDoc,
   "\n  mutation AddEmail($userId: ID!, $email: String!) {\n    addEmail(input: { userId: $userId, email: $email }) {\n      status\n      violations\n      email {\n        id\n        ...UserEmail_email\n      }\n    }\n  }\n":
     types.AddEmailDocument,
   "\n  mutation AllowCrossSigningReset($userId: ID!) {\n    allowUserCrossSigningReset(input: { userId: $userId }) {\n      user {\n        id\n      }\n    }\n  }\n":
@@ -77,6 +77,12 @@ const documents = {
     types.SessionsOverviewQueryDocument,
   "\n  query VerifyEmailQuery($id: ID!) {\n    userEmail(id: $id) {\n      ...UserEmail_verifyEmail\n    }\n  }\n":
     types.VerifyEmailQueryDocument,
+  "\n  query UserLayout($userId: ID!) {\n    user(id: $userId) {\n      ...UserGreeting_user\n    }\n  }\n":
+    types.UserLayoutDocument,
+  "\n  query DeviceRedirectQuery($deviceId: String!, $userId: ID!) {\n    session(deviceId: $deviceId, userId: $userId) {\n      __typename\n      ... on Node {\n        id\n      }\n    }\n  }\n":
+    types.DeviceRedirectQueryDocument,
+  "\n  query SessionDetailQuery($id: ID!) {\n    node(id: $id) {\n      __typename\n      ...CompatSession_detail\n      ...OAuth2Session_detail\n      ...BrowserSession_detail\n    }\n  }\n":
+    types.SessionDetailQueryDocument,
   "\n  query CurrentViewerSessionQuery {\n    viewerSession {\n      __typename\n      ... on BrowserSession {\n        id\n      }\n    }\n  }\n":
     types.CurrentViewerSessionQueryDocument,
   "\n  query CurrentViewerQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n      }\n    }\n  }\n":
@@ -197,8 +203,8 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  query UserGreeting($userId: ID!) {\n    user(id: $userId) {\n      id\n      username\n      matrix {\n        mxid\n        displayName\n      }\n\n      ...UnverifiedEmailAlert\n    }\n  }\n",
-): (typeof documents)["\n  query UserGreeting($userId: ID!) {\n    user(id: $userId) {\n      id\n      username\n      matrix {\n        mxid\n        displayName\n      }\n\n      ...UnverifiedEmailAlert\n    }\n  }\n"];
+  source: "\n  fragment UserGreeting_user on User {\n    id\n    username\n    matrix {\n      mxid\n      displayName\n    }\n\n    ...UnverifiedEmailAlert\n  }\n",
+): (typeof documents)["\n  fragment UserGreeting_user on User {\n    id\n    username\n    matrix {\n      mxid\n      displayName\n    }\n\n    ...UnverifiedEmailAlert\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -289,6 +295,24 @@ export function graphql(
 export function graphql(
   source: "\n  query VerifyEmailQuery($id: ID!) {\n    userEmail(id: $id) {\n      ...UserEmail_verifyEmail\n    }\n  }\n",
 ): (typeof documents)["\n  query VerifyEmailQuery($id: ID!) {\n    userEmail(id: $id) {\n      ...UserEmail_verifyEmail\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  query UserLayout($userId: ID!) {\n    user(id: $userId) {\n      ...UserGreeting_user\n    }\n  }\n",
+): (typeof documents)["\n  query UserLayout($userId: ID!) {\n    user(id: $userId) {\n      ...UserGreeting_user\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  query DeviceRedirectQuery($deviceId: String!, $userId: ID!) {\n    session(deviceId: $deviceId, userId: $userId) {\n      __typename\n      ... on Node {\n        id\n      }\n    }\n  }\n",
+): (typeof documents)["\n  query DeviceRedirectQuery($deviceId: String!, $userId: ID!) {\n    session(deviceId: $deviceId, userId: $userId) {\n      __typename\n      ... on Node {\n        id\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  query SessionDetailQuery($id: ID!) {\n    node(id: $id) {\n      __typename\n      ...CompatSession_detail\n      ...OAuth2Session_detail\n      ...BrowserSession_detail\n    }\n  }\n",
+): (typeof documents)["\n  query SessionDetailQuery($id: ID!) {\n    node(id: $id) {\n      __typename\n      ...CompatSession_detail\n      ...OAuth2Session_detail\n      ...BrowserSession_detail\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

@@ -17,7 +17,7 @@ import { useTranslation } from "react-i18next";
 import { useMutation } from "urql";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
-import { Link } from "../../routing";
+import { NewLink } from "../../routing";
 import { getDeviceIdFromScope } from "../../utils/deviceIdFromScope";
 import BlockList from "../BlockList/BlockList";
 import DateTime from "../DateTime";
@@ -117,9 +117,9 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
   ];
 
   const clientTitle = (
-    <Link route={{ type: "client", id: data.client.id }}>
+    <NewLink to="/clients/$id" params={{ id: data.client.id }}>
       {t("frontend.oauth2_session_detail.client_title")}
-    </Link>
+    </NewLink>
   );
   const clientDetails = [
     {
@@ -142,7 +142,11 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
     {
       label: t("frontend.session.uri_label"),
       value: (
-        <a target="_blank" href={data.client.clientUri || undefined}>
+        <a
+          target="_blank"
+          rel="noreferrer"
+          href={data.client.clientUri || undefined}
+        >
           {data.client.clientUri}
         </a>
       ),
@@ -151,13 +155,7 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
 
   return (
     <BlockList>
-      <SessionHeader
-        backToRoute={{
-          type: "sessions-overview",
-        }}
-      >
-        {deviceId || data.id}
-      </SessionHeader>
+      <SessionHeader to="/sessions">{deviceId || data.id}</SessionHeader>
       <SessionDetails
         title={t("frontend.oauth2_session_detail.session_details_title")}
         details={sessionDetails}
