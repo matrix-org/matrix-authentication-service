@@ -1,0 +1,73 @@
+/* Copyright 2024 The Matrix.org Foundation C.I.C.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.container {
+    display: flex;
+    gap: var(--cpd-space-2x);
+}
+
+button.save,
+button.cancel {
+    height: var(--cpd-space-9x);
+    width: var(--cpd-space-9x);
+    padding: calc(var(--cpd-space-2x) - 1px);
+    border-style: solid;
+    border-width: 1px;
+    border-radius: var(--cpd-radius-pill-effect);
+    transition-duration: 0.1s;
+    transition-property: color, background-color, border-color, box-shadow;
+
+    &>svg {
+        height: var(--cpd-space-5x);
+        width: var(--cpd-space-5x);
+    }
+}
+
+button.save {
+    background-color: var(--cpd-color-bg-action-primary-rest);
+    border-color: var(--cpd-color-bg-action-primary-rest);
+    color: var(--cpd-color-text-on-solid-primary);
+
+    &:hover {
+        background-color: var(--cpd-color-bg-action-primary-hovered);
+        border-color: var(--cpd-color-bg-action-primary-hovered);
+    }
+
+    &:active {
+        background-color: var(--cpd-color-bg-action-primary-pressed);
+        border-color: var(--cpd-color-bg-action-primary-pressed);
+    }
+}
+
+button.cancel {
+    background-color: var(--cpd-color-bg-action-secondary-rest);
+    border-color: var(--cpd-color-border-interactive-secondary);
+    color: var(--cpd-color-icon-primary);
+
+    /** TODO: have the shadow in the design tokens */
+    box-shadow: 0 1.2px 2.4px 0 rgb(0 0 0 / 15%);
+
+    &:hover {
+        background-color: var(--cpd-color-bg-action-secondary-hovered);
+        border-color: var(--cpd-color-border-interactive-hovered);
+        box-shadow: none;
+    }
+
+    &:active {
+        background-color: var(--cpd-color-bg-action-secondary-pressed);
+        border-color: var(--cpd-color-border-interactive-hovered);
+        box-shadow: none;
+    }
+}
