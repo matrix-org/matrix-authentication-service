@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { CombinedError } from "@urql/core";
-import { Alert } from "@vector-im/compound-web";
 import { ErrorInfo, ReactNode, PureComponent } from "react";
-import { Translation } from "react-i18next";
 
-import GraphQLError from "./GraphQLError";
+import GenericError from "./GenericError";
+import Layout from "./Layout";
 
 interface Props {
   children: ReactNode;
@@ -26,9 +24,6 @@ interface Props {
 interface IState {
   error?: Error;
 }
-
-const isGqlError = (error: Error): error is CombinedError =>
-  error.name === "CombinedError";
 
 /**
  * This error boundary component can be used to wrap large content areas and
@@ -57,18 +52,10 @@ export default class ErrorBoundary extends PureComponent<Props, IState> {
 
   public render(): ReactNode {
     if (this.state.error) {
-      if (isGqlError(this.state.error)) {
-        return <GraphQLError error={this.state.error} />;
-      }
-
       return (
-        <Translation>
-          {(t): ReactNode => (
-            <Alert type="critical" title={t("frontend.error_boundary_title")}>
-              {this.state.error!.message}
-            </Alert>
-          )}
-        </Translation>
+        <Layout>
+          <GenericError error={this.state.error} />
+        </Layout>
       );
     }
 

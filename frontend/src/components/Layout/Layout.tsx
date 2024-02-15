@@ -12,45 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useAtomValue } from "jotai";
-import { useTranslation } from "react-i18next";
-
-import { appConfigAtom, routeAtom } from "../../routing";
+import appConfig from "../../config";
 import Footer from "../Footer";
-import NavBar from "../NavBar";
-import NavItem from "../NavItem";
-import UserGreeting from "../UserGreeting";
 
 import styles from "./Layout.module.css";
 
 const Layout: React.FC<{
-  userId: string;
   children?: React.ReactNode;
-}> = ({ userId, children }) => {
-  const route = useAtomValue(routeAtom);
-  const appConfig = useAtomValue(appConfigAtom);
-  const { t } = useTranslation();
-
-  // Hide the nav bar & user greeting on the verify-email page
-  const shouldHideNavBar = route.type === "verify-email";
-
+}> = ({ children }) => {
   return (
     <div className={styles.layoutContainer}>
-      {shouldHideNavBar ? null : (
-        <>
-          <UserGreeting userId={userId} />
-
-          <NavBar>
-            <NavItem route={{ type: "profile" }}>
-              {t("frontend.nav.profile")}
-            </NavItem>
-            <NavItem route={{ type: "sessions-overview" }}>
-              {t("frontend.nav.sessions")}
-            </NavItem>
-          </NavBar>
-        </>
-      )}
-
       {children}
 
       <Footer

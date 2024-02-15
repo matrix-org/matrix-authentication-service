@@ -13,56 +13,50 @@
 // limitations under the License.
 
 import { Heading, Text, Avatar } from "@vector-im/compound-web";
-import { useTranslation } from "react-i18next";
-import { useQuery } from "urql";
 
-import { graphql } from "../gql";
+import { FragmentType, graphql, useFragment } from "../gql";
 
 import UnverifiedEmailAlert from "./UnverifiedEmailAlert";
 import styles from "./UserGreeting.module.css";
 
-const QUERY = graphql(/* GraphQL */ `
-  query UserGreeting($userId: ID!) {
-    user(id: $userId) {
-      id
-      username
-      matrix {
-        mxid
-        displayName
-      }
-
-      ...UnverifiedEmailAlert
+export const USER_GREETING_FRAGMENT = graphql(/* GraphQL */ `
+  fragment UserGreeting_user on User {
+    id
+    username
+    matrix {
+      mxid
+      displayName
     }
+
+    ...UnverifiedEmailAlert
   }
 `);
 
-const UserGreeting: React.FC<{ userId: string }> = ({ userId }) => {
-  const [result] = useQuery({ query: QUERY, variables: { userId } });
-  const { t } = useTranslation();
+type Props = {
+  user: FragmentType<typeof USER_GREETING_FRAGMENT>;
+};
 
-  if (result.data?.user) {
-    const user = result.data.user;
-    return (
-      <>
-        <header className={styles.header}>
-          <Avatar
-            size="var(--cpd-space-24x)"
-            id={user.matrix.mxid}
-            name={user.matrix.displayName || user.matrix.mxid}
-          />
-          <Heading size="xl" weight="semibold">
-            {user.matrix.displayName || user.username}
-          </Heading>
-          <Text size="lg" className={styles.mxid}>
-            {user.matrix.mxid}
-          </Text>
-        </header>
-        <UnverifiedEmailAlert user={user} />
-      </>
-    );
-  }
+const UserGreeting: React.FC<Props> = ({ user }) => {
+  const data = useFragment(USER_GREETING_FRAGMENT, user);
 
-  return <>{t("frontend.user_greeting.error")}</>;
+  return (
+    <>
+      <header className={styles.header}>
+        <Avatar
+          size="var(--cpd-space-24x)"
+          id={data.matrix.mxid}
+          name={data.matrix.displayName || data.matrix.mxid}
+        />
+        <Heading size="xl" weight="semibold">
+          {data.matrix.displayName || data.username}
+        </Heading>
+        <Text size="lg" className={styles.mxid}>
+          {data.matrix.mxid}
+        </Text>
+      </header>
+      <UnverifiedEmailAlert user={data} />
+    </>
+  );
 };
 
 export default UserGreeting;

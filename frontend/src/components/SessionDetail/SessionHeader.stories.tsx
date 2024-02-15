@@ -15,20 +15,17 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { PropsWithChildren } from "react";
 
-import { Route } from "../../routing/routes";
-import { WithLocation } from "../../test-utils/WithLocation";
+import { DummyRouter } from "../../test-utils/router";
 
 import SessionHeader from "./SessionHeader";
 
-type Props = PropsWithChildren<{
-  backToRoute: Route;
-}>;
+type Props = PropsWithChildren;
 
-const Template: React.FC<Props> = ({ backToRoute, children }) => {
+const Template: React.FC<Props> = ({ children }) => {
   return (
-    <WithLocation>
-      <SessionHeader backToRoute={backToRoute}>{children}</SessionHeader>
-    </WithLocation>
+    <DummyRouter>
+      <SessionHeader to="/">{children}</SessionHeader>
+    </DummyRouter>
   );
 };
 
@@ -43,7 +40,6 @@ type Story = StoryObj<typeof Template>;
 
 export const Basic: Story = {
   args: {
-    backToRoute: { type: "sessions-overview" },
     children: <>Chrome on iOS</>,
   },
 };

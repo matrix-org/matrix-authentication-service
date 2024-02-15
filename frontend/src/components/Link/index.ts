@@ -12,26 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useQuery } from "urql";
-
-import { graphql } from "../gql";
-
-const CURRENT_VIEWER_QUERY = graphql(/* GraphQL */ `
-  query CurrentViewerQuery {
-    viewer {
-      __typename
-      ... on User {
-        id
-      }
-    }
-  }
-`);
-
-export const useCurrentUserId = (): string | null => {
-  const [result] = useQuery({ query: CURRENT_VIEWER_QUERY });
-  if (result.error) throw result.error;
-  if (!result.data) throw new Error(); // Suspense mode is enabled
-  return result.data.viewer.__typename === "User"
-    ? result.data.viewer.id
-    : null;
-};
+export { Link } from "./Link";

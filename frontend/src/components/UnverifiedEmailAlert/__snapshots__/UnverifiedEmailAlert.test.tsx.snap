@@ -36,8 +36,11 @@ exports[`<UnverifiedEmailAlert /> > renders a warning when there are unverified 
           You have 2 unverified email addresses.
            
           <a
-            class="_linkButton_b80ad8"
-            href="/"
+            class="_link_1mzip_17 active _linkButton_379d57"
+            data-kind="primary"
+            data-status="active"
+            href="/#emails"
+            rel="noreferrer noopener"
           >
             Review and verify
           </a>

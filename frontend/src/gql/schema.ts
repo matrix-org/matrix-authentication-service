@@ -1855,6 +1855,26 @@ export default {
             ],
           },
           {
+            name: "compatSession",
+            type: {
+              kind: "OBJECT",
+              name: "CompatSession",
+              ofType: null,
+            },
+            args: [
+              {
+                name: "id",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
+          },
+          {
             name: "currentBrowserSession",
             type: {
               kind: "OBJECT",
@@ -1897,6 +1917,26 @@ export default {
             type: {
               kind: "OBJECT",
               name: "Oauth2Client",
+              ofType: null,
+            },
+            args: [
+              {
+                name: "id",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
+          },
+          {
+            name: "oauth2Session",
+            type: {
+              kind: "OBJECT",
+              name: "Oauth2Session",
               ofType: null,
             },
             args: [

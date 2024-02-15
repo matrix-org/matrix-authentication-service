@@ -12,44 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import classNames from "classnames";
-import { useAtomValue } from "jotai";
-
-import { routeAtom, Link, Route } from "../../routing";
+import { Link } from "@tanstack/react-router";
 
 import styles from "./NavItem.module.css";
 
-const NavItem: React.FC<React.PropsWithChildren<{ route: Route }>> = ({
-  route,
-  children,
-}) => {
-  const currentRoute = useAtomValue(routeAtom);
-  const active = currentRoute.type === route.type;
+const NavItem: React.FC<React.ComponentProps<typeof Link>> = (props) => {
   return (
-    <li className={styles.navTab} data-current={active ? true : undefined}>
+    <li className={styles.navTab}>
       <Link
         className={styles.navItem}
-        route={route}
-        aria-current={active ? "page" : undefined}
-      >
-        {children}
-      </Link>
+        activeProps={{ "aria-current": "page" }}
+        {...props}
+      />
     </li>
   );
 };
-
-export const ExternalLink: React.FC<
-  React.PropsWithChildren<{ href: string }>
-> = ({ href, children }) => (
-  <li className={styles.navTab}>
-    <a
-      rel="noreferrer noopener"
-      className={classNames(styles.navItem, styles.externalLink)}
-      href={href}
-    >
-      {children}
-    </a>
-  </li>
-);
 
 export default NavItem;

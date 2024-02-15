@@ -12,23 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Separator } from "@vector-im/compound-web";
+import { LinkComponent, useLinkProps } from "@tanstack/react-router";
+import { Link as CompoundLink } from "@vector-im/compound-web";
+import cx from "classnames";
+import { forwardRef } from "react";
 
-import BlockList from "../BlockList/BlockList";
+import styles from "./Link.module.css";
 
-import CrossSigningReset from "./CrossSigningReset";
-import UserEmailList from "./UserEmailList";
-import UserName from "./UserName";
+export const Link: LinkComponent = forwardRef<
+  HTMLAnchorElement,
+  Parameters<typeof useLinkProps>[0]
+>(({ children, ...props }, ref) => {
+  const { className, ...newProps } = useLinkProps(props);
 
-const UserProfile: React.FC<{ userId: string }> = ({ userId }) => {
   return (
-    <BlockList>
-      <UserName userId={userId} />
-      <UserEmailList userId={userId} />
-      <Separator />
-      <CrossSigningReset userId={userId} />
-    </BlockList>
+    <CompoundLink
+      kind="primary"
+      ref={ref}
+      className={cx(className, styles.linkButton)}
+      children={children}
+      {...newProps}
+    />
   );
-};
-
-export default UserProfile;
+}) as LinkComponent;

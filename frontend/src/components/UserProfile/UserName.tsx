@@ -15,20 +15,18 @@
 import { Alert, Button, Form } from "@vector-im/compound-web";
 import { useState, ChangeEventHandler } from "react";
 import { useTranslation } from "react-i18next";
-import { useMutation, useQuery } from "urql";
+import { useMutation } from "urql";
 
-import { graphql } from "../../gql";
+import { FragmentType, graphql, useFragment } from "../../gql";
 import LoadingSpinner from "../LoadingSpinner/LoadingSpinner";
 
 import styles from "./UserName.module.css";
 
-const QUERY = graphql(/* GraphQL */ `
-  query UserDisplayName($userId: ID!) {
-    user(id: $userId) {
-      id
-      matrix {
-        displayName
-      }
+const FRAGMENT = graphql(/* GraphQL */ `
+  fragment UserName_user on User {
+    id
+    matrix {
+      displayName
     }
   }
 `);
@@ -59,12 +57,11 @@ const getErrorMessage = (result: {
   }
 };
 
-const UserName: React.FC<{ userId: string }> = ({ userId }) => {
-  const [result, refreshUserGreeting] = useQuery({
-    query: QUERY,
-    variables: { userId },
-  });
-  const displayName = result.data?.user?.matrix.displayName || "";
+const UserName: React.FC<{ user: FragmentType<typeof FRAGMENT> }> = ({
+  user,
+}) => {
+  const data = useFragment(FRAGMENT, user);
+  const displayName = data.matrix.displayName || "";
 
   const [setDisplayNameResult, setDisplayName] = useMutation(
     SET_DISPLAYNAME_MUTATION,
@@ -95,21 +92,20 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
       return;
     }
 
-    setDisplayName({ displayName: newDisplayName, userId }).then((result) => {
-      if (!result.data) {
-        console.error("Failed to set display name", result.error);
-      } else if (result.data.setDisplayName.status === "SET") {
-        // refresh the user greeting after changing the display name
-        refreshUserGreeting({
-          requestPolicy: "network-only",
-        });
-      } else if (result.data.setDisplayName.status === "INVALID") {
-        // reset to current saved display name
-        form.reset();
-      }
+    setDisplayName({ displayName: newDisplayName, userId: data.id }).then(
+      (result) => {
+        if (!result.data) {
+          console.error("Failed to set display name", result.error);
+        } else if (result.data.setDisplayName.status === "SET") {
+          // This should update the cache
+        } else if (result.data.setDisplayName.status === "INVALID") {
+          // reset to current saved display name
+          form.reset();
+        }
 
-      setHasChanges(false);
-    });
+        setHasChanges(false);
+      },
+    );
   };
 
   const errorMessage = getErrorMessage(setDisplayNameResult);

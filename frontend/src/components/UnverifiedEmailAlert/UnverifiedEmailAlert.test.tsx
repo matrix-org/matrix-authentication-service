@@ -18,7 +18,7 @@ import { render, cleanup, fireEvent } from "@testing-library/react";
 import { describe, it, expect, afterEach } from "vitest";
 
 import { makeFragmentData } from "../../gql/fragment-masking";
-import { WithLocation } from "../../test-utils/WithLocation";
+import { DummyRouter } from "../../test-utils/router";
 
 import UnverifiedEmailAlert, {
   UNVERIFIED_EMAILS_FRAGMENT,
@@ -39,9 +39,9 @@ describe("<UnverifiedEmailAlert />", () => {
     );
 
     const { container } = render(
-      <WithLocation>
+      <DummyRouter>
         <UnverifiedEmailAlert user={data} />
-      </WithLocation>,
+      </DummyRouter>,
     );
 
     expect(container).toMatchInlineSnapshot("<div />");
@@ -59,9 +59,9 @@ describe("<UnverifiedEmailAlert />", () => {
     );
 
     const { container } = render(
-      <WithLocation>
+      <DummyRouter>
         <UnverifiedEmailAlert user={data} />
-      </WithLocation>,
+      </DummyRouter>,
     );
 
     expect(container).toMatchSnapshot();
@@ -79,9 +79,9 @@ describe("<UnverifiedEmailAlert />", () => {
     );
 
     const { container, getByText, getByLabelText } = render(
-      <WithLocation>
+      <DummyRouter>
         <UnverifiedEmailAlert user={data} />
-      </WithLocation>,
+      </DummyRouter>,
     );
 
     // warning is rendered
@@ -105,9 +105,9 @@ describe("<UnverifiedEmailAlert />", () => {
     );
 
     const { container, getByText, rerender } = render(
-      <WithLocation>
+      <DummyRouter>
         <UnverifiedEmailAlert user={data} />
-      </WithLocation>,
+      </DummyRouter>,
     );
 
     // warning is rendered
@@ -123,9 +123,9 @@ describe("<UnverifiedEmailAlert />", () => {
       UNVERIFIED_EMAILS_FRAGMENT,
     );
     rerender(
-      <WithLocation>
+      <DummyRouter>
         <UnverifiedEmailAlert user={newData} />
-      </WithLocation>,
+      </DummyRouter>,
     );
 
     // warning removed
@@ -144,9 +144,9 @@ describe("<UnverifiedEmailAlert />", () => {
     );
 
     const { container, getByText, getByLabelText, rerender } = render(
-      <WithLocation>
+      <DummyRouter>
         <UnverifiedEmailAlert user={data} />
-      </WithLocation>,
+      </DummyRouter>,
     );
 
     // warning is rendered
@@ -167,9 +167,9 @@ describe("<UnverifiedEmailAlert />", () => {
       UNVERIFIED_EMAILS_FRAGMENT,
     );
     rerender(
-      <WithLocation>
+      <DummyRouter>
         <UnverifiedEmailAlert user={newData} />
-      </WithLocation>,
+      </DummyRouter>,
     );
 
     // warning is rendered

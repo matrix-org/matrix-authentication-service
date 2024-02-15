@@ -12,52 +12,48 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { TooltipProvider } from "@vector-im/compound-web";
-import { Provider } from "jotai";
-import { DevTools } from "jotai-devtools";
 import { Suspense, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { I18nextProvider } from "react-i18next";
 import { Provider as UrqlProvider } from "urql";
 
 import ErrorBoundary from "./components/ErrorBoundary";
-import Layout from "./components/Layout";
+import GenericError from "./components/GenericError";
 import LoadingScreen from "./components/LoadingScreen";
-import LoadingSpinner from "./components/LoadingSpinner";
-import NotLoggedIn from "./components/NotLoggedIn";
+import config from "./config";
 import { client } from "./graphql";
 import i18n from "./i18n";
-import { Router } from "./routing";
+import { routeTree } from "./routeTree.gen";
 import "./main.css";
-import { useCurrentUserId } from "./utils/useCurrentUserId";
 
-const App: React.FC = () => {
-  const userId = useCurrentUserId();
-  if (userId === null) return <NotLoggedIn />;
+// Create a new router instance
+const router = createRouter({
+  routeTree,
+  basepath: config.root,
+  defaultErrorComponent: GenericError,
+  context: { client },
+});
 
-  return (
-    <Layout userId={userId}>
-      <Suspense fallback={<LoadingSpinner />}>
-        <Router userId={userId} />
-      </Suspense>
-    </Layout>
-  );
-};
+// Register the router instance for type safety
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router;
+  }
+}
 
 createRoot(document.getElementById("root") as HTMLElement).render(
   <StrictMode>
     <ErrorBoundary>
       <UrqlProvider value={client}>
-        <Provider>
-          {import.meta.env.DEV && <DevTools />}
-          <Suspense fallback={<LoadingScreen />}>
-            <I18nextProvider i18n={i18n}>
-              <TooltipProvider>
-                <App />
-              </TooltipProvider>
-            </I18nextProvider>
-          </Suspense>
-        </Provider>
+        <Suspense fallback={<LoadingScreen />}>
+          <I18nextProvider i18n={i18n}>
+            <TooltipProvider>
+              <RouterProvider router={router} context={{ client }} />
+            </TooltipProvider>
+          </I18nextProvider>
+        </Suspense>
       </UrqlProvider>
     </ErrorBoundary>
   </StrictMode>,

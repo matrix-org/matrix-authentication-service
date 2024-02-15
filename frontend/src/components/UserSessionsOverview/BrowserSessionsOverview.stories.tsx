@@ -13,24 +13,14 @@
 // limitations under the License.
 
 import type { Meta, StoryObj } from "@storybook/react";
-import { Provider } from "jotai";
-import { useHydrateAtoms } from "jotai/utils";
 
 import { makeFragmentData } from "../../gql";
-import { appConfigAtom, locationAtom } from "../../routing";
+import { DummyRouter } from "../../test-utils/router";
 
 import BrowserSessionsOverview, { FRAGMENT } from "./BrowserSessionsOverview";
 
 type Props = {
   browserSessions: number;
-};
-
-const WithHomePage: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
-  useHydrateAtoms([
-    [appConfigAtom, { root: "/", graphqlEndpoint: "/graphql" }],
-    [locationAtom, { pathname: "/" }],
-  ]);
-  return <>{children}</>;
 };
 
 const Template: React.FC<Props> = ({ browserSessions }) => {
@@ -44,11 +34,9 @@ const Template: React.FC<Props> = ({ browserSessions }) => {
     FRAGMENT,
   );
   return (
-    <Provider>
-      <WithHomePage>
-        <BrowserSessionsOverview user={data} />
-      </WithHomePage>
-    </Provider>
+    <DummyRouter>
+      <BrowserSessionsOverview user={data} />
+    </DummyRouter>
   );
 };
 

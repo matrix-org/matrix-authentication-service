@@ -15,6 +15,7 @@
 import { readFile, writeFile } from "fs/promises";
 import { resolve } from "path";
 
+import { TanStackRouterVite as tanStackRouter } from "@tanstack/router-vite-plugin";
 import react from "@vitejs/plugin-react";
 import browserslistToEsbuild from "browserslist-to-esbuild";
 import type { Manifest, PluginOption } from "vite";
@@ -75,32 +76,9 @@ export default defineConfig((env) => ({
   plugins: [
     codegen(),
 
-    react({
-      babel: {
-        plugins: [
-          [
-            "jotai/babel/plugin-react-refresh",
-            {
-              customAtomNames: [
-                "mapQueryAtom",
-                "atomWithPagination",
-                "atomWithCurrentPagination",
-              ],
-            },
-          ],
-          [
-            "jotai/babel/plugin-debug-label",
-            {
-              customAtomNames: [
-                "mapQueryAtom",
-                "atomWithPagination",
-                "atomWithCurrentPagination",
-              ],
-            },
-          ],
-        ],
-      },
-    }),
+    react(),
+
+    tanStackRouter(),
 
     // Custom plugin to make sure that each asset has an entry in the manifest
     // This is needed so that the preloading & asset integrity generation works
@@ -190,7 +168,7 @@ export default defineConfig((env) => ({
     base: "/account/",
     proxy: {
       // Routes mostly extracted from crates/router/src/endpoints.rs
-      "^/(|graphql.*|assets.*|\\.well-known.*|oauth2.*|login.*|logout.*|register.*|reauth.*|add-email.*|verify-email.*|change-password.*|consent.*|_matrix.*|complete-compat-sso.*)$":
+      "^/(|graphql.*|assets.*|\\.well-known.*|oauth2.*|login.*|logout.*|register.*|reauth.*|add-email.*|verify-email.*|change-password.*|consent.*|_matrix.*|complete-compat-sso.*|link.*|device.*)$":
         "http://127.0.0.1:8080",
     },
   },

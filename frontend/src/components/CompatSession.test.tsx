@@ -20,8 +20,8 @@ import { describe, expect, it, beforeAll } from "vitest";
 import { never } from "wonka";
 
 import { makeFragmentData } from "../gql";
-import { WithLocation } from "../test-utils/WithLocation";
 import { mockLocale } from "../test-utils/mockLocale";
+import { DummyRouter } from "../test-utils/router";
 
 import CompatSession, { FRAGMENT } from "./CompatSession";
 
@@ -49,9 +49,9 @@ describe("<CompatSession />", () => {
     const session = makeFragmentData(baseSession, FRAGMENT);
     const component = create(
       <Provider value={mockClient}>
-        <WithLocation>
+        <DummyRouter>
           <CompatSession session={session} />
-        </WithLocation>
+        </DummyRouter>
       </Provider>,
     );
     expect(component.toJSON()).toMatchSnapshot();
@@ -67,9 +67,9 @@ describe("<CompatSession />", () => {
     );
     const component = create(
       <Provider value={mockClient}>
-        <WithLocation>
+        <DummyRouter>
           <CompatSession session={session} />
-        </WithLocation>
+        </DummyRouter>
       </Provider>,
     );
     expect(component.toJSON()).toMatchSnapshot();

@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,11 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useQuery } from "urql";
 
-import ErrorBoundary from "../components/ErrorBoundary";
-import GraphQLError from "../components/GraphQLError";
-import NotLoggedIn from "../components/NotLoggedIn";
 import UserSessionsOverview from "../components/UserSessionsOverview";
 import { graphql } from "../gql";
 
@@ -33,20 +31,21 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-const SessionsOverview: React.FC = () => {
+export const Route = createFileRoute("/_account/sessions/")({
+  async loader({ context }) {
+    const result = await context.client.query(QUERY, {});
+    if (result.error) throw result.error;
+    if (result.data?.viewer?.__typename !== "User") throw notFound();
+  },
+  component: Sessions,
+});
+
+function Sessions(): React.ReactElement {
   const [result] = useQuery({ query: QUERY });
-  if (result.error) return <GraphQLError error={result.error} />;
-  if (!result.data) throw new Error(); // Suspense mode is enabled
-
+  if (result.error) throw result.error;
   const data =
-    result.data.viewer.__typename === "User" ? result.data.viewer : null;
-  if (data === null) return <NotLoggedIn />;
+    result.data?.viewer.__typename === "User" ? result.data.viewer : null;
+  if (data === null) throw notFound();
 
-  return (
-    <ErrorBoundary>
-      <UserSessionsOverview user={data} />
-    </ErrorBoundary>
-  );
-};
-
-export default SessionsOverview;
+  return <UserSessionsOverview user={data} />;
+}

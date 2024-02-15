@@ -21,8 +21,8 @@ import { never } from "wonka";
 
 import { makeFragmentData } from "../gql";
 import { Oauth2ApplicationType } from "../gql/graphql";
-import { WithLocation } from "../test-utils/WithLocation";
 import { mockLocale } from "../test-utils/mockLocale";
+import { DummyRouter } from "../test-utils/router";
 
 import OAuth2Session, { FRAGMENT } from "./OAuth2Session";
 
@@ -55,9 +55,9 @@ describe("<OAuth2Session />", () => {
 
     const component = create(
       <Provider value={mockClient}>
-        <WithLocation>
+        <DummyRouter>
           <OAuth2Session session={session} />
-        </WithLocation>
+        </DummyRouter>
       </Provider>,
     );
     expect(component.toJSON()).toMatchSnapshot();
@@ -73,9 +73,9 @@ describe("<OAuth2Session />", () => {
     );
     const component = create(
       <Provider value={mockClient}>
-        <WithLocation>
+        <DummyRouter>
           <OAuth2Session session={session} />
-        </WithLocation>
+        </DummyRouter>
       </Provider>,
     );
     expect(component.toJSON()).toMatchSnapshot();
@@ -95,9 +95,9 @@ describe("<OAuth2Session />", () => {
     );
     const component = create(
       <Provider value={mockClient}>
-        <WithLocation>
+        <DummyRouter>
           <OAuth2Session session={session} />
-        </WithLocation>
+        </DummyRouter>
       </Provider>,
     );
     expect(component.toJSON()).toMatchSnapshot();

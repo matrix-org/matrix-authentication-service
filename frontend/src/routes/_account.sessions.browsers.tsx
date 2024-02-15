@@ -1,4 +1,4 @@
-// Copyright 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,15 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import ErrorBoundary from "../components/ErrorBoundary";
-import UserProfile from "../components/UserProfile";
+import { createFileRoute } from "@tanstack/react-router";
+import { Suspense } from "react";
 
-const Profile: React.FC<{ userId: string }> = ({ userId }) => {
+import BrowserSessionList from "../components/BrowserSessionList";
+import LoadingSpinner from "../components/LoadingSpinner";
+
+export const Route = createFileRoute("/_account/sessions/browsers")({
+  component: BrowserSessions,
+});
+
+function BrowserSessions(): React.ReactElement {
   return (
-    <ErrorBoundary>
-      <UserProfile userId={userId} />
-    </ErrorBoundary>
+    <Suspense fallback={<LoadingSpinner className="self-center m-4" />}>
+      <BrowserSessionList />
+    </Suspense>
   );
-};
-
-export default Profile;
+}

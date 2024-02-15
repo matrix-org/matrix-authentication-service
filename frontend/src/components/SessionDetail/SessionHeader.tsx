@@ -12,34 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Link } from "@tanstack/react-router";
 import IconArrowLeft from "@vector-im/compound-design-tokens/icons/arrow-left.svg?react";
-import { H3, IconButton } from "@vector-im/compound-web";
-import { PropsWithChildren } from "react";
-
-import { useNavigationLink } from "../../routing";
-import { Route } from "../../routing/routes";
-import LoadingSpinner from "../LoadingSpinner";
+import { H3 } from "@vector-im/compound-web";
 
 import styles from "./SessionHeader.module.css";
 
-const BackButton: React.FC<{ backToRoute: Route }> = ({ backToRoute }) => {
-  const { onClick, pending } = useNavigationLink(backToRoute);
-
+const SessionHeader: React.FC<React.ComponentProps<typeof Link>> = ({
+  children,
+  ...rest
+}) => {
   return (
-    <IconButton type="button" onClick={onClick}>
-      {pending ? <LoadingSpinner /> : <IconArrowLeft />}
-    </IconButton>
+    <header className={styles.header}>
+      <Link className={styles.backButton} {...rest}>
+        <IconArrowLeft />
+      </Link>
+      <H3>{children}</H3>
+    </header>
   );
 };
-
-const SessionHeader: React.FC<PropsWithChildren<{ backToRoute: Route }>> = ({
-  children,
-  backToRoute,
-}) => (
-  <header className={styles.header}>
-    <BackButton backToRoute={backToRoute} />
-    <H3>{children}</H3>
-  </header>
-);
 
 export default SessionHeader;

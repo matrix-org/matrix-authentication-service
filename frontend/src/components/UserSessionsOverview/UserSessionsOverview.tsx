@@ -13,10 +13,12 @@
 // limitations under the License.
 
 import { H3 } from "@vector-im/compound-web";
+import { Suspense } from "react";
 import { useTranslation } from "react-i18next";
 
 import { FragmentType, useFragment } from "../../gql";
 import BlockList from "../BlockList";
+import LoadingSpinner from "../LoadingSpinner";
 
 import AppSessionsList from "./AppSessionsList";
 import BrowserSessionsOverview, { FRAGMENT } from "./BrowserSessionsOverview";
@@ -31,7 +33,9 @@ const UserSessionsOverview: React.FC<{
     <BlockList>
       <H3>{t("frontend.user_sessions_overview.heading")}</H3>
       <BrowserSessionsOverview user={user} />
-      <AppSessionsList userId={data.id} />
+      <Suspense fallback={<LoadingSpinner className="self-center m-4" />}>
+        <AppSessionsList userId={data.id} />
+      </Suspense>
     </BlockList>
   );
 };

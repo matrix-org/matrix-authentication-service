@@ -16,7 +16,10 @@ use async_graphql::{Context, MergedObject, Object, ID};
 use mas_storage::user::UserRepository;
 
 use crate::{
-    model::{Anonymous, BrowserSession, Node, NodeType, OAuth2Client, User, UserEmail},
+    model::{
+        Anonymous, BrowserSession, CompatSession, Node, NodeType, OAuth2Client, OAuth2Session,
+        User, UserEmail,
+    },
     state::ContextExt,
     UserId,
 };
@@ -149,6 +152,56 @@ impl BaseQuery {
         Ok(Some(BrowserSession(browser_session)))
     }
 
+    /// Fetch a compatible session by its ID.
+    async fn compat_session(
+        &self,
+        ctx: &Context<'_>,
+        id: ID,
+    ) -> Result<Option<CompatSession>, async_graphql::Error> {
+        let state = ctx.state();
+        let id = NodeType::CompatSession.extract_ulid(&id)?;
+        let requester = ctx.requester();
+
+        let mut repo = state.repository().await?;
+        let compat_session = repo.compat_session().lookup(id).await?;
+        repo.cancel().await?;
+
+        let Some(compat_session) = compat_session else {
+            return Ok(None);
+        };
+
+        if !requester.is_owner_or_admin(&compat_session) {
+            return Ok(None);
+        }
+
+        Ok(Some(CompatSession::new(compat_session)))
+    }
+
+    /// Fetch an OAuth 2.0 session by its ID.
+    async fn oauth2_session(
+        &self,
+        ctx: &Context<'_>,
+        id: ID,
+    ) -> Result<Option<OAuth2Session>, async_graphql::Error> {
+        let state = ctx.state();
+        let id = NodeType::OAuth2Session.extract_ulid(&id)?;
+        let requester = ctx.requester();
+
+        let mut repo = state.repository().await?;
+        let oauth2_session = repo.oauth2_session().lookup(id).await?;
+        repo.cancel().await?;
+
+        let Some(oauth2_session) = oauth2_session else {
+            return Ok(None);
+        };
+
+        if !requester.is_owner_or_admin(&oauth2_session) {
+            return Ok(None);
+        }
+
+        Ok(Some(OAuth2Session(oauth2_session)))
+    }
+
     /// Fetch a user email by its ID.
     async fn user_email(
         &self,
@@ -185,10 +238,7 @@ impl BaseQuery {
 
         let ret = match node_type {
             // TODO
-            NodeType::Authentication
-            | NodeType::CompatSession
-            | NodeType::CompatSsoLogin
-            | NodeType::OAuth2Session => None,
+            NodeType::Authentication | NodeType::CompatSsoLogin => None,
 
             NodeType::UpstreamOAuth2Provider => UpstreamOAuthQuery
                 .upstream_oauth2_provider(ctx, id)
@@ -209,6 +259,16 @@ impl BaseQuery {
                 .user_email(ctx, id)
                 .await?
                 .map(|e| Node::UserEmail(Box::new(e))),
+
+            NodeType::CompatSession => self
+                .compat_session(ctx, id)
+                .await?
+                .map(|s| Node::CompatSession(Box::new(s))),
+
+            NodeType::OAuth2Session => self
+                .oauth2_session(ctx, id)
+                .await?
+                .map(|s| Node::OAuth2Session(Box::new(s))),
 
             NodeType::BrowserSession => self
                 .browser_session(ctx, id)

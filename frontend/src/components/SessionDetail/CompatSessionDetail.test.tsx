@@ -20,8 +20,8 @@ import { describe, expect, it, afterEach, beforeAll } from "vitest";
 import { never } from "wonka";
 
 import { makeFragmentData } from "../../gql";
-import { WithLocation } from "../../test-utils/WithLocation";
 import { mockLocale } from "../../test-utils/mockLocale";
+import { DummyRouter } from "../../test-utils/router";
 
 import CompatSessionDetail, { FRAGMENT } from "./CompatSessionDetail";
 
@@ -50,9 +50,9 @@ describe("<CompatSessionDetail>", () => {
 
     const { container } = render(
       <Provider value={mockClient}>
-        <WithLocation>
+        <DummyRouter>
           <CompatSessionDetail session={data} />
-        </WithLocation>
+        </DummyRouter>
       </Provider>,
     );
 
@@ -70,9 +70,9 @@ describe("<CompatSessionDetail>", () => {
 
     const { container } = render(
       <Provider value={mockClient}>
-        <WithLocation>
+        <DummyRouter>
           <CompatSessionDetail session={data} />
-        </WithLocation>
+        </DummyRouter>
       </Provider>,
     );
 
@@ -90,9 +90,9 @@ describe("<CompatSessionDetail>", () => {
 
     const { getByText, queryByText } = render(
       <Provider value={mockClient}>
-        <WithLocation>
+        <DummyRouter>
           <CompatSessionDetail session={data} />
-        </WithLocation>
+        </DummyRouter>
       </Provider>,
     );
 

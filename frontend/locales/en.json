@@ -66,7 +66,12 @@
       "confirmation_modal_title": "Are you sure you want to end this session?",
       "text": "End session"
     },
-    "error_boundary_title": "Something went wrong",
+    "error": {
+      "hideDetails": "Hide details",
+      "showDetails": "Show details",
+      "subtitle": "An unexpected error occurred. Please try again.",
+      "title": "Something went wrong"
+    },
     "last_active": {
       "active_date": "Active {{relativeDate}}",
       "active_now": "Active now",
@@ -132,7 +137,6 @@
         "title": "Cannot find session: {{deviceId}}"
       }
     },
-    "unknown_route": "Unknown route {{route}}",
     "unverified_email_alert": {
       "button": "Review and verify",
       "text:one": "You have {{count}} unverified email address.",
@@ -154,9 +158,6 @@
       "heading": "Emails",
       "no_primary_email_alert": "No primary email address"
     },
-    "user_greeting": {
-      "error": "Failed to load user"
-    },
     "user_name": {
       "display_name_field_label": "Display Name"
     },
@@ -177,8 +178,7 @@
         "description": "Check the code sent to your email and update the fields below to continue.",
         "title": "You entered the wrong code"
       },
-      "resend_code": "Resend code",
-      "unknown_email": "Unknown email"
+      "resend_code": "Resend code"
     }
   }
 }
