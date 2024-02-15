@@ -13,13 +13,14 @@
 // limitations under the License.
 
 import IconDelete from "@vector-im/compound-design-tokens/icons/delete.svg?react";
-import { Form, IconButton, Text, Tooltip } from "@vector-im/compound-web";
+import IconEmail from "@vector-im/compound-design-tokens/icons/email.svg?react";
+import { Button, Form, IconButton, Tooltip } from "@vector-im/compound-web";
 import { ComponentProps, ReactNode } from "react";
 import { Translation, useTranslation } from "react-i18next";
 import { useMutation } from "urql";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
-import ConfirmationModal from "../ConfirmationModal/ConfirmationModal";
+import { Close, Description, Dialog, Title } from "../Dialog";
 import { Link } from "../Link";
 
 import styles from "./UserEmail.module.css";
@@ -83,8 +84,8 @@ const DeleteButton: React.FC<{ disabled?: boolean; onClick?: () => void }> = ({
 );
 
 const DeleteButtonWithConfirmation: React.FC<
-  ComponentProps<typeof DeleteButton>
-> = ({ onClick, ...rest }) => {
+  ComponentProps<typeof DeleteButton> & { email: string }
+> = ({ email, onClick, ...rest }) => {
   const { t } = useTranslation();
   const onConfirm = (): void => {
     onClick?.();
@@ -94,17 +95,32 @@ const DeleteButtonWithConfirmation: React.FC<
   const onDeny = (): void => {};
 
   return (
-    <>
-      <ConfirmationModal
-        trigger={<DeleteButton {...rest} />}
-        onDeny={onDeny}
-        onConfirm={onConfirm}
-      >
-        <Text>
-          {t("frontend.user_email.delete_button_confirmation_modal.body")}
-        </Text>
-      </ConfirmationModal>
-    </>
+    <Dialog trigger={<DeleteButton {...rest} />}>
+      <Title>
+        {t("frontend.user_email.delete_button_confirmation_modal.body")}
+      </Title>
+      <Description className={styles.emailModalBox}>
+        <IconEmail />
+        <div>{email}</div>
+      </Description>
+      <div className="flex flex-col gap-4">
+        <Close asChild>
+          <Button
+            kind="primary"
+            destructive
+            onClick={onConfirm}
+            Icon={IconDelete}
+          >
+            {t("frontend.user_email.delete_button_confirmation_modal.action")}
+          </Button>
+        </Close>
+        <Close asChild>
+          <Button kind="tertiary" onClick={onDeny}>
+            {t("action.cancel")}
+          </Button>
+        </Close>
+      </div>
+    </Dialog>
   );
 };
 
@@ -151,9 +167,9 @@ const UserEmail: React.FC<{
             value={data.email}
             className={styles.userEmailField}
           />
-
           {!isPrimary && (
             <DeleteButtonWithConfirmation
+              email={data.email}
               disabled={removeResult.fetching}
               onClick={onRemoveClick}
             />

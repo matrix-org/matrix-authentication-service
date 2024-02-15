@@ -4,45 +4,68 @@ exports[`<ConfirmationModal /> > opens modal on clicking trigger 1`] = `
 <div
   aria-describedby="radix-:r5:"
   aria-labelledby="radix-:r4:"
-  class="_content_6bc2cb test"
+  class="_dialog_9cf7b0 _glass_1x9g9_17"
   data-state="open"
   id="radix-:r3:"
-  role="alertdialog"
+  role="dialog"
   style="pointer-events: auto;"
   tabindex="-1"
 >
-  <h2
-    id="radix-:r4:"
-  >
-    Are you sure?
-  </h2>
-  <p
-    id="radix-:r5:"
-  >
-    Some extra information.
-  </p>
   <div
-    class="_buttons_6bc2cb"
+    class="_body_9cf7b0"
   >
+    <h2
+      class="_title_9cf7b0"
+      id="radix-:r4:"
+    >
+      Are you sure?
+    </h2>
+    <p
+      id="radix-:r5:"
+    >
+      Some extra information.
+    </p>
+    <div
+      class="_actions_9cf7b0"
+    >
+      <button
+        class="_button_dyfp8_17 _destructive_dyfp8_99"
+        data-kind="primary"
+        data-size="lg"
+        role="button"
+        tabindex="0"
+        type="button"
+      >
+        Continue
+      </button>
+      <button
+        class="_button_dyfp8_17"
+        data-kind="tertiary"
+        data-size="lg"
+        role="button"
+        tabindex="0"
+        type="button"
+      >
+        Cancel
+      </button>
+    </div>
     <button
-      class="_button_dyfp8_17"
-      data-kind="tertiary"
-      data-size="sm"
-      role="button"
-      tabindex="0"
+      class="_close_9cf7b0"
+      data-state="closed"
       type="button"
     >
-      Cancel
-    </button>
-    <button
-      class="_button_dyfp8_17 _destructive_dyfp8_99"
-      data-kind="secondary"
-      data-size="sm"
-      role="button"
-      tabindex="0"
-      type="button"
-    >
-      Continue
+      <svg
+        class="cpd-icon"
+        fill="currentColor"
+        height="1em"
+        viewBox="0 0 24 24"
+        width="1em"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M6.293 6.293a1 1 0 0 1 1.414 0L12 10.586l4.293-4.293a1 1 0 1 1 1.414 1.414L13.414 12l4.293 4.293a1 1 0 0 1-1.414 1.414L12 13.414l-4.293 4.293a1 1 0 0 1-1.414-1.414L10.586 12 6.293 7.707a1 1 0 0 1 0-1.414Z"
+        />
+      </svg>
     </button>
   </div>
 </div>

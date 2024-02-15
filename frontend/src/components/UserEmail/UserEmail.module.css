@@ -42,6 +42,24 @@ button[disabled] .user-email-delete-icon {
   color: var(--cpd-color-text-critical-primary);
 }
 
+.email-modal-box {
+  display: flex;
+  align-items: center;
+  gap: var(--cpd-space-4x);
+  border: 1px solid var(--cpd-color-gray-400);
+  padding: var(--cpd-space-3x);
+  font: var(--cpd-font-body-md-semibold);
+
+  &>svg {
+    color: var(--cpd-color-icon-secondary);
+    background-color: var(--cpd-color-bg-subtle-secondary);
+    padding: var(--cpd-space-2x);
+    border-radius: var(--cpd-space-2x);
+    inline-size: var(--cpd-space-10x);
+    block-size: var(--cpd-space-10x);
+  }
+}
+
 .link {
   display: inline-block;
   text-decoration: underline;

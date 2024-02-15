@@ -1,4 +1,4 @@
-// Copyright 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2023, 2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,82 +12,49 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {
-  Root,
-  Portal,
-  Overlay,
-  Content,
-  Trigger,
-  Title,
-  Description,
-  Action,
-  Cancel,
-} from "@radix-ui/react-alert-dialog";
 import { Button } from "@vector-im/compound-web";
-import classNames from "classnames";
 import { ReactNode } from "react";
 import { Translation } from "react-i18next";
 
-import styles from "./ConfirmationModal.module.css";
+import { Dialog, Title, Description, Close, Actions } from "../Dialog";
 
 type Props = {
   onConfirm: () => void;
-  onDeny?: () => void;
   title?: ReactNode | string;
   // element used to trigger opening of modal
   trigger: ReactNode;
-  className?: string;
 };
+
 /**
  * Generic confirmation modal
  * controls its own open state
- * calls onDeny on cancel or esc
  * calls onConfirm on confirm click
  */
 const ConfirmationModal: React.FC<React.PropsWithChildren<Props>> = ({
   onConfirm,
-  onDeny,
-  className,
   children,
   trigger,
   title,
 }) => (
   <Translation>
     {(t): ReactNode => (
-      <Root>
-        <Trigger asChild>{trigger}</Trigger>
-        <Portal>
-          <Overlay className={styles.overlay} />
-          <Content
-            className={classNames(styles.content, className)}
-            onEscapeKeyDown={(event): void => {
-              if (onDeny) {
-                onDeny();
-              } else {
-                // if there is no deny callback, we should prevent the escape key from closing the modal
-                event.preventDefault();
-              }
-            }}
-          >
-            <Title>{title}</Title>
-            <Description>{children}</Description>
-            <div className={styles.buttons}>
-              {onDeny && (
-                <Cancel asChild>
-                  <Button kind="tertiary" size="sm" onClick={onDeny}>
-                    {t("action.cancel")}
-                  </Button>
-                </Cancel>
-              )}
-              <Action asChild>
-                <Button kind="destructive" size="sm" onClick={onConfirm}>
-                  {t("action.continue")}
-                </Button>
-              </Action>
-            </div>
-          </Content>
-        </Portal>
-      </Root>
+      <Dialog trigger={trigger}>
+        <Title>{title}</Title>
+
+        {children && <Description>{children}</Description>}
+
+        <Actions>
+          <Close asChild>
+            <Button kind="primary" destructive onClick={onConfirm}>
+              {t("action.continue")}
+            </Button>
+          </Close>
+
+          <Close asChild>
+            <Button kind="tertiary">{t("action.cancel")}</Button>
+          </Close>
+        </Actions>
+      </Dialog>
     )}
   </Translation>
 );
