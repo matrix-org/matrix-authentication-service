@@ -16,7 +16,6 @@
     }
   },
   "common": {
-    "add": "Add",
     "error": "Error",
     "loading": "Loading…",
     "next": "Next",
@@ -32,6 +31,7 @@
         "text": "The entered email is already added to this account",
         "title": "Email already exists"
       },
+      "email_field_help": "Add an alternative email you can use to access this account.",
       "email_field_label": "Add email",
       "email_invalid_alert": {
         "text": "The entered email is invalid",
@@ -144,15 +144,16 @@
       "title": "Unverified email"
     },
     "user_email": {
+      "cant_delete_primary": "Choose a different primary email to delete this one.",
       "delete_button_confirmation_modal": {
         "body": "Are you sure you want to remove this email?"
       },
       "delete_button_title": "Remove email address",
       "email": "Email",
       "make_primary_button": "Make primary",
+      "not_verified": "Not verified",
       "primary_email": "Primary email",
-      "retry_button": "Retry verification",
-      "unverified": "Unverified"
+      "retry_button": "Resend code"
     },
     "user_email_list": {
       "heading": "Emails",

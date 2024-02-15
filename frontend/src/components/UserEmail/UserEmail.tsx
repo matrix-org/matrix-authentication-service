@@ -143,21 +143,31 @@ const UserEmail: React.FC<{
             ? t("frontend.user_email.primary_email")
             : t("frontend.user_email.email")}
         </Form.Label>
-        <div className="flex">
+
+        <div className="flex items-center gap-2">
           <Form.TextControl
             type="email"
             readOnly
             value={data.email}
             className={styles.userEmailField}
           />
-          <DeleteButtonWithConfirmation
-            disabled={isPrimary || removeResult.fetching}
-            onClick={onRemoveClick}
-          />
+
+          {!isPrimary && (
+            <DeleteButtonWithConfirmation
+              disabled={removeResult.fetching}
+              onClick={onRemoveClick}
+            />
+          )}
         </div>
 
-        <Form.HelpMessage>
-          {data.confirmedAt && !isPrimary && (
+        {isPrimary && (
+          <Form.HelpMessage>
+            {t("frontend.user_email.cant_delete_primary")}
+          </Form.HelpMessage>
+        )}
+
+        {data.confirmedAt && !isPrimary && (
+          <Form.HelpMessage>
             <button
               type="button"
               className={styles.link}
@@ -166,19 +176,17 @@ const UserEmail: React.FC<{
             >
               {t("frontend.user_email.make_primary_button")}
             </button>
-          )}
-          {!data.confirmedAt && (
-            <>
-              <span className={styles.userEmailUnverified}>
-                {t("frontend.user_email.unverified")}
-              </span>{" "}
-              |{" "}
-              <Link to="/emails/$id/verify" params={{ id: data.id }}>
-                {t("frontend.user_email.retry_button")}
-              </Link>
-            </>
-          )}
-        </Form.HelpMessage>
+          </Form.HelpMessage>
+        )}
+
+        {!data.confirmedAt && (
+          <Form.ErrorMessage>
+            {t("frontend.user_email.not_verified")} |{" "}
+            <Link to="/emails/$id/verify" params={{ id: data.id }}>
+              {t("frontend.user_email.retry_button")}
+            </Link>
+          </Form.ErrorMessage>
+        )}
       </Form.Field>
     </Form.Root>
   );

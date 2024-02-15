@@ -13,11 +13,13 @@
 // limitations under the License.
 
 import { Alert, Form } from "@vector-im/compound-web";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation } from "urql";
 
 import { graphql } from "../../gql";
+
+import EditInPlace from "./EditInPlace";
 
 const ADD_EMAIL_MUTATION = graphql(/* GraphQL */ `
   mutation AddEmail($userId: ID!, $email: String!) {
@@ -40,6 +42,7 @@ const AddEmailForm: React.FC<{
   const formRef = useRef<HTMLFormElement>(null);
   const fieldRef = useRef<HTMLInputElement>(null);
   const [addEmailResult, addEmail] = useMutation(ADD_EMAIL_MUTATION);
+  const [touched, setTouched] = useState(false);
   if (addEmailResult.error) throw addEmailResult.error;
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
@@ -72,64 +75,69 @@ const AddEmailForm: React.FC<{
   const violations = addEmailResult.data?.addEmail.violations ?? [];
 
   return (
-    <>
-      <Form.Root ref={formRef} onSubmit={handleSubmit}>
-        {emailExists && (
-          <Alert
-            type="info"
-            title={t("frontend.add_email_form.email_exists_alert.title")}
-          >
-            {t("frontend.add_email_form.email_exists_alert.text")}
-          </Alert>
-        )}
-
-        {emailInvalid && (
-          <Alert
-            type="critical"
-            title={t("frontend.add_email_form.email_invalid_alert.title")}
-          >
-            {t("frontend.add_email_form.email_invalid_alert.text")}
-          </Alert>
-        )}
-
-        {emailDenied && (
-          <Alert
-            type="critical"
-            title={t("frontend.add_email_form.email_denied_alert.title")}
-          >
-            {t("frontend.add_email_form.email_denied_alert.text")}
-            <ul>
-              {violations.map((violation, index) => (
-                <li key={index}>• {violation}</li>
-              ))}
-            </ul>
-          </Alert>
-        )}
-
-        <Form.Field
-          name="email"
-          serverInvalid={emailInvalid || emailExists || emailDenied}
+    <Form.Root
+      ref={formRef}
+      onReset={() => setTouched(false)}
+      onSubmit={handleSubmit}
+    >
+      {emailExists && (
+        <Alert
+          type="info"
+          title={t("frontend.add_email_form.email_exists_alert.title")}
         >
-          <Form.Label>
-            {t("frontend.add_email_form.email_field_label")}
-          </Form.Label>
+          {t("frontend.add_email_form.email_exists_alert.text")}
+        </Alert>
+      )}
+
+      {emailInvalid && (
+        <Alert
+          type="critical"
+          title={t("frontend.add_email_form.email_invalid_alert.title")}
+        >
+          {t("frontend.add_email_form.email_invalid_alert.text")}
+        </Alert>
+      )}
+
+      {emailDenied && (
+        <Alert
+          type="critical"
+          title={t("frontend.add_email_form.email_denied_alert.title")}
+        >
+          {t("frontend.add_email_form.email_denied_alert.text")}
+          <ul>
+            {violations.map((violation, index) => (
+              <li key={index}>• {violation}</li>
+            ))}
+          </ul>
+        </Alert>
+      )}
+
+      <Form.Field
+        name="email"
+        serverInvalid={emailInvalid || emailExists || emailDenied}
+      >
+        <Form.Label>
+          {t("frontend.add_email_form.email_field_label")}
+        </Form.Label>
+
+        <div className="flex gap-4 items-center">
           <Form.TextControl
+            className="flex-1"
             disabled={addEmailResult.fetching}
             type="email"
             autoComplete="email"
+            onInput={(e) => setTouched(e.currentTarget.value !== "")}
             ref={fieldRef}
           />
-        </Form.Field>
 
-        <Form.Submit
-          size="sm"
-          disabled={addEmailResult.fetching}
-          className="self-start"
-        >
-          {t("common.add")}
-        </Form.Submit>
-      </Form.Root>
-    </>
+          {touched && <EditInPlace />}
+        </div>
+
+        <Form.HelpMessage>
+          {t("frontend.add_email_form.email_field_help")}
+        </Form.HelpMessage>
+      </Form.Field>
+    </Form.Root>
   );
 };
 
