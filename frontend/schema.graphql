@@ -894,6 +894,14 @@ type Query {
   """
   browserSession(id: ID!): BrowserSession
   """
+  Fetch a compatible session by its ID.
+  """
+  compatSession(id: ID!): CompatSession
+  """
+  Fetch an OAuth 2.0 session by its ID.
+  """
+  oauth2Session(id: ID!): Oauth2Session
+  """
   Fetch a user email by its ID.
   """
   userEmail(id: ID!): UserEmail

@@ -641,6 +641,8 @@ export type Query = {
   __typename?: "Query";
   /** Fetch a browser session by its ID. */
   browserSession?: Maybe<BrowserSession>;
+  /** Fetch a compatible session by its ID. */
+  compatSession?: Maybe<CompatSession>;
   /**
    * Get the current logged in browser session
    * @deprecated Use `viewerSession` instead.
@@ -655,6 +657,8 @@ export type Query = {
   node?: Maybe<Node>;
   /** Fetch an OAuth 2.0 client by its ID. */
   oauth2Client?: Maybe<Oauth2Client>;
+  /** Fetch an OAuth 2.0 session by its ID. */
+  oauth2Session?: Maybe<Oauth2Session>;
   /** Lookup a compat or OAuth 2.0 session */
   session?: Maybe<Session>;
   /** Fetch an upstream OAuth 2.0 link by its ID. */
@@ -681,12 +685,22 @@ export type QueryBrowserSessionArgs = {
 };
 
 /** The query root of the GraphQL interface. */
+export type QueryCompatSessionArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+/** The query root of the GraphQL interface. */
 export type QueryNodeArgs = {
   id: Scalars["ID"]["input"];
 };
 
 /** The query root of the GraphQL interface. */
 export type QueryOauth2ClientArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+/** The query root of the GraphQL interface. */
+export type QueryOauth2SessionArgs = {
   id: Scalars["ID"]["input"];
 };
 
