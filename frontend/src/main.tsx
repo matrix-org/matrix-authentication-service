@@ -21,18 +21,17 @@ import { Provider as UrqlProvider } from "urql";
 
 import ErrorBoundary from "./components/ErrorBoundary";
 import LoadingScreen from "./components/LoadingScreen";
-import NotLoggedIn from "./components/NotLoggedIn";
+import config from "./config";
 import { client } from "./graphql";
 import i18n from "./i18n";
 import { routeTree } from "./routeTree.gen";
 import "./main.css";
-import { useCurrentUserId } from "./utils/useCurrentUserId";
 
 // Create a new router instance
 const router = createRouter({
   routeTree,
-  basepath: "/account/",
-  context: { userId: "", client },
+  basepath: config.root,
+  context: { client },
 });
 
 // Register the router instance for type safety
@@ -42,13 +41,6 @@ declare module "@tanstack/react-router" {
   }
 }
 
-const App: React.FC = () => {
-  const userId = useCurrentUserId();
-  if (userId === null) return <NotLoggedIn />;
-
-  return <RouterProvider router={router} context={{ userId, client }} />;
-};
-
 createRoot(document.getElementById("root") as HTMLElement).render(
   <StrictMode>
     <ErrorBoundary>
@@ -56,7 +48,7 @@ createRoot(document.getElementById("root") as HTMLElement).render(
         <Suspense fallback={<LoadingScreen />}>
           <I18nextProvider i18n={i18n}>
             <TooltipProvider>
-              <App />
+              <RouterProvider router={router} context={{ client }} />
             </TooltipProvider>
           </I18nextProvider>
         </Suspense>

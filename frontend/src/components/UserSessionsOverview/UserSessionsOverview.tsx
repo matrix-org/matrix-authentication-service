@@ -33,7 +33,7 @@ const UserSessionsOverview: React.FC<{
     <BlockList>
       <H3>{t("frontend.user_sessions_overview.heading")}</H3>
       <BrowserSessionsOverview user={user} />
-      <Suspense fallback={<LoadingSpinner />}>
+      <Suspense fallback={<LoadingSpinner className="self-center m-4" />}>
         <AppSessionsList userId={data.id} />
       </Suspense>
     </BlockList>

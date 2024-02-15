@@ -17,7 +17,7 @@ const documents = {
     types.BrowserSession_SessionFragmentDoc,
   "\n  mutation EndBrowserSession($id: ID!) {\n    endBrowserSession(input: { browserSessionId: $id }) {\n      status\n      browserSession {\n        id\n        ...BrowserSession_session\n      }\n    }\n  }\n":
     types.EndBrowserSessionDocument,
-  "\n  query BrowserSessionList(\n    $userId: ID!\n    $state: SessionState\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      browserSessions(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n        state: $state\n      ) {\n        totalCount\n\n        edges {\n          cursor\n          node {\n            id\n            ...BrowserSession_session\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n":
+  "\n  query BrowserSessionList(\n    $state: SessionState\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    viewer {\n      __typename\n      ... on User {\n        id\n        browserSessions(\n          first: $first\n          after: $after\n          last: $last\n          before: $before\n          state: $state\n        ) {\n          totalCount\n\n          edges {\n            cursor\n            node {\n              id\n              ...BrowserSession_session\n            }\n          }\n\n          pageInfo {\n            hasNextPage\n            hasPreviousPage\n            startCursor\n            endCursor\n          }\n        }\n      }\n    }\n  }\n":
     types.BrowserSessionListDocument,
   "\n  fragment OAuth2Client_detail on Oauth2Client {\n    id\n    clientId\n    clientName\n    clientUri\n    logoUri\n    tosUri\n    policyUri\n    redirectUris\n  }\n":
     types.OAuth2Client_DetailFragmentDoc,
@@ -53,10 +53,10 @@ const documents = {
     types.AllowCrossSigningResetDocument,
   "\n  query UserEmailListQuery(\n    $userId: ID!\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n\n      emails(first: $first, after: $after, last: $last, before: $before) {\n        edges {\n          cursor\n          node {\n            id\n            ...UserEmail_email\n          }\n        }\n        totalCount\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n":
     types.UserEmailListQueryDocument,
-  "\n  query UserPrimaryEmail($userId: ID!) {\n    user(id: $userId) {\n      id\n      primaryEmail {\n        id\n      }\n    }\n  }\n":
-    types.UserPrimaryEmailDocument,
-  "\n  query UserDisplayName($userId: ID!) {\n    user(id: $userId) {\n      id\n      matrix {\n        displayName\n      }\n    }\n  }\n":
-    types.UserDisplayNameDocument,
+  "\n  fragment UserEmailList_user on User {\n    id\n    primaryEmail {\n      id\n    }\n  }\n":
+    types.UserEmailList_UserFragmentDoc,
+  "\n  fragment UserName_user on User {\n    id\n    matrix {\n      displayName\n    }\n  }\n":
+    types.UserName_UserFragmentDoc,
   "\n  mutation SetDisplayName($userId: ID!, $displayName: String) {\n    setDisplayName(input: { userId: $userId, displayName: $displayName }) {\n      status\n      user {\n        id\n        matrix {\n          displayName\n        }\n      }\n    }\n  }\n":
     types.SetDisplayNameDocument,
   "\n  query AppSessionList(\n    $userId: ID!\n    $state: SessionState\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      appSessions(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n        state: $state\n      ) {\n        totalCount\n\n        edges {\n          cursor\n          node {\n            __typename\n            ...CompatSession_session\n            ...OAuth2Session_session\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n":
@@ -69,22 +69,24 @@ const documents = {
     types.VerifyEmailDocument,
   "\n  mutation ResendVerificationEmail($id: ID!) {\n    sendVerificationEmail(input: { userEmailId: $id }) {\n      status\n\n      user {\n        id\n        primaryEmail {\n          id\n        }\n      }\n\n      email {\n        id\n        ...UserEmail_email\n      }\n    }\n  }\n":
     types.ResendVerificationEmailDocument,
-  "\n  query UserLayout($userId: ID!) {\n    user(id: $userId) {\n      ...UserGreeting_user\n    }\n  }\n":
-    types.UserLayoutDocument,
-  "\n  query OAuth2ClientQuery($id: ID!) {\n    oauth2Client(id: $id) {\n      ...OAuth2Client_detail\n    }\n  }\n":
-    types.OAuth2ClientQueryDocument,
-  "\n  query DeviceRedirectQuery($deviceId: String!, $userId: ID!) {\n    session(deviceId: $deviceId, userId: $userId) {\n      __typename\n      ... on Node {\n        id\n      }\n    }\n  }\n":
-    types.DeviceRedirectQueryDocument,
-  "\n  query VerifyEmailQuery($id: ID!) {\n    userEmail(id: $id) {\n      ...UserEmail_verifyEmail\n    }\n  }\n":
-    types.VerifyEmailQueryDocument,
+  "\n  query UserProfileQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n        ...UserName_user\n        ...UserEmailList_user\n      }\n    }\n  }\n":
+    types.UserProfileQueryDocument,
   "\n  query SessionDetailQuery($id: ID!) {\n    node(id: $id) {\n      __typename\n      ...CompatSession_detail\n      ...OAuth2Session_detail\n      ...BrowserSession_detail\n    }\n  }\n":
     types.SessionDetailQueryDocument,
   "\n  query SessionsOverviewQuery {\n    viewer {\n      __typename\n\n      ... on User {\n        id\n        ...BrowserSessionsOverview_user\n      }\n    }\n  }\n":
     types.SessionsOverviewQueryDocument,
-  "\n  query CurrentViewerSessionQuery {\n    viewerSession {\n      __typename\n      ... on BrowserSession {\n        id\n      }\n    }\n  }\n":
-    types.CurrentViewerSessionQueryDocument,
+  "\n  query CurrentUserGreeting {\n    viewer {\n      __typename\n      ...UserGreeting_user\n    }\n  }\n":
+    types.CurrentUserGreetingDocument,
+  "\n  query OAuth2ClientQuery($id: ID!) {\n    oauth2Client(id: $id) {\n      ...OAuth2Client_detail\n    }\n  }\n":
+    types.OAuth2ClientQueryDocument,
   "\n  query CurrentViewerQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n      }\n    }\n  }\n":
     types.CurrentViewerQueryDocument,
+  "\n  query DeviceRedirectQuery($deviceId: String!, $userId: ID!) {\n    session(deviceId: $deviceId, userId: $userId) {\n      __typename\n      ... on Node {\n        id\n      }\n    }\n  }\n":
+    types.DeviceRedirectQueryDocument,
+  "\n  query VerifyEmailQuery($id: ID!) {\n    userEmail(id: $id) {\n      ...UserEmail_verifyEmail\n    }\n  }\n":
+    types.VerifyEmailQueryDocument,
+  "\n  query CurrentViewerSessionQuery {\n    viewerSession {\n      __typename\n      ... on BrowserSession {\n        id\n      }\n    }\n  }\n":
+    types.CurrentViewerSessionQueryDocument,
 };
 
 /**
@@ -117,8 +119,8 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  query BrowserSessionList(\n    $userId: ID!\n    $state: SessionState\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      browserSessions(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n        state: $state\n      ) {\n        totalCount\n\n        edges {\n          cursor\n          node {\n            id\n            ...BrowserSession_session\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n",
-): (typeof documents)["\n  query BrowserSessionList(\n    $userId: ID!\n    $state: SessionState\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      browserSessions(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n        state: $state\n      ) {\n        totalCount\n\n        edges {\n          cursor\n          node {\n            id\n            ...BrowserSession_session\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n"];
+  source: "\n  query BrowserSessionList(\n    $state: SessionState\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    viewer {\n      __typename\n      ... on User {\n        id\n        browserSessions(\n          first: $first\n          after: $after\n          last: $last\n          before: $before\n          state: $state\n        ) {\n          totalCount\n\n          edges {\n            cursor\n            node {\n              id\n              ...BrowserSession_session\n            }\n          }\n\n          pageInfo {\n            hasNextPage\n            hasPreviousPage\n            startCursor\n            endCursor\n          }\n        }\n      }\n    }\n  }\n",
+): (typeof documents)["\n  query BrowserSessionList(\n    $state: SessionState\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    viewer {\n      __typename\n      ... on User {\n        id\n        browserSessions(\n          first: $first\n          after: $after\n          last: $last\n          before: $before\n          state: $state\n        ) {\n          totalCount\n\n          edges {\n            cursor\n            node {\n              id\n              ...BrowserSession_session\n            }\n          }\n\n          pageInfo {\n            hasNextPage\n            hasPreviousPage\n            startCursor\n            endCursor\n          }\n        }\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -225,14 +227,14 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  query UserPrimaryEmail($userId: ID!) {\n    user(id: $userId) {\n      id\n      primaryEmail {\n        id\n      }\n    }\n  }\n",
-): (typeof documents)["\n  query UserPrimaryEmail($userId: ID!) {\n    user(id: $userId) {\n      id\n      primaryEmail {\n        id\n      }\n    }\n  }\n"];
+  source: "\n  fragment UserEmailList_user on User {\n    id\n    primaryEmail {\n      id\n    }\n  }\n",
+): (typeof documents)["\n  fragment UserEmailList_user on User {\n    id\n    primaryEmail {\n      id\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  query UserDisplayName($userId: ID!) {\n    user(id: $userId) {\n      id\n      matrix {\n        displayName\n      }\n    }\n  }\n",
-): (typeof documents)["\n  query UserDisplayName($userId: ID!) {\n    user(id: $userId) {\n      id\n      matrix {\n        displayName\n      }\n    }\n  }\n"];
+  source: "\n  fragment UserName_user on User {\n    id\n    matrix {\n      displayName\n    }\n  }\n",
+): (typeof documents)["\n  fragment UserName_user on User {\n    id\n    matrix {\n      displayName\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -273,26 +275,8 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  query UserLayout($userId: ID!) {\n    user(id: $userId) {\n      ...UserGreeting_user\n    }\n  }\n",
-): (typeof documents)["\n  query UserLayout($userId: ID!) {\n    user(id: $userId) {\n      ...UserGreeting_user\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(
-  source: "\n  query OAuth2ClientQuery($id: ID!) {\n    oauth2Client(id: $id) {\n      ...OAuth2Client_detail\n    }\n  }\n",
-): (typeof documents)["\n  query OAuth2ClientQuery($id: ID!) {\n    oauth2Client(id: $id) {\n      ...OAuth2Client_detail\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(
-  source: "\n  query DeviceRedirectQuery($deviceId: String!, $userId: ID!) {\n    session(deviceId: $deviceId, userId: $userId) {\n      __typename\n      ... on Node {\n        id\n      }\n    }\n  }\n",
-): (typeof documents)["\n  query DeviceRedirectQuery($deviceId: String!, $userId: ID!) {\n    session(deviceId: $deviceId, userId: $userId) {\n      __typename\n      ... on Node {\n        id\n      }\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(
-  source: "\n  query VerifyEmailQuery($id: ID!) {\n    userEmail(id: $id) {\n      ...UserEmail_verifyEmail\n    }\n  }\n",
-): (typeof documents)["\n  query VerifyEmailQuery($id: ID!) {\n    userEmail(id: $id) {\n      ...UserEmail_verifyEmail\n    }\n  }\n"];
+  source: "\n  query UserProfileQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n        ...UserName_user\n        ...UserEmailList_user\n      }\n    }\n  }\n",
+): (typeof documents)["\n  query UserProfileQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n        ...UserName_user\n        ...UserEmailList_user\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -309,14 +293,38 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  query CurrentViewerSessionQuery {\n    viewerSession {\n      __typename\n      ... on BrowserSession {\n        id\n      }\n    }\n  }\n",
-): (typeof documents)["\n  query CurrentViewerSessionQuery {\n    viewerSession {\n      __typename\n      ... on BrowserSession {\n        id\n      }\n    }\n  }\n"];
+  source: "\n  query CurrentUserGreeting {\n    viewer {\n      __typename\n      ...UserGreeting_user\n    }\n  }\n",
+): (typeof documents)["\n  query CurrentUserGreeting {\n    viewer {\n      __typename\n      ...UserGreeting_user\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  query OAuth2ClientQuery($id: ID!) {\n    oauth2Client(id: $id) {\n      ...OAuth2Client_detail\n    }\n  }\n",
+): (typeof documents)["\n  query OAuth2ClientQuery($id: ID!) {\n    oauth2Client(id: $id) {\n      ...OAuth2Client_detail\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
   source: "\n  query CurrentViewerQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n      }\n    }\n  }\n",
 ): (typeof documents)["\n  query CurrentViewerQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  query DeviceRedirectQuery($deviceId: String!, $userId: ID!) {\n    session(deviceId: $deviceId, userId: $userId) {\n      __typename\n      ... on Node {\n        id\n      }\n    }\n  }\n",
+): (typeof documents)["\n  query DeviceRedirectQuery($deviceId: String!, $userId: ID!) {\n    session(deviceId: $deviceId, userId: $userId) {\n      __typename\n      ... on Node {\n        id\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  query VerifyEmailQuery($id: ID!) {\n    userEmail(id: $id) {\n      ...UserEmail_verifyEmail\n    }\n  }\n",
+): (typeof documents)["\n  query VerifyEmailQuery($id: ID!) {\n    userEmail(id: $id) {\n      ...UserEmail_verifyEmail\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  query CurrentViewerSessionQuery {\n    viewerSession {\n      __typename\n      ... on BrowserSession {\n        id\n      }\n    }\n  }\n",
+): (typeof documents)["\n  query CurrentViewerSessionQuery {\n    viewerSession {\n      __typename\n      ... on BrowserSession {\n        id\n      }\n    }\n  }\n"];
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};

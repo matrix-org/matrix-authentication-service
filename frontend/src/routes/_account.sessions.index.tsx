@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useQuery } from "urql";
 
 import UserSessionsOverview from "../components/UserSessionsOverview";
@@ -31,12 +31,11 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-export const Route = createFileRoute("/sessions/")({
-  loader: async ({ context }) => {
+export const Route = createFileRoute("/_account/sessions/")({
+  async loader({ context }) {
     const result = await context.client.query(QUERY, {});
     if (result.error) throw result.error;
-    if (result.data?.viewer?.__typename !== "User")
-      throw new Error("Not logged in");
+    if (result.data?.viewer?.__typename !== "User") throw notFound();
   },
   component: Sessions,
 });
@@ -46,7 +45,7 @@ function Sessions(): React.ReactElement {
   if (result.error) throw result.error;
   const data =
     result.data?.viewer.__typename === "User" ? result.data.viewer : null;
-  if (data === null) throw new Error("Not logged in");
+  if (data === null) throw notFound();
 
   return <UserSessionsOverview user={data} />;
 }

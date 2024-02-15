@@ -13,19 +13,18 @@
 // limitations under the License.
 
 import { useNavigate } from "@tanstack/react-router";
-import { Alert, H3 } from "@vector-im/compound-web";
+import { Alert } from "@vector-im/compound-web";
 import { useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "urql";
 
-import { graphql } from "../../gql";
+import { FragmentType, graphql, useFragment } from "../../gql";
 import {
   FIRST_PAGE,
   Pagination,
   usePages,
   usePagination,
 } from "../../pagination";
-import BlockList from "../BlockList";
 import PaginationControls from "../PaginationControls";
 import UserEmail from "../UserEmail";
 
@@ -62,27 +61,26 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-const PRIMARY_EMAIL_QUERY = graphql(/* GraphQL */ `
-  query UserPrimaryEmail($userId: ID!) {
-    user(id: $userId) {
+const FRAGMENT = graphql(/* GraphQL */ `
+  fragment UserEmailList_user on User {
+    id
+    primaryEmail {
       id
-      primaryEmail {
-        id
-      }
     }
   }
 `);
 
 const UserEmailList: React.FC<{
-  userId: string;
-}> = ({ userId }) => {
+  user: FragmentType<typeof FRAGMENT>;
+}> = ({ user }) => {
+  const data = useFragment(FRAGMENT, user);
   const { t } = useTranslation();
   const [pending, startTransition] = useTransition();
 
   const [pagination, setPagination] = usePagination();
   const [result, refreshList] = useQuery({
     query: QUERY,
-    variables: { userId, ...pagination },
+    variables: { userId: data.id, ...pagination },
   });
   if (result.error) throw result.error;
   const emails = result.data?.user?.emails;
@@ -91,13 +89,7 @@ const UserEmailList: React.FC<{
   const navigate = useNavigate();
   const [prevPage, nextPage] = usePages(pagination, emails.pageInfo);
 
-  const [primaryEmailResult, refreshPrimaryEmail] = useQuery({
-    query: PRIMARY_EMAIL_QUERY,
-    variables: { userId },
-  });
-  if (primaryEmailResult.error) throw primaryEmailResult.error;
-  if (!result.data) throw new Error(); // Suspense mode is enabled
-  const primaryEmailId = primaryEmailResult.data?.user?.primaryEmail?.id;
+  const primaryEmailId = data.primaryEmail?.id;
 
   const paginate = (pagination: Pagination): void => {
     startTransition(() => {
@@ -121,8 +113,7 @@ const UserEmailList: React.FC<{
   const showNoPrimaryEmailAlert = !!result?.data && !primaryEmailId;
 
   return (
-    <BlockList>
-      <H3 id="emails">{t("frontend.user_email_list.heading")}</H3>
+    <>
       {showNoPrimaryEmailAlert && (
         <Alert
           type="critical"
@@ -134,7 +125,6 @@ const UserEmailList: React.FC<{
           email={edge.node}
           key={edge.cursor}
           isPrimary={primaryEmailId === edge.node.id}
-          onSetPrimary={refreshPrimaryEmail}
           onRemove={onRemove}
         />
       ))}
@@ -146,8 +136,8 @@ const UserEmailList: React.FC<{
         onNext={nextPage ? (): void => paginate(nextPage) : null}
         disabled={pending}
       />
-      <AddEmailForm userId={userId} onAdd={onAdd} />
-    </BlockList>
+      <AddEmailForm userId={data.id} onAdd={onAdd} />
+    </>
   );
 };
 

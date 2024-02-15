@@ -177,7 +177,7 @@ pub(crate) async fn get(
         graphql_endpoint: url_builder.graphql_endpoint(),
         account_management_uri: url_builder.account_management_uri(),
         // This needs to be kept in sync with what is supported in the frontend,
-        // see frontend/src/routing/actions.ts
+        // see frontend/src/routes/__root.tsx
         account_management_actions_supported: vec![
             "org.matrix.profile".to_owned(),
             "org.matrix.sessions_list".to_owned(),

@@ -1,4 +1,4 @@
-// Copyright 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,23 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Separator } from "@vector-im/compound-web";
+import { createFileRoute } from "@tanstack/react-router";
+import { Suspense } from "react";
 
-import BlockList from "../BlockList/BlockList";
+import BrowserSessionList from "../components/BrowserSessionList";
+import LoadingSpinner from "../components/LoadingSpinner";
 
-import CrossSigningReset from "./CrossSigningReset";
-import UserEmailList from "./UserEmailList";
-import UserName from "./UserName";
+export const Route = createFileRoute("/_account/sessions/browsers")({
+  component: BrowserSessions,
+});
 
-const UserProfile: React.FC<{ userId: string }> = ({ userId }) => {
+function BrowserSessions(): React.ReactElement {
   return (
-    <BlockList>
-      <UserName userId={userId} />
-      <UserEmailList userId={userId} />
-      <Separator />
-      <CrossSigningReset userId={userId} />
-    </BlockList>
+    <Suspense fallback={<LoadingSpinner className="self-center m-4" />}>
+      <BrowserSessionList />
+    </Suspense>
   );
-};
-
-export default UserProfile;
+}

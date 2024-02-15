@@ -17,7 +17,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "urql";
 
 import { graphql } from "../../gql";
-import { Link } from "../../routing";
+import { Link } from "../Link";
 
 import CompatSessionDetail from "./CompatSessionDetail";
 import OAuth2SessionDetail from "./OAuth2SessionDetail";

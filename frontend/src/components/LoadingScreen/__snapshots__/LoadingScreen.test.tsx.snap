@@ -5,6 +5,7 @@ exports[`LoadingScreen > render <LoadingScreen /> 1`] = `
   className="_loadingScreen_0642c6"
 >
   <div
+    className=""
     role="status"
   >
     <svg

@@ -19,8 +19,8 @@ import { Translation, useTranslation } from "react-i18next";
 import { useMutation } from "urql";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
-import { Link } from "../../routing";
 import ConfirmationModal from "../ConfirmationModal/ConfirmationModal";
+import { Link } from "../Link";
 
 import styles from "./UserEmail.module.css";
 
@@ -111,9 +111,8 @@ const DeleteButtonWithConfirmation: React.FC<
 const UserEmail: React.FC<{
   email: FragmentType<typeof FRAGMENT>;
   onRemove?: () => void;
-  onSetPrimary?: () => void;
   isPrimary?: boolean;
-}> = ({ email, isPrimary, onSetPrimary, onRemove }) => {
+}> = ({ email, isPrimary, onRemove }) => {
   const { t } = useTranslation();
   const data = useFragment(FRAGMENT, email);
 
@@ -133,10 +132,7 @@ const UserEmail: React.FC<{
   };
 
   const onSetPrimaryClick = (): void => {
-    setPrimary({ id: data.id }).then(() => {
-      // Call the onSetPrimary callback if provided
-      onSetPrimary?.();
-    });
+    setPrimary({ id: data.id });
   };
 
   return (

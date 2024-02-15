@@ -12,31 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useTranslation } from "react-i18next";
-
 import appConfig from "../../config";
 import Footer from "../Footer";
-import NavBar from "../NavBar";
-import NavItem from "../NavItem";
-import UserGreeting from "../UserGreeting";
 
 import styles from "./Layout.module.css";
 
 const Layout: React.FC<{
-  user: React.ComponentProps<typeof UserGreeting>["user"];
   children?: React.ReactNode;
-}> = ({ user, children }) => {
-  const { t } = useTranslation();
-
+}> = ({ children }) => {
   return (
     <div className={styles.layoutContainer}>
-      <UserGreeting user={user} />
-
-      <NavBar>
-        <NavItem to="/">{t("frontend.nav.profile")}</NavItem>
-        <NavItem to="/sessions">{t("frontend.nav.sessions")}</NavItem>
-      </NavBar>
-
       {children}
 
       <Footer

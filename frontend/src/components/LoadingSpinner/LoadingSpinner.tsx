@@ -12,13 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import cx from "classnames";
 import { ReactNode } from "react";
 import { Translation } from "react-i18next";
 
 import styles from "./LoadingSpinner.module.css";
 
-const LoadingSpinner: React.FC<{ inline?: boolean }> = ({ inline }) => (
-  <div role="status" className={inline ? styles.inline : undefined}>
+const LoadingSpinner: React.FC<{ inline?: boolean; className?: string }> = ({
+  inline,
+  className,
+}) => (
+  <div role="status" className={cx(className, inline && styles.inline)}>
     <svg
       className={styles.loadingSpinnerInner}
       viewBox="0 0 100 101"

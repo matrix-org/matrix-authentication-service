@@ -17,7 +17,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { FragmentType, useFragment, graphql } from "../../gql";
-import { Link } from "../../routing";
+import { Link } from "../Link";
 
 import styles from "./UnverifiedEmailAlert.module.css";
 

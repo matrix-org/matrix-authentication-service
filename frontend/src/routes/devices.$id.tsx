@@ -12,18 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Navigate, createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { Alert } from "@vector-im/compound-web";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "urql";
 
+import { Link } from "../components/Link";
 import { graphql } from "../gql";
-import { Link } from "../routing";
 
-export const Route = createFileRoute("/devices/$id")({
-  loader: ({ context }) => context.userId,
-  component: DeviceRedirect,
-});
+const CURRENT_VIEWER_QUERY = graphql(/* GraphQL */ `
+  query CurrentViewerQuery {
+    viewer {
+      __typename
+      ... on User {
+        id
+      }
+    }
+  }
+`);
 
 const QUERY = graphql(/* GraphQL */ `
   query DeviceRedirectQuery($deviceId: String!, $userId: ID!) {
@@ -36,29 +41,40 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-function DeviceRedirect(): React.ReactElement {
-  const userId = Route.useLoaderData();
+export const Route = createFileRoute("/devices/$id")({
+  async loader({ context, params }) {
+    const viewer = await context.client.query(CURRENT_VIEWER_QUERY, {});
+    if (viewer.error) throw viewer.error;
+    if (viewer.data?.viewer.__typename !== "User") throw notFound();
+
+    const result = await context.client.query(QUERY, {
+      deviceId: params.id,
+      userId: viewer.data.viewer.id,
+    });
+    if (result.error) throw result.error;
+    const session = result.data?.session;
+    if (!session) throw notFound();
+
+    throw redirect({
+      to: "/sessions/$id",
+      params: { id: session.id },
+      replace: true,
+    });
+  },
+
+  notFoundComponent: NotFound,
+});
+
+function NotFound(): React.ReactElement {
   const { t } = useTranslation();
   const { id: deviceId } = Route.useParams();
-  const [result] = useQuery({
-    query: QUERY,
-    variables: { deviceId, userId },
-  });
-  if (result.error) throw result.error;
-  if (!result.data) throw new Error(); // Suspense mode is enabled
-
-  const session = result.data.session;
-  if (!session) {
-    return (
-      <Alert
-        type="critical"
-        title={t("frontend.session_detail.alert.title", { deviceId })}
-      >
-        {t("frontend.session_detail.alert.text")}
-        <Link to="/sessions">{t("frontend.session_detail.alert.button")}</Link>
-      </Alert>
-    );
-  }
-
-  return <Navigate to="/sessions/$id" params={{ id: session.id }} replace />;
+  return (
+    <Alert
+      type="critical"
+      title={t("frontend.session_detail.alert.title", { deviceId })}
+    >
+      {t("frontend.session_detail.alert.text")}
+      <Link to="/sessions">{t("frontend.session_detail.alert.button")}</Link>
+    </Alert>
+  );
 }

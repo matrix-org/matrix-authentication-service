@@ -12,18 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
 import { Alert } from "@vector-im/compound-web";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "urql";
 
+import { Link } from "../components/Link";
 import BrowserSessionDetail from "../components/SessionDetail/BrowserSessionDetail";
 import CompatSessionDetail from "../components/SessionDetail/CompatSessionDetail";
 import OAuth2SessionDetail from "../components/SessionDetail/OAuth2SessionDetail";
 import { graphql } from "../gql";
-import { Link } from "../routing";
 
-export const Route = createFileRoute("/sessions/$id")({
+export const Route = createFileRoute("/_account/sessions/$id")({
+  async loader({ context, params }) {
+    const result = await context.client.query(QUERY, { id: params.id });
+    if (result.error) throw result.error;
+    if (!result.data?.node) throw notFound();
+  },
+
+  notFoundComponent: NotFound,
   component: SessionDetail,
 });
 
@@ -38,27 +45,29 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-function SessionDetail(): React.ReactElement {
+function NotFound(): React.ReactElement {
+  const { id } = Route.useParams();
   const { t } = useTranslation();
+
+  return (
+    <Alert
+      type="critical"
+      title={t("frontend.session_detail.alert.title", { deviceId: id })}
+    >
+      {t("frontend.session_detail.alert.text")}
+      <Link from={Route.fullPath} to="..">
+        {t("frontend.session_detail.alert.button")}
+      </Link>
+    </Alert>
+  );
+}
+
+function SessionDetail(): React.ReactElement {
   const { id } = Route.useParams();
   const [result] = useQuery({ query: QUERY, variables: { id } });
   if (result.error) throw result.error;
-  if (!result.data) throw new Error(); // Suspense mode is enabled
-
-  const node = result.data.node;
-  if (!node) {
-    return (
-      <Alert
-        type="critical"
-        title={t("frontend.session_detail.alert.title", { deviceId: id })}
-      >
-        {t("frontend.session_detail.alert.text")}
-        <Link from={Route.fullPath} to="..">
-          {t("frontend.session_detail.alert.button")}
-        </Link>
-      </Alert>
-    );
-  }
+  const node = result.data?.node;
+  if (!node) throw notFound();
 
   switch (node.__typename) {
     case "CompatSession":

@@ -173,8 +173,7 @@
         "description": "Check the code sent to your email and update the fields below to continue.",
         "title": "You entered the wrong code"
       },
-      "resend_code": "Resend code",
-      "unknown_email": "Unknown email"
+      "resend_code": "Resend code"
     }
   }
 }

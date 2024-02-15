@@ -17,10 +17,10 @@ import { useTranslation } from "react-i18next";
 import { useMutation } from "urql";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
-import { Link } from "../../routing";
 import { getDeviceIdFromScope } from "../../utils/deviceIdFromScope";
 import BlockList from "../BlockList/BlockList";
 import DateTime from "../DateTime";
+import { Link } from "../Link";
 import { END_SESSION_MUTATION } from "../OAuth2Session";
 import ClientAvatar from "../Session/ClientAvatar";
 import EndSessionButton from "../Session/EndSessionButton";

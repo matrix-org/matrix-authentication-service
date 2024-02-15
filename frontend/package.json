@@ -19,7 +19,7 @@
     "@fontsource/inconsolata": "^5.0.16",
     "@fontsource/inter": "^5.0.16",
     "@radix-ui/react-alert-dialog": "^1.0.5",
-    "@tanstack/react-router": "^1.16.0",
+    "@tanstack/react-router": "^1.16.2",
     "@types/ua-parser-js": "^0.7.39",
     "@urql/core": "^4.2.3",
     "@urql/devtools": "^2.0.3",
@@ -39,7 +39,8 @@
     "react-dom": "^18.2.0",
     "react-i18next": "^14.0.5",
     "ua-parser-js": "^1.0.37",
-    "urql": "^4.0.6"
+    "urql": "^4.0.6",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^5.0.2",
@@ -49,8 +50,8 @@
     "@storybook/addon-essentials": "^7.6.13",
     "@storybook/react": "^7.6.13",
     "@storybook/react-vite": "^7.6.13",
-    "@tanstack/router-devtools": "^1.16.0",
-    "@tanstack/router-vite-plugin": "^1.16.1",
+    "@tanstack/router-devtools": "^1.16.2",
+    "@tanstack/router-vite-plugin": "^1.16.3",
     "@testing-library/react": "^14.2.1",
     "@types/node": "^20.11.17",
     "@types/react": "^18.2.55",

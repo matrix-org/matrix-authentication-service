@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { notFound } from "@tanstack/react-router";
 import { useState, useTransition } from "react";
 import { useQuery } from "urql";
 
@@ -26,44 +27,46 @@ import SessionListHeader from "./SessionList/SessionListHeader";
 
 const QUERY = graphql(/* GraphQL */ `
   query BrowserSessionList(
-    $userId: ID!
     $state: SessionState
     $first: Int
     $after: String
     $last: Int
     $before: String
   ) {
-    user(id: $userId) {
-      id
-      browserSessions(
-        first: $first
-        after: $after
-        last: $last
-        before: $before
-        state: $state
-      ) {
-        totalCount
+    viewer {
+      __typename
+      ... on User {
+        id
+        browserSessions(
+          first: $first
+          after: $after
+          last: $last
+          before: $before
+          state: $state
+        ) {
+          totalCount
 
-        edges {
-          cursor
-          node {
-            id
-            ...BrowserSession_session
+          edges {
+            cursor
+            node {
+              id
+              ...BrowserSession_session
+            }
           }
-        }
 
-        pageInfo {
-          hasNextPage
-          hasPreviousPage
-          startCursor
-          endCursor
+          pageInfo {
+            hasNextPage
+            hasPreviousPage
+            startCursor
+            endCursor
+          }
         }
       }
     }
   }
 `);
 
-const BrowserSessionList: React.FC<{ userId: string }> = ({ userId }) => {
+const BrowserSessionList: React.FC = () => {
   const [pagination, setPagination] = usePagination();
   const [pending, startTransition] = useTransition();
   const [filter, setFilter] = useState<SessionState | null>(
@@ -71,11 +74,12 @@ const BrowserSessionList: React.FC<{ userId: string }> = ({ userId }) => {
   );
   const [result] = useQuery({
     query: QUERY,
-    variables: { userId, state: filter, ...pagination },
+    variables: { state: filter, ...pagination },
   });
   if (result.error) throw result.error;
-  const browserSessions = result.data?.user?.browserSessions;
-  if (!browserSessions) throw new Error(); // Suspense mode is enabled
+  const user = result.data?.viewer;
+  if (user?.__typename !== "User") throw notFound();
+  const browserSessions = user.browserSessions;
 
   const [prevPage, nextPage] = usePages(pagination, browserSessions.pageInfo);
 

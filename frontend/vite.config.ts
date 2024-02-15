@@ -76,32 +76,7 @@ export default defineConfig((env) => ({
   plugins: [
     codegen(),
 
-    react({
-      babel: {
-        plugins: [
-          [
-            "jotai/babel/plugin-react-refresh",
-            {
-              customAtomNames: [
-                "mapQueryAtom",
-                "atomWithPagination",
-                "atomWithCurrentPagination",
-              ],
-            },
-          ],
-          [
-            "jotai/babel/plugin-debug-label",
-            {
-              customAtomNames: [
-                "mapQueryAtom",
-                "atomWithPagination",
-                "atomWithCurrentPagination",
-              ],
-            },
-          ],
-        ],
-      },
-    }),
+    react(),
 
     tanStackRouter(),
 
