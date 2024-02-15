@@ -15,6 +15,7 @@
 // @vitest-environment happy-dom
 
 import { render, cleanup, screen, fireEvent } from "@testing-library/react";
+import { TooltipProvider } from "@vector-im/compound-web";
 import { describe, expect, it, afterEach, vi } from "vitest";
 
 import ConfirmationModal from "./ConfirmationModal";
@@ -26,90 +27,55 @@ describe("<ConfirmationModal />", () => {
 
   it("does not render a closed modal", () => {
     const onConfirm = vi.fn();
-    const onDeny = vi.fn();
 
     render(
-      <ConfirmationModal
-        onConfirm={onConfirm}
-        onDeny={onDeny}
-        className="test"
-        trigger={trigger}
-        title="Are you sure?"
-      >
-        Some extra information.
-      </ConfirmationModal>,
+      <TooltipProvider>
+        <ConfirmationModal
+          onConfirm={onConfirm}
+          trigger={trigger}
+          title="Are you sure?"
+        >
+          Some extra information.
+        </ConfirmationModal>
+      </TooltipProvider>,
     );
     expect(screen.getByText("Open modal")).toBeTruthy();
-    expect(screen.queryByRole("alertdialog")).toBeFalsy();
+    expect(screen.queryByRole("dialog")).toBeFalsy();
   });
 
   it("opens modal on clicking trigger", () => {
     const onConfirm = vi.fn();
-    const onDeny = vi.fn();
 
     render(
-      <ConfirmationModal
-        onConfirm={onConfirm}
-        onDeny={onDeny}
-        className="test"
-        trigger={trigger}
-        title="Are you sure?"
-      >
-        Some extra information.
-      </ConfirmationModal>,
+      <TooltipProvider>
+        <ConfirmationModal
+          onConfirm={onConfirm}
+          trigger={trigger}
+          title="Are you sure?"
+        >
+          Some extra information.
+        </ConfirmationModal>
+      </TooltipProvider>,
     );
 
     fireEvent.click(screen.getByText("Open modal"));
 
-    expect(screen.getByRole("alertdialog")).toMatchSnapshot();
-  });
-
-  it("renders an undeniable modal", () => {
-    const onConfirm = vi.fn();
-    const onDeny = undefined;
-
-    render(
-      <ConfirmationModal
-        onConfirm={onConfirm}
-        onDeny={onDeny}
-        className="test"
-        trigger={trigger}
-        title="Are you sure?"
-      >
-        Some extra information.
-      </ConfirmationModal>,
-    );
-
-    fireEvent.click(screen.getByText("Open modal"));
-
-    // no cancel button without onDeny
-    expect(screen.queryByText("Cancel")).toBeFalsy();
-
-    // The dialog does not close on escape
-    fireEvent.keyDown(screen.getByRole("alertdialog"), {
-      key: "Escape",
-      code: "Escape",
-      keyCode: 27,
-    });
-
-    // dialog still open
-    expect(screen.queryByRole("alertdialog")).toBeTruthy();
+    expect(screen.getByRole("dialog")).toMatchSnapshot();
   });
 
   it("calls onConfirm on confirmation", () => {
     const onConfirm = vi.fn();
-    const onDeny = vi.fn();
 
     render(
-      <ConfirmationModal
-        onConfirm={onConfirm}
-        onDeny={onDeny}
-        className="test"
-        trigger={trigger}
-        title="Are you sure?"
-      >
-        Some extra information.
-      </ConfirmationModal>,
+      <TooltipProvider>
+        <ConfirmationModal
+          onConfirm={onConfirm}
+          trigger={trigger}
+          title="Are you sure?"
+        >
+          Some extra information.
+        </ConfirmationModal>
+      </TooltipProvider>,
     );
 
     fireEvent.click(screen.getByText("Open modal"));
@@ -118,60 +84,33 @@ describe("<ConfirmationModal />", () => {
     expect(onConfirm).toHaveBeenCalled();
 
     // dialog closed
-    expect(screen.queryByRole("alertdialog")).toBeFalsy();
+    expect(screen.queryByRole("dialog")).toBeFalsy();
   });
 
-  it("calls onDeny on cancel click", () => {
+  it("closes modal with Esc", () => {
     const onConfirm = vi.fn();
-    const onDeny = vi.fn();
 
     render(
-      <ConfirmationModal
-        onConfirm={onConfirm}
-        onDeny={onDeny}
-        className="test"
-        trigger={trigger}
-        title="Are you sure?"
-      >
-        Some extra information.
-      </ConfirmationModal>,
+      <TooltipProvider>
+        <ConfirmationModal
+          onConfirm={onConfirm}
+          trigger={trigger}
+          title="Are you sure?"
+        >
+          Some extra information.
+        </ConfirmationModal>
+      </TooltipProvider>,
     );
 
     fireEvent.click(screen.getByText("Open modal"));
 
-    fireEvent.click(screen.getByText("Cancel"));
-    expect(onDeny).toHaveBeenCalled();
-
-    // dialog closed
-    expect(screen.queryByRole("alertdialog")).toBeFalsy();
-  });
-
-  it("calls onDeny on closing modal via Esc", () => {
-    const onConfirm = vi.fn();
-    const onDeny = vi.fn();
-
-    render(
-      <ConfirmationModal
-        onConfirm={onConfirm}
-        onDeny={onDeny}
-        className="test"
-        trigger={trigger}
-        title="Are you sure?"
-      >
-        Some extra information.
-      </ConfirmationModal>,
-    );
-
-    fireEvent.click(screen.getByText("Open modal"));
-
-    fireEvent.keyDown(screen.getByRole("alertdialog"), {
+    fireEvent.keyDown(screen.getByRole("dialog"), {
       key: "Escape",
       code: "Escape",
       keyCode: 27,
     });
-    expect(onDeny).toHaveBeenCalled();
 
     // dialog closed
-    expect(screen.queryByRole("alertdialog")).toBeFalsy();
+    expect(screen.queryByRole("dialog")).toBeFalsy();
   });
 });

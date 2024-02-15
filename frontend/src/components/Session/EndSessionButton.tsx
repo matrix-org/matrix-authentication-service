@@ -39,13 +39,9 @@ const EndSessionButton: React.FC<{ endSession: () => Promise<void> }> = ({
     setInProgress(false);
   };
 
-  // NOOP so we render cancel button
-  const onDeny = (): void => {};
-
   return (
     <>
       <ConfirmationModal
-        onDeny={onDeny}
         onConfirm={onConfirm}
         title={t("frontend.end_session_button.confirmation_modal_title")}
         trigger={

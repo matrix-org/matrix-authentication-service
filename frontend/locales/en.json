@@ -2,6 +2,7 @@
   "action": {
     "back": "Back",
     "cancel": "Cancel",
+    "close": "Close",
     "continue": "Continue",
     "save": "Save"
   },
@@ -146,7 +147,8 @@
     "user_email": {
       "cant_delete_primary": "Choose a different primary email to delete this one.",
       "delete_button_confirmation_modal": {
-        "body": "Are you sure you want to remove this email?"
+        "action": "Delete email",
+        "body": "Delete this email?"
       },
       "delete_button_title": "Remove email address",
       "email": "Email",
