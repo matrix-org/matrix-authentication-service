@@ -1,0 +1,46 @@
+// Copyright 2024 The Matrix.org Foundation C.I.C.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import IconError from "@vector-im/compound-design-tokens/icons/error.svg?react";
+import { Button, H2, Text } from "@vector-im/compound-web";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+
+import styles from "./GenericError.module.css";
+
+const GenericError: React.FC<{ error: unknown }> = ({ error }) => {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={styles.error}>
+      <IconError className={styles.icon} />
+      <div className={styles.message}>
+        <H2>{t("frontend.error.title")}</H2>
+        <Text size="lg">{t("frontend.error.subtitle")}</Text>
+      </div>
+      <Button kind="tertiary" onClick={() => setOpen(!open)}>
+        {open
+          ? t("frontend.error.hideDetails")
+          : t("frontend.error.showDetails")}
+      </Button>
+      {open && (
+        <pre className={styles.details}>
+          <code>{String(error)}</code>
+        </pre>
+      )}
+    </div>
+  );
+};
+
+export default GenericError;

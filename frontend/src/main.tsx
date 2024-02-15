@@ -20,6 +20,7 @@ import { I18nextProvider } from "react-i18next";
 import { Provider as UrqlProvider } from "urql";
 
 import ErrorBoundary from "./components/ErrorBoundary";
+import GenericError from "./components/GenericError";
 import LoadingScreen from "./components/LoadingScreen";
 import config from "./config";
 import { client } from "./graphql";
@@ -31,6 +32,7 @@ import "./main.css";
 const router = createRouter({
   routeTree,
   basepath: config.root,
+  defaultErrorComponent: GenericError,
   context: { client },
 });
 

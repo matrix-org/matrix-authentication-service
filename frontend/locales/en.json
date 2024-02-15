@@ -66,7 +66,12 @@
       "confirmation_modal_title": "Are you sure you want to end this session?",
       "text": "End session"
     },
-    "error_boundary_title": "Something went wrong",
+    "error": {
+      "hideDetails": "Hide details",
+      "showDetails": "Show details",
+      "subtitle": "An unexpected error occurred. Please try again.",
+      "title": "Something went wrong"
+    },
     "last_active": {
       "active_date": "Active {{relativeDate}}",
       "active_now": "Active now",
