@@ -32,8 +32,12 @@ const QUERY = graphql(/* GraphQL */ `
 `);
 
 export const Route = createFileRoute("/_account/sessions/")({
-  async loader({ context }) {
-    const result = await context.client.query(QUERY, {});
+  async loader({ context, abortController: { signal } }) {
+    const result = await context.client.query(
+      QUERY,
+      {},
+      { fetchOptions: { signal } },
+    );
     if (result.error) throw result.error;
     if (result.data?.viewer?.__typename !== "User") throw notFound();
   },

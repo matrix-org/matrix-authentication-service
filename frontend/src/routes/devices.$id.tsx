@@ -42,15 +42,25 @@ const QUERY = graphql(/* GraphQL */ `
 `);
 
 export const Route = createFileRoute("/devices/$id")({
-  async loader({ context, params }) {
-    const viewer = await context.client.query(CURRENT_VIEWER_QUERY, {});
+  async loader({ context, params, abortController: { signal } }) {
+    const viewer = await context.client.query(
+      CURRENT_VIEWER_QUERY,
+      {},
+      {
+        fetchOptions: { signal },
+      },
+    );
     if (viewer.error) throw viewer.error;
     if (viewer.data?.viewer.__typename !== "User") throw notFound();
 
-    const result = await context.client.query(QUERY, {
-      deviceId: params.id,
-      userId: viewer.data.viewer.id,
-    });
+    const result = await context.client.query(
+      QUERY,
+      {
+        deviceId: params.id,
+        userId: viewer.data.viewer.id,
+      },
+      { fetchOptions: { signal } },
+    );
     if (result.error) throw result.error;
     const session = result.data?.session;
     if (!session) throw notFound();

@@ -24,8 +24,12 @@ import OAuth2SessionDetail from "../components/SessionDetail/OAuth2SessionDetail
 import { graphql } from "../gql";
 
 export const Route = createFileRoute("/_account/sessions/$id")({
-  async loader({ context, params }) {
-    const result = await context.client.query(QUERY, { id: params.id });
+  async loader({ context, params, abortController: { signal } }) {
+    const result = await context.client.query(
+      QUERY,
+      { id: params.id },
+      { fetchOptions: { signal } },
+    );
     if (result.error) throw result.error;
     if (!result.data?.node) throw notFound();
   },
