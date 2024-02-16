@@ -27,8 +27,12 @@ const QUERY = graphql(/* GraphQL */ `
 `);
 
 export const Route = createFileRoute("/clients/$id")({
-  loader: async ({ context, params }) => {
-    const result = await context.client.query(QUERY, { id: params.id });
+  loader: async ({ context, params, abortController: { signal } }) => {
+    const result = await context.client.query(
+      QUERY,
+      { id: params.id },
+      { fetchOptions: { signal } },
+    );
     if (result.error) throw result.error;
     if (!result.data?.oauth2Client) throw notFound();
   },

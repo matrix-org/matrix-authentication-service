@@ -27,10 +27,14 @@ const QUERY = graphql(/* GraphQL */ `
 `);
 
 export const Route = createFileRoute("/emails/$id/verify")({
-  async loader({ context, params }) {
-    const result = await context.client.query(QUERY, {
-      id: params.id,
-    });
+  async loader({ context, params, abortController: { signal } }) {
+    const result = await context.client.query(
+      QUERY,
+      {
+        id: params.id,
+      },
+      { fetchOptions: { signal } },
+    );
     if (result.error) throw result.error;
     if (!result.data?.userEmail) throw notFound();
   },
