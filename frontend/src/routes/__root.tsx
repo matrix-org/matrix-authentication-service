@@ -85,9 +85,7 @@ export const Route = createRootRouteWithContext<{
 
   component: () => (
     <>
-      <Layout>
-        <Outlet />
-      </Layout>
+      <Outlet />
       {import.meta.env.DEV && <TanStackRouterDevtools />}
     </>
   ),

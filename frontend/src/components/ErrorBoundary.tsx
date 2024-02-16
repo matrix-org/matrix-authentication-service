@@ -52,9 +52,10 @@ export default class ErrorBoundary extends PureComponent<Props, IState> {
 
   public render(): ReactNode {
     if (this.state.error) {
+      // We ask the child components not to suspend, as this error boundary won't be in a Suspense boundary.
       return (
-        <Layout>
-          <GenericError error={this.state.error} />
+        <Layout dontSuspend>
+          <GenericError dontSuspend error={this.state.error} />
         </Layout>
       );
     }

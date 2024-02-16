@@ -21,6 +21,7 @@ import { Provider as UrqlProvider } from "urql";
 
 import ErrorBoundary from "./components/ErrorBoundary";
 import GenericError from "./components/GenericError";
+import Layout from "./components/Layout";
 import LoadingScreen from "./components/LoadingScreen";
 import config from "./config";
 import { client } from "./graphql";
@@ -46,15 +47,17 @@ declare module "@tanstack/react-router" {
 createRoot(document.getElementById("root") as HTMLElement).render(
   <StrictMode>
     <ErrorBoundary>
-      <UrqlProvider value={client}>
-        <Suspense fallback={<LoadingScreen />}>
+      <Suspense fallback={<LoadingScreen />}>
+        <UrqlProvider value={client}>
           <I18nextProvider i18n={i18n}>
             <TooltipProvider>
-              <RouterProvider router={router} context={{ client }} />
+              <Layout>
+                <RouterProvider router={router} context={{ client }} />
+              </Layout>
             </TooltipProvider>
           </I18nextProvider>
-        </Suspense>
-      </UrqlProvider>
+        </UrqlProvider>
+      </Suspense>
     </ErrorBoundary>
   </StrictMode>,
 );

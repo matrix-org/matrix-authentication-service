@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { Link } from "@vector-im/compound-web";
-import { useTranslation } from "react-i18next";
+import { Translation } from "react-i18next";
 
 import styles from "./Footer.module.css";
 
@@ -21,37 +21,58 @@ type Props = {
   policyUri?: string;
   tosUri?: string;
   imprint?: string;
+  dontSuspend?: boolean;
 };
 
-const Footer: React.FC<Props> = ({ policyUri, tosUri, imprint }) => {
-  const { t } = useTranslation();
-  return (
-    <footer className={styles.legalFooter}>
-      {(policyUri || tosUri) && (
-        <nav>
-          {policyUri && (
-            <Link href={policyUri} title={t("branding.privacy_policy.alt")}>
-              {t("branding.privacy_policy.link")}
-            </Link>
-          )}
+const Footer: React.FC<Props> = ({
+  policyUri,
+  tosUri,
+  imprint,
+  dontSuspend,
+}) => (
+  <Translation useSuspense={!dontSuspend}>
+    {(t) => (
+      <footer className={styles.legalFooter}>
+        {(policyUri || tosUri) && (
+          <nav>
+            {policyUri && (
+              <Link
+                href={policyUri}
+                title={t("branding.privacy_policy.alt", {
+                  defaultValue: "Link to the service privacy policy",
+                })}
+              >
+                {t("branding.privacy_policy.link", {
+                  defaultValue: "Privacy policy",
+                })}
+              </Link>
+            )}
 
-          {policyUri && tosUri && (
-            <div className={styles.separator} aria-hidden="true">
-              •
-            </div>
-          )}
+            {policyUri && tosUri && (
+              <div className={styles.separator} aria-hidden="true">
+                •
+              </div>
+            )}
 
-          {tosUri && (
-            <Link href={tosUri} title={t("branding.terms_and_conditions.alt")}>
-              {t("branding.terms_and_conditions.link")}
-            </Link>
-          )}
-        </nav>
-      )}
+            {tosUri && (
+              <Link
+                href={tosUri}
+                title={t("branding.terms_and_conditions.alt", {
+                  defaultValue: "Link to the service terms and conditions",
+                })}
+              >
+                {t("branding.terms_and_conditions.link", {
+                  defaultValue: "Terms and conditions",
+                })}
+              </Link>
+            )}
+          </nav>
+        )}
 
-      {imprint && <p className={styles.imprint}>{imprint}</p>}
-    </footer>
-  );
-};
+        {imprint && <p className={styles.imprint}>{imprint}</p>}
+      </footer>
+    )}
+  </Translation>
+);
 
 export default Footer;
