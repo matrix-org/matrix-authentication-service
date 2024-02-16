@@ -19,18 +19,18 @@ import styles from "./Layout.module.css";
 
 const Layout: React.FC<{
   children?: React.ReactNode;
-}> = ({ children }) => {
-  return (
-    <div className={styles.layoutContainer}>
-      {children}
+  dontSuspend?: boolean;
+}> = ({ children, dontSuspend }) => (
+  <div className={styles.layoutContainer}>
+    {children}
 
-      <Footer
-        imprint={appConfig.branding?.imprint}
-        tosUri={appConfig.branding?.tosUri}
-        policyUri={appConfig.branding?.policyUri}
-      />
-    </div>
-  );
-};
+    <Footer
+      dontSuspend={dontSuspend}
+      imprint={appConfig.branding?.imprint}
+      tosUri={appConfig.branding?.tosUri}
+      policyUri={appConfig.branding?.policyUri}
+    />
+  </div>
+);
 
 export default Layout;

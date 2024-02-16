@@ -35,7 +35,9 @@ const LoadingSpinner: React.FC<{ inline?: boolean; className?: string }> = ({
       />
     </svg>
     <span className="sr-only">
-      <Translation>{(t): ReactNode => t("common.loading")}</Translation>
+      <Translation useSuspense={false}>
+        {(t): ReactNode => t("common.loading", { defaultValue: "Loading" })}
+      </Translation>
     </span>
   </div>
 );

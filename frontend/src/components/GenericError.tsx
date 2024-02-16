@@ -13,33 +13,50 @@
 // limitations under the License.
 
 import IconError from "@vector-im/compound-design-tokens/icons/error.svg?react";
-import { Button, H2, Text } from "@vector-im/compound-web";
+import { Button } from "@vector-im/compound-web";
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Translation } from "react-i18next";
 
+import BlockList from "./BlockList";
 import styles from "./GenericError.module.css";
+import PageHeading from "./PageHeading";
 
-const GenericError: React.FC<{ error: unknown }> = ({ error }) => {
-  const { t } = useTranslation();
+const GenericError: React.FC<{ error: unknown; dontSuspend?: boolean }> = ({
+  error,
+  dontSuspend,
+}) => {
   const [open, setOpen] = useState(false);
   return (
-    <div className={styles.error}>
-      <IconError className={styles.icon} />
-      <div className={styles.message}>
-        <H2>{t("frontend.error.title")}</H2>
-        <Text size="lg">{t("frontend.error.subtitle")}</Text>
-      </div>
-      <Button kind="tertiary" onClick={() => setOpen(!open)}>
-        {open
-          ? t("frontend.error.hideDetails")
-          : t("frontend.error.showDetails")}
-      </Button>
-      {open && (
-        <pre className={styles.details}>
-          <code>{String(error)}</code>
-        </pre>
+    <Translation useSuspense={!dontSuspend}>
+      {(t) => (
+        <BlockList>
+          <PageHeading
+            invalid
+            Icon={IconError}
+            title={t("frontend.error.title", {
+              defaultValue: "Something went wrong",
+            })}
+            subtitle={t("frontend.error.subtitle", {
+              defaultValue: "An unexpected error occured. Please try again.",
+            })}
+          />
+          <Button kind="tertiary" onClick={() => setOpen(!open)}>
+            {open
+              ? t("frontend.error.hideDetails", {
+                  defaultValue: "Hide details",
+                })
+              : t("frontend.error.showDetails", {
+                  defaultValue: "Show details",
+                })}
+          </Button>
+          {open && (
+            <pre className={styles.details}>
+              <code>{String(error)}</code>
+            </pre>
+          )}
+        </BlockList>
       )}
-    </div>
+    </Translation>
   );
 };
 

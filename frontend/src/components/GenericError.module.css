@@ -13,33 +13,6 @@
  * limitations under the License.
  */
 
-.error {
-    display: flex;
-    flex-direction: column;
-    gap: var(--cpd-space-4x);
-}
-
-.message {
-    display: flex;
-    flex-direction: column;
-    gap: var(--cpd-space-2x);
-    text-align: center;
-
-    &>p {
-        color: var(--cpd-color-text-secondary);
-    }
-}
-
-.icon {
-    align-self: center;
-    height: var(--cpd-space-16x);
-    width: var(--cpd-space-16x);
-    padding: var(--cpd-space-3x);
-    border-radius: var(--cpd-space-2x);
-    background-color: var(--cpd-color-bg-critical-subtle);
-    color: var(--cpd-color-icon-critical-primary);
-}
-
 .details {
     font: var(--cpd-font-body-sm-regular);
     background: var(--cpd-color-bg-critical-subtle);
