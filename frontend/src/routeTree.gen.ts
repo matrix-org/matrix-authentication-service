@@ -11,6 +11,7 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as ResetCrossSigningImport } from './routes/reset-cross-signing'
 import { Route as AccountImport } from './routes/_account'
 import { Route as AccountIndexImport } from './routes/_account.index'
 import { Route as DevicesIdImport } from './routes/devices.$id'
@@ -21,6 +22,11 @@ import { Route as AccountSessionsBrowsersImport } from './routes/_account.sessio
 import { Route as AccountSessionsIdImport } from './routes/_account.sessions.$id'
 
 // Create/Update Routes
+
+const ResetCrossSigningRoute = ResetCrossSigningImport.update({
+  path: '/reset-cross-signing',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const AccountRoute = AccountImport.update({
   id: '/_account',
@@ -70,6 +76,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountImport
       parentRoute: typeof rootRoute
     }
+    '/reset-cross-signing': {
+      preLoaderRoute: typeof ResetCrossSigningImport
+      parentRoute: typeof rootRoute
+    }
     '/clients/$id': {
       preLoaderRoute: typeof ClientsIdImport
       parentRoute: typeof rootRoute
@@ -110,6 +120,7 @@ export const routeTree = rootRoute.addChildren([
     AccountSessionsBrowsersRoute,
     AccountSessionsIndexRoute,
   ]),
+  ResetCrossSigningRoute,
   ClientsIdRoute,
   DevicesIdRoute,
   EmailsIdVerifyRoute,

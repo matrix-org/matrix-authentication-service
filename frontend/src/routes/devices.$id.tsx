@@ -23,7 +23,7 @@ const CURRENT_VIEWER_QUERY = graphql(/* GraphQL */ `
   query CurrentViewerQuery {
     viewer {
       __typename
-      ... on User {
+      ... on Node {
         id
       }
     }

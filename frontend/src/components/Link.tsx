@@ -14,24 +14,21 @@
 
 import { LinkComponent, useLinkProps } from "@tanstack/react-router";
 import { Link as CompoundLink } from "@vector-im/compound-web";
-import cx from "classnames";
 import { forwardRef } from "react";
 
-import styles from "./Link.module.css";
+type Props = {
+  kind?: "primary" | "critical";
+};
 
-export const Link: LinkComponent = forwardRef<
+export const Link: LinkComponent<Props> = forwardRef<
   HTMLAnchorElement,
-  Parameters<typeof useLinkProps>[0]
->(({ children, ...props }, ref) => {
-  const { className, ...newProps } = useLinkProps(props);
+  Parameters<typeof useLinkProps>[0] & Props
+>(({ children, kind, ...props }, ref) => {
+  const linkProps = useLinkProps(props);
 
   return (
-    <CompoundLink
-      kind="primary"
-      ref={ref}
-      className={cx(className, styles.linkButton)}
-      children={children}
-      {...newProps}
-    />
+    <CompoundLink kind={kind} ref={ref} {...linkProps}>
+      {children}
+    </CompoundLink>
   );
-}) as LinkComponent;
+}) as LinkComponent<Props>;

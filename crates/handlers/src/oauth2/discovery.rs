@@ -183,6 +183,7 @@ pub(crate) async fn get(
             "org.matrix.sessions_list".to_owned(),
             "org.matrix.session_view".to_owned(),
             "org.matrix.session_end".to_owned(),
+            "org.matrix.cross_signing_reset".to_owned(),
         ],
     })
 }
