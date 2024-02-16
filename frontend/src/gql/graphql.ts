@@ -1423,18 +1423,6 @@ export type AddEmailMutation = {
   };
 };
 
-export type AllowCrossSigningResetMutationVariables = Exact<{
-  userId: Scalars["ID"]["input"];
-}>;
-
-export type AllowCrossSigningResetMutation = {
-  __typename?: "Mutation";
-  allowUserCrossSigningReset: {
-    __typename?: "AllowUserCrossSigningResetPayload";
-    user?: { __typename?: "User"; id: string } | null;
-  };
-};
-
 export type UserEmailListQueryQueryVariables = Exact<{
   userId: Scalars["ID"]["input"];
   first?: InputMaybe<Scalars["Int"]["input"]>;
@@ -1698,7 +1686,9 @@ export type CurrentViewerQueryQueryVariables = Exact<{ [key: string]: never }>;
 
 export type CurrentViewerQueryQuery = {
   __typename?: "Query";
-  viewer: { __typename: "Anonymous" } | { __typename: "User"; id: string };
+  viewer:
+    | { __typename: "Anonymous"; id: string }
+    | { __typename: "User"; id: string };
 };
 
 export type DeviceRedirectQueryQueryVariables = Exact<{
@@ -1727,6 +1717,18 @@ export type VerifyEmailQueryQuery = {
         };
       })
     | null;
+};
+
+export type AllowCrossSigningResetMutationVariables = Exact<{
+  userId: Scalars["ID"]["input"];
+}>;
+
+export type AllowCrossSigningResetMutation = {
+  __typename?: "Mutation";
+  allowUserCrossSigningReset: {
+    __typename?: "AllowUserCrossSigningResetPayload";
+    user?: { __typename?: "User"; id: string } | null;
+  };
 };
 
 export type CurrentViewerSessionQueryQueryVariables = Exact<{
@@ -3160,75 +3162,6 @@ export const AddEmailDocument = {
     },
   ],
 } as unknown as DocumentNode<AddEmailMutation, AddEmailMutationVariables>;
-export const AllowCrossSigningResetDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "mutation",
-      name: { kind: "Name", value: "AllowCrossSigningReset" },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "userId" },
-          },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "allowUserCrossSigningReset" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "input" },
-                value: {
-                  kind: "ObjectValue",
-                  fields: [
-                    {
-                      kind: "ObjectField",
-                      name: { kind: "Name", value: "userId" },
-                      value: {
-                        kind: "Variable",
-                        name: { kind: "Name", value: "userId" },
-                      },
-                    },
-                  ],
-                },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "user" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                    ],
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<
-  AllowCrossSigningResetMutation,
-  AllowCrossSigningResetMutationVariables
->;
 export const UserEmailListQueryDocument = {
   kind: "Document",
   definitions: [
@@ -4576,7 +4509,7 @@ export const CurrentViewerQueryDocument = {
                   kind: "InlineFragment",
                   typeCondition: {
                     kind: "NamedType",
-                    name: { kind: "Name", value: "User" },
+                    name: { kind: "Name", value: "Node" },
                   },
                   selectionSet: {
                     kind: "SelectionSet",
@@ -4747,6 +4680,75 @@ export const VerifyEmailQueryDocument = {
 } as unknown as DocumentNode<
   VerifyEmailQueryQuery,
   VerifyEmailQueryQueryVariables
+>;
+export const AllowCrossSigningResetDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "AllowCrossSigningReset" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "userId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "allowUserCrossSigningReset" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "userId" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "userId" },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "user" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  AllowCrossSigningResetMutation,
+  AllowCrossSigningResetMutationVariables
 >;
 export const CurrentViewerSessionQueryDocument = {
   kind: "Document",

@@ -41,6 +41,9 @@ const actionSchema = z
       device_id: z.string().optional(),
     }),
     z.object({
+      action: z.literal("org.matrix.cross_signing_reset"),
+    }),
+    z.object({
       action: z.undefined(),
     }),
   ])
@@ -53,7 +56,7 @@ export const Route = createRootRouteWithContext<{
 }>()({
   validateSearch: (search): Action => actionSchema.parse(search),
 
-  beforeLoad: ({ search }) => {
+  beforeLoad({ search }) {
     switch (search.action) {
       case "profile":
       case "org.matrix.profile":
@@ -80,6 +83,12 @@ export const Route = createRootRouteWithContext<{
             params: { id: search.device_id },
           });
         throw redirect({ to: "/sessions" });
+
+      case "org.matrix.cross_signing_reset":
+        throw redirect({
+          to: "/reset-cross-signing",
+          search: { deepLink: true },
+        });
     }
   },
 

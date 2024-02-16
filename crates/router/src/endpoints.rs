@@ -475,6 +475,9 @@ pub enum AccountAction {
     OrgMatrixSessionEnd { device_id: String },
     #[serde(rename = "session_end")]
     SessionEnd { device_id: String },
+
+    #[serde(rename = "org.matrix.cross_signing_reset")]
+    OrgMatrixCrossSigningReset,
 }
 
 /// `GET /account/`

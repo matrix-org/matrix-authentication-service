@@ -13,14 +13,15 @@
 // limitations under the License.
 
 import { createFileRoute, notFound } from "@tanstack/react-router";
+import IconKey from "@vector-im/compound-design-tokens/icons/key.svg?react";
 import { H3, Separator } from "@vector-im/compound-web";
 import { Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "urql";
 
 import BlockList from "../components/BlockList/BlockList";
+import { ButtonLink } from "../components/ButtonLink";
 import LoadingSpinner from "../components/LoadingSpinner";
-import CrossSigningReset from "../components/UserProfile/CrossSigningReset";
 import UserEmailList from "../components/UserProfile/UserEmailList";
 import UserName from "../components/UserProfile/UserName";
 import { graphql } from "../gql";
@@ -71,7 +72,15 @@ function Index(): React.ReactElement {
         </BlockList>
 
         <Separator />
-        <CrossSigningReset userId={user.id} />
+
+        <ButtonLink
+          to="/reset-cross-signing"
+          kind="tertiary"
+          destructive
+          Icon={IconKey}
+        >
+          {t("frontend.reset_cross_signing.heading")}
+        </ButtonLink>
       </BlockList>
     </>
   );

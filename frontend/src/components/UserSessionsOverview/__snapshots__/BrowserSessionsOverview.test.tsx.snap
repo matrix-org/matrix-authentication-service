@@ -22,7 +22,7 @@ exports[`BrowserSessionsOverview > renders with sessions 1`] = `
       </p>
     </div>
     <a
-      class="_link_1mzip_17 _linkButton_379d57"
+      class="_link_1mzip_17"
       data-kind="primary"
       href="/sessions/browsers"
       rel="noreferrer noopener"
