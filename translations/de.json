@@ -96,7 +96,8 @@
         "description": "Bitte erstellen Sie ein Konto, um loszulegen:",
         "heading": "Konto erstellen"
       },
-      "sign_in_instead": "Stattdessen anmelden"
+      "sign_in_instead": "Stattdessen anmelden",
+      "terms_of_service": "I agree to the <a href=\"%s\" data-kind=\"primary\" class=\"cpd-link\">Terms and Conditions</a>"
     },
     "scope": {
       "edit_profile": "Ihr Profil und Ihre Kontaktdaten bearbeiten",

@@ -96,7 +96,8 @@
         "description": "Créer un compte pour commencer :",
         "heading": "Créer un compte"
       },
-      "sign_in_instead": "Se connecter"
+      "sign_in_instead": "Se connecter",
+      "terms_of_service": "J'accepte les <a href=\"%s\" data-kind=\"primary\" class=\"cpd-link\">Conditions d'utilisation</a>"
     },
     "scope": {
       "edit_profile": "Modifiez votre profil et vos coordonnées",
@@ -128,7 +129,7 @@
         "imported_from_upstream": "Importé de votre compte en amont",
         "link_existing": "Associer un compte existant",
         "suggested_display_name": "Importer le pseudonyme",
-        "suggested_email": "Importer l’adresse email",
+        "suggested_email": "Importer l’adresse e-mail",
         "use": "Importer"
       },
       "suggest_link": {

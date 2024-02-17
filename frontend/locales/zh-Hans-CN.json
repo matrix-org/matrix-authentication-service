@@ -1,0 +1,196 @@
+{
+  "action": {
+    "back": "返回",
+    "cancel": "取消",
+    "close": "关闭",
+    "continue": "继续",
+    "save": "保存"
+  },
+  "branding": {
+    "privacy_policy": {
+      "alt": "服务隐私政策链接",
+      "link": "隐私政策"
+    },
+    "terms_and_conditions": {
+      "alt": "服务条款与条件链接",
+      "link": "条款与条件"
+    }
+  },
+  "common": {
+    "add": "添加",
+    "error": "错误",
+    "loading": "正在加载...",
+    "next": "下一步",
+    "previous": "上一步"
+  },
+  "frontend": {
+    "add_email_form": {
+      "email_denied_alert": {
+        "text": "服务器策略不允许输入的电子邮件地址。",
+        "title": "电子邮件地址被策略拒绝"
+      },
+      "email_exists_alert": {
+        "text": "输入的电子邮件地址已添加到此账户",
+        "title": "电子邮件地址已经存在"
+      },
+      "email_field_help": "添加可用于访问此账户的备用电子邮件地址。",
+      "email_field_label": "添加电子邮件地址",
+      "email_invalid_alert": {
+        "text": "输入的电子邮件地址无效",
+        "title": "无效的电子邮件地址"
+      }
+    },
+    "app_sessions_list": {
+      "error": "加载应用程序会话失败",
+      "heading": "应用"
+    },
+    "browser_session_details": {
+      "current_badge": "当前",
+      "session_details_title": "会话"
+    },
+    "browser_sessions_overview": {
+      "body:other": "{{count}}活跃会话",
+      "heading": "浏览器",
+      "view_all_button": "查看全部"
+    },
+    "compat_session_detail": {
+      "client_details_title": "客户端",
+      "name": "名称",
+      "session_details_title": "会话"
+    },
+    "device_type_icon_label": {
+      "desktop": "桌面",
+      "mobile": "手机",
+      "unknown": "未知设备类型",
+      "web": "网页"
+    },
+    "end_session_button": {
+      "confirmation_modal_title": "你确定要结束这个会话吗？",
+      "text": "结束会话"
+    },
+    "error": {
+      "hideDetails": "隐藏详细信息",
+      "showDetails": "显示详细信息",
+      "subtitle": "出现意外错误。请重试。",
+      "title": "出了点问题"
+    },
+    "error_boundary_title": "出了点问题",
+    "last_active": {
+      "active_date": "活跃 {{relativeDate}}",
+      "active_now": "现在激活",
+      "inactive_90_days": "已停用90天以上"
+    },
+    "nav": {
+      "profile": "个人资料",
+      "sessions": "会话"
+    },
+    "not_found_alert_title": "未找到。",
+    "not_logged_in_alert": "尚未登录。",
+    "oauth2_client_detail": {
+      "details_title": "客户端",
+      "id": "客户端ID",
+      "name": "名称",
+      "policy": "策略",
+      "terms": "服务条款"
+    },
+    "oauth2_session_detail": {
+      "client_details_name": "名称",
+      "client_title": "客户端",
+      "session_details_title": "会话"
+    },
+    "pagination_controls": {
+      "total": "总计：{{totalCount}}"
+    },
+    "reset_cross_signing": {
+      "button": "允许重置加密身份",
+      "description": "如果您没有在其他地方登录，并且忘记或丢失了所有恢复选项，则需要重置您的加密身份。这意味着您将丢失现有的信息历史记录，其他用户会看到您已重置身份，您需要再次验证现有设备。",
+      "failure": {
+        "description": "这可能是暂时的问题，请稍后再试。如果问题仍然存在，请联系服务器管理员。",
+        "title": "无法允许加密身份"
+      },
+      "heading": "重置加密身份",
+      "success": {
+        "description": "客户端现在可以临时重置您的账户加密身份。请按照客户端中的说明完成该过程。",
+        "title": "临时允许重置加密身份"
+      }
+    },
+    "selectable_session": {
+      "label": "选择会话"
+    },
+    "session": {
+      "current_badge": "当前",
+      "device_id_label": "设备 ID",
+      "finished_date": "已完成 <datetime/>",
+      "finished_label": "已完成",
+      "id_label": "ID",
+      "ip_label": "IP 地址",
+      "last_active_label": "最后活动",
+      "last_auth_label": "最后认证",
+      "scopes_label": "范围",
+      "signed_in_date": "已登录 <datetime/>",
+      "signed_in_label": "已登录",
+      "uri_label": "Uri",
+      "user_id_label": "用户 ID",
+      "username_label": "用户名"
+    },
+    "session_detail": {
+      "alert": {
+        "button": "返回",
+        "text": "该会话不存在，或不再处于活动状态。",
+        "title": "无法找到会话：{{deviceId}}"
+      }
+    },
+    "unknown_route": "未知路线 {{route}}",
+    "unverified_email_alert": {
+      "button": "审查并验证",
+      "text:other": "您有{{count}} 个未经验证的电子邮件地址。",
+      "title": "未经验证的电子邮件地址"
+    },
+    "user_email": {
+      "cant_delete_primary": "选择其他主电子邮件地址，删除该电子邮件地址。",
+      "delete_button_confirmation_modal": {
+        "action": "删除电子邮件地址",
+        "body": "您确定要删除此电子邮件地址吗？"
+      },
+      "delete_button_title": "删除电子邮件地址",
+      "email": "电子邮件地址",
+      "make_primary_button": "设为主要",
+      "not_verified": "未验证",
+      "primary_email": "主电子邮件地址",
+      "retry_button": "Resend code",
+      "unverified": "未验证"
+    },
+    "user_email_list": {
+      "heading": "电子邮件地址",
+      "no_primary_email_alert": "没有主电子邮件地址"
+    },
+    "user_greeting": {
+      "error": "加载用户失败"
+    },
+    "user_name": {
+      "display_name_field_label": "显示名称"
+    },
+    "user_sessions_overview": {
+      "heading": "您登录的位置"
+    },
+    "verify_email": {
+      "code_field_error": "无法识别代码",
+      "code_field_label": "6位数代码",
+      "code_field_wrong_shape": "代码必须是6位数字",
+      "email_sent_alert": {
+        "description": "请在下方输入新代码。",
+        "title": "新代码已发送"
+      },
+      "enter_code_prompt": "输入发送至以下地址的6位数代码：<email>{{email}}</email>",
+      "heading": "验证您的电子邮件地址",
+      "invalid_code_alert": {
+        "description": "检查发送到您电子邮件地址中的代码，并更新以下字段以继续。",
+        "title": "您输入了错误的代码"
+      },
+      "resend_code": "重新发送代码",
+      "resend_email": "重新发送电子邮件",
+      "sent": "已发送！",
+      "unknown_email": "未知的电子邮件地址"
+    }
+  }
+}

@@ -2,6 +2,7 @@
   "action": {
     "back": "Retour",
     "cancel": "Annuler",
+    "close": "Fermer",
     "continue": "Continuer",
     "save": "Enregistrer"
   },
@@ -32,6 +33,7 @@
         "text": "L’adresse e-mail saisie est déjà ajoutée à ce compte",
         "title": "Cette adresse e-mail existe déjà"
       },
+      "email_field_help": "Ajouter une autre adresse e-mail à utiliser pour ce compte.",
       "email_field_label": "Ajouter une adresse e-mail",
       "email_invalid_alert": {
         "text": "L’adresse e-mail saisie est invalide",
@@ -66,6 +68,12 @@
     "end_session_button": {
       "confirmation_modal_title": "Êtes-vous sûr de vouloir terminer cette session ?",
       "text": "Terminer la session"
+    },
+    "error": {
+      "hideDetails": "Masquer les détails",
+      "showDetails": "Afficher les détails",
+      "subtitle": "Une erreur inattendue s'est produite. Veuillez réessayer",
+      "title": "Un problème est survenu"
     },
     "error_boundary_title": "Un problème est survenu",
     "last_active": {
@@ -141,14 +149,17 @@
       "title": "Adresse e-mail non vérifiée"
     },
     "user_email": {
+      "cant_delete_primary": "Changez d'adresse e-mail principale pour supprimer celle-ci.",
       "delete_button_confirmation_modal": {
-        "body": "Êtes-vous sûr de vouloir supprimer cette adresse e-mail ?"
+        "action": "Supprimer l'adresse e-mail",
+        "body": "Supprimer cette adresse e-mail ?"
       },
       "delete_button_title": "Supprimer l’adresse e-mail",
       "email": "Adresse e-mail",
       "make_primary_button": "Utiliser comme adresse principale",
+      "not_verified": "Non vérifié",
       "primary_email": "Adresse e-mail principale",
-      "retry_button": "Réessayer la vérification",
+      "retry_button": "Renvoyer le code",
       "unverified": "Non vérifiée"
     },
     "user_email_list": {
