@@ -1,0 +1,147 @@
+{
+  "action": {
+    "cancel": "取消",
+    "continue": "继续",
+    "create_account": "",
+    "sign_in": "登录",
+    "sign_out": "注销",
+    "submit": "提交"
+  },
+  "app": {
+    "human_name": "Matrix Authentication Service",
+    "name": "matrix-authentication-service",
+    "technical_description": "OpenID Connect 发现文档： <a class=\"cpd-link\" data-kind=\"primary\" href=\"%(discovery_url)s\">%(discovery_url)s</a>"
+  },
+  "branding": {
+    "privacy_policy": {
+      "alt": "服务隐私政策链接",
+      "link": "隐私政策"
+    },
+    "terms_and_conditions": {
+      "alt": "服务条款和条件链接",
+      "link": "条款与条件"
+    }
+  },
+  "common": {
+    "display_name": "显示名称",
+    "email_address": "电子邮件地址",
+    "mxid": "Matrix ID",
+    "password": "密码",
+    "password_confirm": "确认密码",
+    "username": "用户名"
+  },
+  "error": {
+    "unexpected": "意外错误"
+  },
+  "mas": {
+    "add_email": {
+      "description": "输入电子邮件地址，以便在失去访问权限时恢复账户。",
+      "heading": "添加电子邮件地址"
+    },
+    "back_to_homepage": "返回主页",
+    "change_password": {
+      "change": "更改密码",
+      "confirm": "确认密码",
+      "current": "当前密码",
+      "description": "这将更改您账户的密码。",
+      "heading": "更改我的密码",
+      "new": "新密码"
+    },
+    "emails": {
+      "greeting": "%(username)s 你好，",
+      "verify": {
+        "body_html": "确认此电子邮件地址的验证码是： <strong>%(code)s</strong>",
+        "body_text": "确认此电子邮件地址的验证码是： %(code)s",
+        "subject": "您的邮箱验证码是：%(code)s"
+      }
+    },
+    "errors": {
+      "denied_policy": "被该策略拒绝：%(policy)s",
+      "field_required": "此字段为必填项",
+      "invalid_credentials": "无效的凭据",
+      "password_mismatch": "密码字段不匹配",
+      "username_taken": "此用户名已被使用"
+    },
+    "login": {
+      "call_to_register": "还没有账户？",
+      "continue_with_provider": "以 %(provider)s 继续",
+      "description": "请登录以继续：",
+      "headline": "登录",
+      "link": {
+        "description": "关联您的 <span class=\"break-keep text-links\">%(provider)s</span> 账户",
+        "headline": "登录以链接"
+      },
+      "no_login_methods": "没有可用的登录途径。",
+      "separator": "或"
+    },
+    "navbar": {
+      "my_account": "我的账户",
+      "register": "创建账户",
+      "signed_in_as": "登录为 <span class=\"font-semibold\">%(username)s</span>。"
+    },
+    "not_found": {
+      "description": "您要查找的页面不存在或已被移动",
+      "heading": "页面未找到"
+    },
+    "not_you": "不是 %(username)s？",
+    "or_separator": "或",
+    "policy_violation": {
+      "description": "这可能是由于创建请求的客户端、当前登录的用户或请求本身造成的。",
+      "heading": "授权请求被该服务执行的策略拒绝",
+      "logged_as": "登录为 <span class=\"font-semibold\">%(username)s</span>"
+    },
+    "register": {
+      "call_to_login": "已有账户？",
+      "create_account": {
+        "description": "请创建一个账户以开始使用：",
+        "heading": "创建账户"
+      },
+      "sign_in_instead": "改为登录",
+      "terms_of_service": "我同意<a href=\"%s\" data-kind=\"primary\" class=\"cpd-link\">条款与条件 </a>"
+    },
+    "scope": {
+      "edit_profile": "编辑个人资料和联系方式",
+      "manage_sessions": "管理设备和会话",
+      "mas_admin": "管理 matrix-authentication-service 上的用户",
+      "send_messages": "代您发送新消息",
+      "synapse_admin": "管理 Synapse 服务器",
+      "view_messages": "查看现有信息和数据",
+      "view_profile": "查看个人资料信息和联系方式"
+    },
+    "upstream_oauth2": {
+      "link_mismatch": {
+        "heading": "此上游账户已与另一个账户关联。"
+      },
+      "register": {
+        "choose_username": {
+          "description": "以后无法更改。",
+          "heading": "选择用户名"
+        },
+        "create_account": "创建新账户",
+        "enforced_by_policy": "由服务器策略强制执行",
+        "forced_display_name": "将使用以下显示名称",
+        "forced_email": "将使用以下电子邮件地址",
+        "forced_localpart": "将使用以下用户名",
+        "import_data": {
+          "description": "确认将链接到新%(server_name)s 账户的信息。",
+          "heading": "导入数据"
+        },
+        "imported_from_upstream": "从上游账户导入",
+        "link_existing": "链接到现有账户",
+        "suggested_display_name": "导入显示名称",
+        "suggested_email": "导入电子邮件地址",
+        "use": "使用"
+      },
+      "suggest_link": {
+        "action": "链接",
+        "heading": "链接到现有账户"
+      }
+    },
+    "verify_email": {
+      "6_digit_code": "6位数代码",
+      "code": "代码",
+      "description": "输入发送至以下邮箱的6位数代码：<em>%(email)s</em>",
+      "headline": "验证邮箱"
+    }
+  }
+}
