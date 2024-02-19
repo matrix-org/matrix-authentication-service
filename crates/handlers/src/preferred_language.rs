@@ -21,7 +21,7 @@ use axum::{
     TypedHeader,
 };
 use mas_axum_utils::language_detection::AcceptLanguage;
-use mas_i18n::{DataLocale, Translator};
+use mas_i18n::{locale, DataLocale, Translator};
 
 pub struct PreferredLanguage(pub DataLocale);
 
@@ -37,16 +37,24 @@ where
         let translator: Arc<Translator> = FromRef::from_ref(state);
         let accept_language: Option<TypedHeader<AcceptLanguage>> =
             FromRequestParts::from_request_parts(parts, state).await?;
-        let supported_language = translator.available_locales();
 
-        let locale = accept_language
-            .and_then(|TypedHeader(accept_language)| {
-                accept_language.iter().find_map(|lang| {
-                    let locale: DataLocale = lang.into();
-                    supported_language.contains(&&locale).then_some(locale)
-                })
-            })
-            .unwrap_or("en".parse().unwrap());
+        let iter = accept_language
+            .iter()
+            .flat_map(|TypedHeader(accept_language)| accept_language.iter())
+            .flat_map(|lang| {
+                let lang = DataLocale::from(lang);
+                // XXX: this is hacky as we may want to actually maintain proper language
+                // aliases at some point, but `zh-CN` doesn't fallback
+                // automatically to `zh-Hans`, so we insert it manually here.
+                // For some reason, `zh-TW` does fallback to `zh-Hant` correctly.
+                if lang == locale!("zh-CN").into() {
+                    vec![lang, locale!("zh-Hans").into()]
+                } else {
+                    vec![lang]
+                }
+            });
+
+        let locale = translator.choose_locale(iter);
 
         Ok(PreferredLanguage(locale))
     }

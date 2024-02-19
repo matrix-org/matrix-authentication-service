@@ -194,6 +194,8 @@ impl Templates {
                 .await??;
         let translator = Arc::new(translator);
 
+        debug!(locales = ?translator.available_locales(), "Loaded translations");
+
         let (loaded, mut env) = tokio::task::spawn_blocking(move || {
             span.in_scope(move || {
                 let mut loaded: HashSet<_> = HashSet::new();
