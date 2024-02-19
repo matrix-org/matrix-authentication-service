@@ -40,8 +40,15 @@ export const Route = createFileRoute("/_account/sessions/$id")({
 
 const QUERY = graphql(/* GraphQL */ `
   query SessionDetailQuery($id: ID!) {
+    viewerSession {
+      ... on Node {
+        id
+      }
+    }
+
     node(id: $id) {
       __typename
+      id
       ...CompatSession_detail
       ...OAuth2Session_detail
       ...BrowserSession_detail
@@ -72,6 +79,7 @@ function SessionDetail(): React.ReactElement {
   if (result.error) throw result.error;
   const node = result.data?.node;
   if (!node) throw notFound();
+  const currentSessionId = result.data?.viewerSession?.id;
 
   switch (node.__typename) {
     case "CompatSession":
@@ -79,7 +87,12 @@ function SessionDetail(): React.ReactElement {
     case "Oauth2Session":
       return <OAuth2SessionDetail session={node} />;
     case "BrowserSession":
-      return <BrowserSessionDetail session={node} />;
+      return (
+        <BrowserSessionDetail
+          session={node}
+          isCurrent={node.id === currentSessionId}
+        />
+      );
     default:
       throw new Error("Unknown session type");
   }

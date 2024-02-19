@@ -1510,30 +1510,34 @@ export type SessionDetailQueryQueryVariables = Exact<{
 
 export type SessionDetailQueryQuery = {
   __typename?: "Query";
+  viewerSession:
+    | { __typename?: "Anonymous"; id: string }
+    | { __typename?: "BrowserSession"; id: string }
+    | { __typename?: "Oauth2Session"; id: string };
   node?:
-    | { __typename: "Anonymous" }
-    | { __typename: "Authentication" }
-    | ({ __typename: "BrowserSession" } & {
+    | { __typename: "Anonymous"; id: string }
+    | { __typename: "Authentication"; id: string }
+    | ({ __typename: "BrowserSession"; id: string } & {
         " $fragmentRefs"?: {
           BrowserSession_DetailFragment: BrowserSession_DetailFragment;
         };
       })
-    | ({ __typename: "CompatSession" } & {
+    | ({ __typename: "CompatSession"; id: string } & {
         " $fragmentRefs"?: {
           CompatSession_DetailFragment: CompatSession_DetailFragment;
         };
       })
-    | { __typename: "CompatSsoLogin" }
-    | { __typename: "Oauth2Client" }
-    | ({ __typename: "Oauth2Session" } & {
+    | { __typename: "CompatSsoLogin"; id: string }
+    | { __typename: "Oauth2Client"; id: string }
+    | ({ __typename: "Oauth2Session"; id: string } & {
         " $fragmentRefs"?: {
           OAuth2Session_DetailFragment: OAuth2Session_DetailFragment;
         };
       })
-    | { __typename: "UpstreamOAuth2Link" }
-    | { __typename: "UpstreamOAuth2Provider" }
-    | { __typename: "User" }
-    | { __typename: "UserEmail" }
+    | { __typename: "UpstreamOAuth2Link"; id: string }
+    | { __typename: "UpstreamOAuth2Provider"; id: string }
+    | { __typename: "User"; id: string }
+    | { __typename: "UserEmail"; id: string }
     | null;
 };
 
@@ -1546,32 +1550,37 @@ export type BrowserSessionListQueryVariables = Exact<{
 
 export type BrowserSessionListQuery = {
   __typename?: "Query";
-  viewer:
+  viewerSession:
     | { __typename: "Anonymous" }
     | {
-        __typename: "User";
+        __typename: "BrowserSession";
         id: string;
-        browserSessions: {
-          __typename?: "BrowserSessionConnection";
-          totalCount: number;
-          edges: Array<{
-            __typename?: "BrowserSessionEdge";
-            cursor: string;
-            node: { __typename?: "BrowserSession"; id: string } & {
-              " $fragmentRefs"?: {
-                BrowserSession_SessionFragment: BrowserSession_SessionFragment;
+        user: {
+          __typename?: "User";
+          id: string;
+          browserSessions: {
+            __typename?: "BrowserSessionConnection";
+            totalCount: number;
+            edges: Array<{
+              __typename?: "BrowserSessionEdge";
+              cursor: string;
+              node: { __typename?: "BrowserSession"; id: string } & {
+                " $fragmentRefs"?: {
+                  BrowserSession_SessionFragment: BrowserSession_SessionFragment;
+                };
               };
+            }>;
+            pageInfo: {
+              __typename?: "PageInfo";
+              hasNextPage: boolean;
+              hasPreviousPage: boolean;
+              startCursor?: string | null;
+              endCursor?: string | null;
             };
-          }>;
-          pageInfo: {
-            __typename?: "PageInfo";
-            hasNextPage: boolean;
-            hasPreviousPage: boolean;
-            startCursor?: string | null;
-            endCursor?: string | null;
           };
         };
-      };
+      }
+    | { __typename: "Oauth2Session" };
 };
 
 export type SessionsOverviewQueryQueryVariables = Exact<{
@@ -3419,6 +3428,28 @@ export const SessionDetailQueryDocument = {
         selections: [
           {
             kind: "Field",
+            name: { kind: "Name", value: "viewerSession" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "InlineFragment",
+                  typeCondition: {
+                    kind: "NamedType",
+                    name: { kind: "Name", value: "Node" },
+                  },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+          {
+            kind: "Field",
             name: { kind: "Name", value: "node" },
             arguments: [
               {
@@ -3434,6 +3465,7 @@ export const SessionDetailQueryDocument = {
               kind: "SelectionSet",
               selections: [
                 { kind: "Field", name: { kind: "Name", value: "__typename" } },
+                { kind: "Field", name: { kind: "Name", value: "id" } },
                 {
                   kind: "FragmentSpread",
                   name: { kind: "Name", value: "CompatSession_detail" },
@@ -3604,7 +3636,7 @@ export const BrowserSessionListDocument = {
         selections: [
           {
             kind: "Field",
-            name: { kind: "Name", value: "viewer" },
+            name: { kind: "Name", value: "viewerSession" },
             selectionSet: {
               kind: "SelectionSet",
               selections: [
@@ -3613,7 +3645,7 @@ export const BrowserSessionListDocument = {
                   kind: "InlineFragment",
                   typeCondition: {
                     kind: "NamedType",
-                    name: { kind: "Name", value: "User" },
+                    name: { kind: "Name", value: "BrowserSession" },
                   },
                   selectionSet: {
                     kind: "SelectionSet",
@@ -3621,116 +3653,139 @@ export const BrowserSessionListDocument = {
                       { kind: "Field", name: { kind: "Name", value: "id" } },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "browserSessions" },
-                        arguments: [
-                          {
-                            kind: "Argument",
-                            name: { kind: "Name", value: "first" },
-                            value: {
-                              kind: "Variable",
-                              name: { kind: "Name", value: "first" },
-                            },
-                          },
-                          {
-                            kind: "Argument",
-                            name: { kind: "Name", value: "after" },
-                            value: {
-                              kind: "Variable",
-                              name: { kind: "Name", value: "after" },
-                            },
-                          },
-                          {
-                            kind: "Argument",
-                            name: { kind: "Name", value: "last" },
-                            value: {
-                              kind: "Variable",
-                              name: { kind: "Name", value: "last" },
-                            },
-                          },
-                          {
-                            kind: "Argument",
-                            name: { kind: "Name", value: "before" },
-                            value: {
-                              kind: "Variable",
-                              name: { kind: "Name", value: "before" },
-                            },
-                          },
-                          {
-                            kind: "Argument",
-                            name: { kind: "Name", value: "state" },
-                            value: { kind: "EnumValue", value: "ACTIVE" },
-                          },
-                        ],
+                        name: { kind: "Name", value: "user" },
                         selectionSet: {
                           kind: "SelectionSet",
                           selections: [
                             {
                               kind: "Field",
-                              name: { kind: "Name", value: "totalCount" },
+                              name: { kind: "Name", value: "id" },
                             },
                             {
                               kind: "Field",
-                              name: { kind: "Name", value: "edges" },
+                              name: { kind: "Name", value: "browserSessions" },
+                              arguments: [
+                                {
+                                  kind: "Argument",
+                                  name: { kind: "Name", value: "first" },
+                                  value: {
+                                    kind: "Variable",
+                                    name: { kind: "Name", value: "first" },
+                                  },
+                                },
+                                {
+                                  kind: "Argument",
+                                  name: { kind: "Name", value: "after" },
+                                  value: {
+                                    kind: "Variable",
+                                    name: { kind: "Name", value: "after" },
+                                  },
+                                },
+                                {
+                                  kind: "Argument",
+                                  name: { kind: "Name", value: "last" },
+                                  value: {
+                                    kind: "Variable",
+                                    name: { kind: "Name", value: "last" },
+                                  },
+                                },
+                                {
+                                  kind: "Argument",
+                                  name: { kind: "Name", value: "before" },
+                                  value: {
+                                    kind: "Variable",
+                                    name: { kind: "Name", value: "before" },
+                                  },
+                                },
+                                {
+                                  kind: "Argument",
+                                  name: { kind: "Name", value: "state" },
+                                  value: { kind: "EnumValue", value: "ACTIVE" },
+                                },
+                              ],
                               selectionSet: {
                                 kind: "SelectionSet",
                                 selections: [
                                   {
                                     kind: "Field",
-                                    name: { kind: "Name", value: "cursor" },
+                                    name: { kind: "Name", value: "totalCount" },
                                   },
                                   {
                                     kind: "Field",
-                                    name: { kind: "Name", value: "node" },
+                                    name: { kind: "Name", value: "edges" },
                                     selectionSet: {
                                       kind: "SelectionSet",
                                       selections: [
                                         {
                                           kind: "Field",
-                                          name: { kind: "Name", value: "id" },
-                                        },
-                                        {
-                                          kind: "FragmentSpread",
                                           name: {
                                             kind: "Name",
-                                            value: "BrowserSession_session",
+                                            value: "cursor",
+                                          },
+                                        },
+                                        {
+                                          kind: "Field",
+                                          name: { kind: "Name", value: "node" },
+                                          selectionSet: {
+                                            kind: "SelectionSet",
+                                            selections: [
+                                              {
+                                                kind: "Field",
+                                                name: {
+                                                  kind: "Name",
+                                                  value: "id",
+                                                },
+                                              },
+                                              {
+                                                kind: "FragmentSpread",
+                                                name: {
+                                                  kind: "Name",
+                                                  value:
+                                                    "BrowserSession_session",
+                                                },
+                                              },
+                                            ],
                                           },
                                         },
                                       ],
                                     },
                                   },
-                                ],
-                              },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "pageInfo" },
-                              selectionSet: {
-                                kind: "SelectionSet",
-                                selections: [
                                   {
                                     kind: "Field",
-                                    name: {
-                                      kind: "Name",
-                                      value: "hasNextPage",
+                                    name: { kind: "Name", value: "pageInfo" },
+                                    selectionSet: {
+                                      kind: "SelectionSet",
+                                      selections: [
+                                        {
+                                          kind: "Field",
+                                          name: {
+                                            kind: "Name",
+                                            value: "hasNextPage",
+                                          },
+                                        },
+                                        {
+                                          kind: "Field",
+                                          name: {
+                                            kind: "Name",
+                                            value: "hasPreviousPage",
+                                          },
+                                        },
+                                        {
+                                          kind: "Field",
+                                          name: {
+                                            kind: "Name",
+                                            value: "startCursor",
+                                          },
+                                        },
+                                        {
+                                          kind: "Field",
+                                          name: {
+                                            kind: "Name",
+                                            value: "endCursor",
+                                          },
+                                        },
+                                      ],
                                     },
-                                  },
-                                  {
-                                    kind: "Field",
-                                    name: {
-                                      kind: "Name",
-                                      value: "hasPreviousPage",
-                                    },
-                                  },
-                                  {
-                                    kind: "Field",
-                                    name: {
-                                      kind: "Name",
-                                      value: "startCursor",
-                                    },
-                                  },
-                                  {
-                                    kind: "Field",
-                                    name: { kind: "Name", value: "endCursor" },
                                   },
                                 ],
                               },

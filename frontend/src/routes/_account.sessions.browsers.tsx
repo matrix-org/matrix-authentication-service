@@ -37,32 +37,37 @@ const QUERY = graphql(/* GraphQL */ `
     $last: Int
     $before: String
   ) {
-    viewer {
+    viewerSession {
       __typename
-      ... on User {
+      ... on BrowserSession {
         id
-        browserSessions(
-          first: $first
-          after: $after
-          last: $last
-          before: $before
-          state: ACTIVE
-        ) {
-          totalCount
 
-          edges {
-            cursor
-            node {
-              id
-              ...BrowserSession_session
+        user {
+          id
+
+          browserSessions(
+            first: $first
+            after: $after
+            last: $last
+            before: $before
+            state: ACTIVE
+          ) {
+            totalCount
+
+            edges {
+              cursor
+              node {
+                id
+                ...BrowserSession_session
+              }
             }
-          }
 
-          pageInfo {
-            hasNextPage
-            hasPreviousPage
-            startCursor
-            endCursor
+            pageInfo {
+              hasNextPage
+              hasPreviousPage
+              startCursor
+              endCursor
+            }
           }
         }
       }
@@ -84,7 +89,8 @@ export const Route = createFileRoute("/_account/sessions/browsers")({
       fetchOptions: { signal },
     });
     if (result.error) throw result.error;
-    if (result.data?.viewer?.__typename !== "User") throw notFound();
+    if (result.data?.viewerSession?.__typename !== "BrowserSession")
+      throw notFound();
   },
 
   component: BrowserSessions,
@@ -95,26 +101,30 @@ function BrowserSessions(): React.ReactElement {
   const pagination = Route.useLoaderDeps();
   const [list] = useQuery({ query: QUERY, variables: pagination });
   if (list.error) throw list.error;
-  const browserSessions =
-    list.data?.viewer.__typename === "User"
-      ? list.data.viewer.browserSessions
+  const currentSession =
+    list.data?.viewerSession.__typename === "BrowserSession"
+      ? list.data.viewerSession
       : null;
-  if (browserSessions === null) throw notFound();
+  if (currentSession === null) throw notFound();
 
   const [backwardPage, forwardPage] = usePages(
     pagination,
-    browserSessions.pageInfo,
+    currentSession.user.browserSessions.pageInfo,
     PAGE_SIZE,
   );
 
   // We reverse the list as we are paginating backwards
-  const edges = [...browserSessions.edges].reverse();
+  const edges = [...currentSession.user.browserSessions.edges].reverse();
   return (
     <BlockList>
       <H5>{t("frontend.browser_sessions_overview.heading")}</H5>
 
       {edges.map((n) => (
-        <BrowserSession key={n.cursor} session={n.node} />
+        <BrowserSession
+          key={n.cursor}
+          session={n.node}
+          isCurrent={currentSession.id === n.node.id}
+        />
       ))}
 
       <div className="flex *:flex-1">

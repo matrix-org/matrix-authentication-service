@@ -21,7 +21,6 @@ import {
   parseUserAgent,
   sessionNameFromDeviceInformation,
 } from "../utils/parseUserAgent";
-import { useCurrentBrowserSessionId } from "../utils/session/useCurrentBrowserSessionId";
 
 import EndSessionButton from "./Session/EndSessionButton";
 import Session from "./Session/Session";
@@ -71,12 +70,11 @@ export const useEndBrowserSession = (
 
 type Props = {
   session: FragmentType<typeof FRAGMENT>;
+  isCurrent: boolean;
 };
 
-const BrowserSession: React.FC<Props> = ({ session }) => {
-  const currentBrowserSessionId = useCurrentBrowserSessionId();
+const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
   const data = useFragment(FRAGMENT, session);
-  const isCurrent = data.id === currentBrowserSessionId;
 
   const onSessionEnd = useEndBrowserSession(data.id, isCurrent);
 

@@ -21,7 +21,6 @@ import {
   parseUserAgent,
   sessionNameFromDeviceInformation,
 } from "../../utils/parseUserAgent";
-import { useCurrentBrowserSessionId } from "../../utils/session/useCurrentBrowserSessionId";
 import BlockList from "../BlockList/BlockList";
 import { useEndBrowserSession } from "../BrowserSession";
 import DateTime from "../DateTime";
@@ -53,14 +52,13 @@ const FRAGMENT = graphql(/* GraphQL */ `
 
 type Props = {
   session: FragmentType<typeof FRAGMENT>;
+  isCurrent: boolean;
 };
 
-const BrowserSessionDetail: React.FC<Props> = ({ session }) => {
+const BrowserSessionDetail: React.FC<Props> = ({ session, isCurrent }) => {
   const data = useFragment(FRAGMENT, session);
-  const currentBrowserSessionId = useCurrentBrowserSessionId();
   const { t } = useTranslation();
 
-  const isCurrent = currentBrowserSessionId === data.id;
   const onSessionEnd = useEndBrowserSession(data.id, isCurrent);
 
   const deviceInformation = parseUserAgent(data.userAgent || undefined);
