@@ -19,7 +19,7 @@
   "common": {
     "add": "添加",
     "error": "错误",
-    "loading": "正在加载...",
+    "loading": "加载中...",
     "next": "下一步",
     "previous": "上一步"
   },
@@ -157,7 +157,7 @@
       "make_primary_button": "设为主要",
       "not_verified": "未验证",
       "primary_email": "主电子邮件地址",
-      "retry_button": "Resend code",
+      "retry_button": "重新发送代码",
       "unverified": "未验证"
     },
     "user_email_list": {
