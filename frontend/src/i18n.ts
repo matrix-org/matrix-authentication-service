@@ -47,7 +47,8 @@ i18n
     pluralSeparator: ":",
     supportedLngs,
     detection: {
-      order: ["navigator", "htmlTag"],
+      // This lets the backend fully decide the language to use
+      order: ["htmlTag"],
     } satisfies DetectorOptions,
     interpolation: {
       escapeValue: false, // React has built-in XSS protections

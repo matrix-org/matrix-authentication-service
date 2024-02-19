@@ -17,7 +17,9 @@ use std::{collections::HashMap, fs::File, str::FromStr};
 use camino::{Utf8Path, Utf8PathBuf};
 use icu_list::{ListError, ListFormatter, ListLength};
 use icu_locid::{Locale, ParserError};
-use icu_locid_transform::fallback::LocaleFallbacker;
+use icu_locid_transform::fallback::{
+    LocaleFallbackPriority, LocaleFallbackSupplement, LocaleFallbacker, LocaleFallbackerWithConfig,
+};
 use icu_plurals::{PluralRules, PluralsError};
 use icu_provider::{
     data_key, fallback::LocaleFallbackConfig, DataError, DataErrorKind, DataKey, DataLocale,
@@ -32,6 +34,13 @@ use crate::{sprintf::Message, translations::TranslationTree};
 
 /// Fake data key for errors
 const DATA_KEY: DataKey = data_key!("mas/translations@1");
+
+const FALLBACKER: LocaleFallbackerWithConfig<'static> = LocaleFallbacker::new().for_config({
+    let mut config = LocaleFallbackConfig::const_default();
+    config.priority = LocaleFallbackPriority::Collation;
+    config.fallback_supplement = Some(LocaleFallbackSupplement::Collation);
+    config
+});
 
 /// Error type for loading translations
 #[derive(Debug, Error)]
@@ -49,7 +58,6 @@ pub struct Translator {
     translations: HashMap<DataLocale, TranslationTree>,
     plural_provider: LocaleFallbackProvider<icu_plurals::provider::Baked>,
     list_provider: LocaleFallbackProvider<icu_list::provider::Baked>,
-    fallbacker: LocaleFallbacker,
     default_locale: DataLocale,
 }
 
@@ -62,16 +70,13 @@ impl Translator {
             icu_plurals::provider::Baked,
             fallbacker.clone(),
         );
-        let list_provider = LocaleFallbackProvider::new_with_fallbacker(
-            icu_list::provider::Baked,
-            fallbacker.clone(),
-        );
+        let list_provider =
+            LocaleFallbackProvider::new_with_fallbacker(icu_list::provider::Baked, fallbacker);
 
         Self {
             translations,
             plural_provider,
             list_provider,
-            fallbacker,
             // TODO: make this configurable
             default_locale: icu_locid::locale!("en").into(),
         }
@@ -126,10 +131,11 @@ impl Translator {
         locale: DataLocale,
         key: &str,
     ) -> Option<(&Message, DataLocale)> {
-        let mut iter = self
-            .fallbacker
-            .for_config(LocaleFallbackConfig::default())
-            .fallback_for(locale);
+        if let Ok(message) = self.message(&locale, key) {
+            return Some((message, locale));
+        }
+
+        let mut iter = FALLBACKER.fallback_for(locale);
 
         loop {
             let locale = iter.get();
@@ -194,10 +200,7 @@ impl Translator {
         key: &str,
         count: usize,
     ) -> Option<(&Message, DataLocale)> {
-        let mut iter = self
-            .fallbacker
-            .for_config(LocaleFallbackConfig::default())
-            .fallback_for(locale);
+        let mut iter = FALLBACKER.fallback_for(locale);
 
         loop {
             let locale = iter.get();
@@ -369,29 +372,29 @@ impl Translator {
 
     /// Choose the best available locale from a list of candidates.
     #[must_use]
-    pub fn choose_locale<'a>(
-        &self,
-        iter: impl Iterator<Item = &'a DataLocale>,
-    ) -> Option<DataLocale> {
+    pub fn choose_locale(&self, iter: impl Iterator<Item = DataLocale>) -> DataLocale {
         for locale in iter {
-            let mut fallbacker = self
-                .fallbacker
-                .for_config(LocaleFallbackConfig::default())
-                .fallback_for(locale.clone());
+            println!("Trying for locale {locale:?}");
+            if self.has_locale(&locale) {
+                return locale;
+            }
+
+            let mut fallbacker = FALLBACKER.fallback_for(locale);
 
             loop {
+                println!("  Fallback: {:?}", fallbacker.get());
                 if fallbacker.get().is_und() {
                     break;
                 }
 
                 if self.has_locale(fallbacker.get()) {
-                    return Some(fallbacker.take());
+                    return fallbacker.take();
                 }
                 fallbacker.step();
             }
         }
 
-        None
+        self.default_locale.clone()
     }
 }
 
