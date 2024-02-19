@@ -19,11 +19,19 @@
   flex-direction: column;
 
   max-width: calc(420px + var(--cpd-space-5x) * 2);
+
+  /* Fallback for browsers that do not support 100svh */
   min-height: 100vh;
+  min-height: 100svh;
+
   margin: 0 auto;
   padding-inline: var(--cpd-space-5x);
   padding-block: var(--cpd-space-12x);
   gap: var(--cpd-space-8x);
+
+  &.wide {
+    max-width: calc(520px + var(--cpd-space-5x) * 2);
+  }
 }
 
 @media screen and (min-width: 768px) {

@@ -21,7 +21,6 @@ import { Provider as UrqlProvider } from "urql";
 
 import ErrorBoundary from "./components/ErrorBoundary";
 import GenericError from "./components/GenericError";
-import Layout from "./components/Layout";
 import LoadingScreen from "./components/LoadingScreen";
 import config from "./config";
 import { client } from "./graphql";
@@ -51,9 +50,7 @@ createRoot(document.getElementById("root") as HTMLElement).render(
         <UrqlProvider value={client}>
           <I18nextProvider i18n={i18n}>
             <TooltipProvider>
-              <Layout>
-                <RouterProvider router={router} context={{ client }} />
-              </Layout>
+              <RouterProvider router={router} context={{ client }} />
             </TooltipProvider>
           </I18nextProvider>
         </UrqlProvider>

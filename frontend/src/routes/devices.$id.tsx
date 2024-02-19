@@ -16,6 +16,7 @@ import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { Alert } from "@vector-im/compound-web";
 import { useTranslation } from "react-i18next";
 
+import Layout from "../components/Layout";
 import { Link } from "../components/Link";
 import { graphql } from "../gql";
 
@@ -79,12 +80,14 @@ function NotFound(): React.ReactElement {
   const { t } = useTranslation();
   const { id: deviceId } = Route.useParams();
   return (
-    <Alert
-      type="critical"
-      title={t("frontend.session_detail.alert.title", { deviceId })}
-    >
-      {t("frontend.session_detail.alert.text")}
-      <Link to="/sessions">{t("frontend.session_detail.alert.button")}</Link>
-    </Alert>
+    <Layout>
+      <Alert
+        type="critical"
+        title={t("frontend.session_detail.alert.title", { deviceId })}
+      >
+        {t("frontend.session_detail.alert.text")}
+        <Link to="/sessions">{t("frontend.session_detail.alert.button")}</Link>
+      </Alert>
+    </Layout>
   );
 }
