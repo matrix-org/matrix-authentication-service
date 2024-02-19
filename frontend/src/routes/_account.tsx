@@ -16,6 +16,7 @@ import { Outlet, createFileRoute, notFound } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "urql";
 
+import Layout from "../components/Layout";
 import NavBar from "../components/NavBar";
 import NavItem from "../components/NavItem";
 import UserGreeting from "../components/UserGreeting";
@@ -53,7 +54,7 @@ function Account(): React.ReactElement {
   if (user?.__typename !== "User") throw notFound();
 
   return (
-    <>
+    <Layout wide>
       <UserGreeting user={user} />
 
       <NavBar>
@@ -66,6 +67,6 @@ function Account(): React.ReactElement {
       </NavBar>
 
       <Outlet />
-    </>
+    </Layout>
   );
 }

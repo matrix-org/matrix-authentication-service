@@ -22,6 +22,7 @@ import { z } from "zod";
 
 import BlockList from "../components/BlockList";
 import { ButtonLink } from "../components/ButtonLink";
+import Layout from "../components/Layout";
 import LoadingSpinner from "../components/LoadingSpinner";
 import PageHeading from "../components/PageHeading";
 import { graphql } from "../gql";
@@ -84,56 +85,58 @@ function ResetCrossSigning(): React.ReactNode {
   };
 
   return (
-    <BlockList>
-      <PageHeading
-        Icon={IconKey}
-        title={t("frontend.reset_cross_signing.heading")}
-        invalid
-      />
+    <Layout>
+      <BlockList>
+        <PageHeading
+          Icon={IconKey}
+          title={t("frontend.reset_cross_signing.heading")}
+          invalid
+        />
 
-      {!result.data && !result.error && (
-        <>
-          <Text className="text-justify">
-            {t("frontend.reset_cross_signing.description")}
-          </Text>
-          <Button
-            kind="primary"
-            destructive
-            disabled={result.fetching}
-            onClick={onClick}
+        {!result.data && !result.error && (
+          <>
+            <Text className="text-justify">
+              {t("frontend.reset_cross_signing.description")}
+            </Text>
+            <Button
+              kind="primary"
+              destructive
+              disabled={result.fetching}
+              onClick={onClick}
+            >
+              {!!result.fetching && <LoadingSpinner inline />}
+              {t("frontend.reset_cross_signing.button")}
+            </Button>
+          </>
+        )}
+        {result.data && (
+          <Alert
+            type="info"
+            title={t("frontend.reset_cross_signing.success.title")}
           >
-            {!!result.fetching && <LoadingSpinner inline />}
-            {t("frontend.reset_cross_signing.button")}
-          </Button>
-        </>
-      )}
-      {result.data && (
-        <Alert
-          type="info"
-          title={t("frontend.reset_cross_signing.success.title")}
-        >
-          {t("frontend.reset_cross_signing.success.description")}
-        </Alert>
-      )}
-      {result.error && (
-        <Alert
-          type="critical"
-          title={t("frontend.reset_cross_signing.failure.title")}
-        >
-          {t("frontend.reset_cross_signing.failure.description")}
-        </Alert>
-      )}
+            {t("frontend.reset_cross_signing.success.description")}
+          </Alert>
+        )}
+        {result.error && (
+          <Alert
+            type="critical"
+            title={t("frontend.reset_cross_signing.failure.title")}
+          >
+            {t("frontend.reset_cross_signing.failure.description")}
+          </Alert>
+        )}
 
-      {!deepLink && (
-        <ButtonLink
-          to=".."
-          from={Route.fullPath}
-          kind="tertiary"
-          Icon={IconArrowLeft}
-        >
-          {t("action.back")}
-        </ButtonLink>
-      )}
-    </BlockList>
+        {!deepLink && (
+          <ButtonLink
+            to=".."
+            from={Route.fullPath}
+            kind="tertiary"
+            Icon={IconArrowLeft}
+          >
+            {t("action.back")}
+          </ButtonLink>
+        )}
+      </BlockList>
+    </Layout>
   );
 }

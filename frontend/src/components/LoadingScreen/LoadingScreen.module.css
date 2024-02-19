@@ -15,7 +15,11 @@
 
 .loading-screen {
     display: flex;
+
+    /* Fallback for browsers that do not support 100svh */
     min-height: 100vh;
+    min-height: 100svh;
+
     justify-content: center;
     align-items: center;
 }

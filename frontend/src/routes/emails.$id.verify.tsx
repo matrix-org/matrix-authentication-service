@@ -15,6 +15,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useQuery } from "urql";
 
+import Layout from "../components/Layout";
 import VerifyEmailComponent from "../components/VerifyEmail";
 import { graphql } from "../gql";
 
@@ -50,5 +51,9 @@ function EmailVerify(): React.ReactElement {
   const email = result.data?.userEmail;
   if (email == null) throw notFound();
 
-  return <VerifyEmailComponent email={email} />;
+  return (
+    <Layout>
+      <VerifyEmailComponent email={email} />
+    </Layout>
+  );
 }

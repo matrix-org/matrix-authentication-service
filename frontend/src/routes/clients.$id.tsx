@@ -16,6 +16,7 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useQuery } from "urql";
 
 import OAuth2ClientDetail from "../components/Client/OAuth2ClientDetail";
+import Layout from "../components/Layout";
 import { graphql } from "../gql";
 
 const QUERY = graphql(/* GraphQL */ `
@@ -49,5 +50,9 @@ function ClientDetail(): React.ReactElement {
   const client = result.data?.oauth2Client;
   if (!client) throw new Error(); // Should have been caught by the loader
 
-  return <OAuth2ClientDetail client={client} />;
+  return (
+    <Layout>
+      <OAuth2ClientDetail client={client} />
+    </Layout>
+  );
 }

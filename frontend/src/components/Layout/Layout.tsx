@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import cx from "classnames";
+
 import appConfig from "../../config";
 import Footer from "../Footer";
 
@@ -20,8 +22,9 @@ import styles from "./Layout.module.css";
 const Layout: React.FC<{
   children?: React.ReactNode;
   dontSuspend?: boolean;
-}> = ({ children, dontSuspend }) => (
-  <div className={styles.layoutContainer}>
+  wide?: boolean;
+}> = ({ children, dontSuspend, wide }) => (
+  <div className={cx(styles.layoutContainer, wide && styles.wide)}>
     {children}
 
     <Footer
