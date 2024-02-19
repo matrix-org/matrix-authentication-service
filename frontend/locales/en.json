@@ -39,9 +39,6 @@
         "title": "Invalid email"
       }
     },
-    "app_sessions_list": {
-      "heading": "Apps"
-    },
     "browser_session_details": {
       "current_badge": "Current",
       "session_details_title": "Session"
@@ -165,6 +162,8 @@
       "display_name_field_label": "Display Name"
     },
     "user_sessions_overview": {
+      "active_sessions:one": "{{count}} active session",
+      "active_sessions:other": "{{count}} active sessions",
       "heading": "Where you're signed in"
     },
     "verify_email": {

@@ -49,12 +49,10 @@ const actionSchema = z
   ])
   .catch({ action: undefined });
 
-type Action = z.infer<typeof actionSchema>;
-
 export const Route = createRootRouteWithContext<{
   client: Client;
 }>()({
-  validateSearch: (search): Action => actionSchema.parse(search),
+  validateSearch: actionSchema,
 
   beforeLoad({ search }) {
     switch (search.action) {
