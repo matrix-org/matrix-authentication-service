@@ -374,7 +374,6 @@ impl Translator {
     #[must_use]
     pub fn choose_locale(&self, iter: impl Iterator<Item = DataLocale>) -> DataLocale {
         for locale in iter {
-            println!("Trying for locale {locale:?}");
             if self.has_locale(&locale) {
                 return locale;
             }
@@ -382,7 +381,6 @@ impl Translator {
             let mut fallbacker = FALLBACKER.fallback_for(locale);
 
             loop {
-                println!("  Fallback: {:?}", fallbacker.get());
                 if fallbacker.get().is_und() {
                     break;
                 }
