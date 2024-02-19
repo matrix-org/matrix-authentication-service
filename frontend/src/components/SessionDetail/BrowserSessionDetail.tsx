@@ -132,7 +132,7 @@ const BrowserSessionDetail: React.FC<Props> = ({ session }) => {
           {t("frontend.browser_session_details.current_badge")}
         </Badge>
       )}
-      <SessionHeader to="/sessions">{sessionName}</SessionHeader>
+      <SessionHeader to="/sessions/browsers">{sessionName}</SessionHeader>
       <SessionDetails
         title={t("frontend.browser_session_details.session_details_title")}
         details={sessionDetails}

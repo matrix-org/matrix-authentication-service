@@ -31,8 +31,6 @@ const searchSchema = z.object({
   deepLink: z.boolean().optional(),
 });
 
-type Search = z.infer<typeof searchSchema>;
-
 const CURRENT_VIEWER_QUERY = graphql(/* GraphQL */ `
   query CurrentViewerQuery {
     viewer {
@@ -65,7 +63,7 @@ export const Route = createFileRoute("/reset-cross-signing")({
     if (viewer.data?.viewer.__typename !== "User") throw notFound();
   },
 
-  validateSearch: (search): Search => searchSchema.parse(search),
+  validateSearch: searchSchema,
 
   component: ResetCrossSigning,
 });

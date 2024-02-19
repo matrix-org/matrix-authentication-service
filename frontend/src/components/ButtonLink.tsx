@@ -35,6 +35,7 @@ export const ButtonLink: LinkComponent<Props> = forwardRef<
       kind={kind}
       size={size}
       destructive={destructive}
+      disabled={props.disabled}
       Icon={Icon}
       ref={ref}
       {...linkProps}
