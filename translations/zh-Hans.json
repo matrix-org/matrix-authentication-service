@@ -2,7 +2,7 @@
   "action": {
     "cancel": "取消",
     "continue": "继续",
-    "create_account": "",
+    "create_account": "创建账户",
     "sign_in": "登录",
     "sign_out": "注销",
     "submit": "提交"
@@ -24,7 +24,7 @@
   },
   "common": {
     "display_name": "显示名称",
-    "email_address": "电子邮件地址",
+    "email_address": "邮箱地址",
     "mxid": "Matrix ID",
     "password": "密码",
     "password_confirm": "确认密码",
