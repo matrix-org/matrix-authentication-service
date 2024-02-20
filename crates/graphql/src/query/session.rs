@@ -15,7 +15,9 @@
 use async_graphql::{Context, Object, Union, ID};
 use mas_data_model::Device;
 use mas_storage::{
-    compat::CompatSessionRepository, oauth2::OAuth2SessionFilter, Pagination, RepositoryAccess,
+    compat::{CompatSessionFilter, CompatSessionRepository},
+    oauth2::OAuth2SessionFilter,
+    Pagination, RepositoryAccess,
 };
 use oauth2_types::scope::Scope;
 
@@ -62,13 +64,27 @@ impl SessionQuery {
         };
 
         // First, try to find a compat session
-        let compat_session = repo.compat_session().find_by_device(&user, &device).await?;
-        if let Some(compat_session) = compat_session {
+        let filter = CompatSessionFilter::new()
+            .for_user(&user)
+            .active_only()
+            .for_device(&device);
+        // We only want most recent session
+        let pagination = Pagination::last(1);
+        let compat_sessions = repo.compat_session().list(filter, pagination).await?;
+
+        if compat_sessions.has_previous_page {
+            // XXX: should we bail out?
+            tracing::warn!(
+                "Found more than one active session with device {device} for user {user_id}"
+            );
+        }
+
+        if let Some((compat_session, sso_login)) = compat_sessions.edges.into_iter().next() {
             repo.cancel().await?;
 
-            return Ok(Some(Session::CompatSession(Box::new(CompatSession::new(
-                compat_session,
-            )))));
+            return Ok(Some(Session::CompatSession(Box::new(
+                CompatSession::new(compat_session).with_loaded_sso_login(sso_login),
+            ))));
         }
 
         // Then, try to find an OAuth 2.0 session. Because we don't have any dedicated
@@ -78,13 +94,11 @@ impl SessionQuery {
             .for_user(&user)
             .active_only()
             .with_scope(&scope);
-        // We only want most recent session
-        let pagination = Pagination::last(1);
         let sessions = repo.oauth2_session().list(filter, pagination).await?;
 
-        // It's technically possible to have multiple active OAuth 2.0 sessions. For
-        // now, we just log it if it is the case
-        if sessions.has_next_page {
+        // It's possible to have multiple active OAuth 2.0 sessions. For now, we just
+        // log it if it is the case
+        if sessions.has_previous_page {
             // XXX: should we bail out?
             tracing::warn!(
                 "Found more than one active session with device {device} for user {user_id}"
