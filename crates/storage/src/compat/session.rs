@@ -68,6 +68,7 @@ pub struct CompatSessionFilter<'a> {
     user: Option<&'a User>,
     state: Option<CompatSessionState>,
     auth_type: Option<CompatSessionType>,
+    device: Option<&'a Device>,
 }
 
 impl<'a> CompatSessionFilter<'a> {
@@ -88,6 +89,19 @@ impl<'a> CompatSessionFilter<'a> {
     #[must_use]
     pub fn user(&self) -> Option<&User> {
         self.user
+    }
+
+    /// Set the device filter
+    #[must_use]
+    pub fn for_device(mut self, device: &'a Device) -> Self {
+        self.device = Some(device);
+        self
+    }
+
+    /// Get the device filter
+    #[must_use]
+    pub fn device(&self) -> Option<&Device> {
+        self.device
     }
 
     /// Only return active compatibility sessions
@@ -150,24 +164,6 @@ pub trait CompatSessionRepository: Send + Sync {
     ///
     /// Returns [`Self::Error`] if the underlying repository fails
     async fn lookup(&mut self, id: Ulid) -> Result<Option<CompatSession>, Self::Error>;
-
-    /// Find a compatibility session by its device ID
-    ///
-    /// Returns the compat session if it exists, `None` otherwise
-    ///
-    /// # Parameters
-    ///
-    /// * `user`: The user to lookup the compat session for
-    /// * `device`: The device ID of the compat session to lookup
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Self::Error`] if the underlying repository fails
-    async fn find_by_device(
-        &mut self,
-        user: &User,
-        device: &Device,
-    ) -> Result<Option<CompatSession>, Self::Error>;
 
     /// Start a new compat session
     ///
@@ -258,12 +254,6 @@ pub trait CompatSessionRepository: Send + Sync {
 
 repository_impl!(CompatSessionRepository:
     async fn lookup(&mut self, id: Ulid) -> Result<Option<CompatSession>, Self::Error>;
-
-    async fn find_by_device(
-        &mut self,
-        user: &User,
-        device: &Device,
-    ) -> Result<Option<CompatSession>, Self::Error>;
 
     async fn add(
         &mut self,

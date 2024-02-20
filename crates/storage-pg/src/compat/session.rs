@@ -234,48 +234,6 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
     }
 
     #[tracing::instrument(
-        name = "db.compat_session.find_by_device",
-        skip_all,
-        fields(
-            db.statement,
-            %user.id,
-            %user.username,
-            compat_session.device.id = device.as_str(),
-        ),
-    )]
-    async fn find_by_device(
-        &mut self,
-        user: &User,
-        device: &Device,
-    ) -> Result<Option<CompatSession>, Self::Error> {
-        let res = sqlx::query_as!(
-            CompatSessionLookup,
-            r#"
-                SELECT compat_session_id
-                     , device_id
-                     , user_id
-                     , created_at
-                     , finished_at
-                     , is_synapse_admin
-                     , last_active_at
-                     , last_active_ip as "last_active_ip: IpAddr"
-                FROM compat_sessions
-                WHERE user_id = $1
-                  AND device_id = $2
-            "#,
-            Uuid::from(user.id),
-            device.as_str(),
-        )
-        .traced()
-        .fetch_optional(&mut *self.conn)
-        .await?;
-
-        let Some(res) = res else { return Ok(None) };
-
-        Ok(Some(res.try_into()?))
-    }
-
-    #[tracing::instrument(
         name = "db.compat_session.add",
         skip_all,
         fields(
@@ -459,6 +417,9 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
                 } else {
                     Expr::col((CompatSsoLogins::Table, CompatSsoLogins::CompatSsoLoginId)).is_null()
                 }
+            }))
+            .and_where_option(filter.device().map(|device| {
+                Expr::col((CompatSessions::Table, CompatSessions::DeviceId)).eq(device.as_str())
             }))
             .generate_pagination(
                 (CompatSessions::Table, CompatSessions::CompatSessionId),
