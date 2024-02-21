@@ -15,7 +15,7 @@
 //! Repositories to interact with all kinds of sessions
 
 use async_trait::async_trait;
-use mas_data_model::{CompatSession, Device, Session, User};
+use mas_data_model::{BrowserSession, CompatSession, Device, Session, User};
 
 use crate::{repository_impl, Page, Pagination};
 
@@ -56,6 +56,7 @@ pub enum AppSession {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub struct AppSessionFilter<'a> {
     user: Option<&'a User>,
+    browser_session: Option<&'a BrowserSession>,
     state: Option<AppSessionState>,
     device_id: Option<&'a Device>,
 }
@@ -67,7 +68,7 @@ impl<'a> AppSessionFilter<'a> {
         Self::default()
     }
 
-    /// Set the user who owns the compatibility sessions
+    /// Set the user who owns the sessions
     #[must_use]
     pub fn for_user(mut self, user: &'a User) -> Self {
         self.user = Some(user);
@@ -78,6 +79,19 @@ impl<'a> AppSessionFilter<'a> {
     #[must_use]
     pub fn user(&self) -> Option<&User> {
         self.user
+    }
+
+    /// Set the browser session filter
+    #[must_use]
+    pub fn for_browser_session(mut self, browser_session: &'a BrowserSession) -> Self {
+        self.browser_session = Some(browser_session);
+        self
+    }
+
+    /// Get the browser session filter
+    #[must_use]
+    pub fn browser_session(&self) -> Option<&BrowserSession> {
+        self.browser_session
     }
 
     /// Set the device ID filter

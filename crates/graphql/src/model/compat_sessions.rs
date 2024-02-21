@@ -18,7 +18,7 @@ use chrono::{DateTime, Utc};
 use mas_storage::{compat::CompatSessionRepository, user::UserRepository};
 use url::Url;
 
-use super::{NodeType, SessionState, User};
+use super::{BrowserSession, NodeType, SessionState, User};
 use crate::state::ContextExt;
 
 /// Lazy-loaded reverse reference.
@@ -123,6 +123,27 @@ impl CompatSession {
         repo.cancel().await?;
 
         Ok(sso_login.map(CompatSsoLogin))
+    }
+
+    /// The browser session which started this session, if any.
+    pub async fn browser_session(
+        &self,
+        ctx: &Context<'_>,
+    ) -> Result<Option<BrowserSession>, async_graphql::Error> {
+        let Some(user_session_id) = self.session.user_session_id else {
+            return Ok(None);
+        };
+
+        let state = ctx.state();
+        let mut repo = state.repository().await?;
+        let browser_session = repo
+            .browser_session()
+            .lookup(user_session_id)
+            .await?
+            .context("Could not load browser session")?;
+        repo.cancel().await?;
+
+        Ok(Some(BrowserSession(browser_session)))
     }
 
     /// The state of the session.

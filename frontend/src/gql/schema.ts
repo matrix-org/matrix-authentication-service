@@ -278,6 +278,61 @@ export default {
         name: "BrowserSession",
         fields: [
           {
+            name: "appSessions",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "AppSessionConnection",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "after",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "before",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "device",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "first",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "last",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "state",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+            ],
+          },
+          {
             name: "createdAt",
             type: {
               kind: "NON_NULL",
@@ -475,6 +530,15 @@ export default {
         kind: "OBJECT",
         name: "CompatSession",
         fields: [
+          {
+            name: "browserSession",
+            type: {
+              kind: "OBJECT",
+              name: "BrowserSession",
+              ofType: null,
+            },
+            args: [],
+          },
           {
             name: "createdAt",
             type: {
@@ -2658,6 +2722,13 @@ export default {
               },
               {
                 name: "before",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "browserSession",
                 type: {
                   kind: "SCALAR",
                   name: "Any",

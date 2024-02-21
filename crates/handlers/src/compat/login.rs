@@ -411,7 +411,7 @@ async fn user_password_login(
 
     let session = repo
         .compat_session()
-        .add(&mut rng, clock, &user, device, false)
+        .add(&mut rng, clock, &user, device, None, false)
         .await?;
 
     Ok((session, user))
@@ -738,7 +738,14 @@ mod tests {
         // Complete the flow by fulfilling it with a session
         let compat_session = repo
             .compat_session()
-            .add(&mut state.rng(), &state.clock, user, device.clone(), false)
+            .add(
+                &mut state.rng(),
+                &state.clock,
+                user,
+                device.clone(),
+                None,
+                false,
+            )
             .await
             .unwrap();
 

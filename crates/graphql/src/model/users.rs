@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use anyhow::Context as _;
 use async_graphql::{
     connection::{query, Connection, Edge, OpaqueCursor},
     Context, Description, Enum, Object, Union, ID,
@@ -544,6 +545,12 @@ impl User {
         #[graphql(name = "device", desc = "List only sessions for the given device.")]
         device_param: Option<String>,
 
+        #[graphql(
+            name = "browserSession",
+            desc = "List only sessions for the given session."
+        )]
+        browser_session_param: Option<ID>,
+
         #[graphql(desc = "Returns the elements in the list that come after the cursor.")]
         after: Option<String>,
         #[graphql(desc = "Returns the elements in the list that come before the cursor.")]
@@ -552,6 +559,7 @@ impl User {
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
     ) -> Result<Connection<Cursor, AppSession, PreloadedTotalCount>, async_graphql::Error> {
         let state = ctx.state();
+        let requester = ctx.requester();
         let mut repo = state.repository().await?;
 
         query(
@@ -584,6 +592,38 @@ impl User {
 
                 let filter = match device_param.as_ref() {
                     Some(device) => filter.for_device(device),
+                    None => filter,
+                };
+
+                let maybe_session = match browser_session_param {
+                    Some(id) => {
+                        // This might fail, but we're probably alright with it
+                        let id = NodeType::BrowserSession
+                            .extract_ulid(&id)
+                            .context("Invalid browser_session parameter")?;
+
+                        let Some(session) = repo
+                            .browser_session()
+                            .lookup(id)
+                            .await?
+                            .filter(|u| requester.is_owner_or_admin(u))
+                        else {
+                            // If we couldn't find the session or if the requester can't access it,
+                            // return an empty list
+                            return Ok(Connection::with_additional_fields(
+                                false,
+                                false,
+                                PreloadedTotalCount(Some(0)),
+                            ));
+                        };
+
+                        Some(session)
+                    }
+                    None => None,
+                };
+
+                let filter = match maybe_session {
+                    Some(ref session) => filter.for_browser_session(session),
                     None => filter,
                 };
 
@@ -625,7 +665,7 @@ impl User {
 
 /// A session in an application, either a compatibility or an OAuth 2.0 one
 #[derive(Union)]
-enum AppSession {
+pub enum AppSession {
     CompatSession(Box<CompatSession>),
     OAuth2Session(Box<OAuth2Session>),
 }

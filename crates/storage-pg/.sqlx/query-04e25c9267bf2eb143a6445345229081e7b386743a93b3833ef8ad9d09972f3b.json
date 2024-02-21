@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                SELECT compat_session_id\n                     , device_id\n                     , user_id\n                     , created_at\n                     , finished_at\n                     , is_synapse_admin\n                     , last_active_at\n                     , last_active_ip as \"last_active_ip: IpAddr\"\n                FROM compat_sessions\n                WHERE compat_session_id = $1\n            ",
+  "query": "\n                SELECT compat_session_id\n                     , device_id\n                     , user_id\n                     , user_session_id\n                     , created_at\n                     , finished_at\n                     , is_synapse_admin\n                     , last_active_at\n                     , last_active_ip as \"last_active_ip: IpAddr\"\n                FROM compat_sessions\n                WHERE compat_session_id = $1\n            ",
   "describe": {
     "columns": [
       {
@@ -20,26 +20,31 @@
       },
       {
         "ordinal": 3,
+        "name": "user_session_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "finished_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "is_synapse_admin",
         "type_info": "Bool"
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "last_active_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "last_active_ip: IpAddr",
         "type_info": "Inet"
       }
@@ -53,6 +58,7 @@
       false,
       false,
       false,
+      true,
       false,
       true,
       false,
@@ -60,5 +66,5 @@
       true
     ]
   },
-  "hash": "23c03635d6433099a4353ba0c80b88737724edb16315832891550e29088d02bf"
+  "hash": "04e25c9267bf2eb143a6445345229081e7b386743a93b3833ef8ad9d09972f3b"
 }

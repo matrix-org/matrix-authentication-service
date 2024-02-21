@@ -158,6 +158,11 @@ export type Authentication = CreationEvent &
 export type BrowserSession = CreationEvent &
   Node & {
     __typename?: "BrowserSession";
+    /**
+     * Get the list of both compat and OAuth 2.0 sessions started by this
+     * browser session, chronologically sorted
+     */
+    appSessions: AppSessionConnection;
     /** When the object was created. */
     createdAt: Scalars["DateTime"]["output"];
     /** When the session was finished. */
@@ -177,6 +182,16 @@ export type BrowserSession = CreationEvent &
     /** The user-agent string with which the session was created. */
     userAgent?: Maybe<Scalars["String"]["output"]>;
   };
+
+/** A browser session represents a logged in user in a browser. */
+export type BrowserSessionAppSessionsArgs = {
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
+  device?: InputMaybe<Scalars["String"]["input"]>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
+  state?: InputMaybe<SessionState>;
+};
 
 export type BrowserSessionConnection = {
   __typename?: "BrowserSessionConnection";
@@ -206,6 +221,8 @@ export type BrowserSessionEdge = {
 export type CompatSession = CreationEvent &
   Node & {
     __typename?: "CompatSession";
+    /** The browser session which started this session, if any. */
+    browserSession?: Maybe<BrowserSession>;
     /** When the object was created. */
     createdAt: Scalars["DateTime"]["output"];
     /** The Matrix Device ID of this session. */
@@ -980,6 +997,7 @@ export type User = Node & {
 export type UserAppSessionsArgs = {
   after?: InputMaybe<Scalars["String"]["input"]>;
   before?: InputMaybe<Scalars["String"]["input"]>;
+  browserSession?: InputMaybe<Scalars["ID"]["input"]>;
   device?: InputMaybe<Scalars["String"]["input"]>;
   first?: InputMaybe<Scalars["Int"]["input"]>;
   last?: InputMaybe<Scalars["Int"]["input"]>;
