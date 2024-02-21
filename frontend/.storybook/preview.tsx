@@ -19,6 +19,8 @@ import { useLayoutEffect } from "react";
 import "../src/main.css";
 import i18n from "../src/i18n";
 
+import localazyMetadata from "./locales";
+
 export const parameters: Parameters = {
   actions: { argTypesRegex: "^on[A-Z].*" },
   controls: {
@@ -29,39 +31,38 @@ export const parameters: Parameters = {
   },
 };
 
-export const globalTypes: ArgTypes = {
+export const globalTypes = {
   theme: {
     name: "Theme",
+    defaultValue: "system",
     description: "Global theme for components",
-    defaultValue: "light",
     toolbar: {
       icon: "circlehollow",
       title: "Theme",
       items: [
-        {
-          title: "Light",
-          value: "light",
-          icon: "sun",
-        },
-        {
-          title: "Dark",
-          value: "dark",
-          icon: "moon",
-        },
+        { title: "System", value: "system", icon: "browser" },
+        { title: "Light", value: "light", icon: "sun" },
+        { title: "Light (high contrast)", value: "light-hc", icon: "sun" },
+        { title: "Dark", value: "dark", icon: "moon" },
+        { title: "Dark (high contrast)", value: "darkhc", icon: "moon" },
       ],
     },
   },
-};
+} satisfies ArgTypes;
 
-const ThemeSwitcher: React.FC<{ theme?: "light" | "dark" }> = ({ theme }) => {
+const allThemesClasses = globalTypes.theme.toolbar.items.map(
+  ({ value }) => `cpd-theme-${value}`,
+);
+
+const ThemeSwitcher: React.FC<{
+  theme: string;
+}> = ({ theme }) => {
   useLayoutEffect(() => {
-    if (theme === "dark") {
-      document.documentElement.classList.add("cpd-theme-dark");
-    } else {
-      document.documentElement.classList.remove("cpd-theme-dark");
+    document.documentElement.classList.remove(...allThemesClasses);
+    if (theme !== "system") {
+      document.documentElement.classList.add(`cpd-theme-${theme}`);
     }
-
-    return () => document.documentElement.classList.remove("cpd-theme-dark");
+    return () => document.documentElement.classList.remove(...allThemesClasses);
   }, [theme]);
 
   return null;
@@ -80,13 +81,17 @@ const withThemeProvider: Decorator = (Story, context) => {
 
 export const decorators: Decorator[] = [withThemeProvider];
 
+const locales = Object.fromEntries(
+  localazyMetadata.languages.map(({ language, name, localizedName }) => [
+    language,
+    `${localizedName} (${name})`,
+  ]),
+);
+
 const preview: Preview = {
   globals: {
-    locale: "en",
-    locales: {
-      en: "English",
-      fr: "Français",
-    },
+    locale: localazyMetadata.baseLocale,
+    locales,
   },
   parameters: {
     i18n,

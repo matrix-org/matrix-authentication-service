@@ -17,6 +17,7 @@
     }]
   },
   "download": {
+    "metadataFileTs": "frontend/.storybook/locales.ts",
     "files": [{
       "conditions": "equals: ${file}, file.json",
       "output": "translations/${lang}.json"
