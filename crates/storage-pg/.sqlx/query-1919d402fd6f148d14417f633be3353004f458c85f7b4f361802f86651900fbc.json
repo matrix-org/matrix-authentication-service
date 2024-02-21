@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                UPDATE oauth2_sessions\n                SET user_agent = $2\n                WHERE oauth2_session_id = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1919d402fd6f148d14417f633be3353004f458c85f7b4f361802f86651900fbc"
+}

@@ -57,6 +57,7 @@ pub enum CompatSessions {
     CreatedAt,
     FinishedAt,
     IsSynapseAdmin,
+    UserAgent,
     LastActiveAt,
     LastActiveIp,
 }
@@ -86,6 +87,7 @@ pub enum OAuth2Sessions {
     ScopeList,
     CreatedAt,
     FinishedAt,
+    UserAgent,
     LastActiveAt,
     LastActiveIp,
 }

@@ -60,6 +60,7 @@ struct CompatSessionLookup {
     created_at: DateTime<Utc>,
     finished_at: Option<DateTime<Utc>>,
     is_synapse_admin: bool,
+    user_agent: Option<String>,
     last_active_at: Option<DateTime<Utc>>,
     last_active_ip: Option<IpAddr>,
 }
@@ -89,6 +90,7 @@ impl TryFrom<CompatSessionLookup> for CompatSession {
             device,
             created_at: value.created_at,
             is_synapse_admin: value.is_synapse_admin,
+            user_agent: value.user_agent,
             last_active_at: value.last_active_at,
             last_active_ip: value.last_active_ip,
         };
@@ -107,6 +109,7 @@ struct CompatSessionAndSsoLoginLookup {
     created_at: DateTime<Utc>,
     finished_at: Option<DateTime<Utc>>,
     is_synapse_admin: bool,
+    user_agent: Option<String>,
     last_active_at: Option<DateTime<Utc>>,
     last_active_ip: Option<IpAddr>,
     compat_sso_login_id: Option<Uuid>,
@@ -142,6 +145,7 @@ impl TryFrom<CompatSessionAndSsoLoginLookup> for (CompatSession, Option<CompatSs
             user_session_id: value.user_session_id.map(Ulid::from),
             created_at: value.created_at,
             is_synapse_admin: value.is_synapse_admin,
+            user_agent: value.user_agent,
             last_active_at: value.last_active_at,
             last_active_ip: value.last_active_ip,
         };
@@ -223,6 +227,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
                      , created_at
                      , finished_at
                      , is_synapse_admin
+                     , user_agent
                      , last_active_at
                      , last_active_ip as "last_active_ip: IpAddr"
                 FROM compat_sessions
@@ -290,6 +295,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
             user_session_id: browser_session.map(|s| s.id),
             created_at,
             is_synapse_admin,
+            user_agent: None,
             last_active_at: None,
             last_active_ip: None,
         })
@@ -376,6 +382,10 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
             .expr_as(
                 Expr::col((CompatSessions::Table, CompatSessions::IsSynapseAdmin)),
                 CompatSessionAndSsoLoginLookupIden::IsSynapseAdmin,
+            )
+            .expr_as(
+                Expr::col((CompatSessions::Table, CompatSessions::UserAgent)),
+                CompatSessionAndSsoLoginLookupIden::UserAgent,
             )
             .expr_as(
                 Expr::col((CompatSessions::Table, CompatSessions::LastActiveAt)),
@@ -551,5 +561,39 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
         DatabaseError::ensure_affected_rows(&res, ids.len().try_into().unwrap_or(u64::MAX))?;
 
         Ok(())
+    }
+
+    #[tracing::instrument(
+        name = "db.compat_session.record_user_agent",
+        skip_all,
+        fields(
+            db.statement,
+            %compat_session.id,
+        ),
+        err,
+    )]
+    async fn record_user_agent(
+        &mut self,
+        mut compat_session: CompatSession,
+        user_agent: String,
+    ) -> Result<CompatSession, Self::Error> {
+        let res = sqlx::query!(
+            r#"
+            UPDATE compat_sessions
+            SET user_agent = $2
+            WHERE compat_session_id = $1
+        "#,
+            Uuid::from(compat_session.id),
+            user_agent,
+        )
+        .traced()
+        .execute(&mut *self.conn)
+        .await?;
+
+        compat_session.user_agent = Some(user_agent);
+
+        DatabaseError::ensure_affected_rows(&res, 1)?;
+
+        Ok(compat_session)
     }
 }

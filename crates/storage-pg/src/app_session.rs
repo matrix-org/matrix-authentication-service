@@ -73,6 +73,7 @@ mod priv_ {
         pub(super) created_at: DateTime<Utc>,
         pub(super) finished_at: Option<DateTime<Utc>>,
         pub(super) is_synapse_admin: Option<bool>,
+        pub(super) user_agent: Option<String>,
         pub(super) last_active_at: Option<DateTime<Utc>>,
         pub(super) last_active_ip: Option<IpAddr>,
     }
@@ -98,6 +99,7 @@ impl TryFrom<AppSessionLookup> for AppSession {
             created_at,
             finished_at,
             is_synapse_admin,
+            user_agent,
             last_active_at,
             last_active_ip,
         } = value;
@@ -143,6 +145,7 @@ impl TryFrom<AppSessionLookup> for AppSession {
                     user_session_id,
                     created_at,
                     is_synapse_admin,
+                    user_agent,
                     last_active_at,
                     last_active_ip,
                 };
@@ -182,6 +185,7 @@ impl TryFrom<AppSessionLookup> for AppSession {
                     user_id: user_id.map(Ulid::from),
                     user_session_id,
                     scope,
+                    user_agent,
                     last_active_at,
                     last_active_ip,
                 };
@@ -251,6 +255,10 @@ impl<'c> AppSessionRepository for PgAppSessionRepository<'c> {
             )
             .expr_as(Expr::cust("NULL"), AppSessionLookupIden::IsSynapseAdmin)
             .expr_as(
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::UserAgent)),
+                AppSessionLookupIden::UserAgent,
+            )
+            .expr_as(
                 Expr::col((OAuth2Sessions::Table, OAuth2Sessions::LastActiveAt)),
                 AppSessionLookupIden::LastActiveAt,
             )
@@ -316,6 +324,10 @@ impl<'c> AppSessionRepository for PgAppSessionRepository<'c> {
             .expr_as(
                 Expr::col((CompatSessions::Table, CompatSessions::IsSynapseAdmin)),
                 AppSessionLookupIden::IsSynapseAdmin,
+            )
+            .expr_as(
+                Expr::col((CompatSessions::Table, CompatSessions::UserAgent)),
+                AppSessionLookupIden::UserAgent,
             )
             .expr_as(
                 Expr::col((CompatSessions::Table, CompatSessions::LastActiveAt)),

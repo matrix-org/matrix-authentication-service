@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{extract::State, response::IntoResponse, Json};
+use axum::{extract::State, response::IntoResponse, Json, TypedHeader};
 use chrono::{DateTime, Duration, Utc};
 use headers::{CacheControl, HeaderMap, HeaderMapExt, Pragma};
 use hyper::StatusCode;
@@ -230,8 +230,10 @@ pub(crate) async fn post(
     State(site_config): State<SiteConfig>,
     State(encrypter): State<Encrypter>,
     policy: Policy,
+    user_agent: Option<TypedHeader<headers::UserAgent>>,
     client_authorization: ClientAuthorization<AccessTokenRequest>,
 ) -> Result<impl IntoResponse, RouteError> {
+    let user_agent = user_agent.map(|ua| ua.to_string());
     let client = client_authorization
         .credentials
         .fetch(&mut repo)
@@ -262,6 +264,7 @@ pub(crate) async fn post(
                 &url_builder,
                 &site_config,
                 repo,
+                user_agent,
             )
             .await?
         }
@@ -274,6 +277,7 @@ pub(crate) async fn post(
                 &client,
                 &site_config,
                 repo,
+                user_agent,
             )
             .await?
         }
@@ -287,6 +291,7 @@ pub(crate) async fn post(
                 &site_config,
                 repo,
                 policy,
+                user_agent,
             )
             .await?
         }
@@ -301,6 +306,7 @@ pub(crate) async fn post(
                 &url_builder,
                 &site_config,
                 repo,
+                user_agent,
             )
             .await?
         }
@@ -329,6 +335,7 @@ async fn authorization_code_grant(
     url_builder: &UrlBuilder,
     site_config: &SiteConfig,
     mut repo: BoxRepository,
+    user_agent: Option<String>,
 ) -> Result<(AccessTokenResponse, BoxRepository), RouteError> {
     // Check that the client is allowed to use this grant type
     if !client.grant_types.contains(&GrantType::AuthorizationCode) {
@@ -386,11 +393,18 @@ async fn authorization_code_grant(
         }
     };
 
-    let session = repo
+    let mut session = repo
         .oauth2_session()
         .lookup(session_id)
         .await?
         .ok_or(RouteError::NoSuchOAuthSession)?;
+
+    if let Some(user_agent) = user_agent {
+        session = repo
+            .oauth2_session()
+            .record_user_agent(session, user_agent)
+            .await?;
+    }
 
     // This should never happen, since we looked up in the database using the code
     let code = authz_grant.code.as_ref().ok_or(RouteError::InvalidGrant)?;
@@ -490,6 +504,7 @@ async fn refresh_token_grant(
     client: &Client,
     site_config: &SiteConfig,
     mut repo: BoxRepository,
+    user_agent: Option<String>,
 ) -> Result<(AccessTokenResponse, BoxRepository), RouteError> {
     // Check that the client is allowed to use this grant type
     if !client.grant_types.contains(&GrantType::RefreshToken) {
@@ -502,11 +517,20 @@ async fn refresh_token_grant(
         .await?
         .ok_or(RouteError::RefreshTokenNotFound)?;
 
-    let session = repo
+    let mut session = repo
         .oauth2_session()
         .lookup(refresh_token.session_id)
         .await?
         .ok_or(RouteError::NoSuchOAuthSession)?;
+
+    // Let's for now record the user agent on each refresh, that should be
+    // responsive enough and not too much of a burden on the database.
+    if let Some(user_agent) = user_agent {
+        session = repo
+            .oauth2_session()
+            .record_user_agent(session, user_agent)
+            .await?;
+    }
 
     if !refresh_token.is_valid() {
         return Err(RouteError::RefreshTokenInvalid(refresh_token.id));
@@ -563,6 +587,7 @@ async fn client_credentials_grant(
     site_config: &SiteConfig,
     mut repo: BoxRepository,
     mut policy: Policy,
+    user_agent: Option<String>,
 ) -> Result<(AccessTokenResponse, BoxRepository), RouteError> {
     // Check that the client is allowed to use this grant type
     if !client.grant_types.contains(&GrantType::ClientCredentials) {
@@ -584,10 +609,17 @@ async fn client_credentials_grant(
     }
 
     // Start the session
-    let session = repo
+    let mut session = repo
         .oauth2_session()
         .add_from_client_credentials(rng, clock, client, scope)
         .await?;
+
+    if let Some(user_agent) = user_agent {
+        session = repo
+            .oauth2_session()
+            .record_user_agent(session, user_agent)
+            .await?;
+    }
 
     let ttl = site_config.access_token_ttl;
     let access_token_str = TokenType::AccessToken.generate(rng);
@@ -624,6 +656,7 @@ async fn device_code_grant(
     url_builder: &UrlBuilder,
     site_config: &SiteConfig,
     mut repo: BoxRepository,
+    user_agent: Option<String>,
 ) -> Result<(AccessTokenResponse, BoxRepository), RouteError> {
     // Check that the client is allowed to use this grant type
     if !client.grant_types.contains(&GrantType::DeviceCode) {
@@ -670,10 +703,18 @@ async fn device_code_grant(
         .ok_or(RouteError::NoSuchBrowserSession)?;
 
     // Start the session
-    let session = repo
+    let mut session = repo
         .oauth2_session()
         .add_from_browser_session(rng, clock, client, &browser_session, grant.scope)
         .await?;
+
+    // XXX: should we get the user agent from the device code grant instead?
+    if let Some(user_agent) = user_agent {
+        session = repo
+            .oauth2_session()
+            .record_user_agent(session, user_agent)
+            .await?;
+    }
 
     let ttl = site_config.access_token_ttl;
     let access_token_str = TokenType::AccessToken.generate(rng);

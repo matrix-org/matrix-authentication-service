@@ -286,6 +286,18 @@ pub trait OAuth2SessionRepository: Send + Sync {
         &mut self,
         activity: Vec<(Ulid, DateTime<Utc>, Option<IpAddr>)>,
     ) -> Result<(), Self::Error>;
+
+    /// Record the user agent of a [`Session`]
+    ///
+    /// # Parameters
+    ///
+    /// * `session`: The [`Session`] to record the user agent for
+    /// * `user_agent`: The user agent to record
+    async fn record_user_agent(
+        &mut self,
+        session: Session,
+        user_agent: String,
+    ) -> Result<Session, Self::Error>;
 }
 
 repository_impl!(OAuth2SessionRepository:
@@ -333,4 +345,10 @@ repository_impl!(OAuth2SessionRepository:
         &mut self,
         activity: Vec<(Ulid, DateTime<Utc>, Option<IpAddr>)>,
     ) -> Result<(), Self::Error>;
+
+    async fn record_user_agent(
+        &mut self,
+        session: Session,
+        user_agent: String,
+    ) -> Result<Session, Self::Error>;
 );
