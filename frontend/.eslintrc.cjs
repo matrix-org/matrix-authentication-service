@@ -19,7 +19,7 @@ module.exports = {
     "**/dist/**",
     "**/__generated__/**",
     "**/coverage/**",
-    "!.storybook",
+    "!.storybook/locales.ts",
     "*/gql/*.ts",
   ],
   overrides: [
