@@ -53,6 +53,7 @@ pub enum CompatSessions {
     CompatSessionId,
     UserId,
     DeviceId,
+    UserSessionId,
     CreatedAt,
     FinishedAt,
     IsSynapseAdmin,

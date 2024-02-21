@@ -17,7 +17,8 @@ use std::net::IpAddr;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mas_data_model::{
-    CompatSession, CompatSessionState, CompatSsoLogin, CompatSsoLoginState, Device, User,
+    BrowserSession, CompatSession, CompatSessionState, CompatSsoLogin, CompatSsoLoginState, Device,
+    User,
 };
 use mas_storage::{
     compat::{CompatSessionFilter, CompatSessionRepository},
@@ -55,6 +56,7 @@ struct CompatSessionLookup {
     compat_session_id: Uuid,
     device_id: String,
     user_id: Uuid,
+    user_session_id: Option<Uuid>,
     created_at: DateTime<Utc>,
     finished_at: Option<DateTime<Utc>>,
     is_synapse_admin: bool,
@@ -83,6 +85,7 @@ impl TryFrom<CompatSessionLookup> for CompatSession {
             id,
             state,
             user_id: value.user_id.into(),
+            user_session_id: value.user_session_id.map(Ulid::from),
             device,
             created_at: value.created_at,
             is_synapse_admin: value.is_synapse_admin,
@@ -100,6 +103,7 @@ struct CompatSessionAndSsoLoginLookup {
     compat_session_id: Uuid,
     device_id: String,
     user_id: Uuid,
+    user_session_id: Option<Uuid>,
     created_at: DateTime<Utc>,
     finished_at: Option<DateTime<Utc>>,
     is_synapse_admin: bool,
@@ -135,6 +139,7 @@ impl TryFrom<CompatSessionAndSsoLoginLookup> for (CompatSession, Option<CompatSs
             state,
             user_id: value.user_id.into(),
             device,
+            user_session_id: value.user_session_id.map(Ulid::from),
             created_at: value.created_at,
             is_synapse_admin: value.is_synapse_admin,
             last_active_at: value.last_active_at,
@@ -214,6 +219,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
                 SELECT compat_session_id
                      , device_id
                      , user_id
+                     , user_session_id
                      , created_at
                      , finished_at
                      , is_synapse_admin
@@ -251,6 +257,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
         clock: &dyn Clock,
         user: &User,
         device: Device,
+        browser_session: Option<&BrowserSession>,
         is_synapse_admin: bool,
     ) -> Result<CompatSession, Self::Error> {
         let created_at = clock.now();
@@ -259,12 +266,15 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
 
         sqlx::query!(
             r#"
-                INSERT INTO compat_sessions (compat_session_id, user_id, device_id, created_at, is_synapse_admin)
-                VALUES ($1, $2, $3, $4, $5)
+                INSERT INTO compat_sessions 
+                    (compat_session_id, user_id, device_id,
+                     user_session_id, created_at, is_synapse_admin)
+                VALUES ($1, $2, $3, $4, $5, $6)
             "#,
             Uuid::from(id),
             Uuid::from(user.id),
             device.as_str(),
+            browser_session.map(|s| Uuid::from(s.id)),
             created_at,
             is_synapse_admin,
         )
@@ -277,6 +287,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
             state: CompatSessionState::default(),
             user_id: user.id,
             device,
+            user_session_id: browser_session.map(|s| s.id),
             created_at,
             is_synapse_admin,
             last_active_at: None,
@@ -349,6 +360,10 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
             .expr_as(
                 Expr::col((CompatSessions::Table, CompatSessions::UserId)),
                 CompatSessionAndSsoLoginLookupIden::UserId,
+            )
+            .expr_as(
+                Expr::col((CompatSessions::Table, CompatSessions::UserSessionId)),
+                CompatSessionAndSsoLoginLookupIden::UserSessionId,
             )
             .expr_as(
                 Expr::col((CompatSessions::Table, CompatSessions::CreatedAt)),

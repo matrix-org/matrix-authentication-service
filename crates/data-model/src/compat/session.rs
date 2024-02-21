@@ -80,6 +80,7 @@ pub struct CompatSession {
     pub state: CompatSessionState,
     pub user_id: Ulid,
     pub device: Device,
+    pub user_session_id: Option<Ulid>,
     pub created_at: DateTime<Utc>,
     pub is_synapse_admin: bool,
     pub last_active_at: Option<DateTime<Utc>>,

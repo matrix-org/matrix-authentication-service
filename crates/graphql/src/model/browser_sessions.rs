@@ -12,11 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use async_graphql::{Context, Description, Object, ID};
+use async_graphql::{
+    connection::{query, Connection, Edge, OpaqueCursor},
+    Context, Description, Object, ID,
+};
 use chrono::{DateTime, Utc};
-use mas_storage::{user::BrowserSessionRepository, RepositoryAccess};
+use mas_data_model::Device;
+use mas_storage::{
+    app_session::AppSessionFilter, user::BrowserSessionRepository, Pagination, RepositoryAccess,
+};
 
-use super::{NodeType, SessionState, User};
+use super::{
+    AppSession, CompatSession, Cursor, NodeCursor, NodeType, OAuth2Session, PreloadedTotalCount,
+    SessionState, User,
+};
 use crate::state::ContextExt;
 
 /// A browser session represents a logged in user in a browser.
@@ -91,6 +100,97 @@ impl BrowserSession {
     /// The last time the session was active.
     pub async fn last_active_at(&self) -> Option<DateTime<Utc>> {
         self.0.last_active_at
+    }
+
+    /// Get the list of both compat and OAuth 2.0 sessions started by this
+    /// browser session, chronologically sorted
+    #[allow(clippy::too_many_arguments)]
+    async fn app_sessions(
+        &self,
+        ctx: &Context<'_>,
+
+        #[graphql(name = "state", desc = "List only sessions in the given state.")]
+        state_param: Option<SessionState>,
+
+        #[graphql(name = "device", desc = "List only sessions for the given device.")]
+        device_param: Option<String>,
+
+        #[graphql(desc = "Returns the elements in the list that come after the cursor.")]
+        after: Option<String>,
+        #[graphql(desc = "Returns the elements in the list that come before the cursor.")]
+        before: Option<String>,
+        #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
+        #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
+    ) -> Result<Connection<Cursor, AppSession, PreloadedTotalCount>, async_graphql::Error> {
+        let state = ctx.state();
+        let mut repo = state.repository().await?;
+
+        query(
+            after,
+            before,
+            first,
+            last,
+            |after, before, first, last| async move {
+                let after_id = after
+                    .map(|x: OpaqueCursor<NodeCursor>| {
+                        x.extract_for_types(&[NodeType::OAuth2Session, NodeType::CompatSession])
+                    })
+                    .transpose()?;
+                let before_id = before
+                    .map(|x: OpaqueCursor<NodeCursor>| {
+                        x.extract_for_types(&[NodeType::OAuth2Session, NodeType::CompatSession])
+                    })
+                    .transpose()?;
+                let pagination = Pagination::try_new(before_id, after_id, first, last)?;
+
+                let device_param = device_param.map(Device::try_from).transpose()?;
+
+                let filter = AppSessionFilter::new().for_browser_session(&self.0);
+
+                let filter = match state_param {
+                    Some(SessionState::Active) => filter.active_only(),
+                    Some(SessionState::Finished) => filter.finished_only(),
+                    None => filter,
+                };
+
+                let filter = match device_param.as_ref() {
+                    Some(device) => filter.for_device(device),
+                    None => filter,
+                };
+
+                let page = repo.app_session().list(filter, pagination).await?;
+
+                let count = if ctx.look_ahead().field("totalCount").exists() {
+                    Some(repo.app_session().count(filter).await?)
+                } else {
+                    None
+                };
+
+                repo.cancel().await?;
+
+                let mut connection = Connection::with_additional_fields(
+                    page.has_previous_page,
+                    page.has_next_page,
+                    PreloadedTotalCount(count),
+                );
+
+                connection
+                    .edges
+                    .extend(page.edges.into_iter().map(|s| match s {
+                        mas_storage::app_session::AppSession::Compat(session) => Edge::new(
+                            OpaqueCursor(NodeCursor(NodeType::CompatSession, session.id)),
+                            AppSession::CompatSession(Box::new(CompatSession::new(*session))),
+                        ),
+                        mas_storage::app_session::AppSession::OAuth2(session) => Edge::new(
+                            OpaqueCursor(NodeCursor(NodeType::OAuth2Session, session.id)),
+                            AppSession::OAuth2Session(Box::new(OAuth2Session(*session))),
+                        ),
+                    }));
+
+                Ok::<_, async_graphql::Error>(connection)
+            },
+        )
+        .await
     }
 }
 

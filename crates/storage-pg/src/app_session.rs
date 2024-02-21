@@ -102,11 +102,12 @@ impl TryFrom<AppSessionLookup> for AppSession {
             last_active_ip,
         } = value;
 
+        let user_session_id = user_session_id.map(Ulid::from);
+
         match (
             compat_session_id,
             oauth2_session_id,
             oauth2_client_id,
-            user_session_id,
             user_id,
             scope_list,
             device_id,
@@ -114,7 +115,6 @@ impl TryFrom<AppSessionLookup> for AppSession {
         ) {
             (
                 Some(compat_session_id),
-                None,
                 None,
                 None,
                 Some(user_id),
@@ -140,6 +140,7 @@ impl TryFrom<AppSessionLookup> for AppSession {
                     state,
                     user_id: user_id.into(),
                     device,
+                    user_session_id,
                     created_at,
                     is_synapse_admin,
                     last_active_at,
@@ -153,7 +154,6 @@ impl TryFrom<AppSessionLookup> for AppSession {
                 None,
                 Some(oauth2_session_id),
                 Some(oauth2_client_id),
-                user_session_id,
                 user_id,
                 Some(scope_list),
                 None,
@@ -180,7 +180,7 @@ impl TryFrom<AppSessionLookup> for AppSession {
                     created_at,
                     client_id: oauth2_client_id.into(),
                     user_id: user_id.map(Ulid::from),
-                    user_session_id: user_session_id.map(Ulid::from),
+                    user_session_id,
                     scope,
                     last_active_at,
                     last_active_ip,
@@ -269,6 +269,10 @@ impl<'c> AppSessionRepository for PgAppSessionRepository<'c> {
                     Expr::col((OAuth2Sessions::Table, OAuth2Sessions::FinishedAt)).is_not_null()
                 }
             }))
+            .and_where_option(filter.browser_session().map(|browser_session| {
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::UserSessionId))
+                    .eq(Uuid::from(browser_session.id))
+            }))
             .and_where_option(filter.device().map(|device| {
                 Expr::val(device.to_scope_token().to_string()).eq(PgFunc::any(Expr::col((
                     OAuth2Sessions::Table,
@@ -288,7 +292,10 @@ impl<'c> AppSessionRepository for PgAppSessionRepository<'c> {
             )
             .expr_as(Expr::cust("NULL"), AppSessionLookupIden::Oauth2SessionId)
             .expr_as(Expr::cust("NULL"), AppSessionLookupIden::Oauth2ClientId)
-            .expr_as(Expr::cust("NULL"), AppSessionLookupIden::UserSessionId)
+            .expr_as(
+                Expr::col((CompatSessions::Table, CompatSessions::UserSessionId)),
+                AppSessionLookupIden::UserSessionId,
+            )
             .expr_as(
                 Expr::col((CompatSessions::Table, CompatSessions::UserId)),
                 AppSessionLookupIden::UserId,
@@ -328,6 +335,10 @@ impl<'c> AppSessionRepository for PgAppSessionRepository<'c> {
                 } else {
                     Expr::col((CompatSessions::Table, CompatSessions::FinishedAt)).is_not_null()
                 }
+            }))
+            .and_where_option(filter.browser_session().map(|browser_session| {
+                Expr::col((CompatSessions::Table, CompatSessions::UserSessionId))
+                    .eq(Uuid::from(browser_session.id))
             }))
             .and_where_option(filter.device().map(|device| {
                 Expr::col((CompatSessions::Table, CompatSessions::DeviceId)).eq(device.to_string())
@@ -385,6 +396,10 @@ impl<'c> AppSessionRepository for PgAppSessionRepository<'c> {
                     Expr::col((OAuth2Sessions::Table, OAuth2Sessions::FinishedAt)).is_not_null()
                 }
             }))
+            .and_where_option(filter.browser_session().map(|browser_session| {
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::UserSessionId))
+                    .eq(Uuid::from(browser_session.id))
+            }))
             .and_where_option(filter.device().map(|device| {
                 Expr::val(device.to_scope_token().to_string()).eq(PgFunc::any(Expr::col((
                     OAuth2Sessions::Table,
@@ -405,6 +420,10 @@ impl<'c> AppSessionRepository for PgAppSessionRepository<'c> {
                 } else {
                     Expr::col((CompatSessions::Table, CompatSessions::FinishedAt)).is_not_null()
                 }
+            }))
+            .and_where_option(filter.browser_session().map(|browser_session| {
+                Expr::col((CompatSessions::Table, CompatSessions::UserSessionId))
+                    .eq(Uuid::from(browser_session.id))
             }))
             .and_where_option(filter.device().map(|device| {
                 Expr::col((CompatSessions::Table, CompatSessions::DeviceId)).eq(device.to_string())
@@ -493,7 +512,7 @@ mod tests {
         let device = Device::generate(&mut rng);
         let compat_session = repo
             .compat_session()
-            .add(&mut rng, &clock, &user, device.clone(), false)
+            .add(&mut rng, &clock, &user, device.clone(), None, false)
             .await
             .unwrap();
 

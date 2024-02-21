@@ -223,6 +223,36 @@ type BrowserSession implements Node & CreationEvent {
   The last time the session was active.
   """
   lastActiveAt: DateTime
+  """
+  Get the list of both compat and OAuth 2.0 sessions started by this
+  browser session, chronologically sorted
+  """
+  appSessions(
+    """
+    List only sessions in the given state.
+    """
+    state: SessionState
+    """
+    List only sessions for the given device.
+    """
+    device: String
+    """
+    Returns the elements in the list that come after the cursor.
+    """
+    after: String
+    """
+    Returns the elements in the list that come before the cursor.
+    """
+    before: String
+    """
+    Returns the first *n* elements from the list.
+    """
+    first: Int
+    """
+    Returns the last *n* elements from the list.
+    """
+    last: Int
+  ): AppSessionConnection!
 }
 
 type BrowserSessionConnection {
@@ -287,6 +317,10 @@ type CompatSession implements Node & CreationEvent {
   The associated SSO login, if any.
   """
   ssoLogin: CompatSsoLogin
+  """
+  The browser session which started this session, if any.
+  """
+  browserSession: BrowserSession
   """
   The state of the session.
   """
@@ -1472,6 +1506,10 @@ type User implements Node {
     List only sessions for the given device.
     """
     device: String
+    """
+    List only sessions for the given session.
+    """
+    browserSession: ID
     """
     Returns the elements in the list that come after the cursor.
     """

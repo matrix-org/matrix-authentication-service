@@ -16,7 +16,7 @@ use std::net::IpAddr;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use mas_data_model::{CompatSession, CompatSsoLogin, Device, User};
+use mas_data_model::{BrowserSession, CompatSession, CompatSsoLogin, Device, User};
 use rand_core::RngCore;
 use ulid::Ulid;
 
@@ -175,6 +175,7 @@ pub trait CompatSessionRepository: Send + Sync {
     /// * `clock`: The clock used to generate timestamps
     /// * `user`: The user to create the compat session for
     /// * `device`: The device ID of this session
+    /// * `browser_session`: The browser session which created this session
     /// * `is_synapse_admin`: Whether the session is a synapse admin session
     ///
     /// # Errors
@@ -186,6 +187,7 @@ pub trait CompatSessionRepository: Send + Sync {
         clock: &dyn Clock,
         user: &User,
         device: Device,
+        browser_session: Option<&BrowserSession>,
         is_synapse_admin: bool,
     ) -> Result<CompatSession, Self::Error>;
 
@@ -261,6 +263,7 @@ repository_impl!(CompatSessionRepository:
         clock: &dyn Clock,
         user: &User,
         device: Device,
+        browser_session: Option<&BrowserSession>,
         is_synapse_admin: bool,
     ) -> Result<CompatSession, Self::Error>;
 

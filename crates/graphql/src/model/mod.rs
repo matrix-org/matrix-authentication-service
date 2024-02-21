@@ -32,7 +32,7 @@ pub use self::{
     node::{Node, NodeType},
     oauth::{OAuth2Client, OAuth2Session},
     upstream_oauth::{UpstreamOAuth2Link, UpstreamOAuth2Provider},
-    users::{User, UserEmail},
+    users::{AppSession, User, UserEmail},
     viewer::{Anonymous, Viewer, ViewerSession},
 };
 
