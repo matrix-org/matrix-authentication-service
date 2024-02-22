@@ -17,14 +17,13 @@ use axum::{
     response::{Html, IntoResponse, Response},
     TypedHeader,
 };
-use headers::UserAgent;
 use hyper::StatusCode;
 use mas_axum_utils::{
     cookies::CookieJar,
     csrf::{CsrfExt, CsrfToken, ProtectedForm},
     FancyError, SessionInfoExt,
 };
-use mas_data_model::BrowserSession;
+use mas_data_model::{BrowserSession, UserAgent};
 use mas_i18n::DataLocale;
 use mas_router::{UpstreamOAuth2Authorize, UrlBuilder};
 use mas_storage::{
@@ -123,10 +122,10 @@ pub(crate) async fn post(
     activity_tracker: BoundActivityTracker,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: CookieJar,
-    user_agent: Option<TypedHeader<UserAgent>>,
+    user_agent: Option<TypedHeader<headers::UserAgent>>,
     Form(form): Form<ProtectedForm<LoginForm>>,
 ) -> Result<Response, FancyError> {
-    let user_agent = user_agent.map(|ua| ua.as_str().to_owned());
+    let user_agent = user_agent.map(|ua| UserAgent::parse(ua.as_str().to_owned()));
     if !password_manager.is_enabled() {
         // XXX: is it necessary to have better errors here?
         return Ok(StatusCode::METHOD_NOT_ALLOWED.into_response());
@@ -216,7 +215,7 @@ async fn login(
     clock: &impl Clock,
     username: &str,
     password: &str,
-    user_agent: Option<String>,
+    user_agent: Option<UserAgent>,
 ) -> Result<BrowserSession, FormError> {
     // XXX: we're loosing the error context here
     // First, lookup the user

@@ -18,7 +18,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mas_data_model::{
     Authentication, AuthenticationMethod, BrowserSession, Password,
-    UpstreamOAuthAuthorizationSession, User,
+    UpstreamOAuthAuthorizationSession, User, UserAgent,
 };
 use mas_storage::{user::BrowserSessionRepository, Clock, Page, Pagination};
 use rand::RngCore;
@@ -86,7 +86,7 @@ impl TryFrom<SessionLookup> for BrowserSession {
             user,
             created_at: value.user_session_created_at,
             finished_at: value.user_session_finished_at,
-            user_agent: value.user_session_user_agent,
+            user_agent: value.user_session_user_agent.map(UserAgent::parse),
             last_active_at: value.user_session_last_active_at,
             last_active_ip: value.user_session_last_active_ip,
         })
@@ -189,7 +189,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
         user: &User,
-        user_agent: Option<String>,
+        user_agent: Option<UserAgent>,
     ) -> Result<BrowserSession, Self::Error> {
         let created_at = clock.now();
         let id = Ulid::from_datetime_with_source(created_at.into(), rng);
@@ -203,7 +203,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
             Uuid::from(id),
             Uuid::from(user.id),
             created_at,
-            user_agent,
+            user_agent.as_deref(),
         )
         .traced()
         .execute(&mut *self.conn)

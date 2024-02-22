@@ -19,6 +19,8 @@ use rand::{Rng, SeedableRng};
 use serde::Serialize;
 use ulid::Ulid;
 
+use crate::UserAgent;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct User {
     pub id: Ulid,
@@ -83,7 +85,7 @@ pub struct BrowserSession {
     pub user: User,
     pub created_at: DateTime<Utc>,
     pub finished_at: Option<DateTime<Utc>>,
-    pub user_agent: Option<String>,
+    pub user_agent: Option<UserAgent>,
     pub last_active_at: Option<DateTime<Utc>>,
     pub last_active_ip: Option<IpAddr>,
 }
@@ -105,7 +107,9 @@ impl BrowserSession {
                 user,
                 created_at: now,
                 finished_at: None,
-                user_agent: Some("Mozilla/5.0".to_owned()),
+                user_agent: Some(UserAgent::parse(
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.0.0 Safari/537.36".to_owned()
+                )),
                 last_active_at: Some(now),
                 last_active_ip: None,
             })

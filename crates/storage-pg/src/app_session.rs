@@ -15,7 +15,7 @@
 //! A module containing PostgreSQL implementation of repositories for sessions
 
 use async_trait::async_trait;
-use mas_data_model::{CompatSession, CompatSessionState, Device, Session, SessionState};
+use mas_data_model::{CompatSession, CompatSessionState, Device, Session, SessionState, UserAgent};
 use mas_storage::{
     app_session::{AppSession, AppSessionFilter, AppSessionRepository},
     Page, Pagination,
@@ -104,6 +104,7 @@ impl TryFrom<AppSessionLookup> for AppSession {
             last_active_ip,
         } = value;
 
+        let user_agent = user_agent.map(UserAgent::parse);
         let user_session_id = user_session_id.map(Ulid::from);
 
         match (

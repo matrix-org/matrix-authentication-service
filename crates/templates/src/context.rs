@@ -25,7 +25,7 @@ use chrono::{DateTime, Duration, Utc};
 use http::{Method, Uri, Version};
 use mas_data_model::{
     AuthorizationGrant, BrowserSession, Client, CompatSsoLogin, CompatSsoLoginState,
-    DeviceCodeGrant, UpstreamOAuthLink, UpstreamOAuthProvider, User, UserEmail,
+    DeviceCodeGrant, UpstreamOAuthLink, UpstreamOAuthProvider, User, UserAgent, UserEmail,
     UserEmailVerification,
 };
 use mas_i18n::DataLocale;
@@ -1164,7 +1164,7 @@ impl TemplateContext for DeviceConsentContext {
                     created_at: now - Duration::minutes(5),
                     expires_at: now + Duration::minutes(25),
                     ip_address: Some(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1))),
-                    user_agent: Some("Mozilla/5.0".to_owned()),
+                    user_agent: Some(UserAgent::parse("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.0.0 Safari/537.36".to_owned())),
                 };
                 Self { grant, client }
             })

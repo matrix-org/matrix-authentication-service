@@ -24,7 +24,7 @@ use mas_axum_utils::{
     sentry::SentryEventID,
     FancyError, SessionInfoExt,
 };
-use mas_data_model::User;
+use mas_data_model::{User, UserAgent};
 use mas_jose::jwt::Jwt;
 use mas_policy::Policy;
 use mas_router::UrlBuilder;
@@ -200,7 +200,7 @@ pub(crate) async fn get(
     user_agent: Option<TypedHeader<headers::UserAgent>>,
     Path(link_id): Path<Ulid>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let user_agent = user_agent.map(|ua| ua.as_str().to_owned());
+    let user_agent = user_agent.map(|ua| UserAgent::parse(ua.as_str().to_owned()));
     let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);
     let (session_id, post_auth_action) = sessions_cookie
         .lookup_link(link_id)
@@ -481,7 +481,7 @@ pub(crate) async fn post(
     Path(link_id): Path<Ulid>,
     Form(form): Form<ProtectedForm<FormData>>,
 ) -> Result<Response, RouteError> {
-    let user_agent = user_agent.map(|ua| ua.as_str().to_owned());
+    let user_agent = user_agent.map(|ua| UserAgent::parse(ua.as_str().to_owned()));
     let form = cookie_jar.verify_form(&clock, form)?;
 
     let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);

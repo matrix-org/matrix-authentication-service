@@ -33,7 +33,7 @@ limitations under the License.
         <h1 class="title">Allow access to your account?</h1>
 
         <div class="consent-device-card">
-          <div class="device" {%- if grant.user_agent %} title="{{ grant.user_agent }}"{% endif %}>
+          <div class="device" {%- if grant.user_agent %} title="{{ grant.user_agent.raw }}"{% endif %}>
             {{ icon.web_browser() }}
             {# TODO: Infer from the user agent #}
             <div class="name">Device</div>
