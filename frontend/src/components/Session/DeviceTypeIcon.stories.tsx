@@ -14,7 +14,7 @@
 
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { DeviceType } from "../../utils/parseUserAgent";
+import { DeviceType } from "../../gql/graphql";
 
 import DeviceTypeIcon from "./DeviceTypeIcon";
 
@@ -30,9 +30,9 @@ const meta = {
       control: "select",
       options: [
         DeviceType.Unknown,
-        DeviceType.Desktop,
+        DeviceType.Pc,
         DeviceType.Mobile,
-        DeviceType.Web,
+        DeviceType.Tablet,
       ],
     },
   },
@@ -43,9 +43,9 @@ type Story = StoryObj<typeof DeviceTypeIcon>;
 
 export const Unknown: Story = {};
 
-export const Desktop: Story = {
+export const Pc: Story = {
   args: {
-    deviceType: DeviceType.Desktop,
+    deviceType: DeviceType.Pc,
   },
 };
 export const Mobile: Story = {
@@ -53,8 +53,8 @@ export const Mobile: Story = {
     deviceType: DeviceType.Mobile,
   },
 };
-export const Web: Story = {
+export const Tablet: Story = {
   args: {
-    deviceType: DeviceType.Web,
+    deviceType: DeviceType.Tablet,
   },
 };

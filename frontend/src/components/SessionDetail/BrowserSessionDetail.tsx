@@ -17,10 +17,6 @@ import { parseISO } from "date-fns";
 import { useTranslation } from "react-i18next";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
-import {
-  parseUserAgent,
-  sessionNameFromDeviceInformation,
-} from "../../utils/parseUserAgent";
 import BlockList from "../BlockList/BlockList";
 import { useEndBrowserSession } from "../BrowserSession";
 import DateTime from "../DateTime";
@@ -36,7 +32,11 @@ const FRAGMENT = graphql(/* GraphQL */ `
     id
     createdAt
     finishedAt
-    userAgent
+    userAgent {
+      name
+      model
+      os
+    }
     lastActiveIp
     lastActiveAt
     lastAuthentication {
@@ -61,9 +61,16 @@ const BrowserSessionDetail: React.FC<Props> = ({ session, isCurrent }) => {
 
   const onSessionEnd = useEndBrowserSession(data.id, isCurrent);
 
-  const deviceInformation = parseUserAgent(data.userAgent || undefined);
-  const sessionName =
-    sessionNameFromDeviceInformation(deviceInformation) || "Browser session";
+  let sessionName = "Browser session";
+  if (data.userAgent) {
+    if (data.userAgent.model && data.userAgent.name) {
+      sessionName = `${data.userAgent.name} on ${data.userAgent.model}`;
+    } else if (data.userAgent.name && data.userAgent.os) {
+      sessionName = `${data.userAgent.name} on ${data.userAgent.os}`;
+    } else if (data.userAgent.name) {
+      sessionName = data.userAgent.name;
+    }
+  }
 
   const finishedAt = data.finishedAt
     ? [

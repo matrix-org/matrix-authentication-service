@@ -413,8 +413,9 @@ export default {
           {
             name: "userAgent",
             type: {
-              kind: "SCALAR",
-              name: "Any",
+              kind: "OBJECT",
+              name: "UserAgent",
+              ofType: null,
             },
             args: [],
           },
@@ -625,6 +626,15 @@ export default {
                 name: "User",
                 ofType: null,
               },
+            },
+            args: [],
+          },
+          {
+            name: "userAgent",
+            type: {
+              kind: "OBJECT",
+              name: "UserAgent",
+              ofType: null,
             },
             args: [],
           },
@@ -1737,6 +1747,15 @@ export default {
             type: {
               kind: "OBJECT",
               name: "User",
+              ofType: null,
+            },
+            args: [],
+          },
+          {
+            name: "userAgent",
+            type: {
+              kind: "OBJECT",
+              name: "UserAgent",
               ofType: null,
             },
             args: [],
@@ -3132,6 +3151,75 @@ export default {
             name: "Node",
           },
         ],
+      },
+      {
+        kind: "OBJECT",
+        name: "UserAgent",
+        fields: [
+          {
+            name: "deviceType",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "model",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
+            },
+            args: [],
+          },
+          {
+            name: "name",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
+            },
+            args: [],
+          },
+          {
+            name: "os",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
+            },
+            args: [],
+          },
+          {
+            name: "osVersion",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
+            },
+            args: [],
+          },
+          {
+            name: "raw",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "version",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
       },
       {
         kind: "OBJECT",

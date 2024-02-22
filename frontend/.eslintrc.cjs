@@ -102,7 +102,7 @@ module.exports = {
             exceptions: {
               // The '*Connection', '*Edge', '*Payload' and 'PageInfo' types don't have IDs
               // XXX: Maybe the MatrixUser type should have an ID?
-              types: ["PageInfo", "MatrixUser"],
+              types: ["PageInfo", "MatrixUser", "UserAgent"],
               suffixes: ["Connection", "Edge", "Payload"],
             },
           },

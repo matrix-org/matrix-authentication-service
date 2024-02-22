@@ -16,12 +16,22 @@ use serde::Serialize;
 use woothee::{parser::Parser, woothee::VALUE_UNKNOWN};
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum DeviceType {
+    Pc,
+    Mobile,
+    Tablet,
+    Unknown,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct UserAgent {
     pub name: Option<String>,
     pub version: Option<String>,
     pub os: Option<String>,
     pub os_version: Option<String>,
     pub model: Option<String>,
+    pub device_type: DeviceType,
     pub raw: String,
 }
 
@@ -78,17 +88,31 @@ impl UserAgent {
             if let Some((name, version, model, os, os_version)) =
                 UserAgent::parse_custom(&user_agent)
             {
+                let mut device_type = DeviceType::Unknown;
+
+                // Handle mobile simple mobile devices
+                if os == "Android" || os == "iOS" {
+                    device_type = DeviceType::Mobile;
+                }
+
+                // Handle iPads
+                if model.contains("iPad") {
+                    device_type = DeviceType::Tablet;
+                }
+
                 return Self {
                     name: Some(name.to_owned()),
                     version: Some(version.to_owned()),
                     os: Some(os.to_owned()),
                     os_version: os_version.map(|s| s.to_owned()),
                     model: Some(model.to_owned()),
+                    device_type,
                     raw: user_agent,
                 };
             }
         }
 
+        let mut model = None;
         let Some(mut result) = Parser::new().parse(&user_agent) else {
             return Self {
                 raw: user_agent,
@@ -97,7 +121,14 @@ impl UserAgent {
                 os: None,
                 os_version: None,
                 model: None,
+                device_type: DeviceType::Unknown,
             };
+        };
+
+        let mut device_type = match result.category {
+            "pc" => DeviceType::Pc,
+            "smartphone" | "mobilephone" => DeviceType::Mobile,
+            _ => DeviceType::Unknown,
         };
 
         // Special handling for Chrome user-agent reduction cases
@@ -138,6 +169,32 @@ impl UserAgent {
                 result.os_version = VALUE_UNKNOWN.into();
             }
 
+            // Safari also freezes the OS version
+            // Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like
+            // Gecko) Version/17.3.1 Safari/605.1.15
+            ("Mac OSX", "10.15.7") if user_agent.contains("Macintosh; Intel Mac OS X 10_15_7") => {
+                result.os = "macOS";
+                result.os_version = VALUE_UNKNOWN.into();
+            }
+
+            // Woothee identifies iPhone and iPod in the OS, but we want to map them to iOS and use
+            // them as model
+            ("iPhone" | "iPod", _) => {
+                model = Some(result.os.to_owned());
+                result.os = "iOS";
+            }
+
+            ("iPad", _) => {
+                model = Some(result.os.to_owned());
+                device_type = DeviceType::Tablet;
+                result.os = "iPadOS";
+            }
+
+            // Also map `Mac OSX` to `macOS`
+            ("Mac OSX", _) => {
+                result.os = "macOS";
+            }
+
             _ => {}
         }
 
@@ -154,7 +211,8 @@ impl UserAgent {
             os: (result.os != VALUE_UNKNOWN).then(|| result.os.to_owned()),
             os_version: (result.os_version != VALUE_UNKNOWN)
                 .then(|| result.os_version.into_owned()),
-            model: None,
+            device_type,
+            model,
             raw: user_agent,
         }
     }

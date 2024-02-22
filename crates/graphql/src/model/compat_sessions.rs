@@ -18,7 +18,7 @@ use chrono::{DateTime, Utc};
 use mas_storage::{compat::CompatSessionRepository, user::UserRepository};
 use url::Url;
 
-use super::{BrowserSession, NodeType, SessionState, User};
+use super::{BrowserSession, NodeType, SessionState, User, UserAgent};
 use crate::state::ContextExt;
 
 /// Lazy-loaded reverse reference.
@@ -101,6 +101,11 @@ impl CompatSession {
     /// When the session ended.
     pub async fn finished_at(&self) -> Option<DateTime<Utc>> {
         self.session.finished_at()
+    }
+
+    /// The user-agent with which the session was created.
+    pub async fn user_agent(&self) -> Option<UserAgent> {
+        self.session.user_agent.clone().map(|ua| ua.into())
     }
 
     /// The associated SSO login, if any.

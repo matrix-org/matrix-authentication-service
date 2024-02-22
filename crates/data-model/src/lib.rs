@@ -47,7 +47,7 @@ pub use self::{
         UpstreamOAuthProviderImportAction, UpstreamOAuthProviderImportPreference,
         UpstreamOAuthProviderPkceMode, UpstreamOAuthProviderSubjectPreference,
     },
-    user_agent::UserAgent,
+    user_agent::{DeviceType, UserAgent},
     users::{
         Authentication, AuthenticationMethod, BrowserSession, Password, User, UserEmail,
         UserEmailVerification, UserEmailVerificationState,

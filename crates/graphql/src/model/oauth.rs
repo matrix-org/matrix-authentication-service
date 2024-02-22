@@ -20,7 +20,7 @@ use oauth2_types::{oidc::ApplicationType, scope::Scope};
 use ulid::Ulid;
 use url::Url;
 
-use super::{BrowserSession, NodeType, SessionState, User};
+use super::{BrowserSession, NodeType, SessionState, User, UserAgent};
 use crate::{state::ContextExt, UserId};
 
 /// An OAuth 2.0 session represents a client session which used the OAuth APIs
@@ -65,6 +65,11 @@ impl OAuth2Session {
             mas_data_model::SessionState::Valid => None,
             mas_data_model::SessionState::Finished { finished_at } => Some(*finished_at),
         }
+    }
+
+    /// The user-agent with which the session was created.
+    pub async fn user_agent(&self) -> Option<UserAgent> {
+        self.0.user_agent.clone().map(|ua| ua.into())
     }
 
     /// The state of the session.

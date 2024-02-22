@@ -55,10 +55,10 @@
       "session_details_title": "Session"
     },
     "device_type_icon_label": {
-      "desktop": "Desktop",
       "mobile": "Mobile",
-      "unknown": "Unknown device type",
-      "web": "Web"
+      "pc": "Computer",
+      "tablet": "Tablet",
+      "unknown": "Unknown device type"
     },
     "end_session_button": {
       "confirmation_modal_title": "Are you sure you want to end this session?",

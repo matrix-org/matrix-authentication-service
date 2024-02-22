@@ -28,6 +28,13 @@ export const FRAGMENT = graphql(/* GraphQL */ `
     finishedAt
     lastActiveIp
     lastActiveAt
+    userAgent {
+      raw
+      name
+      os
+      model
+      deviceType
+    }
     ssoLogin {
       id
       redirectUri
@@ -78,9 +85,19 @@ const CompatSession: React.FC<{
     await endCompatSession({ id: data.id });
   };
 
-  const clientName = data.ssoLogin?.redirectUri
+  let clientName = data.ssoLogin?.redirectUri
     ? simplifyUrl(data.ssoLogin.redirectUri)
     : undefined;
+
+  if (data.userAgent) {
+    if (data.userAgent.model && data.userAgent.name) {
+      clientName = `${data.userAgent.name} on ${data.userAgent.model}`;
+    } else if (data.userAgent.name && data.userAgent.os) {
+      clientName = `${data.userAgent.name} on ${data.userAgent.os}`;
+    } else if (data.userAgent.name) {
+      clientName = data.userAgent.name;
+    }
+  }
 
   const createdAt = parseISO(data.createdAt);
   const finishedAt = data.finishedAt ? parseISO(data.finishedAt) : undefined;
@@ -95,6 +112,7 @@ const CompatSession: React.FC<{
       createdAt={createdAt}
       finishedAt={finishedAt}
       clientName={clientName}
+      deviceType={data.userAgent?.deviceType}
       lastActiveIp={data.lastActiveIp || undefined}
       lastActiveAt={lastActiveAt}
     >

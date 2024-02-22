@@ -16,7 +16,7 @@ import { Link } from "@tanstack/react-router";
 import { H6, Text, Badge } from "@vector-im/compound-web";
 import { Trans, useTranslation } from "react-i18next";
 
-import { DeviceType } from "../../utils/parseUserAgent";
+import { DeviceType } from "../../gql/graphql";
 import Block from "../Block";
 import DateTime from "../DateTime";
 

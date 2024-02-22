@@ -212,9 +212,9 @@ type BrowserSession implements Node & CreationEvent {
   """
   state: SessionState!
   """
-  The user-agent string with which the session was created.
+  The user-agent with which the session was created.
   """
-  userAgent: String
+  userAgent: UserAgent
   """
   The last IP address used by the session.
   """
@@ -313,6 +313,10 @@ type CompatSession implements Node & CreationEvent {
   When the session ended.
   """
   finishedAt: DateTime
+  """
+  The user-agent with which the session was created.
+  """
+  userAgent: UserAgent
   """
   The associated SSO login, if any.
   """
@@ -499,6 +503,28 @@ Implement the DateTime<Utc> scalar
 The input/output is a string in RFC3339 format.
 """
 scalar DateTime
+
+"""
+The type of a user agent
+"""
+enum DeviceType {
+  """
+  A personal computer, laptop or desktop
+  """
+  PC
+  """
+  A mobile phone. Can also sometimes be a tablet.
+  """
+  MOBILE
+  """
+  A tablet
+  """
+  TABLET
+  """
+  Unknown device type
+  """
+  UNKNOWN
+}
 
 """
 The input of the `endBrowserSession` mutation.
@@ -821,6 +847,10 @@ type Oauth2Session implements Node & CreationEvent {
   When the session ended.
   """
   finishedAt: DateTime
+  """
+  The user-agent with which the session was created.
+  """
+  userAgent: UserAgent
   """
   The state of the session.
   """
@@ -1527,6 +1557,40 @@ type User implements Node {
     """
     last: Int
   ): AppSessionConnection!
+}
+
+"""
+A parsed user agent string
+"""
+type UserAgent {
+  """
+  The user agent string
+  """
+  raw: String!
+  """
+  The name of the browser
+  """
+  name: String
+  """
+  The version of the browser
+  """
+  version: String
+  """
+  The operating system name
+  """
+  os: String
+  """
+  The operating system version
+  """
+  osVersion: String
+  """
+  The device model
+  """
+  model: String
+  """
+  The device type
+  """
+  deviceType: DeviceType!
 }
 
 """
