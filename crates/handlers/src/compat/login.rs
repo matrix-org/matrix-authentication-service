@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{extract::State, response::IntoResponse, Json};
+use axum::{extract::State, response::IntoResponse, Json, TypedHeader};
 use chrono::Duration;
 use hyper::StatusCode;
 use mas_axum_utils::sentry::SentryEventID;
@@ -217,9 +217,11 @@ pub(crate) async fn post(
     activity_tracker: BoundActivityTracker,
     State(homeserver): State<MatrixHomeserver>,
     State(site_config): State<SiteConfig>,
+    user_agent: Option<TypedHeader<headers::UserAgent>>,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let (session, user) = match (password_manager.is_enabled(), input.credentials) {
+    let user_agent = user_agent.map(|ua| ua.to_string());
+    let (mut session, user) = match (password_manager.is_enabled(), input.credentials) {
         (
             true,
             Credentials::Password {
@@ -244,6 +246,13 @@ pub(crate) async fn post(
             return Err(RouteError::Unsupported);
         }
     };
+
+    if let Some(user_agent) = user_agent {
+        session = repo
+            .compat_session()
+            .record_user_agent(session, user_agent)
+            .await?;
+    }
 
     let user_id = format!("@{username}:{homeserver}", username = user.username);
 

@@ -367,6 +367,24 @@ mod tests {
             .unwrap();
         assert!(!refresh_token.is_valid());
 
+        // Record the user-agent on the session
+        assert!(session.user_agent.is_none());
+        let session = repo
+            .oauth2_session()
+            .record_user_agent(session, "Mozilla/5.0".to_owned())
+            .await
+            .unwrap();
+        assert_eq!(session.user_agent.as_deref(), Some("Mozilla/5.0"));
+
+        // Reload the session and check the user-agent
+        let session = repo
+            .oauth2_session()
+            .lookup(session.id)
+            .await
+            .unwrap()
+            .expect("session not found");
+        assert_eq!(session.user_agent.as_deref(), Some("Mozilla/5.0"));
+
         // Mark the session as finished
         assert!(session.is_valid());
         let session = repo.oauth2_session().finish(&clock, session).await.unwrap();

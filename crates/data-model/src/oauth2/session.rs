@@ -75,6 +75,7 @@ pub struct Session {
     pub user_session_id: Option<Ulid>,
     pub client_id: Ulid,
     pub scope: Scope,
+    pub user_agent: Option<String>,
     pub last_active_at: Option<DateTime<Utc>>,
     pub last_active_ip: Option<IpAddr>,
 }

@@ -252,6 +252,22 @@ pub trait CompatSessionRepository: Send + Sync {
         &mut self,
         activity: Vec<(Ulid, DateTime<Utc>, Option<IpAddr>)>,
     ) -> Result<(), Self::Error>;
+
+    /// Record the user agent of a compat session
+    ///
+    /// # Parameters
+    ///
+    /// * `compat_session`: The compat session to record the user agent for
+    /// * `user_agent`: The user agent to record
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn record_user_agent(
+        &mut self,
+        compat_session: CompatSession,
+        user_agent: String,
+    ) -> Result<CompatSession, Self::Error>;
 }
 
 repository_impl!(CompatSessionRepository:
@@ -285,4 +301,10 @@ repository_impl!(CompatSessionRepository:
         &mut self,
         activity: Vec<(Ulid, DateTime<Utc>, Option<IpAddr>)>,
     ) -> Result<(), Self::Error>;
+
+    async fn record_user_agent(
+        &mut self,
+        compat_session: CompatSession,
+        user_agent: String,
+    ) -> Result<CompatSession, Self::Error>;
 );

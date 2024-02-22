@@ -59,6 +59,7 @@ struct OAuthSessionLookup {
     scope_list: Vec<String>,
     created_at: DateTime<Utc>,
     finished_at: Option<DateTime<Utc>>,
+    user_agent: Option<String>,
     last_active_at: Option<DateTime<Utc>>,
     last_active_ip: Option<IpAddr>,
 }
@@ -93,6 +94,7 @@ impl TryFrom<OAuthSessionLookup> for Session {
             user_id: value.user_id.map(Ulid::from),
             user_session_id: value.user_session_id.map(Ulid::from),
             scope,
+            user_agent: value.user_agent,
             last_active_at: value.last_active_at,
             last_active_ip: value.last_active_ip,
         })
@@ -123,6 +125,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
                      , scope_list
                      , created_at
                      , finished_at
+                     , user_agent
                      , last_active_at
                      , last_active_ip as "last_active_ip: IpAddr"
                 FROM oauth2_sessions
@@ -197,6 +200,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
             user_session_id: user_session.map(|s| s.id),
             client_id: client.id,
             scope,
+            user_agent: None,
             last_active_at: None,
             last_active_ip: None,
         })
@@ -280,6 +284,10 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
             .expr_as(
                 Expr::col((OAuth2Sessions::Table, OAuth2Sessions::FinishedAt)),
                 OAuthSessionLookupIden::FinishedAt,
+            )
+            .expr_as(
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::UserAgent)),
+                OAuthSessionLookupIden::UserAgent,
             )
             .expr_as(
                 Expr::col((OAuth2Sessions::Table, OAuth2Sessions::LastActiveAt)),
@@ -426,5 +434,42 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
         DatabaseError::ensure_affected_rows(&res, ids.len().try_into().unwrap_or(u64::MAX))?;
 
         Ok(())
+    }
+
+    #[tracing::instrument(
+        name = "db.oauth2_session.record_user_agent",
+        skip_all,
+        fields(
+            db.statement,
+            %session.id,
+            %session.scope,
+            client.id = %session.client_id,
+            session.user_agent = %user_agent,
+        ),
+        err,
+    )]
+    async fn record_user_agent(
+        &mut self,
+        mut session: Session,
+        user_agent: String,
+    ) -> Result<Session, Self::Error> {
+        let res = sqlx::query!(
+            r#"
+                UPDATE oauth2_sessions
+                SET user_agent = $2
+                WHERE oauth2_session_id = $1
+            "#,
+            Uuid::from(session.id),
+            user_agent,
+        )
+        .traced()
+        .execute(&mut *self.conn)
+        .await?;
+
+        session.user_agent = Some(user_agent);
+
+        DatabaseError::ensure_affected_rows(&res, 1)?;
+
+        Ok(session)
     }
 }
