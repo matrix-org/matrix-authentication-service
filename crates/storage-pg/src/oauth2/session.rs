@@ -286,6 +286,10 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
                 OAuthSessionLookupIden::FinishedAt,
             )
             .expr_as(
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::UserAgent)),
+                OAuthSessionLookupIden::UserAgent,
+            )
+            .expr_as(
                 Expr::col((OAuth2Sessions::Table, OAuth2Sessions::LastActiveAt)),
                 OAuthSessionLookupIden::LastActiveAt,
             )

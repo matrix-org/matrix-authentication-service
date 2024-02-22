@@ -129,6 +129,24 @@ mod tests {
         assert!(session_lookup.is_valid());
         assert!(!session_lookup.is_finished());
 
+        // Record a user-agent for the session
+        assert!(session_lookup.user_agent.is_none());
+        let session = repo
+            .compat_session()
+            .record_user_agent(session_lookup, "Mozilla/5.0".to_owned())
+            .await
+            .unwrap();
+        assert_eq!(session.user_agent.as_deref(), Some("Mozilla/5.0"));
+
+        // Reload the session and check again
+        let session_lookup = repo
+            .compat_session()
+            .lookup(session.id)
+            .await
+            .unwrap()
+            .expect("compat session not found");
+        assert_eq!(session_lookup.user_agent.as_deref(), Some("Mozilla/5.0"));
+
         // Look up the session by device
         let list = repo
             .compat_session()
