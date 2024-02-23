@@ -237,7 +237,7 @@ async fn get_requester(
             return Err(RouteError::MissingScope);
         }
 
-        Requester::OAuth2Session(session, user)
+        Requester::OAuth2Session(Box::new((session, user)))
     } else {
         let maybe_session = session_info.load_session(&mut repo).await?;
 
