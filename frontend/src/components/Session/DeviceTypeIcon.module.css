@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-.icon {
+.device-type-icon {
     color: var(--cpd-color-icon-secondary);
     background-color: var(--cpd-color-bg-subtle-secondary);
     box-sizing: content-box;
