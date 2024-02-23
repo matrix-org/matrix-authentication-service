@@ -49,7 +49,7 @@ const DeviceTypeIcon: React.FC<{ deviceType: DeviceType }> = ({
 
   const label = deviceTypeToLabel[deviceType];
 
-  return <Icon className={styles.icon} aria-label={label} />;
+  return <Icon className={styles.deviceTypeIcon} aria-label={label} />;
 };
 
 export default DeviceTypeIcon;

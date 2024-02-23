@@ -29,6 +29,8 @@
 @import url("./styles/cpd-mfa-control.css");
 @import url("./styles/cpd-checkbox-control.css");
 
+@import url("./components/SessionCard/SessionCard.module.css");
+@import url("./components/Session/DeviceTypeIcon.module.css");
 @import url("./components/Layout/Layout.module.css");
 @import url("./components/Footer/Footer.module.css");
 @import url("./components/PageHeading/PageHeading.module.css");
@@ -60,71 +62,6 @@
 
 .cpd-text-secondary {
   color: var(--cpd-color-text-secondary);
-}
-
-.consent-device-card {
-  display: flex;
-  gap: var(--cpd-space-4x);
-  flex-direction: column;
-  text-align: start;
-  margin: var(--cpd-space-2x) 0;
-
-  border-radius: var(--cpd-space-4x);
-  background-color: var(--cpd-color-bg-canvas-default);
-  border: 1px solid var(--cpd-color-border-interactive-secondary);
-  box-shadow: 0px 1.2px 2.4px 0px rgba(0, 0, 0, 0.15);
-  padding: var(--cpd-space-6x);
-
-  & .device {
-    display: flex;
-    gap: var(--cpd-space-4x);
-    align-items: center;
-
-    & svg {
-      aspect-ratio: 1;
-      border-radius: var(--cpd-space-2x);
-      background-color: var(--cpd-color-bg-subtle-secondary);
-      color: var(--cpd-color-icon-secondary);
-      padding: var(--cpd-space-2x);
-      height: var(--cpd-space-10x);
-      width: var(--cpd-space-10x);
-    }
-
-    & .lines {
-      display: flex;
-      flex-direction: column;
-
-      & div:first-child {
-        font: var(--cpd-font-body-md-semibold);
-        letter-spacing: var(--cpd-font-letter-spacing-body-md);
-        color: var(--cpd-color-text-primary);
-      }
-
-      & div {
-        font: var(--cpd-font-body-sm-regular);
-        letter-spacing: var(--cpd-font-letter-spacing-body-sm);
-        color: var(--cpd-color-text-secondary);
-      }
-    }
-  }
-
-  & .meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--cpd-space-4x) var(--cpd-space-10x);
-
-    & .key {
-      font: var(--cpd-font-body-sm-regular);
-      letter-spacing: var(--cpd-font-letter-spacing-body-sm);
-      color: var(--cpd-color-text-secondary);
-    }
-
-    & .value {
-      font: var(--cpd-font-body-md-regular);
-      letter-spacing: var(--cpd-font-letter-spacing-body-md);
-      color: var(--cpd-color-text-primary);
-    }
-  }
 }
 
 .consent-client-icon {

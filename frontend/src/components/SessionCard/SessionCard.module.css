@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-.root {
+.session-card-root {
     position: relative;
 }
 
 @media screen and (min-width: 768px) {
-    .root:has(.action) .body .header {
+    .session-card-root:has(.action) .session-card .card-header {
         /* We can't exactly know the width of the action button,
          * so we use a somewhat arbitrary safe value:
          *  - the button padding is 4x + 5x
@@ -33,7 +33,7 @@
 }
 
 @media screen and (max-width: 767px) {
-    .root:has(.action) .body {
+    .session-card-root:has(.action) .session-card {
         /* On small screen, the action button is at the bottom, and we can accurately
          * calculate the height of the button:
          *
@@ -47,10 +47,11 @@
     }
 }
 
-.body {
+.session-card {
     display: flex;
     gap: var(--cpd-space-4x);
     flex-direction: column;
+    text-align: start;
 
     border-radius: var(--cpd-space-4x);
     background-color: var(--cpd-color-bg-canvas-default);
@@ -69,9 +70,66 @@
         box-shadow: none;
         padding: var(--cpd-space-3x);
     }
+
+    & .card-header {
+        display: flex;
+        gap: var(--cpd-space-4x);
+        align-items: center;
+
+        & .content {
+            display: flex;
+            flex-direction: column;
+
+            /* This makes sure it can shrink, and that the text doesn't overflow */
+            flex: 0 1 auto;
+            min-width: 0;
+
+            &.auto div:first-child,
+            & .name {
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                font: var(--cpd-font-body-md-semibold);
+                letter-spacing: var(--cpd-font-letter-spacing-body-md);
+                color: var(--cpd-color-text-primary);
+            }
+
+            &.auto div:not(:first-child),
+            & .client {
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                font: var(--cpd-font-body-sm-regular);
+                letter-spacing: var(--cpd-font-letter-spacing-body-sm);
+                color: var(--cpd-color-text-secondary);
+
+                & img {
+                    margin-inline-end: var(--cpd-space-1x);
+                }
+            }
+        }
+    }
+
+    & .metadata {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--cpd-space-4x) var(--cpd-space-10x);
+
+        & .key {
+            font: var(--cpd-font-body-sm-regular);
+            letter-spacing: var(--cpd-font-letter-spacing-body-sm);
+            color: var(--cpd-color-text-secondary);
+        }
+
+        & .value {
+            font: var(--cpd-font-body-md-regular);
+            letter-spacing: var(--cpd-font-letter-spacing-body-md);
+            color: var(--cpd-color-text-primary);
+        }
+    }
 }
 
-a.body:not(.disabled) {
+a.session-card:not(.disabled) {
     transition-property: outline-color, box-shadow;
     transition-duration: 0.1s;
     transition-timing-function: linear;
@@ -88,78 +146,25 @@ a.body:not(.disabled) {
     }
 }
 
-@media screen and (min-width: 768px) {
-    .action {
-        position: absolute;
-        /* This padding creates a safe area for the action button */
-        padding: var(--cpd-space-6x) var(--cpd-space-6x) var(--cpd-space-2x) var(--cpd-space-2x);
-        inset-block-start: 0;
-        inset-inline-end: 0;
-    }
-}
-
-@media screen and (max-width: 767px) {
-    .action {
-        display: flex;
-        flex-direction: column;
-        position: absolute;
-        padding: var(--cpd-space-6x);
-        inset-block-end: 0;
-        inset-inline: 0;
-    }
-}
-
-.header {
-    display: flex;
-    gap: var(--cpd-space-4x);
-    align-items: center;
-
-    & .content {
-        display: flex;
-        flex-direction: column;
-
-        /* This makes sure it can shrink, and that the text doesn't overflow */
-        flex: 0 1 auto;
-        min-width: 0;
-
-        & .name {
-            overflow: hidden;
-            white-space: nowrap;
-            text-overflow: ellipsis;
-            font: var(--cpd-font-body-md-semibold);
-            letter-spacing: var(--cpd-font-letter-spacing-body-md);
-            color: var(--cpd-color-text-primary);
-        }
-
-        & .client {
-            overflow: hidden;
-            white-space: nowrap;
-            text-overflow: ellipsis;
-            font: var(--cpd-font-body-sm-regular);
-            letter-spacing: var(--cpd-font-letter-spacing-body-sm);
-            color: var(--cpd-color-text-secondary);
-
-            & img {
-                margin-inline-end: var(--cpd-space-1x);
-            }
+.session-card-root {
+    @media screen and (min-width: 768px) {
+        .action {
+            position: absolute;
+            /* This padding creates a safe area for the action button */
+            padding: var(--cpd-space-6x) var(--cpd-space-6x) var(--cpd-space-2x) var(--cpd-space-2x);
+            inset-block-start: 0;
+            inset-inline-end: 0;
         }
     }
-}
 
-.metadata {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--cpd-space-4x) var(--cpd-space-10x);
-
-    & .key {
-        font: var(--cpd-font-body-sm-regular);
-        letter-spacing: var(--cpd-font-letter-spacing-body-sm);
-        color: var(--cpd-color-text-secondary);
-    }
-
-    & .value {
-        font: var(--cpd-font-body-md-regular);
-        letter-spacing: var(--cpd-font-letter-spacing-body-md);
-        color: var(--cpd-color-text-primary);
+    @media screen and (max-width: 767px) {
+        .action {
+            display: flex;
+            flex-direction: column;
+            position: absolute;
+            padding: var(--cpd-space-6x);
+            inset-block-end: 0;
+            inset-inline: 0;
+        }
     }
 }

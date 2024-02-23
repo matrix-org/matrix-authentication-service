@@ -32,19 +32,21 @@ limitations under the License.
       <div class="header">
         <h1 class="title">Allow access to your account?</h1>
 
-        <div class="consent-device-card">
-          <div class="device" {%- if grant.user_agent %} title="{{ grant.user_agent.raw }}"{% endif %}>
-            {% if grant.user_agent.device_type == "mobile" %}
-              {{ icon.mobile() }}
-            {% elif grant.user_agent.device_type == "tablet" %}
-              {{ icon.web_browser() }}
-            {% elif grant.user_agent.device_type == "pc" %}
-              {{ icon.computer() }}
-            {% else %}
-              {{ icon.unknown_solid() }}
-            {% endif %}
+        <div class="session-card my-4">
+          <div class="card-header" {%- if grant.user_agent %} title="{{ grant.user_agent.raw }}"{% endif %}>
+            <div class="device-type-icon">
+              {% if grant.user_agent.device_type == "mobile" %}
+                {{ icon.mobile() }}
+              {% elif grant.user_agent.device_type == "tablet" %}
+                {{ icon.web_browser() }}
+              {% elif grant.user_agent.device_type == "pc" %}
+                {{ icon.computer() }}
+              {% else %}
+                {{ icon.unknown_solid() }}
+              {% endif %}
+            </div>
 
-            <div class="lines">
+            <div class="content auto">
               {% if grant.user_agent.model %}
                 <div>{{ grant.user_agent.model }}</div>
               {% endif %}
@@ -74,7 +76,7 @@ limitations under the License.
               {% endif %}
             </div>
           </div>
-          <div class="meta">
+          <div class="metadata">
             {% if grant.ip_address %}
               <div>
                 <div class="key">IP address</div>

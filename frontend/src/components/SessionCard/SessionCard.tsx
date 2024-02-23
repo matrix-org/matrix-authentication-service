@@ -23,7 +23,7 @@ import DeviceTypeIcon from "../Session/DeviceTypeIcon";
 import styles from "./SessionCard.module.css";
 
 export const Root: React.FC<React.PropsWithChildren> = ({ children }) => (
-  <section className={styles.root}>{children}</section>
+  <section className={styles.sessionCardRoot}>{children}</section>
 );
 
 type BodyProps = React.PropsWithChildren<{
@@ -36,7 +36,7 @@ export const LinkBody: LinkComponent = forwardRef<
 >(({ children, disabled, compact, ...props }, ref) => {
   const linkProps = useLinkProps({
     className: cx(
-      styles.body,
+      styles.sessionCard,
       compact && styles.compact,
       disabled && styles.disabled,
     ),
@@ -52,7 +52,7 @@ export const LinkBody: LinkComponent = forwardRef<
 export const Body: React.FC<BodyProps> = ({ children, compact, disabled }) => (
   <div
     className={cx(
-      styles.body,
+      styles.sessionCard,
       compact && styles.compact,
       disabled && styles.disabled,
     )}
@@ -63,7 +63,7 @@ export const Body: React.FC<BodyProps> = ({ children, compact, disabled }) => (
 
 type HeaderProps = React.PropsWithChildren<{ type: DeviceType }>;
 export const Header: React.FC<HeaderProps> = ({ type, children }) => (
-  <header className={styles.header}>
+  <header className={styles.cardHeader}>
     <DeviceTypeIcon deviceType={type} />
     <div className={styles.content}>{children}</div>
   </header>
