@@ -84,6 +84,7 @@ use priv_::{AppSessionLookup, AppSessionLookupIden};
 impl TryFrom<AppSessionLookup> for AppSession {
     type Error = DatabaseError;
 
+    #[allow(clippy::too_many_lines)]
     fn try_from(value: AppSessionLookup) -> Result<Self, Self::Error> {
         // This is annoying to do, but we have to match on all the fields to determine
         // whether it's a compat session or an oauth2 session
