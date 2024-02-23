@@ -48,23 +48,20 @@ impl UserAgent {
         let regex = regex::Regex::new(r"^(?P<name>[^/]+)/(?P<version>[^ ]+) \((?P<segments>.+)\)$")
             .unwrap();
 
-        let captures = regex.captures(&user_agent)?;
+        let captures = regex.captures(user_agent)?;
         let name = captures.name("name")?.as_str();
         let version = captures.name("version")?.as_str();
         let segments: Vec<&str> = captures
             .name("segments")?
             .as_str()
             .split(';')
-            .map(|s| s.trim())
+            .map(str::trim)
             .collect();
 
         match segments[..] {
             ["Linux", "U", os, model, ..] | [model, os, ..] => {
                 // Most android model have a `/[build version]` suffix we don't care about
-                let model = model
-                    .split_once("/")
-                    .map(|(model, _)| model)
-                    .unwrap_or(model);
+                let model = model.split_once('/').map_or(model, |(model, _)| model);
                 // Some android version also have `Build/[build version]` suffix we don't care
                 // about
                 let model = model.strip_suffix("Build").unwrap_or(model);
@@ -83,6 +80,7 @@ impl UserAgent {
         }
     }
 
+    #[must_use]
     pub fn parse(user_agent: String) -> Self {
         if !user_agent.contains("Mozilla/") {
             if let Some((name, version, model, os, os_version)) =
@@ -104,7 +102,7 @@ impl UserAgent {
                     name: Some(name.to_owned()),
                     version: Some(version.to_owned()),
                     os: Some(os.to_owned()),
-                    os_version: os_version.map(|s| s.to_owned()),
+                    os_version: os_version.map(std::borrow::ToOwned::to_owned),
                     model: Some(model.to_owned()),
                     device_type,
                     raw: user_agent,

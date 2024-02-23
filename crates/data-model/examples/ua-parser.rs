@@ -21,6 +21,6 @@ fn main() {
     for line in std::io::stdin().lines() {
         let user_agent = line.unwrap();
         let user_agent = UserAgent::parse(user_agent);
-        println!("{:?}", user_agent);
+        println!("{user_agent:?}");
     }
 }
