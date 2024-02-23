@@ -105,7 +105,7 @@ impl CompatSession {
 
     /// The user-agent with which the session was created.
     pub async fn user_agent(&self) -> Option<UserAgent> {
-        self.session.user_agent.clone().map(|ua| ua.into())
+        self.session.user_agent.clone().map(UserAgent::from)
     }
 
     /// The associated SSO login, if any.
