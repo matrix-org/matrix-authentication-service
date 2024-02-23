@@ -15,7 +15,7 @@
 //! A module containing PostgreSQL implementation of repositories for sessions
 
 use async_trait::async_trait;
-use mas_data_model::{CompatSession, CompatSessionState, Device, Session, SessionState};
+use mas_data_model::{CompatSession, CompatSessionState, Device, Session, SessionState, UserAgent};
 use mas_storage::{
     app_session::{AppSession, AppSessionFilter, AppSessionRepository},
     Page, Pagination,
@@ -84,6 +84,7 @@ use priv_::{AppSessionLookup, AppSessionLookupIden};
 impl TryFrom<AppSessionLookup> for AppSession {
     type Error = DatabaseError;
 
+    #[allow(clippy::too_many_lines)]
     fn try_from(value: AppSessionLookup) -> Result<Self, Self::Error> {
         // This is annoying to do, but we have to match on all the fields to determine
         // whether it's a compat session or an oauth2 session
@@ -104,6 +105,7 @@ impl TryFrom<AppSessionLookup> for AppSession {
             last_active_ip,
         } = value;
 
+        let user_agent = user_agent.map(UserAgent::parse);
         let user_session_id = user_session_id.map(Ulid::from);
 
         match (

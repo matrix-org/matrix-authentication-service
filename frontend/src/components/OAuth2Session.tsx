@@ -16,9 +16,8 @@ import { parseISO } from "date-fns";
 import { useMutation } from "urql";
 
 import { FragmentType, graphql, useFragment } from "../gql";
-import { Oauth2ApplicationType } from "../gql/graphql";
+import { DeviceType, Oauth2ApplicationType } from "../gql/graphql";
 import { getDeviceIdFromScope } from "../utils/deviceIdFromScope";
-import { DeviceType } from "../utils/parseUserAgent";
 
 import { Session } from "./Session";
 import EndSessionButton from "./Session/EndSessionButton";
@@ -31,6 +30,14 @@ export const FRAGMENT = graphql(/* GraphQL */ `
     finishedAt
     lastActiveIp
     lastActiveAt
+
+    userAgent {
+      model
+      os
+      osVersion
+      deviceType
+    }
+
     client {
       id
       clientId
@@ -57,7 +64,7 @@ const getDeviceTypeFromClientAppType = (
   appType?: Oauth2ApplicationType | null,
 ): DeviceType => {
   if (appType === Oauth2ApplicationType.Web) {
-    return DeviceType.Web;
+    return DeviceType.Pc;
   }
   if (appType === Oauth2ApplicationType.Native) {
     return DeviceType.Mobile;
@@ -85,9 +92,17 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
     ? parseISO(data.lastActiveAt)
     : undefined;
 
-  const deviceType = getDeviceTypeFromClientAppType(
-    data.client.applicationType,
-  );
+  const deviceType =
+    (data.userAgent?.deviceType === DeviceType.Unknown
+      ? null
+      : data.userAgent?.deviceType) ??
+    getDeviceTypeFromClientAppType(data.client.applicationType);
+
+  let clientName = data.client.clientName || data.client.clientId || undefined;
+
+  if (data.userAgent?.model) {
+    clientName = `${clientName} on ${data.userAgent.model}`;
+  }
 
   return (
     <Session
@@ -95,7 +110,7 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
       name={deviceId}
       createdAt={createdAt}
       finishedAt={finishedAt}
-      clientName={data.client.clientName || data.client.clientId || undefined}
+      clientName={clientName}
       clientLogoUri={data.client.logoUri || undefined}
       deviceType={deviceType}
       lastActiveIp={data.lastActiveIp || undefined}

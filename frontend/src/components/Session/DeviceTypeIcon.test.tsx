@@ -18,7 +18,7 @@ import { composeStory } from "@storybook/react";
 import { render, cleanup } from "@testing-library/react";
 import { describe, it, expect, afterEach } from "vitest";
 
-import Meta, { Unknown, Desktop, Mobile, Web } from "./DeviceTypeIcon.stories";
+import Meta, { Unknown, Pc, Mobile, Tablet } from "./DeviceTypeIcon.stories";
 
 describe("<DeviceTypeIcon />", () => {
   afterEach(cleanup);
@@ -33,13 +33,13 @@ describe("<DeviceTypeIcon />", () => {
     const { container } = render(<Component />);
     expect(container).toMatchSnapshot();
   });
-  it("renders desktop device type", () => {
-    const Component = composeStory(Desktop, Meta);
+  it("renders pc device type", () => {
+    const Component = composeStory(Pc, Meta);
     const { container } = render(<Component />);
     expect(container).toMatchSnapshot();
   });
-  it("renders Web device type", () => {
-    const Component = composeStory(Web, Meta);
+  it("renders tablet device type", () => {
+    const Component = composeStory(Tablet, Meta);
     const { container } = render(<Component />);
     expect(container).toMatchSnapshot();
   });

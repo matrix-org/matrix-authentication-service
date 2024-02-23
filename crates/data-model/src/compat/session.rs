@@ -19,7 +19,7 @@ use serde::Serialize;
 use ulid::Ulid;
 
 use super::Device;
-use crate::InvalidTransitionError;
+use crate::{InvalidTransitionError, UserAgent};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 pub enum CompatSessionState {
@@ -83,7 +83,7 @@ pub struct CompatSession {
     pub user_session_id: Option<Ulid>,
     pub created_at: DateTime<Utc>,
     pub is_synapse_admin: bool,
-    pub user_agent: Option<String>,
+    pub user_agent: Option<UserAgent>,
     pub last_active_at: Option<DateTime<Utc>>,
     pub last_active_ip: Option<IpAddr>,
 }

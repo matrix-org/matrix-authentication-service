@@ -49,10 +49,10 @@ pub enum Requester {
     Anonymous,
 
     /// The requester is a browser session, stored in a cookie.
-    BrowserSession(BrowserSession),
+    BrowserSession(Box<BrowserSession>),
 
     /// The requester is a OAuth2 session, with an access token.
-    OAuth2Session(Session, Option<User>),
+    OAuth2Session(Box<(Session, Option<User>)>),
 }
 
 trait OwnerId {
@@ -108,21 +108,21 @@ impl Requester {
     fn browser_session(&self) -> Option<&BrowserSession> {
         match self {
             Self::BrowserSession(session) => Some(session),
-            Self::OAuth2Session(_, _) | Self::Anonymous => None,
+            Self::OAuth2Session(_) | Self::Anonymous => None,
         }
     }
 
     fn user(&self) -> Option<&User> {
         match self {
             Self::BrowserSession(session) => Some(&session.user),
-            Self::OAuth2Session(_session, user) => user.as_ref(),
+            Self::OAuth2Session(tuple) => tuple.1.as_ref(),
             Self::Anonymous => None,
         }
     }
 
     fn oauth2_session(&self) -> Option<&Session> {
         match self {
-            Self::OAuth2Session(session, _) => Some(session),
+            Self::OAuth2Session(tuple) => Some(&tuple.0),
             Self::BrowserSession(_) | Self::Anonymous => None,
         }
     }
@@ -148,10 +148,10 @@ impl Requester {
 
     fn is_admin(&self) -> bool {
         match self {
-            Self::OAuth2Session(session, _user) => {
+            Self::OAuth2Session(tuple) => {
                 // TODO: is this the right scope?
                 // This has to be in sync with the policy
-                session.scope.contains("urn:mas:admin")
+                tuple.0.scope.contains("urn:mas:admin")
             }
             Self::BrowserSession(_) | Self::Anonymous => false,
         }
@@ -160,7 +160,7 @@ impl Requester {
 
 impl From<BrowserSession> for Requester {
     fn from(session: BrowserSession) -> Self {
-        Self::BrowserSession(session)
+        Self::BrowserSession(Box::new(session))
     }
 }
 

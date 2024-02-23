@@ -19,7 +19,6 @@ use axum::{
     response::{Html, IntoResponse, Response},
     TypedHeader,
 };
-use headers::UserAgent;
 use hyper::StatusCode;
 use lettre::Address;
 use mas_axum_utils::{
@@ -27,6 +26,7 @@ use mas_axum_utils::{
     csrf::{CsrfExt, CsrfToken, ProtectedForm},
     FancyError, SessionInfoExt,
 };
+use mas_data_model::UserAgent;
 use mas_i18n::DataLocale;
 use mas_policy::Policy;
 use mas_router::UrlBuilder;
@@ -116,10 +116,10 @@ pub(crate) async fn post(
     activity_tracker: BoundActivityTracker,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: CookieJar,
-    user_agent: Option<TypedHeader<UserAgent>>,
+    user_agent: Option<TypedHeader<headers::UserAgent>>,
     Form(form): Form<ProtectedForm<RegisterForm>>,
 ) -> Result<Response, FancyError> {
-    let user_agent = user_agent.map(|ua| ua.as_str().to_owned());
+    let user_agent = user_agent.map(|ua| UserAgent::parse(ua.as_str().to_owned()));
     if !password_manager.is_enabled() {
         return Ok(StatusCode::METHOD_NOT_ALLOWED.into_response());
     }

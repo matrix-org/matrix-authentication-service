@@ -20,6 +20,7 @@ pub(crate) mod compat;
 pub(crate) mod oauth2;
 pub(crate) mod tokens;
 pub(crate) mod upstream_oauth2;
+pub(crate) mod user_agent;
 pub(crate) mod users;
 
 /// Error when an invalid state transition is attempted.
@@ -46,6 +47,7 @@ pub use self::{
         UpstreamOAuthProviderImportAction, UpstreamOAuthProviderImportPreference,
         UpstreamOAuthProviderPkceMode, UpstreamOAuthProviderSubjectPreference,
     },
+    user_agent::{DeviceType, UserAgent},
     users::{
         Authentication, AuthenticationMethod, BrowserSession, Password, User, UserEmail,
         UserEmailVerification, UserEmailVerificationState,

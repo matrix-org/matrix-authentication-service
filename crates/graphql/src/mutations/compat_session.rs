@@ -40,7 +40,7 @@ pub struct EndCompatSessionInput {
 /// The payload of the `endCompatSession` mutation.
 pub enum EndCompatSessionPayload {
     NotFound,
-    Ended(mas_data_model::CompatSession),
+    Ended(Box<mas_data_model::CompatSession>),
 }
 
 /// The status of the `endCompatSession` mutation.
@@ -66,7 +66,7 @@ impl EndCompatSessionPayload {
     /// Returns the ended session.
     async fn compat_session(&self) -> Option<CompatSession> {
         match self {
-            Self::Ended(session) => Some(CompatSession::new(session.clone())),
+            Self::Ended(session) => Some(CompatSession::new(*session.clone())),
             Self::NotFound => None,
         }
     }
@@ -110,6 +110,6 @@ impl CompatSessionMutations {
 
         repo.save().await?;
 
-        Ok(EndCompatSessionPayload::Ended(session))
+        Ok(EndCompatSessionPayload::Ended(Box::new(session)))
     }
 }

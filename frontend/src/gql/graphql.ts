@@ -179,8 +179,8 @@ export type BrowserSession = CreationEvent &
     state: SessionState;
     /** The user logged in this session. */
     user: User;
-    /** The user-agent string with which the session was created. */
-    userAgent?: Maybe<Scalars["String"]["output"]>;
+    /** The user-agent with which the session was created. */
+    userAgent?: Maybe<UserAgent>;
   };
 
 /** A browser session represents a logged in user in a browser. */
@@ -241,6 +241,8 @@ export type CompatSession = CreationEvent &
     state: SessionState;
     /** The user authorized for this session. */
     user: User;
+    /** The user-agent with which the session was created. */
+    userAgent?: Maybe<UserAgent>;
   };
 
 export type CompatSessionConnection = {
@@ -342,6 +344,18 @@ export type CreationEvent = {
   /** When the object was created. */
   createdAt: Scalars["DateTime"]["output"];
 };
+
+/** The type of a user agent */
+export enum DeviceType {
+  /** A mobile phone. Can also sometimes be a tablet. */
+  Mobile = "MOBILE",
+  /** A personal computer, laptop or desktop */
+  Pc = "PC",
+  /** A tablet */
+  Tablet = "TABLET",
+  /** Unknown device type */
+  Unknown = "UNKNOWN",
+}
 
 /** The input of the `endBrowserSession` mutation. */
 export type EndBrowserSessionInput = {
@@ -617,6 +631,8 @@ export type Oauth2Session = CreationEvent &
     state: SessionState;
     /** User authorized for this session. */
     user?: Maybe<User>;
+    /** The user-agent with which the session was created. */
+    userAgent?: Maybe<UserAgent>;
   };
 
 export type Oauth2SessionConnection = {
@@ -1058,6 +1074,25 @@ export type UserUpstreamOauth2LinksArgs = {
   last?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
+/** A parsed user agent string */
+export type UserAgent = {
+  __typename?: "UserAgent";
+  /** The device type */
+  deviceType: DeviceType;
+  /** The device model */
+  model?: Maybe<Scalars["String"]["output"]>;
+  /** The name of the browser */
+  name?: Maybe<Scalars["String"]["output"]>;
+  /** The operating system name */
+  os?: Maybe<Scalars["String"]["output"]>;
+  /** The operating system version */
+  osVersion?: Maybe<Scalars["String"]["output"]>;
+  /** The user agent string */
+  raw: Scalars["String"]["output"];
+  /** The version of the browser */
+  version?: Maybe<Scalars["String"]["output"]>;
+};
+
 /** A user email address */
 export type UserEmail = CreationEvent &
   Node & {
@@ -1144,9 +1179,16 @@ export type BrowserSession_SessionFragment = {
   id: string;
   createdAt: string;
   finishedAt?: string | null;
-  userAgent?: string | null;
   lastActiveIp?: string | null;
   lastActiveAt?: string | null;
+  userAgent?: {
+    __typename?: "UserAgent";
+    raw: string;
+    name?: string | null;
+    os?: string | null;
+    model?: string | null;
+    deviceType: DeviceType;
+  } | null;
   lastAuthentication?: {
     __typename?: "Authentication";
     id: string;
@@ -1193,6 +1235,14 @@ export type CompatSession_SessionFragment = {
   finishedAt?: string | null;
   lastActiveIp?: string | null;
   lastActiveAt?: string | null;
+  userAgent?: {
+    __typename?: "UserAgent";
+    raw: string;
+    name?: string | null;
+    os?: string | null;
+    model?: string | null;
+    deviceType: DeviceType;
+  } | null;
   ssoLogin?: {
     __typename?: "CompatSsoLogin";
     id: string;
@@ -1225,6 +1275,13 @@ export type OAuth2Session_SessionFragment = {
   finishedAt?: string | null;
   lastActiveIp?: string | null;
   lastActiveAt?: string | null;
+  userAgent?: {
+    __typename?: "UserAgent";
+    model?: string | null;
+    os?: string | null;
+    osVersion?: string | null;
+    deviceType: DeviceType;
+  } | null;
   client: {
     __typename?: "Oauth2Client";
     id: string;
@@ -1259,9 +1316,14 @@ export type BrowserSession_DetailFragment = {
   id: string;
   createdAt: string;
   finishedAt?: string | null;
-  userAgent?: string | null;
   lastActiveIp?: string | null;
   lastActiveAt?: string | null;
+  userAgent?: {
+    __typename?: "UserAgent";
+    name?: string | null;
+    model?: string | null;
+    os?: string | null;
+  } | null;
   lastAuthentication?: {
     __typename?: "Authentication";
     id: string;
@@ -1278,6 +1340,12 @@ export type CompatSession_DetailFragment = {
   finishedAt?: string | null;
   lastActiveIp?: string | null;
   lastActiveAt?: string | null;
+  userAgent?: {
+    __typename?: "UserAgent";
+    name?: string | null;
+    os?: string | null;
+    model?: string | null;
+  } | null;
   ssoLogin?: {
     __typename?: "CompatSsoLogin";
     id: string;
@@ -1736,18 +1804,6 @@ export type AllowCrossSigningResetMutation = {
   };
 };
 
-export type CurrentViewerSessionQueryQueryVariables = Exact<{
-  [key: string]: never;
-}>;
-
-export type CurrentViewerSessionQueryQuery = {
-  __typename?: "Query";
-  viewerSession:
-    | { __typename: "Anonymous" }
-    | { __typename: "BrowserSession"; id: string }
-    | { __typename: "Oauth2Session" };
-};
-
 export const BrowserSession_SessionFragmentDoc = {
   kind: "Document",
   definitions: [
@@ -1764,7 +1820,20 @@ export const BrowserSession_SessionFragmentDoc = {
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
-          { kind: "Field", name: { kind: "Name", value: "userAgent" } },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "userAgent" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "raw" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "os" } },
+                { kind: "Field", name: { kind: "Name", value: "model" } },
+                { kind: "Field", name: { kind: "Name", value: "deviceType" } },
+              ],
+            },
+          },
           { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
           { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
           {
@@ -1830,6 +1899,20 @@ export const CompatSession_SessionFragmentDoc = {
           { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
           {
             kind: "Field",
+            name: { kind: "Name", value: "userAgent" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "raw" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "os" } },
+                { kind: "Field", name: { kind: "Name", value: "model" } },
+                { kind: "Field", name: { kind: "Name", value: "deviceType" } },
+              ],
+            },
+          },
+          {
+            kind: "Field",
             name: { kind: "Name", value: "ssoLogin" },
             selectionSet: {
               kind: "SelectionSet",
@@ -1863,6 +1946,19 @@ export const OAuth2Session_SessionFragmentDoc = {
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
           { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
           { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "userAgent" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "model" } },
+                { kind: "Field", name: { kind: "Name", value: "os" } },
+                { kind: "Field", name: { kind: "Name", value: "osVersion" } },
+                { kind: "Field", name: { kind: "Name", value: "deviceType" } },
+              ],
+            },
+          },
           {
             kind: "Field",
             name: { kind: "Name", value: "client" },
@@ -1901,7 +1997,18 @@ export const BrowserSession_DetailFragmentDoc = {
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
-          { kind: "Field", name: { kind: "Name", value: "userAgent" } },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "userAgent" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "model" } },
+                { kind: "Field", name: { kind: "Name", value: "os" } },
+              ],
+            },
+          },
           { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
           { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
           {
@@ -1950,6 +2057,18 @@ export const CompatSession_DetailFragmentDoc = {
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
           { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
           { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "userAgent" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "os" } },
+                { kind: "Field", name: { kind: "Name", value: "model" } },
+              ],
+            },
+          },
           {
             kind: "Field",
             name: { kind: "Name", value: "ssoLogin" },
@@ -2337,7 +2456,20 @@ export const EndBrowserSessionDocument = {
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
-          { kind: "Field", name: { kind: "Name", value: "userAgent" } },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "userAgent" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "raw" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "os" } },
+                { kind: "Field", name: { kind: "Name", value: "model" } },
+                { kind: "Field", name: { kind: "Name", value: "deviceType" } },
+              ],
+            },
+          },
           { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
           { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
           {
@@ -2512,6 +2644,19 @@ export const EndOAuth2SessionDocument = {
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
           { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
           { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "userAgent" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "model" } },
+                { kind: "Field", name: { kind: "Name", value: "os" } },
+                { kind: "Field", name: { kind: "Name", value: "osVersion" } },
+                { kind: "Field", name: { kind: "Name", value: "deviceType" } },
+              ],
+            },
+          },
           {
             kind: "Field",
             name: { kind: "Name", value: "client" },
@@ -3520,6 +3665,18 @@ export const SessionDetailQueryDocument = {
           { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
           {
             kind: "Field",
+            name: { kind: "Name", value: "userAgent" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "os" } },
+                { kind: "Field", name: { kind: "Name", value: "model" } },
+              ],
+            },
+          },
+          {
+            kind: "Field",
             name: { kind: "Name", value: "ssoLogin" },
             selectionSet: {
               kind: "SelectionSet",
@@ -3578,7 +3735,18 @@ export const SessionDetailQueryDocument = {
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
-          { kind: "Field", name: { kind: "Name", value: "userAgent" } },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "userAgent" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "model" } },
+                { kind: "Field", name: { kind: "Name", value: "os" } },
+              ],
+            },
+          },
           { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
           { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
           {
@@ -3833,7 +4001,20 @@ export const BrowserSessionListDocument = {
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
-          { kind: "Field", name: { kind: "Name", value: "userAgent" } },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "userAgent" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "raw" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "os" } },
+                { kind: "Field", name: { kind: "Name", value: "model" } },
+                { kind: "Field", name: { kind: "Name", value: "deviceType" } },
+              ],
+            },
+          },
           { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
           { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
           {
@@ -4153,6 +4334,20 @@ export const AppSessionsListQueryDocument = {
           { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
           {
             kind: "Field",
+            name: { kind: "Name", value: "userAgent" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "raw" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "os" } },
+                { kind: "Field", name: { kind: "Name", value: "model" } },
+                { kind: "Field", name: { kind: "Name", value: "deviceType" } },
+              ],
+            },
+          },
+          {
+            kind: "Field",
             name: { kind: "Name", value: "ssoLogin" },
             selectionSet: {
               kind: "SelectionSet",
@@ -4181,6 +4376,19 @@ export const AppSessionsListQueryDocument = {
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
           { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
           { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "userAgent" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "model" } },
+                { kind: "Field", name: { kind: "Name", value: "os" } },
+                { kind: "Field", name: { kind: "Name", value: "osVersion" } },
+                { kind: "Field", name: { kind: "Name", value: "deviceType" } },
+              ],
+            },
+          },
           {
             kind: "Field",
             name: { kind: "Name", value: "client" },
@@ -4638,45 +4846,4 @@ export const AllowCrossSigningResetDocument = {
 } as unknown as DocumentNode<
   AllowCrossSigningResetMutation,
   AllowCrossSigningResetMutationVariables
->;
-export const CurrentViewerSessionQueryDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "query",
-      name: { kind: "Name", value: "CurrentViewerSessionQuery" },
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "viewerSession" },
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "__typename" } },
-                {
-                  kind: "InlineFragment",
-                  typeCondition: {
-                    kind: "NamedType",
-                    name: { kind: "Name", value: "BrowserSession" },
-                  },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                    ],
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<
-  CurrentViewerSessionQueryQuery,
-  CurrentViewerSessionQueryQueryVariables
 >;

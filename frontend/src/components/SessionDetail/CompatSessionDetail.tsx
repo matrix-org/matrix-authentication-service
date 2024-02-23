@@ -35,6 +35,11 @@ export const FRAGMENT = graphql(/* GraphQL */ `
     finishedAt
     lastActiveIp
     lastActiveAt
+    userAgent {
+      name
+      os
+      model
+    }
     ssoLogin {
       id
       redirectUri
@@ -102,7 +107,7 @@ const CompatSessionDetail: React.FC<Props> = ({ session }) => {
   if (data.ssoLogin?.redirectUri) {
     clientDetails.push({
       label: t("frontend.compat_session_detail.name"),
-      value: simplifyUrl(data.ssoLogin.redirectUri),
+      value: data.userAgent?.name ?? simplifyUrl(data.ssoLogin.redirectUri),
     });
     clientDetails.push({
       label: t("frontend.session.uri_label"),

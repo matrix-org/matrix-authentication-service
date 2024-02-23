@@ -21,7 +21,9 @@ use mas_axum_utils::{
     http_client_factory::HttpClientFactory,
     sentry::SentryEventID,
 };
-use mas_data_model::{AuthorizationGrantStage, Client, Device, DeviceCodeGrantState, TokenType};
+use mas_data_model::{
+    AuthorizationGrantStage, Client, Device, DeviceCodeGrantState, TokenType, UserAgent,
+};
 use mas_keystore::{Encrypter, Keystore};
 use mas_oidc_client::types::scope::ScopeToken;
 use mas_policy::Policy;
@@ -233,7 +235,7 @@ pub(crate) async fn post(
     user_agent: Option<TypedHeader<headers::UserAgent>>,
     client_authorization: ClientAuthorization<AccessTokenRequest>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let user_agent = user_agent.map(|ua| ua.to_string());
+    let user_agent = user_agent.map(|ua| UserAgent::parse(ua.as_str().to_owned()));
     let client = client_authorization
         .credentials
         .fetch(&mut repo)
@@ -335,7 +337,7 @@ async fn authorization_code_grant(
     url_builder: &UrlBuilder,
     site_config: &SiteConfig,
     mut repo: BoxRepository,
-    user_agent: Option<String>,
+    user_agent: Option<UserAgent>,
 ) -> Result<(AccessTokenResponse, BoxRepository), RouteError> {
     // Check that the client is allowed to use this grant type
     if !client.grant_types.contains(&GrantType::AuthorizationCode) {
@@ -504,7 +506,7 @@ async fn refresh_token_grant(
     client: &Client,
     site_config: &SiteConfig,
     mut repo: BoxRepository,
-    user_agent: Option<String>,
+    user_agent: Option<UserAgent>,
 ) -> Result<(AccessTokenResponse, BoxRepository), RouteError> {
     // Check that the client is allowed to use this grant type
     if !client.grant_types.contains(&GrantType::RefreshToken) {
@@ -587,7 +589,7 @@ async fn client_credentials_grant(
     site_config: &SiteConfig,
     mut repo: BoxRepository,
     mut policy: Policy,
-    user_agent: Option<String>,
+    user_agent: Option<UserAgent>,
 ) -> Result<(AccessTokenResponse, BoxRepository), RouteError> {
     // Check that the client is allowed to use this grant type
     if !client.grant_types.contains(&GrantType::ClientCredentials) {
@@ -656,7 +658,7 @@ async fn device_code_grant(
     url_builder: &UrlBuilder,
     site_config: &SiteConfig,
     mut repo: BoxRepository,
-    user_agent: Option<String>,
+    user_agent: Option<UserAgent>,
 ) -> Result<(AccessTokenResponse, BoxRepository), RouteError> {
     // Check that the client is allowed to use this grant type
     if !client.grant_types.contains(&GrantType::DeviceCode) {

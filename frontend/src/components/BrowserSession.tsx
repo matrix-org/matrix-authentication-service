@@ -17,10 +17,6 @@ import { useCallback } from "react";
 import { useMutation } from "urql";
 
 import { FragmentType, graphql, useFragment } from "../gql";
-import {
-  parseUserAgent,
-  sessionNameFromDeviceInformation,
-} from "../utils/parseUserAgent";
 
 import EndSessionButton from "./Session/EndSessionButton";
 import Session from "./Session/Session";
@@ -30,7 +26,13 @@ const FRAGMENT = graphql(/* GraphQL */ `
     id
     createdAt
     finishedAt
-    userAgent
+    userAgent {
+      raw
+      name
+      os
+      model
+      deviceType
+    }
     lastActiveIp
     lastActiveAt
     lastAuthentication {
@@ -83,9 +85,16 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
   const lastActiveAt = data.lastActiveAt
     ? parseISO(data.lastActiveAt)
     : undefined;
-  const deviceInformation = parseUserAgent(data.userAgent || undefined);
-  const sessionName =
-    sessionNameFromDeviceInformation(deviceInformation) || "Browser session";
+  let sessionName = "Browser session";
+  if (data.userAgent) {
+    if (data.userAgent.model && data.userAgent.name) {
+      sessionName = `${data.userAgent.name} on ${data.userAgent.model}`;
+    } else if (data.userAgent.name && data.userAgent.os) {
+      sessionName = `${data.userAgent.name} on ${data.userAgent.os}`;
+    } else if (data.userAgent.name) {
+      sessionName = data.userAgent.name;
+    }
+  }
 
   return (
     <Session
@@ -94,7 +103,7 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
       createdAt={createdAt}
       finishedAt={finishedAt}
       isCurrent={isCurrent}
-      deviceType={deviceInformation?.deviceType}
+      deviceType={data.userAgent?.deviceType}
       lastActiveIp={data.lastActiveIp || undefined}
       lastActiveAt={lastActiveAt}
     >

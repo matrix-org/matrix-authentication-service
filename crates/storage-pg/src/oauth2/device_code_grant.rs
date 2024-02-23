@@ -16,7 +16,7 @@ use std::net::IpAddr;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use mas_data_model::{BrowserSession, DeviceCodeGrant, DeviceCodeGrantState, Session};
+use mas_data_model::{BrowserSession, DeviceCodeGrant, DeviceCodeGrantState, Session, UserAgent};
 use mas_storage::{
     oauth2::{OAuth2DeviceCodeGrantParams, OAuth2DeviceCodeGrantRepository},
     Clock,
@@ -140,7 +140,7 @@ impl TryFrom<OAuth2DeviceGrantLookup> for DeviceCodeGrant {
             created_at,
             expires_at,
             ip_address,
-            user_agent,
+            user_agent: user_agent.map(UserAgent::parse),
         })
     }
 }

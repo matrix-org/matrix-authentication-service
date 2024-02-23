@@ -18,7 +18,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mas_data_model::{
     BrowserSession, CompatSession, CompatSessionState, CompatSsoLogin, CompatSsoLoginState, Device,
-    User,
+    User, UserAgent,
 };
 use mas_storage::{
     compat::{CompatSessionFilter, CompatSessionRepository},
@@ -90,7 +90,7 @@ impl TryFrom<CompatSessionLookup> for CompatSession {
             device,
             created_at: value.created_at,
             is_synapse_admin: value.is_synapse_admin,
-            user_agent: value.user_agent,
+            user_agent: value.user_agent.map(UserAgent::parse),
             last_active_at: value.last_active_at,
             last_active_ip: value.last_active_ip,
         };
@@ -145,7 +145,7 @@ impl TryFrom<CompatSessionAndSsoLoginLookup> for (CompatSession, Option<CompatSs
             user_session_id: value.user_session_id.map(Ulid::from),
             created_at: value.created_at,
             is_synapse_admin: value.is_synapse_admin,
-            user_agent: value.user_agent,
+            user_agent: value.user_agent.map(UserAgent::parse),
             last_active_at: value.last_active_at,
             last_active_ip: value.last_active_ip,
         };
@@ -575,7 +575,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
     async fn record_user_agent(
         &mut self,
         mut compat_session: CompatSession,
-        user_agent: String,
+        user_agent: UserAgent,
     ) -> Result<CompatSession, Self::Error> {
         let res = sqlx::query!(
             r#"
@@ -584,7 +584,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
             WHERE compat_session_id = $1
         "#,
             Uuid::from(compat_session.id),
-            user_agent,
+            &*user_agent,
         )
         .traced()
         .execute(&mut *self.conn)

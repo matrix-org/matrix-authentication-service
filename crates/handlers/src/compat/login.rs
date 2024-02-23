@@ -16,7 +16,7 @@ use axum::{extract::State, response::IntoResponse, Json, TypedHeader};
 use chrono::Duration;
 use hyper::StatusCode;
 use mas_axum_utils::sentry::SentryEventID;
-use mas_data_model::{CompatSession, CompatSsoLoginState, Device, TokenType, User};
+use mas_data_model::{CompatSession, CompatSsoLoginState, Device, TokenType, User, UserAgent};
 use mas_storage::{
     compat::{
         CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository,
@@ -220,7 +220,7 @@ pub(crate) async fn post(
     user_agent: Option<TypedHeader<headers::UserAgent>>,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let user_agent = user_agent.map(|ua| ua.to_string());
+    let user_agent = user_agent.map(|ua| UserAgent::parse(ua.as_str().to_owned()));
     let (mut session, user) = match (password_manager.is_enabled(), input.credentials) {
         (
             true,

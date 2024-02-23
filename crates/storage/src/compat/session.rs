@@ -16,7 +16,7 @@ use std::net::IpAddr;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use mas_data_model::{BrowserSession, CompatSession, CompatSsoLogin, Device, User};
+use mas_data_model::{BrowserSession, CompatSession, CompatSsoLogin, Device, User, UserAgent};
 use rand_core::RngCore;
 use ulid::Ulid;
 
@@ -266,7 +266,7 @@ pub trait CompatSessionRepository: Send + Sync {
     async fn record_user_agent(
         &mut self,
         compat_session: CompatSession,
-        user_agent: String,
+        user_agent: UserAgent,
     ) -> Result<CompatSession, Self::Error>;
 }
 
@@ -305,6 +305,6 @@ repository_impl!(CompatSessionRepository:
     async fn record_user_agent(
         &mut self,
         compat_session: CompatSession,
-        user_agent: String,
+        user_agent: UserAgent,
     ) -> Result<CompatSession, Self::Error>;
 );

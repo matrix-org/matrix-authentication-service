@@ -33,10 +33,46 @@ limitations under the License.
         <h1 class="title">Allow access to your account?</h1>
 
         <div class="consent-device-card">
-          <div class="device" {%- if grant.user_agent %} title="{{ grant.user_agent }}"{% endif %}>
-            {{ icon.web_browser() }}
-            {# TODO: Infer from the user agent #}
-            <div class="name">Device</div>
+          <div class="device" {%- if grant.user_agent %} title="{{ grant.user_agent.raw }}"{% endif %}>
+            {% if grant.user_agent.device_type == "mobile" %}
+              {{ icon.mobile() }}
+            {% elif grant.user_agent.device_type == "tablet" %}
+              {{ icon.web_browser() }}
+            {% elif grant.user_agent.device_type == "pc" %}
+              {{ icon.computer() }}
+            {% else %}
+              {{ icon.unknown_solid() }}
+            {% endif %}
+
+            <div class="lines">
+              {% if grant.user_agent.model %}
+                <div>{{ grant.user_agent.model }}</div>
+              {% endif %}
+
+              {% if grant.user_agent.os %}
+                <div>
+                  {{ grant.user_agent.os }}
+                  {% if grant.user_agent.os_version %}
+                    {{ grant.user_agent.os_version }}
+                  {% endif %}
+                </div>
+              {% endif %}
+
+              {# If we haven't detected a model, it's probably a browser, so show the name #}
+              {% if not grant.user_agent.model and grant.user_agent.name %}
+                <div>
+                  {{ grant.user_agent.name }}
+                  {% if grant.user_agent.version %}
+                    {{ grant.user_agent.version }}
+                  {% endif %}
+                </div>
+              {% endif %}
+
+              {# If we couldn't detect anything, show a generic "Device" #}
+              {% if not grant.user_agent.model and not grant.user_agent.name and not grant.user_agent.os %}
+                <div>Device</div>
+              {% endif %}
+            </div>
           </div>
           <div class="meta">
             {% if grant.ip_address %}

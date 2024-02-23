@@ -14,13 +14,14 @@
 
 use axum::{extract::State, response::IntoResponse, Json, TypedHeader};
 use chrono::Duration;
-use headers::{CacheControl, Pragma, UserAgent};
+use headers::{CacheControl, Pragma};
 use hyper::StatusCode;
 use mas_axum_utils::{
     client_authorization::{ClientAuthorization, CredentialsVerificationError},
     http_client_factory::HttpClientFactory,
     sentry::SentryEventID,
 };
+use mas_data_model::UserAgent;
 use mas_keystore::Encrypter;
 use mas_router::UrlBuilder;
 use mas_storage::{oauth2::OAuth2DeviceCodeGrantParams, BoxClock, BoxRepository, BoxRng};
@@ -84,7 +85,7 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
-    user_agent: Option<TypedHeader<UserAgent>>,
+    user_agent: Option<TypedHeader<headers::UserAgent>>,
     activity_tracker: BoundActivityTracker,
     State(url_builder): State<UrlBuilder>,
     State(http_client_factory): State<HttpClientFactory>,
@@ -125,7 +126,7 @@ pub(crate) async fn post(
 
     let expires_in = Duration::minutes(20);
 
-    let user_agent = user_agent.map(|ua| ua.0.to_string());
+    let user_agent = user_agent.map(|ua| UserAgent::parse(ua.as_str().to_owned()));
     let ip_address = activity_tracker.ip();
 
     let device_code = Alphanumeric.sample_string(&mut rng, 32);

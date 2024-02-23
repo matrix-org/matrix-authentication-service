@@ -24,7 +24,7 @@ use mas_storage::{
 
 use super::{
     AppSession, CompatSession, Cursor, NodeCursor, NodeType, OAuth2Session, PreloadedTotalCount,
-    SessionState, User,
+    SessionState, User, UserAgent,
 };
 use crate::state::ContextExt;
 
@@ -87,9 +87,9 @@ impl BrowserSession {
         }
     }
 
-    /// The user-agent string with which the session was created.
-    pub async fn user_agent(&self) -> Option<&str> {
-        self.0.user_agent.as_deref()
+    /// The user-agent with which the session was created.
+    pub async fn user_agent(&self) -> Option<UserAgent> {
+        self.0.user_agent.clone().map(UserAgent::from)
     }
 
     /// The last IP address used by the session.

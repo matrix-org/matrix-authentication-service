@@ -31,8 +31,11 @@ impl ViewerQuery {
 
         match requester {
             Requester::BrowserSession(session) => Viewer::user(session.user.clone()),
-            Requester::OAuth2Session(_session, Some(user)) => Viewer::user(user.clone()),
-            Requester::OAuth2Session(_, None) | Requester::Anonymous => Viewer::anonymous(),
+            Requester::OAuth2Session(tuple) => match &tuple.1 {
+                Some(user) => Viewer::user(user.clone()),
+                None => Viewer::anonymous(),
+            },
+            Requester::Anonymous => Viewer::anonymous(),
         }
     }
 
@@ -41,10 +44,8 @@ impl ViewerQuery {
         let requester = ctx.requester();
 
         match requester {
-            Requester::BrowserSession(session) => ViewerSession::browser_session(session.clone()),
-            Requester::OAuth2Session(session, _user) => {
-                ViewerSession::oauth2_session(session.clone())
-            }
+            Requester::BrowserSession(session) => ViewerSession::browser_session(*session.clone()),
+            Requester::OAuth2Session(tuple) => ViewerSession::oauth2_session(tuple.0.clone()),
             Requester::Anonymous => ViewerSession::anonymous(),
         }
     }

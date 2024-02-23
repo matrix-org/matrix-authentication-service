@@ -1,9 +1,9 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`<DeviceTypeIcon /> > renders Web device type 1`] = `
+exports[`<DeviceTypeIcon /> > renders mobile device type 1`] = `
 <div>
   <svg
-    aria-label="Web"
+    aria-label="Mobile"
     class="_icon_e677aa"
     fill="currentColor"
     height="1em"
@@ -12,16 +12,16 @@ exports[`<DeviceTypeIcon /> > renders Web device type 1`] = `
     xmlns="http://www.w3.org/2000/svg"
   >
     <path
-      d="M4 20c-.55 0-1.02-.196-1.413-.587A1.926 1.926 0 0 1 2 18V6c0-.55.196-1.02.587-1.412A1.926 1.926 0 0 1 4 4h16c.55 0 1.02.196 1.413.588.391.391.587.862.587 1.412v12c0 .55-.196 1.02-.587 1.413A1.926 1.926 0 0 1 20 20H4Zm0-2h16V8H4v10Z"
+      d="M7 23c-.55 0-1.02-.196-1.412-.587A1.926 1.926 0 0 1 5 21V3c0-.55.196-1.02.588-1.413A1.926 1.926 0 0 1 7 1h10c.55 0 1.02.196 1.413.587.39.393.587.863.587 1.413v18c0 .55-.196 1.02-.587 1.413A1.926 1.926 0 0 1 17 23H7Zm0-5h10V6H7v12Z"
     />
   </svg>
 </div>
 `;
 
-exports[`<DeviceTypeIcon /> > renders desktop device type 1`] = `
+exports[`<DeviceTypeIcon /> > renders pc device type 1`] = `
 <div>
   <svg
-    aria-label="Desktop"
+    aria-label="Computer"
     class="_icon_e677aa"
     fill="currentColor"
     height="1em"
@@ -36,10 +36,10 @@ exports[`<DeviceTypeIcon /> > renders desktop device type 1`] = `
 </div>
 `;
 
-exports[`<DeviceTypeIcon /> > renders mobile device type 1`] = `
+exports[`<DeviceTypeIcon /> > renders tablet device type 1`] = `
 <div>
   <svg
-    aria-label="Mobile"
+    aria-label="Tablet"
     class="_icon_e677aa"
     fill="currentColor"
     height="1em"
@@ -48,7 +48,7 @@ exports[`<DeviceTypeIcon /> > renders mobile device type 1`] = `
     xmlns="http://www.w3.org/2000/svg"
   >
     <path
-      d="M7 23c-.55 0-1.02-.196-1.412-.587A1.926 1.926 0 0 1 5 21V3c0-.55.196-1.02.588-1.413A1.926 1.926 0 0 1 7 1h10c.55 0 1.02.196 1.413.587.39.393.587.863.587 1.413v18c0 .55-.196 1.02-.587 1.413A1.926 1.926 0 0 1 17 23H7Zm0-5h10V6H7v12Z"
+      d="M4 20c-.55 0-1.02-.196-1.413-.587A1.926 1.926 0 0 1 2 18V6c0-.55.196-1.02.587-1.412A1.926 1.926 0 0 1 4 4h16c.55 0 1.02.196 1.413.588.391.391.587.862.587 1.412v12c0 .55-.196 1.02-.587 1.413A1.926 1.926 0 0 1 20 20H4Zm0-2h16V8H4v10Z"
     />
   </svg>
 </div>

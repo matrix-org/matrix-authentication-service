@@ -28,7 +28,7 @@ pub use self::{
 #[cfg(test)]
 mod tests {
     use chrono::Duration;
-    use mas_data_model::Device;
+    use mas_data_model::{Device, UserAgent};
     use mas_storage::{
         clock::MockClock,
         compat::{
@@ -133,7 +133,7 @@ mod tests {
         assert!(session_lookup.user_agent.is_none());
         let session = repo
             .compat_session()
-            .record_user_agent(session_lookup, "Mozilla/5.0".to_owned())
+            .record_user_agent(session_lookup, UserAgent::parse("Mozilla/5.0".to_owned()))
             .await
             .unwrap();
         assert_eq!(session.user_agent.as_deref(), Some("Mozilla/5.0"));
