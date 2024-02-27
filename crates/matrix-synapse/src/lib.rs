@@ -176,6 +176,37 @@ impl HomeserverConnection for SynapseConnection {
     }
 
     #[tracing::instrument(
+        name = "homeserver.is_localpart_available",
+        skip_all,
+        fields(
+            matrix.homeserver = self.homeserver,
+            matrix.localpart = localpart,
+        ),
+        err(Display),
+    )]
+    async fn is_localpart_available(&self, localpart: &str) -> Result<bool, Self::Error> {
+        let mut client = self
+            .http_client_factory
+            .client("homeserver.is_localpart_available");
+
+        let request = self
+            .get(&format!(
+                "_synapse/admin/v1/username_available?username={localpart}"
+            ))
+            .body(EmptyBody::new())?;
+
+        let response = client.ready().await?.call(request).await?;
+
+        match response.status() {
+            StatusCode::OK => Ok(true),
+            StatusCode::BAD_REQUEST => Ok(false),
+            _ => Err(anyhow::anyhow!(
+                "Failed to query localpart availability from Synapse"
+            )),
+        }
+    }
+
+    #[tracing::instrument(
         name = "homeserver.provision_user",
         skip_all,
         fields(
