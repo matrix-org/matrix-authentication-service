@@ -13,26 +13,36 @@
  * limitations under the License.
  */
 
-
-.overlay {
+.overlay,
+.scroll-container {
     position: fixed;
     inset: 0;
     background: rgba(3 12 27 / 52.8%);
 }
 
+.scroll-container {
+    overflow-y: auto;
+}
+
+.container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100svh;
+}
+
 .dialog {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: calc(496px + var(--cpd-space-3x) * 2);
-    max-width: calc(100vw - var(--cpd-space-4x));
+    /* To position the close icon */
+    position: relative;
+    margin: var(--cpd-space-4x);
+    min-width: 0;
+    flex: 0 1 520px;
 }
 
 .body {
     display: flex;
     flex-direction: column;
-    gap: var(--cpd-space-8x);
+    gap: var(--cpd-space-4x);
     background: var(--cpd-color-bg-canvas-default);
 }
 
@@ -43,17 +53,13 @@
     margin-block-start: var(--cpd-space-4x);
 }
 
-.actions {
-    display: flex;
-    flex-direction: column;
-    gap: var(--cpd-space-4x);
-}
-
 .dialog .body {
     padding: var(--cpd-space-4x) var(--cpd-space-10x) var(--cpd-space-10x);
 }
 
 .dialog .title {
+    /* This adds a padding to the title to make sure it overflows correctly
+     * and not behind the close button */
     padding-inline-end: var(--cpd-space-7x);
 }
 
