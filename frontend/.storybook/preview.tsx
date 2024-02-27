@@ -44,7 +44,7 @@ export const globalTypes = {
         { title: "Light", value: "light", icon: "sun" },
         { title: "Light (high contrast)", value: "light-hc", icon: "sun" },
         { title: "Dark", value: "dark", icon: "moon" },
-        { title: "Dark (high contrast)", value: "darkhc", icon: "moon" },
+        { title: "Dark (high contrast)", value: "dark-hc", icon: "moon" },
       ],
     },
   },
