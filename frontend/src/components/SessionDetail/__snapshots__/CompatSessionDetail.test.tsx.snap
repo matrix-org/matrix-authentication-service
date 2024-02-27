@@ -1,6 +1,200 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `<div />`;
+exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
+<div>
+  <div
+    class="_blockList_f8cc7f"
+  >
+    <header
+      class="_header_92353c"
+    >
+      <a
+        class="_backButton_92353c"
+        href="/sessions"
+      >
+        <svg
+          class="cpd-icon"
+          fill="currentColor"
+          height="1em"
+          viewBox="0 0 24 24"
+          width="1em"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12.207 5.293a1 1 0 0 1 0 1.414L7.914 11H18.5a1 1 0 1 1 0 2H7.914l4.293 4.293a1 1 0 0 1-1.414 1.414l-6-6a1 1 0 0 1 0-1.414l6-6a1 1 0 0 1 1.414 0Z"
+          />
+        </svg>
+      </a>
+      <h3
+        class="_typography_yh5dq_162 _font-heading-md-semibold_yh5dq_121"
+      >
+        abcd1234
+      </h3>
+    </header>
+    <div
+      class="_block_17898c"
+    >
+      <h6
+        class="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64"
+      >
+        Session
+      </h6>
+      <ul
+        class="_list_040867"
+      >
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          >
+            ID
+          </p>
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+          >
+            <code>
+              session-id
+            </code>
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          >
+            Device ID
+          </p>
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+          >
+            <code>
+              abcd1234
+            </code>
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          >
+            Signed in
+          </p>
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+          >
+            <time
+              datetime="2023-06-29T03:35:17Z"
+            >
+              Thu, 29 Jun 2023, 03:35
+            </time>
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          >
+            Last Active
+          </p>
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+          >
+            <span
+              title="Sat, 29 Jul 2023, 03:35"
+            >
+              Inactive for 90+ days
+            </span>
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          >
+            IP Address
+          </p>
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+          >
+            <code>
+              1.2.3.4
+            </code>
+          </p>
+        </li>
+      </ul>
+    </div>
+    <div
+      class="_block_17898c"
+    >
+      <h6
+        class="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64"
+      >
+        Client
+      </h6>
+      <ul
+        class="_list_040867"
+      >
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          >
+            Name
+          </p>
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+          >
+            element.io
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          >
+            Uri
+          </p>
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+          >
+            <a
+              class="_link_1mzip_17 _externalLink_a97355"
+              data-kind="primary"
+              href="https://element.io"
+              rel="noreferrer noopener"
+              target="_blank"
+            >
+              https://element.io
+            </a>
+          </p>
+        </li>
+      </ul>
+    </div>
+    <button
+      aria-controls="radix-:r0:"
+      aria-disabled="false"
+      aria-expanded="false"
+      aria-haspopup="dialog"
+      class="_button_dyfp8_17 _destructive_dyfp8_99"
+      data-kind="secondary"
+      data-size="sm"
+      data-state="closed"
+      role="button"
+      tabindex="0"
+      type="button"
+    >
+      End session
+    </button>
+  </div>
+</div>
+`;
 
 exports[`<CompatSessionDetail> > renders a compatability session without an ssoLogin 1`] = `
 <div>
@@ -131,7 +325,7 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
       </ul>
     </div>
     <button
-      aria-controls="radix-:r0:"
+      aria-controls="radix-:r3:"
       aria-disabled="false"
       aria-expanded="false"
       aria-haspopup="dialog"
@@ -145,6 +339,205 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
     >
       End session
     </button>
+  </div>
+</div>
+`;
+
+exports[`<CompatSessionDetail> > renders a finished compatability session details 1`] = `
+<div>
+  <div
+    class="_blockList_f8cc7f"
+  >
+    <header
+      class="_header_92353c"
+    >
+      <a
+        class="_backButton_92353c"
+        href="/sessions"
+      >
+        <svg
+          class="cpd-icon"
+          fill="currentColor"
+          height="1em"
+          viewBox="0 0 24 24"
+          width="1em"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12.207 5.293a1 1 0 0 1 0 1.414L7.914 11H18.5a1 1 0 1 1 0 2H7.914l4.293 4.293a1 1 0 0 1-1.414 1.414l-6-6a1 1 0 0 1 0-1.414l6-6a1 1 0 0 1 1.414 0Z"
+          />
+        </svg>
+      </a>
+      <h3
+        class="_typography_yh5dq_162 _font-heading-md-semibold_yh5dq_121"
+      >
+        abcd1234
+      </h3>
+    </header>
+    <div
+      class="_block_17898c"
+    >
+      <h6
+        class="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64"
+      >
+        Session
+      </h6>
+      <ul
+        class="_list_040867"
+      >
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          >
+            ID
+          </p>
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+          >
+            <code>
+              session-id
+            </code>
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          >
+            Device ID
+          </p>
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+          >
+            <code>
+              abcd1234
+            </code>
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          >
+            Signed in
+          </p>
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+          >
+            <time
+              datetime="2023-06-29T03:35:17Z"
+            >
+              Thu, 29 Jun 2023, 03:35
+            </time>
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          >
+            Finished
+          </p>
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+          >
+            <time
+              datetime="2023-07-29T03:35:17Z"
+            >
+              Sat, 29 Jul 2023, 03:35
+            </time>
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          >
+            Last Active
+          </p>
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+          >
+            <span
+              title="Sat, 29 Jul 2023, 03:35"
+            >
+              Inactive for 90+ days
+            </span>
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          >
+            IP Address
+          </p>
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+          >
+            <code>
+              1.2.3.4
+            </code>
+          </p>
+        </li>
+      </ul>
+    </div>
+    <div
+      class="_block_17898c"
+    >
+      <h6
+        class="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64"
+      >
+        Client
+      </h6>
+      <ul
+        class="_list_040867"
+      >
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          >
+            Name
+          </p>
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+          >
+            element.io
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          >
+            Uri
+          </p>
+          <p
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+          >
+            <a
+              class="_link_1mzip_17 _externalLink_a97355"
+              data-kind="primary"
+              href="https://element.io"
+              rel="noreferrer noopener"
+              target="_blank"
+            >
+              https://element.io
+            </a>
+          </p>
+        </li>
+      </ul>
+    </div>
   </div>
 </div>
 `;

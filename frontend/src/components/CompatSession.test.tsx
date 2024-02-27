@@ -14,6 +14,7 @@
 
 // @vitest-environment happy-dom
 
+import { TooltipProvider } from "@vector-im/compound-web";
 import { create } from "react-test-renderer";
 import { Provider } from "urql";
 import { describe, expect, it, beforeAll } from "vitest";
@@ -37,7 +38,7 @@ describe("<CompatSession />", () => {
     lastActiveIp: "1.2.3.4",
     ssoLogin: {
       id: "test-id",
-      redirectUri: "https://element.io",
+      redirectUri: "https://element.io/",
     },
   };
 
@@ -48,11 +49,13 @@ describe("<CompatSession />", () => {
   it("renders an active session", () => {
     const session = makeFragmentData(baseSession, FRAGMENT);
     const component = create(
-      <Provider value={mockClient}>
-        <DummyRouter>
-          <CompatSession session={session} />
-        </DummyRouter>
-      </Provider>,
+      <TooltipProvider>
+        <Provider value={mockClient}>
+          <DummyRouter>
+            <CompatSession session={session} />
+          </DummyRouter>
+        </Provider>
+      </TooltipProvider>,
     );
     expect(component.toJSON()).toMatchSnapshot();
   });
@@ -66,11 +69,13 @@ describe("<CompatSession />", () => {
       FRAGMENT,
     );
     const component = create(
-      <Provider value={mockClient}>
-        <DummyRouter>
-          <CompatSession session={session} />
-        </DummyRouter>
-      </Provider>,
+      <TooltipProvider>
+        <Provider value={mockClient}>
+          <DummyRouter>
+            <CompatSession session={session} />
+          </DummyRouter>
+        </Provider>
+      </TooltipProvider>,
     );
     expect(component.toJSON()).toMatchSnapshot();
   });
