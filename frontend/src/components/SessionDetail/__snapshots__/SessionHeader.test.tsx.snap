@@ -1,3 +1,33 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`<SessionHeader /> > renders a session header 1`] = `<div />`;
+exports[`<SessionHeader /> > renders a session header 1`] = `
+<div>
+  <header
+    class="_header_92353c"
+  >
+    <a
+      class="_backButton_92353c active"
+      data-status="active"
+      href="/"
+    >
+      <svg
+        class="cpd-icon"
+        fill="currentColor"
+        height="1em"
+        viewBox="0 0 24 24"
+        width="1em"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M12.207 5.293a1 1 0 0 1 0 1.414L7.914 11H18.5a1 1 0 1 1 0 2H7.914l4.293 4.293a1 1 0 0 1-1.414 1.414l-6-6a1 1 0 0 1 0-1.414l6-6a1 1 0 0 1 1.414 0Z"
+        />
+      </svg>
+    </a>
+    <h3
+      class="_typography_yh5dq_162 _font-heading-md-semibold_yh5dq_121"
+    >
+      Chrome on iOS
+    </h3>
+  </header>
+</div>
+`;

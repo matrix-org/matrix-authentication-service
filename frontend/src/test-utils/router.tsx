@@ -19,6 +19,7 @@ import {
   createRoute,
   createRouter,
 } from "@tanstack/react-router";
+import { beforeAll } from "vitest";
 
 const rootRoute = createRootRoute();
 const index = createRoute({ getParentRoute: () => rootRoute, path: "/" });
@@ -28,6 +29,10 @@ const router = createRouter({
   history: createMemoryHistory(),
   routeTree: rootRoute,
 });
+
+const routerReady = router.load();
+// Make sure the router is ready before running any tests
+beforeAll(async () => await routerReady);
 
 export const DummyRouter: React.FC<React.PropsWithChildren> = ({
   children,

@@ -15,6 +15,7 @@
 // @vitest-environment happy-dom
 
 import { render, cleanup } from "@testing-library/react";
+import { TooltipProvider } from "@vector-im/compound-web";
 import { Provider } from "urql";
 import { describe, expect, it, afterEach, beforeAll } from "vitest";
 import { never } from "wonka";
@@ -34,8 +35,10 @@ describe("<CompatSessionDetail>", () => {
     id: "session-id",
     deviceId: "abcd1234",
     createdAt: "2023-06-29T03:35:17.451292+00:00",
+    finishedAt: null,
     lastActiveIp: "1.2.3.4",
     lastActiveAt: "2023-07-29T03:35:17.451292+00:00",
+    userAgent: null,
     ssoLogin: {
       id: "test-id",
       redirectUri: "https://element.io",
@@ -46,17 +49,21 @@ describe("<CompatSessionDetail>", () => {
   afterEach(cleanup);
 
   it("renders a compatability session details", () => {
-    const data = makeFragmentData(baseSession, FRAGMENT);
+    const data = makeFragmentData({ ...baseSession }, FRAGMENT);
 
-    const { container } = render(
-      <Provider value={mockClient}>
-        <DummyRouter>
-          <CompatSessionDetail session={data} />
-        </DummyRouter>
-      </Provider>,
+    const { container, getByText, queryByText } = render(
+      <TooltipProvider>
+        <Provider value={mockClient}>
+          <DummyRouter>
+            <CompatSessionDetail session={data} />
+          </DummyRouter>
+        </Provider>
+      </TooltipProvider>,
     );
 
     expect(container).toMatchSnapshot();
+    expect(queryByText("Finished")).toBeFalsy();
+    expect(getByText("End session")).toBeTruthy();
   });
 
   it("renders a compatability session without an ssoLogin", () => {
@@ -68,7 +75,7 @@ describe("<CompatSessionDetail>", () => {
       FRAGMENT,
     );
 
-    const { container } = render(
+    const { container, getByText, queryByText } = render(
       <Provider value={mockClient}>
         <DummyRouter>
           <CompatSessionDetail session={data} />
@@ -77,6 +84,8 @@ describe("<CompatSessionDetail>", () => {
     );
 
     expect(container).toMatchSnapshot();
+    expect(queryByText("Finished")).toBeFalsy();
+    expect(getByText("End session")).toBeTruthy();
   });
 
   it("renders a finished compatability session details", () => {
@@ -88,7 +97,7 @@ describe("<CompatSessionDetail>", () => {
       FRAGMENT,
     );
 
-    const { getByText, queryByText } = render(
+    const { container, getByText, queryByText } = render(
       <Provider value={mockClient}>
         <DummyRouter>
           <CompatSessionDetail session={data} />
@@ -96,8 +105,8 @@ describe("<CompatSessionDetail>", () => {
       </Provider>,
     );
 
+    expect(container).toMatchSnapshot();
     expect(getByText("Finished")).toBeTruthy();
-    // no end session button
-    expect(queryByText("End session")).toBeFalsy();
+    expect(queryByText("Sign out")).toBeFalsy();
   });
 });

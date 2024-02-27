@@ -15,6 +15,7 @@
 // @vitest-environment happy-dom
 
 import { render, cleanup } from "@testing-library/react";
+import { TooltipProvider } from "@vector-im/compound-web";
 import { Provider } from "urql";
 import { describe, expect, it, afterEach, beforeAll } from "vitest";
 import { never } from "wonka";
@@ -35,13 +36,16 @@ describe("<OAuth2SessionDetail>", () => {
     scope:
       "openid urn:matrix:org.matrix.msc2967.client:api:* urn:matrix:org.matrix.msc2967.client:device:abcd1234",
     createdAt: "2023-06-29T03:35:17.451292+00:00",
+    finishedAt: null,
     lastActiveAt: "2023-07-29T03:35:17.451292+00:00",
     lastActiveIp: "1.2.3.4",
+    userAgent: null,
     client: {
       id: "test-id",
       clientId: "test-client-id",
       clientName: "Element",
       clientUri: "https://element.io",
+      logoUri: null,
     },
   };
 
@@ -51,15 +55,19 @@ describe("<OAuth2SessionDetail>", () => {
   it("renders session details", () => {
     const data = makeFragmentData(baseSession, FRAGMENT);
 
-    const { container } = render(
-      <Provider value={mockClient}>
-        <DummyRouter>
-          <OAuth2SessionDetail session={data} />
-        </DummyRouter>
-      </Provider>,
+    const { asFragment, getByText, queryByText } = render(
+      <TooltipProvider>
+        <Provider value={mockClient}>
+          <DummyRouter>
+            <OAuth2SessionDetail session={data} />
+          </DummyRouter>
+        </Provider>
+      </TooltipProvider>,
     );
 
-    expect(container).toMatchSnapshot();
+    expect(asFragment()).toMatchSnapshot();
+    expect(queryByText("Finished")).toBeFalsy();
+    expect(getByText("End session")).toBeTruthy();
   });
 
   it("renders a finished session details", () => {
@@ -71,16 +79,18 @@ describe("<OAuth2SessionDetail>", () => {
       FRAGMENT,
     );
 
-    const { getByText, queryByText } = render(
-      <Provider value={mockClient}>
-        <DummyRouter>
-          <OAuth2SessionDetail session={data} />
-        </DummyRouter>
-      </Provider>,
+    const { asFragment, getByText, queryByText } = render(
+      <TooltipProvider>
+        <Provider value={mockClient}>
+          <DummyRouter>
+            <OAuth2SessionDetail session={data} />
+          </DummyRouter>
+        </Provider>
+      </TooltipProvider>,
     );
 
+    expect(asFragment()).toMatchSnapshot();
     expect(getByText("Finished")).toBeTruthy();
-    // no end session button
     expect(queryByText("End session")).toBeFalsy();
   });
 });
