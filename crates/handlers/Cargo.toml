@@ -29,7 +29,7 @@ sentry = { version = "0.31.8", default-features = false }
 # Web server
 hyper = { version = "0.14.27", features = ["full"] }
 tower = "0.4.13"
-tower-http = { version = "0.4.4", features = ["cors"] }
+tower-http = { version = "0.5.2", features = ["cors"] }
 axum = "0.6.20"
 axum-macros = "0.3.8"
 axum-extra = { version = "0.8.0", features = ["cookie-private"] }

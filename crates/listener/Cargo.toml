@@ -23,7 +23,7 @@ socket2 = "0.5.5"
 thiserror.workspace = true
 tokio = { version = "1.35.1", features = ["net", "rt", "macros", "signal", "time"] }
 tokio-rustls = "0.25.0"
-tower-http = { version = "0.4.4", features = ["add-extension"] }
+tower-http = { version = "0.5.2", features = ["add-extension"] }
 tower-service = "0.3.2"
 tracing.workspace = true
 
