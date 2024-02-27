@@ -34,6 +34,7 @@ struct MockUser {
 pub struct HomeserverConnection {
     homeserver: String,
     users: RwLock<HashMap<String, MockUser>>,
+    reserved_localparts: RwLock<HashSet<&'static str>>,
 }
 
 impl HomeserverConnection {
@@ -45,7 +46,12 @@ impl HomeserverConnection {
         Self {
             homeserver: homeserver.into(),
             users: RwLock::new(HashMap::new()),
+            reserved_localparts: RwLock::new(HashSet::new()),
         }
+    }
+
+    pub async fn reserve_localpart(&self, localpart: &'static str) {
+        self.reserved_localparts.write().await.insert(localpart);
     }
 }
 
@@ -96,6 +102,16 @@ impl crate::HomeserverConnection for HomeserverConnection {
         });
 
         Ok(inserted)
+    }
+
+    async fn is_localpart_available(&self, localpart: &str) -> Result<bool, Self::Error> {
+        if self.reserved_localparts.read().await.contains(localpart) {
+            return Ok(false);
+        }
+
+        let mxid = self.mxid(localpart);
+        let users = self.users.read().await;
+        Ok(!users.contains_key(&mxid))
     }
 
     async fn create_device(&self, mxid: &str, device_id: &str) -> Result<(), Self::Error> {
@@ -200,5 +216,14 @@ mod tests {
         // XXX: there is no API to query devices yet in the trait
         // Delete the device
         assert!(conn.delete_device(mxid, device).await.is_ok());
+
+        // The user we just created should be not available
+        assert!(!conn.is_localpart_available("test").await.unwrap());
+        // But another user should be
+        assert!(conn.is_localpart_available("alice").await.unwrap());
+
+        // Reserve the localpart, it should not be available anymore
+        conn.reserve_localpart("alice").await;
+        assert!(!conn.is_localpart_available("alice").await.unwrap());
     }
 }

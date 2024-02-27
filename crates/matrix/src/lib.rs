@@ -219,6 +219,17 @@ pub trait HomeserverConnection: Send + Sync {
     /// be provisioned.
     async fn provision_user(&self, request: &ProvisionRequest) -> Result<bool, Self::Error>;
 
+    /// Check whether a given username is available on the homeserver.
+    ///
+    /// # Parameters
+    ///
+    /// * `localpart` - The localpart to check.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the homeserver is unreachable.
+    async fn is_localpart_available(&self, localpart: &str) -> Result<bool, Self::Error>;
+
     /// Create a device for a user on the homeserver.
     ///
     /// # Parameters
@@ -310,6 +321,10 @@ impl<T: HomeserverConnection + Send + Sync + ?Sized> HomeserverConnection for &T
 
     async fn provision_user(&self, request: &ProvisionRequest) -> Result<bool, Self::Error> {
         (**self).provision_user(request).await
+    }
+
+    async fn is_localpart_available(&self, localpart: &str) -> Result<bool, Self::Error> {
+        (**self).is_localpart_available(localpart).await
     }
 
     async fn create_device(&self, mxid: &str, device_id: &str) -> Result<(), Self::Error> {
