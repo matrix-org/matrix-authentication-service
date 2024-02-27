@@ -83,20 +83,23 @@ export const Dialog: React.FC<Props> = ({
     <DialogRoot open={open} onOpenChange={onOpenChange}>
       {trigger && <Trigger asChild>{trigger}</Trigger>}
       <Portal>
-        <DialogOverlay className={styles.overlay} />
-        <DialogContent asChild>
-          <Glass className={styles.dialog}>
-            <div className={styles.body}>
-              {children}
+        {/* This container has a fixed position and scrolls over the Y axis if needed */}
+        <DialogOverlay className={styles.scrollContainer}>
+          {/* This container is used as a flexbox parent to center the dialog */}
+          <div className={styles.container}>
+            <Glass className={styles.dialog}>
+              <DialogContent className={styles.body}>
+                {children}
 
-              <Tooltip label={t("action.close")}>
-                <Close className={styles.close}>
-                  <IconClose />
-                </Close>
-              </Tooltip>
-            </div>
-          </Glass>
-        </DialogContent>
+                <Tooltip label={t("action.close")}>
+                  <Close className={styles.close}>
+                    <IconClose />
+                  </Close>
+                </Tooltip>
+              </DialogContent>
+            </Glass>
+          </div>
+        </DialogOverlay>
       </Portal>
     </DialogRoot>
   );
@@ -104,10 +107,6 @@ export const Dialog: React.FC<Props> = ({
 
 export const Title: React.FC<PropsWithChildren> = ({ children }) => (
   <DialogTitle className={styles.title}>{children}</DialogTitle>
-);
-
-export const Actions: React.FC<PropsWithChildren> = ({ children }) => (
-  <div className={styles.actions}>{children}</div>
 );
 
 export { Description, Close } from "@radix-ui/react-dialog";

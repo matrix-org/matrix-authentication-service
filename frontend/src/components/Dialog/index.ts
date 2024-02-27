@@ -12,4 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export { Close, Dialog, Title, Description, Actions } from "./Dialog";
+export { Close, Dialog, Title, Description } from "./Dialog";
