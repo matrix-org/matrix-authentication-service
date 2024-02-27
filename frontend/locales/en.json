@@ -109,21 +109,19 @@
         "title": "Crypto identity reset temporarily allowed"
       }
     },
-    "selectable_session": {
-      "label": "Select session"
-    },
     "session": {
-      "current_badge": "Current",
+      "current": "Current",
       "device_id_label": "Device ID",
-      "finished_date": "Finished <datetime/>",
       "finished_label": "Finished",
       "id_label": "ID",
       "ip_label": "IP Address",
       "last_active_label": "Last Active",
       "last_auth_label": "Last Authentication",
+      "name_for_platform": "{{name}} for {{platform}}",
       "scopes_label": "Scopes",
-      "signed_in_date": "Signed in <datetime/>",
       "signed_in_label": "Signed in",
+      "unknown_browser": "Unknown browser",
+      "unknown_device": "Unknown device",
       "uri_label": "Uri",
       "user_id_label": "User ID",
       "username_label": "User name"
