@@ -62,7 +62,7 @@
     },
     "end_session_button": {
       "confirmation_modal_title": "Are you sure you want to end this session?",
-      "text": "End session"
+      "text": "Sign out"
     },
     "error": {
       "hideDetails": "Hide details",
