@@ -34,7 +34,7 @@ struct Error {
 
 #[tokio::test]
 async fn test_http_errors() {
-    async fn handle<B>(_request: Request<B>) -> Result<Response<String>, Infallible> {
+    async fn handle<B>(_: Request<B>) -> Result<Response<String>, Infallible> {
         let mut res = Response::new(r#"{"error": "invalid_request"}"#.to_owned());
         *res.status_mut() = StatusCode::BAD_REQUEST;
 

@@ -368,6 +368,7 @@ impl RequestClientCredentials {
     }
 }
 
+#[allow(clippy::struct_field_names)] // All the fields start with `client_`
 #[skip_serializing_none]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub(crate) struct BodyClientCredentials {

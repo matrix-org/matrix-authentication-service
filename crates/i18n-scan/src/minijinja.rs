@@ -122,7 +122,7 @@ fn find_in_call<'a>(
         if var_.id == context.func() {
             let key = call
                 .args
-                .get(0)
+                .first()
                 .and_then(as_const)
                 .and_then(|const_| const_.value.as_str())
                 .ok_or(minijinja::Error::new(

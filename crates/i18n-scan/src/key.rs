@@ -69,7 +69,7 @@ impl Context {
             });
 
             let key = translatable
-                .key
+                .name
                 .split('.')
                 .chain(if translatable.kind == Kind::Plural {
                     Some("other")
@@ -111,15 +111,15 @@ pub struct Location {
 #[derive(Debug, Clone)]
 pub struct Key {
     kind: Kind,
-    key: String,
+    name: String,
     location: Option<Location>,
 }
 
 impl Key {
-    pub fn new(kind: Kind, key: String) -> Self {
+    pub fn new(kind: Kind, name: String) -> Self {
         Self {
             kind,
-            key,
+            name,
             location: None,
         }
     }
