@@ -38,6 +38,7 @@ jobs:
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v4.1.0
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: policies/coverage.json
           flags: policies
 
@@ -68,6 +69,7 @@ jobs:
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v4.1.0
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           directory: frontend/coverage/
           flags: frontend
 
@@ -155,5 +157,6 @@ jobs:
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v4.1.0
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: target/coverage/*.lcov
           flags: unit
