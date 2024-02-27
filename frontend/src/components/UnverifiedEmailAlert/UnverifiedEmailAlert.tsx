@@ -22,7 +22,7 @@ import { Link } from "../Link";
 import styles from "./UnverifiedEmailAlert.module.css";
 
 export const UNVERIFIED_EMAILS_FRAGMENT = graphql(/* GraphQL */ `
-  fragment UnverifiedEmailAlert on User {
+  fragment UnverifiedEmailAlert_user on User {
     id
     unverifiedEmails: emails(first: 0, state: PENDING) {
       totalCount

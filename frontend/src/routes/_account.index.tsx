@@ -14,7 +14,7 @@
 
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import IconKey from "@vector-im/compound-design-tokens/icons/key.svg?react";
-import { H3, Separator } from "@vector-im/compound-web";
+import { Separator } from "@vector-im/compound-web";
 import { Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "urql";
@@ -23,7 +23,6 @@ import BlockList from "../components/BlockList/BlockList";
 import { ButtonLink } from "../components/ButtonLink";
 import LoadingSpinner from "../components/LoadingSpinner";
 import UserEmailList from "../components/UserProfile/UserEmailList";
-import UserName from "../components/UserProfile/UserName";
 import { graphql } from "../gql";
 
 const QUERY = graphql(/* GraphQL */ `
@@ -32,7 +31,6 @@ const QUERY = graphql(/* GraphQL */ `
       __typename
       ... on User {
         id
-        ...UserName_user
         ...UserEmailList_user
       }
     }
@@ -62,14 +60,12 @@ function Index(): React.ReactElement {
   return (
     <>
       <BlockList>
-        <UserName user={user} />
-
-        <BlockList>
-          <H3 id="emails">{t("frontend.user_email_list.heading")}</H3>
+        {/* This wrapper is only needed for the anchor link */}
+        <div className="flex flex-col gap-4" id="emails">
           <Suspense fallback={<LoadingSpinner className="self-center m-4" />}>
             <UserEmailList user={user} />
           </Suspense>
-        </BlockList>
+        </div>
 
         <Separator />
 
