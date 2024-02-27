@@ -63,7 +63,7 @@ describe("<CompatSessionDetail>", () => {
 
     expect(container).toMatchSnapshot();
     expect(queryByText("Finished")).toBeFalsy();
-    expect(getByText("End session")).toBeTruthy();
+    expect(getByText("Sign out")).toBeTruthy();
   });
 
   it("renders a compatability session without an ssoLogin", () => {
@@ -85,7 +85,7 @@ describe("<CompatSessionDetail>", () => {
 
     expect(container).toMatchSnapshot();
     expect(queryByText("Finished")).toBeFalsy();
-    expect(getByText("End session")).toBeTruthy();
+    expect(getByText("Sign out")).toBeTruthy();
   });
 
   it("renders a finished compatability session details", () => {

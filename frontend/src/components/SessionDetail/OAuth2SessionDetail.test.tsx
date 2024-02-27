@@ -67,7 +67,7 @@ describe("<OAuth2SessionDetail>", () => {
 
     expect(asFragment()).toMatchSnapshot();
     expect(queryByText("Finished")).toBeFalsy();
-    expect(getByText("End session")).toBeTruthy();
+    expect(getByText("Sign out")).toBeTruthy();
   });
 
   it("renders a finished session details", () => {
@@ -91,6 +91,6 @@ describe("<OAuth2SessionDetail>", () => {
 
     expect(asFragment()).toMatchSnapshot();
     expect(getByText("Finished")).toBeTruthy();
-    expect(queryByText("End session")).toBeFalsy();
+    expect(queryByText("Sign out")).toBeFalsy();
   });
 });
