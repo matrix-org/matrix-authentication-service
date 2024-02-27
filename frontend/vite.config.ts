@@ -168,7 +168,7 @@ export default defineConfig((env) => ({
     base: "/account/",
     proxy: {
       // Routes mostly extracted from crates/router/src/endpoints.rs
-      "^/(|graphql.*|assets.*|\\.well-known.*|oauth2.*|login.*|logout.*|register.*|reauth.*|add-email.*|verify-email.*|change-password.*|consent.*|_matrix.*|complete-compat-sso.*|link.*|device.*)$":
+      "^/(|graphql.*|assets.*|\\.well-known.*|oauth2.*|login.*|logout.*|register.*|reauth.*|add-email.*|verify-email.*|change-password.*|consent.*|_matrix.*|complete-compat-sso.*|link.*|device.*|upstream.*)$":
         "http://127.0.0.1:8080",
     },
   },
