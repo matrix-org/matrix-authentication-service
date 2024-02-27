@@ -1371,11 +1371,11 @@ export type OAuth2Session_DetailFragment = {
   };
 } & { " $fragmentName"?: "OAuth2Session_DetailFragment" };
 
-export type UnverifiedEmailAlertFragment = {
+export type UnverifiedEmailAlert_UserFragment = {
   __typename?: "User";
   id: string;
   unverifiedEmails: { __typename?: "UserEmailConnection"; totalCount: number };
-} & { " $fragmentName"?: "UnverifiedEmailAlertFragment" };
+} & { " $fragmentName"?: "UnverifiedEmailAlert_UserFragment" };
 
 export type UserEmail_EmailFragment = {
   __typename?: "UserEmail";
@@ -1414,20 +1414,33 @@ export type SetPrimaryEmailMutation = {
   };
 };
 
-export type UserGreeting_UserFragment = ({
+export type UserGreeting_UserFragment = {
   __typename?: "User";
   id: string;
-  username: string;
   matrix: {
     __typename?: "MatrixUser";
     mxid: string;
     displayName?: string | null;
   };
-} & {
-  " $fragmentRefs"?: {
-    UnverifiedEmailAlertFragment: UnverifiedEmailAlertFragment;
+} & { " $fragmentName"?: "UserGreeting_UserFragment" };
+
+export type SetDisplayNameMutationVariables = Exact<{
+  userId: Scalars["ID"]["input"];
+  displayName?: InputMaybe<Scalars["String"]["input"]>;
+}>;
+
+export type SetDisplayNameMutation = {
+  __typename?: "Mutation";
+  setDisplayName: {
+    __typename?: "SetDisplayNamePayload";
+    status: SetDisplayNameStatus;
+    user?: {
+      __typename?: "User";
+      id: string;
+      matrix: { __typename?: "MatrixUser"; displayName?: string | null };
+    } | null;
   };
-}) & { " $fragmentName"?: "UserGreeting_UserFragment" };
+};
 
 export type AddEmailMutationVariables = Exact<{
   userId: Scalars["ID"]["input"];
@@ -1491,30 +1504,6 @@ export type UserEmailList_UserFragment = {
   id: string;
   primaryEmail?: { __typename?: "UserEmail"; id: string } | null;
 } & { " $fragmentName"?: "UserEmailList_UserFragment" };
-
-export type UserName_UserFragment = {
-  __typename?: "User";
-  id: string;
-  matrix: { __typename?: "MatrixUser"; displayName?: string | null };
-} & { " $fragmentName"?: "UserName_UserFragment" };
-
-export type SetDisplayNameMutationVariables = Exact<{
-  userId: Scalars["ID"]["input"];
-  displayName?: InputMaybe<Scalars["String"]["input"]>;
-}>;
-
-export type SetDisplayNameMutation = {
-  __typename?: "Mutation";
-  setDisplayName: {
-    __typename?: "SetDisplayNamePayload";
-    status: SetDisplayNameStatus;
-    user?: {
-      __typename?: "User";
-      id: string;
-      matrix: { __typename?: "MatrixUser"; displayName?: string | null };
-    } | null;
-  };
-};
 
 export type BrowserSessionsOverview_UserFragment = {
   __typename?: "User";
@@ -1584,7 +1573,6 @@ export type UserProfileQueryQuery = {
     | { __typename: "Anonymous" }
     | ({ __typename: "User"; id: string } & {
         " $fragmentRefs"?: {
-          UserName_UserFragment: UserName_UserFragment;
           UserEmailList_UserFragment: UserEmailList_UserFragment;
         };
       });
@@ -1731,13 +1719,19 @@ export type CurrentUserGreetingQueryVariables = Exact<{ [key: string]: never }>;
 
 export type CurrentUserGreetingQuery = {
   __typename?: "Query";
-  viewer:
+  viewerSession:
     | { __typename: "Anonymous" }
-    | ({ __typename: "User" } & {
-        " $fragmentRefs"?: {
-          UserGreeting_UserFragment: UserGreeting_UserFragment;
+    | {
+        __typename: "BrowserSession";
+        id: string;
+        user: { __typename?: "User"; id: string } & {
+          " $fragmentRefs"?: {
+            UnverifiedEmailAlert_UserFragment: UnverifiedEmailAlert_UserFragment;
+            UserGreeting_UserFragment: UserGreeting_UserFragment;
+          };
         };
-      });
+      }
+    | { __typename: "Oauth2Session" };
 };
 
 export type OAuth2ClientQueryQueryVariables = Exact<{
@@ -2123,6 +2117,48 @@ export const OAuth2Session_DetailFragmentDoc = {
     },
   ],
 } as unknown as DocumentNode<OAuth2Session_DetailFragment, unknown>;
+export const UnverifiedEmailAlert_UserFragmentDoc = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "UnverifiedEmailAlert_user" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "User" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          {
+            kind: "Field",
+            alias: { kind: "Name", value: "unverifiedEmails" },
+            name: { kind: "Name", value: "emails" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "IntValue", value: "0" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "state" },
+                value: { kind: "EnumValue", value: "PENDING" },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<UnverifiedEmailAlert_UserFragment, unknown>;
 export const UserEmail_EmailFragmentDoc = {
   kind: "Document",
   definitions: [
@@ -2144,48 +2180,6 @@ export const UserEmail_EmailFragmentDoc = {
     },
   ],
 } as unknown as DocumentNode<UserEmail_EmailFragment, unknown>;
-export const UnverifiedEmailAlertFragmentDoc = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "FragmentDefinition",
-      name: { kind: "Name", value: "UnverifiedEmailAlert" },
-      typeCondition: {
-        kind: "NamedType",
-        name: { kind: "Name", value: "User" },
-      },
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          { kind: "Field", name: { kind: "Name", value: "id" } },
-          {
-            kind: "Field",
-            alias: { kind: "Name", value: "unverifiedEmails" },
-            name: { kind: "Name", value: "emails" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "first" },
-                value: { kind: "IntValue", value: "0" },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "state" },
-                value: { kind: "EnumValue", value: "PENDING" },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "totalCount" } },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<UnverifiedEmailAlertFragment, unknown>;
 export const UserGreeting_UserFragmentDoc = {
   kind: "Document",
   definitions: [
@@ -2200,7 +2194,6 @@ export const UserGreeting_UserFragmentDoc = {
         kind: "SelectionSet",
         selections: [
           { kind: "Field", name: { kind: "Name", value: "id" } },
-          { kind: "Field", name: { kind: "Name", value: "username" } },
           {
             kind: "Field",
             name: { kind: "Name", value: "matrix" },
@@ -2209,47 +2202,6 @@ export const UserGreeting_UserFragmentDoc = {
               selections: [
                 { kind: "Field", name: { kind: "Name", value: "mxid" } },
                 { kind: "Field", name: { kind: "Name", value: "displayName" } },
-              ],
-            },
-          },
-          {
-            kind: "FragmentSpread",
-            name: { kind: "Name", value: "UnverifiedEmailAlert" },
-          },
-        ],
-      },
-    },
-    {
-      kind: "FragmentDefinition",
-      name: { kind: "Name", value: "UnverifiedEmailAlert" },
-      typeCondition: {
-        kind: "NamedType",
-        name: { kind: "Name", value: "User" },
-      },
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          { kind: "Field", name: { kind: "Name", value: "id" } },
-          {
-            kind: "Field",
-            alias: { kind: "Name", value: "unverifiedEmails" },
-            name: { kind: "Name", value: "emails" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "first" },
-                value: { kind: "IntValue", value: "0" },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "state" },
-                value: { kind: "EnumValue", value: "PENDING" },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "totalCount" } },
               ],
             },
           },
@@ -2287,35 +2239,6 @@ export const UserEmailList_UserFragmentDoc = {
     },
   ],
 } as unknown as DocumentNode<UserEmailList_UserFragment, unknown>;
-export const UserName_UserFragmentDoc = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "FragmentDefinition",
-      name: { kind: "Name", value: "UserName_user" },
-      typeCondition: {
-        kind: "NamedType",
-        name: { kind: "Name", value: "User" },
-      },
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          { kind: "Field", name: { kind: "Name", value: "id" } },
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "matrix" },
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "displayName" } },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<UserName_UserFragment, unknown>;
 export const BrowserSessionsOverview_UserFragmentDoc = {
   kind: "Document",
   definitions: [
@@ -2826,6 +2749,105 @@ export const SetPrimaryEmailDocument = {
   SetPrimaryEmailMutation,
   SetPrimaryEmailMutationVariables
 >;
+export const SetDisplayNameDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "SetDisplayName" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "userId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "displayName" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "setDisplayName" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "userId" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "userId" },
+                      },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "displayName" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "displayName" },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "status" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "user" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "matrix" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "displayName" },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  SetDisplayNameMutation,
+  SetDisplayNameMutationVariables
+>;
 export const AddEmailDocument = {
   kind: "Document",
   definitions: [
@@ -3137,105 +3159,6 @@ export const UserEmailListQueryDocument = {
   UserEmailListQueryQuery,
   UserEmailListQueryQueryVariables
 >;
-export const SetDisplayNameDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "mutation",
-      name: { kind: "Name", value: "SetDisplayName" },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "userId" },
-          },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "displayName" },
-          },
-          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "setDisplayName" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "input" },
-                value: {
-                  kind: "ObjectValue",
-                  fields: [
-                    {
-                      kind: "ObjectField",
-                      name: { kind: "Name", value: "userId" },
-                      value: {
-                        kind: "Variable",
-                        name: { kind: "Name", value: "userId" },
-                      },
-                    },
-                    {
-                      kind: "ObjectField",
-                      name: { kind: "Name", value: "displayName" },
-                      value: {
-                        kind: "Variable",
-                        name: { kind: "Name", value: "displayName" },
-                      },
-                    },
-                  ],
-                },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "status" } },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "user" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "matrix" },
-                        selectionSet: {
-                          kind: "SelectionSet",
-                          selections: [
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "displayName" },
-                            },
-                          ],
-                        },
-                      },
-                    ],
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<
-  SetDisplayNameMutation,
-  SetDisplayNameMutationVariables
->;
 export const VerifyEmailDocument = {
   kind: "Document",
   definitions: [
@@ -3501,39 +3424,11 @@ export const UserProfileQueryDocument = {
                       { kind: "Field", name: { kind: "Name", value: "id" } },
                       {
                         kind: "FragmentSpread",
-                        name: { kind: "Name", value: "UserName_user" },
-                      },
-                      {
-                        kind: "FragmentSpread",
                         name: { kind: "Name", value: "UserEmailList_user" },
                       },
                     ],
                   },
                 },
-              ],
-            },
-          },
-        ],
-      },
-    },
-    {
-      kind: "FragmentDefinition",
-      name: { kind: "Name", value: "UserName_user" },
-      typeCondition: {
-        kind: "NamedType",
-        name: { kind: "Name", value: "User" },
-      },
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          { kind: "Field", name: { kind: "Name", value: "id" } },
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "matrix" },
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "displayName" } },
               ],
             },
           },
@@ -4426,14 +4321,50 @@ export const CurrentUserGreetingDocument = {
         selections: [
           {
             kind: "Field",
-            name: { kind: "Name", value: "viewer" },
+            name: { kind: "Name", value: "viewerSession" },
             selectionSet: {
               kind: "SelectionSet",
               selections: [
                 { kind: "Field", name: { kind: "Name", value: "__typename" } },
                 {
-                  kind: "FragmentSpread",
-                  name: { kind: "Name", value: "UserGreeting_user" },
+                  kind: "InlineFragment",
+                  typeCondition: {
+                    kind: "NamedType",
+                    name: { kind: "Name", value: "BrowserSession" },
+                  },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "user" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "id" },
+                            },
+                            {
+                              kind: "FragmentSpread",
+                              name: {
+                                kind: "Name",
+                                value: "UnverifiedEmailAlert_user",
+                              },
+                            },
+                            {
+                              kind: "FragmentSpread",
+                              name: {
+                                kind: "Name",
+                                value: "UserGreeting_user",
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
                 },
               ],
             },
@@ -4443,7 +4374,7 @@ export const CurrentUserGreetingDocument = {
     },
     {
       kind: "FragmentDefinition",
-      name: { kind: "Name", value: "UnverifiedEmailAlert" },
+      name: { kind: "Name", value: "UnverifiedEmailAlert_user" },
       typeCondition: {
         kind: "NamedType",
         name: { kind: "Name", value: "User" },
@@ -4489,7 +4420,6 @@ export const CurrentUserGreetingDocument = {
         kind: "SelectionSet",
         selections: [
           { kind: "Field", name: { kind: "Name", value: "id" } },
-          { kind: "Field", name: { kind: "Name", value: "username" } },
           {
             kind: "Field",
             name: { kind: "Name", value: "matrix" },
@@ -4500,10 +4430,6 @@ export const CurrentUserGreetingDocument = {
                 { kind: "Field", name: { kind: "Name", value: "displayName" } },
               ],
             },
-          },
-          {
-            kind: "FragmentSpread",
-            name: { kind: "Name", value: "UnverifiedEmailAlert" },
           },
         ],
       },

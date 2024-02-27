@@ -33,26 +33,24 @@ const documents = {
     types.CompatSession_DetailFragmentDoc,
   "\n  fragment OAuth2Session_detail on Oauth2Session {\n    id\n    scope\n    createdAt\n    finishedAt\n    lastActiveIp\n    lastActiveAt\n    client {\n      id\n      clientId\n      clientName\n      clientUri\n      logoUri\n    }\n  }\n":
     types.OAuth2Session_DetailFragmentDoc,
-  "\n  fragment UnverifiedEmailAlert on User {\n    id\n    unverifiedEmails: emails(first: 0, state: PENDING) {\n      totalCount\n    }\n  }\n":
-    types.UnverifiedEmailAlertFragmentDoc,
+  "\n  fragment UnverifiedEmailAlert_user on User {\n    id\n    unverifiedEmails: emails(first: 0, state: PENDING) {\n      totalCount\n    }\n  }\n":
+    types.UnverifiedEmailAlert_UserFragmentDoc,
   "\n  fragment UserEmail_email on UserEmail {\n    id\n    email\n    confirmedAt\n  }\n":
     types.UserEmail_EmailFragmentDoc,
   "\n  mutation RemoveEmail($id: ID!) {\n    removeEmail(input: { userEmailId: $id }) {\n      status\n\n      user {\n        id\n      }\n    }\n  }\n":
     types.RemoveEmailDocument,
   "\n  mutation SetPrimaryEmail($id: ID!) {\n    setPrimaryEmail(input: { userEmailId: $id }) {\n      status\n      user {\n        id\n        primaryEmail {\n          id\n        }\n      }\n    }\n  }\n":
     types.SetPrimaryEmailDocument,
-  "\n  fragment UserGreeting_user on User {\n    id\n    username\n    matrix {\n      mxid\n      displayName\n    }\n\n    ...UnverifiedEmailAlert\n  }\n":
+  "\n  fragment UserGreeting_user on User {\n    id\n    matrix {\n      mxid\n      displayName\n    }\n  }\n":
     types.UserGreeting_UserFragmentDoc,
+  "\n  mutation SetDisplayName($userId: ID!, $displayName: String) {\n    setDisplayName(input: { userId: $userId, displayName: $displayName }) {\n      status\n      user {\n        id\n        matrix {\n          displayName\n        }\n      }\n    }\n  }\n":
+    types.SetDisplayNameDocument,
   "\n  mutation AddEmail($userId: ID!, $email: String!) {\n    addEmail(input: { userId: $userId, email: $email }) {\n      status\n      violations\n      email {\n        id\n        ...UserEmail_email\n      }\n    }\n  }\n":
     types.AddEmailDocument,
   "\n  query UserEmailListQuery(\n    $userId: ID!\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n\n      emails(first: $first, after: $after, last: $last, before: $before) {\n        edges {\n          cursor\n          node {\n            id\n            ...UserEmail_email\n          }\n        }\n        totalCount\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n":
     types.UserEmailListQueryDocument,
   "\n  fragment UserEmailList_user on User {\n    id\n    primaryEmail {\n      id\n    }\n  }\n":
     types.UserEmailList_UserFragmentDoc,
-  "\n  fragment UserName_user on User {\n    id\n    matrix {\n      displayName\n    }\n  }\n":
-    types.UserName_UserFragmentDoc,
-  "\n  mutation SetDisplayName($userId: ID!, $displayName: String) {\n    setDisplayName(input: { userId: $userId, displayName: $displayName }) {\n      status\n      user {\n        id\n        matrix {\n          displayName\n        }\n      }\n    }\n  }\n":
-    types.SetDisplayNameDocument,
   "\n  fragment BrowserSessionsOverview_user on User {\n    id\n\n    browserSessions(first: 0, state: ACTIVE) {\n      totalCount\n    }\n  }\n":
     types.BrowserSessionsOverview_UserFragmentDoc,
   "\n  fragment UserEmail_verifyEmail on UserEmail {\n    id\n    email\n  }\n":
@@ -61,7 +59,7 @@ const documents = {
     types.VerifyEmailDocument,
   "\n  mutation ResendVerificationEmail($id: ID!) {\n    sendVerificationEmail(input: { userEmailId: $id }) {\n      status\n\n      user {\n        id\n        primaryEmail {\n          id\n        }\n      }\n\n      email {\n        id\n        ...UserEmail_email\n      }\n    }\n  }\n":
     types.ResendVerificationEmailDocument,
-  "\n  query UserProfileQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n        ...UserName_user\n        ...UserEmailList_user\n      }\n    }\n  }\n":
+  "\n  query UserProfileQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n        ...UserEmailList_user\n      }\n    }\n  }\n":
     types.UserProfileQueryDocument,
   "\n  query SessionDetailQuery($id: ID!) {\n    viewerSession {\n      ... on Node {\n        id\n      }\n    }\n\n    node(id: $id) {\n      __typename\n      id\n      ...CompatSession_detail\n      ...OAuth2Session_detail\n      ...BrowserSession_detail\n    }\n  }\n":
     types.SessionDetailQueryDocument,
@@ -71,7 +69,7 @@ const documents = {
     types.SessionsOverviewQueryDocument,
   "\n  query AppSessionsListQuery(\n    $before: String\n    $after: String\n    $first: Int\n    $last: Int\n  ) {\n    viewer {\n      __typename\n\n      ... on User {\n        id\n        appSessions(\n          before: $before\n          after: $after\n          first: $first\n          last: $last\n          state: ACTIVE\n        ) {\n          edges {\n            cursor\n            node {\n              __typename\n              ...CompatSession_session\n              ...OAuth2Session_session\n            }\n          }\n\n          totalCount\n          pageInfo {\n            startCursor\n            endCursor\n            hasNextPage\n            hasPreviousPage\n          }\n        }\n      }\n    }\n  }\n":
     types.AppSessionsListQueryDocument,
-  "\n  query CurrentUserGreeting {\n    viewer {\n      __typename\n      ...UserGreeting_user\n    }\n  }\n":
+  "\n  query CurrentUserGreeting {\n    viewerSession {\n      __typename\n\n      ... on BrowserSession {\n        id\n\n        user {\n          id\n          ...UnverifiedEmailAlert_user\n          ...UserGreeting_user\n        }\n      }\n    }\n  }\n":
     types.CurrentUserGreetingDocument,
   "\n  query OAuth2ClientQuery($id: ID!) {\n    oauth2Client(id: $id) {\n      ...OAuth2Client_detail\n    }\n  }\n":
     types.OAuth2ClientQueryDocument,
@@ -163,8 +161,8 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  fragment UnverifiedEmailAlert on User {\n    id\n    unverifiedEmails: emails(first: 0, state: PENDING) {\n      totalCount\n    }\n  }\n",
-): (typeof documents)["\n  fragment UnverifiedEmailAlert on User {\n    id\n    unverifiedEmails: emails(first: 0, state: PENDING) {\n      totalCount\n    }\n  }\n"];
+  source: "\n  fragment UnverifiedEmailAlert_user on User {\n    id\n    unverifiedEmails: emails(first: 0, state: PENDING) {\n      totalCount\n    }\n  }\n",
+): (typeof documents)["\n  fragment UnverifiedEmailAlert_user on User {\n    id\n    unverifiedEmails: emails(first: 0, state: PENDING) {\n      totalCount\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -187,8 +185,14 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  fragment UserGreeting_user on User {\n    id\n    username\n    matrix {\n      mxid\n      displayName\n    }\n\n    ...UnverifiedEmailAlert\n  }\n",
-): (typeof documents)["\n  fragment UserGreeting_user on User {\n    id\n    username\n    matrix {\n      mxid\n      displayName\n    }\n\n    ...UnverifiedEmailAlert\n  }\n"];
+  source: "\n  fragment UserGreeting_user on User {\n    id\n    matrix {\n      mxid\n      displayName\n    }\n  }\n",
+): (typeof documents)["\n  fragment UserGreeting_user on User {\n    id\n    matrix {\n      mxid\n      displayName\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  mutation SetDisplayName($userId: ID!, $displayName: String) {\n    setDisplayName(input: { userId: $userId, displayName: $displayName }) {\n      status\n      user {\n        id\n        matrix {\n          displayName\n        }\n      }\n    }\n  }\n",
+): (typeof documents)["\n  mutation SetDisplayName($userId: ID!, $displayName: String) {\n    setDisplayName(input: { userId: $userId, displayName: $displayName }) {\n      status\n      user {\n        id\n        matrix {\n          displayName\n        }\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -207,18 +211,6 @@ export function graphql(
 export function graphql(
   source: "\n  fragment UserEmailList_user on User {\n    id\n    primaryEmail {\n      id\n    }\n  }\n",
 ): (typeof documents)["\n  fragment UserEmailList_user on User {\n    id\n    primaryEmail {\n      id\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(
-  source: "\n  fragment UserName_user on User {\n    id\n    matrix {\n      displayName\n    }\n  }\n",
-): (typeof documents)["\n  fragment UserName_user on User {\n    id\n    matrix {\n      displayName\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(
-  source: "\n  mutation SetDisplayName($userId: ID!, $displayName: String) {\n    setDisplayName(input: { userId: $userId, displayName: $displayName }) {\n      status\n      user {\n        id\n        matrix {\n          displayName\n        }\n      }\n    }\n  }\n",
-): (typeof documents)["\n  mutation SetDisplayName($userId: ID!, $displayName: String) {\n    setDisplayName(input: { userId: $userId, displayName: $displayName }) {\n      status\n      user {\n        id\n        matrix {\n          displayName\n        }\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -247,8 +239,8 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  query UserProfileQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n        ...UserName_user\n        ...UserEmailList_user\n      }\n    }\n  }\n",
-): (typeof documents)["\n  query UserProfileQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n        ...UserName_user\n        ...UserEmailList_user\n      }\n    }\n  }\n"];
+  source: "\n  query UserProfileQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n        ...UserEmailList_user\n      }\n    }\n  }\n",
+): (typeof documents)["\n  query UserProfileQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n        ...UserEmailList_user\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -277,8 +269,8 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  query CurrentUserGreeting {\n    viewer {\n      __typename\n      ...UserGreeting_user\n    }\n  }\n",
-): (typeof documents)["\n  query CurrentUserGreeting {\n    viewer {\n      __typename\n      ...UserGreeting_user\n    }\n  }\n"];
+  source: "\n  query CurrentUserGreeting {\n    viewerSession {\n      __typename\n\n      ... on BrowserSession {\n        id\n\n        user {\n          id\n          ...UnverifiedEmailAlert_user\n          ...UserGreeting_user\n        }\n      }\n    }\n  }\n",
+): (typeof documents)["\n  query CurrentUserGreeting {\n    viewerSession {\n      __typename\n\n      ... on BrowserSession {\n        id\n\n        user {\n          id\n          ...UnverifiedEmailAlert_user\n          ...UserGreeting_user\n        }\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

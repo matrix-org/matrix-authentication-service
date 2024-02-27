@@ -13,20 +13,33 @@
 // limitations under the License.
 
 import { Outlet, createFileRoute, notFound } from "@tanstack/react-router";
+import { Heading } from "@vector-im/compound-web";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "urql";
 
+import { useEndBrowserSession } from "../components/BrowserSession";
 import Layout from "../components/Layout";
 import NavBar from "../components/NavBar";
 import NavItem from "../components/NavItem";
+import EndSessionButton from "../components/Session/EndSessionButton";
+import UnverifiedEmailAlert from "../components/UnverifiedEmailAlert";
 import UserGreeting from "../components/UserGreeting";
 import { graphql } from "../gql";
 
 const QUERY = graphql(/* GraphQL */ `
   query CurrentUserGreeting {
-    viewer {
+    viewerSession {
       __typename
-      ...UserGreeting_user
+
+      ... on BrowserSession {
+        id
+
+        user {
+          id
+          ...UnverifiedEmailAlert_user
+          ...UserGreeting_user
+        }
+      }
     }
   }
 `);
@@ -39,7 +52,8 @@ export const Route = createFileRoute("/_account")({
       { fetchOptions: { signal } },
     );
     if (result.error) throw result.error;
-    if (result.data?.viewer.__typename !== "User") throw notFound();
+    if (result.data?.viewerSession.__typename !== "BrowserSession")
+      throw notFound();
   },
   component: Account,
 });
@@ -50,21 +64,34 @@ function Account(): React.ReactElement {
     query: QUERY,
   });
   if (result.error) throw result.error;
-  const user = result.data?.viewer;
-  if (user?.__typename !== "User") throw notFound();
+  const session = result.data?.viewerSession;
+  if (session?.__typename !== "BrowserSession") throw notFound();
+  const onSessionEnd = useEndBrowserSession(session.id, true);
 
   return (
     <Layout wide>
-      <UserGreeting user={user} />
+      <div className="flex flex-col gap-4">
+        <header className="flex justify-between mb-4">
+          <Heading size="lg" weight="semibold">
+            {t("frontend.account.title")}
+          </Heading>
 
-      <NavBar>
-        <NavItem from={Route.fullPath} to=".">
-          {t("frontend.nav.profile")}
-        </NavItem>
-        <NavItem from={Route.fullPath} to="./sessions">
-          {t("frontend.nav.sessions")}
-        </NavItem>
-      </NavBar>
+          <EndSessionButton endSession={onSessionEnd} />
+        </header>
+
+        <UserGreeting user={session.user} />
+
+        <UnverifiedEmailAlert user={session.user} />
+
+        <NavBar>
+          <NavItem from={Route.fullPath} to=".">
+            {t("frontend.nav.settings")}
+          </NavItem>
+          <NavItem from={Route.fullPath} to="./sessions">
+            {t("frontend.nav.devices")}
+          </NavItem>
+        </NavBar>
+      </div>
 
       <Outlet />
     </Layout>

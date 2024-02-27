@@ -2,8 +2,10 @@
   "action": {
     "back": "Back",
     "cancel": "Cancel",
+    "clear": "Clear",
     "close": "Close",
     "continue": "Continue",
+    "edit": "Edit",
     "save": "Save"
   },
   "branding": {
@@ -17,12 +19,20 @@
     }
   },
   "common": {
-    "error": "Error",
     "loading": "Loading…",
     "next": "Next",
     "previous": "Previous"
   },
   "frontend": {
+    "account": {
+      "edit_profile": {
+        "display_name_help": "This is what others will see wherever you’re signed in.",
+        "display_name_label": "Display name",
+        "title": "Edit profile",
+        "username_label": "Username"
+      },
+      "title": "Your account"
+    },
     "add_email_form": {
       "email_denied_alert": {
         "text": "The entered email is not allowed by the server policy.",
@@ -76,8 +86,8 @@
       "inactive_90_days": "Inactive for 90+ days"
     },
     "nav": {
-      "profile": "Profile",
-      "sessions": "Sessions"
+      "devices": "Devices",
+      "settings": "Settings"
     },
     "not_found_alert_title": "Not found.",
     "not_logged_in_alert": "You're not logged in.",
@@ -155,11 +165,7 @@
       "retry_button": "Resend code"
     },
     "user_email_list": {
-      "heading": "Emails",
       "no_primary_email_alert": "No primary email address"
-    },
-    "user_name": {
-      "display_name_field_label": "Display Name"
     },
     "user_sessions_overview": {
       "active_sessions:one": "{{count}} active session",
