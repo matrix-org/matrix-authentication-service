@@ -98,7 +98,7 @@ features = ["preserve_order"]
 
 # Custom error types
 [workspace.dependencies.thiserror]
-version = "1.0.56"
+version = "1.0.57"
 
 # Logging and tracing
 [workspace.dependencies.tracing]
