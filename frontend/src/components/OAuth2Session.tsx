@@ -13,14 +13,17 @@
 // limitations under the License.
 
 import { parseISO } from "date-fns";
+import { useTranslation } from "react-i18next";
 import { useMutation } from "urql";
 
 import { FragmentType, graphql, useFragment } from "../gql";
 import { DeviceType, Oauth2ApplicationType } from "../gql/graphql";
 import { getDeviceIdFromScope } from "../utils/deviceIdFromScope";
 
-import { Session } from "./Session";
+import DateTime from "./DateTime";
 import EndSessionButton from "./Session/EndSessionButton";
+import LastActive from "./Session/LastActive";
+import * as Card from "./SessionCard";
 
 export const FRAGMENT = graphql(/* GraphQL */ `
   fragment OAuth2Session_session on Oauth2Session {
@@ -32,9 +35,9 @@ export const FRAGMENT = graphql(/* GraphQL */ `
     lastActiveAt
 
     userAgent {
+      name
       model
       os
-      osVersion
       deviceType
     }
 
@@ -77,6 +80,7 @@ type Props = {
 };
 
 const OAuth2Session: React.FC<Props> = ({ session }) => {
+  const { t } = useTranslation();
   const data = useFragment(FRAGMENT, session);
   const [, endSession] = useMutation(END_SESSION_MUTATION);
 
@@ -87,7 +91,6 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
   const deviceId = getDeviceIdFromScope(data.scope);
 
   const createdAt = parseISO(data.createdAt);
-  const finishedAt = data.finishedAt ? parseISO(data.finishedAt) : undefined;
   const lastActiveAt = data.lastActiveAt
     ? parseISO(data.lastActiveAt)
     : undefined;
@@ -98,26 +101,67 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
       : data.userAgent?.deviceType) ??
     getDeviceTypeFromClientAppType(data.client.applicationType);
 
-  let clientName = data.client.clientName || data.client.clientId || undefined;
+  const clientName = data.client.clientName || data.client.clientId;
 
-  if (data.userAgent?.model) {
-    clientName = `${clientName} on ${data.userAgent.model}`;
-  }
+  const deviceName =
+    data.userAgent?.model ??
+    (data.userAgent?.name
+      ? data.userAgent?.os
+        ? t("frontend.session.name_for_platform", {
+            name: data.userAgent.name,
+            platform: data.userAgent.os,
+          })
+        : data.userAgent.name
+      : t("frontend.session.unknown_device"));
 
   return (
-    <Session
-      id={data.id}
-      name={deviceId}
-      createdAt={createdAt}
-      finishedAt={finishedAt}
-      clientName={clientName}
-      clientLogoUri={data.client.logoUri || undefined}
-      deviceType={deviceType}
-      lastActiveIp={data.lastActiveIp || undefined}
-      lastActiveAt={lastActiveAt}
-    >
-      {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
-    </Session>
+    <Card.Root>
+      <Card.LinkBody
+        to="/sessions/$id"
+        params={{ id: data.id }}
+        disabled={!!data.finishedAt}
+      >
+        <Card.Header type={deviceType}>
+          <Card.Name name={deviceName} />
+          <Card.Client
+            name={clientName}
+            logoUri={data.client.logoUri ?? undefined}
+          />
+        </Card.Header>
+
+        <Card.Metadata>
+          {lastActiveAt && (
+            <Card.Info label={t("frontend.session.last_active_label")}>
+              <LastActive lastActive={lastActiveAt} />
+            </Card.Info>
+          )}
+          <Card.Info label={t("frontend.session.signed_in_label")}>
+            <DateTime datetime={createdAt} />
+          </Card.Info>
+          {deviceId && (
+            <Card.Info label={t("frontend.session.device_id_label")}>
+              {deviceId}
+            </Card.Info>
+          )}
+        </Card.Metadata>
+      </Card.LinkBody>
+
+      {!data.finishedAt && (
+        <Card.Action>
+          <EndSessionButton endSession={onSessionEnd}>
+            <Card.Body compact>
+              <Card.Header type={deviceType}>
+                <Card.Name name={deviceName} />
+                <Card.Client
+                  name={clientName}
+                  logoUri={data.client.logoUri ?? undefined}
+                />
+              </Card.Header>
+            </Card.Body>
+          </EndSessionButton>
+        </Card.Action>
+      )}
+    </Card.Root>
   );
 };
 

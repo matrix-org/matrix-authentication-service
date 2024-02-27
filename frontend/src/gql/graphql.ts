@@ -1237,7 +1237,6 @@ export type CompatSession_SessionFragment = {
   lastActiveAt?: string | null;
   userAgent?: {
     __typename?: "UserAgent";
-    raw: string;
     name?: string | null;
     os?: string | null;
     model?: string | null;
@@ -1277,9 +1276,9 @@ export type OAuth2Session_SessionFragment = {
   lastActiveAt?: string | null;
   userAgent?: {
     __typename?: "UserAgent";
+    name?: string | null;
     model?: string | null;
     os?: string | null;
-    osVersion?: string | null;
     deviceType: DeviceType;
   } | null;
   client: {
@@ -1897,7 +1896,6 @@ export const CompatSession_SessionFragmentDoc = {
             selectionSet: {
               kind: "SelectionSet",
               selections: [
-                { kind: "Field", name: { kind: "Name", value: "raw" } },
                 { kind: "Field", name: { kind: "Name", value: "name" } },
                 { kind: "Field", name: { kind: "Name", value: "os" } },
                 { kind: "Field", name: { kind: "Name", value: "model" } },
@@ -1946,9 +1944,9 @@ export const OAuth2Session_SessionFragmentDoc = {
             selectionSet: {
               kind: "SelectionSet",
               selections: [
+                { kind: "Field", name: { kind: "Name", value: "name" } },
                 { kind: "Field", name: { kind: "Name", value: "model" } },
                 { kind: "Field", name: { kind: "Name", value: "os" } },
-                { kind: "Field", name: { kind: "Name", value: "osVersion" } },
                 { kind: "Field", name: { kind: "Name", value: "deviceType" } },
               ],
             },
@@ -2573,9 +2571,9 @@ export const EndOAuth2SessionDocument = {
             selectionSet: {
               kind: "SelectionSet",
               selections: [
+                { kind: "Field", name: { kind: "Name", value: "name" } },
                 { kind: "Field", name: { kind: "Name", value: "model" } },
                 { kind: "Field", name: { kind: "Name", value: "os" } },
-                { kind: "Field", name: { kind: "Name", value: "osVersion" } },
                 { kind: "Field", name: { kind: "Name", value: "deviceType" } },
               ],
             },
@@ -4233,7 +4231,6 @@ export const AppSessionsListQueryDocument = {
             selectionSet: {
               kind: "SelectionSet",
               selections: [
-                { kind: "Field", name: { kind: "Name", value: "raw" } },
                 { kind: "Field", name: { kind: "Name", value: "name" } },
                 { kind: "Field", name: { kind: "Name", value: "os" } },
                 { kind: "Field", name: { kind: "Name", value: "model" } },
@@ -4277,9 +4274,9 @@ export const AppSessionsListQueryDocument = {
             selectionSet: {
               kind: "SelectionSet",
               selections: [
+                { kind: "Field", name: { kind: "Name", value: "name" } },
                 { kind: "Field", name: { kind: "Name", value: "model" } },
                 { kind: "Field", name: { kind: "Name", value: "os" } },
-                { kind: "Field", name: { kind: "Name", value: "osVersion" } },
                 { kind: "Field", name: { kind: "Name", value: "deviceType" } },
               ],
             },

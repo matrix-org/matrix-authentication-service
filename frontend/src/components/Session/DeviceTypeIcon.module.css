@@ -14,12 +14,11 @@
  */
 
 .icon {
-    color: var(--cpd-color-icon-primary);
-    background-color: var(--cpd-color-bg-subtle-primary);
-    flex: 0 0 var(--cpd-space-4x);
+    color: var(--cpd-color-icon-secondary);
+    background-color: var(--cpd-color-bg-subtle-secondary);
     box-sizing: content-box;
-    height: var(--cpd-space-4x);
-    width: var(--cpd-space-4x);
+    height: var(--cpd-space-6x);
+    width: var(--cpd-space-6x);
     padding: var(--cpd-space-2x);
     border-radius: var(--cpd-space-2x);
 }

@@ -13,12 +13,16 @@
 // limitations under the License.
 
 import { parseISO } from "date-fns";
+import { useTranslation } from "react-i18next";
 import { useMutation } from "urql";
 
 import { FragmentType, graphql, useFragment } from "../gql";
+import { DeviceType } from "../gql/graphql";
 
-import { Session } from "./Session";
+import DateTime from "./DateTime";
 import EndSessionButton from "./Session/EndSessionButton";
+import LastActive from "./Session/LastActive";
+import * as Card from "./SessionCard";
 
 export const FRAGMENT = graphql(/* GraphQL */ `
   fragment CompatSession_session on CompatSession {
@@ -29,7 +33,6 @@ export const FRAGMENT = graphql(/* GraphQL */ `
     lastActiveIp
     lastActiveAt
     userAgent {
-      raw
       name
       os
       model
@@ -78,6 +81,7 @@ export const simplifyUrl = (url: string): string => {
 const CompatSession: React.FC<{
   session: FragmentType<typeof FRAGMENT>;
 }> = ({ session }) => {
+  const { t } = useTranslation();
   const data = useFragment(FRAGMENT, session);
   const [, endCompatSession] = useMutation(END_SESSION_MUTATION);
 
@@ -85,39 +89,68 @@ const CompatSession: React.FC<{
     await endCompatSession({ id: data.id });
   };
 
-  let clientName = data.ssoLogin?.redirectUri
+  const clientName = data.ssoLogin?.redirectUri
     ? simplifyUrl(data.ssoLogin.redirectUri)
     : undefined;
 
-  if (data.userAgent) {
-    if (data.userAgent.model && data.userAgent.name) {
-      clientName = `${data.userAgent.name} on ${data.userAgent.model}`;
-    } else if (data.userAgent.name && data.userAgent.os) {
-      clientName = `${data.userAgent.name} on ${data.userAgent.os}`;
-    } else if (data.userAgent.name) {
-      clientName = data.userAgent.name;
-    }
-  }
+  const deviceType = data.userAgent?.deviceType ?? DeviceType.Unknown;
+
+  const deviceName =
+    data.userAgent?.model ??
+    (data.userAgent?.name
+      ? data.userAgent?.os
+        ? t("frontend.session.name_for_platform", {
+            name: data.userAgent.name,
+            platform: data.userAgent.os,
+          })
+        : data.userAgent.name
+      : t("frontend.session.unknown_device"));
 
   const createdAt = parseISO(data.createdAt);
-  const finishedAt = data.finishedAt ? parseISO(data.finishedAt) : undefined;
   const lastActiveAt = data.lastActiveAt
     ? parseISO(data.lastActiveAt)
     : undefined;
 
   return (
-    <Session
-      id={data.id}
-      name={data.deviceId}
-      createdAt={createdAt}
-      finishedAt={finishedAt}
-      clientName={clientName}
-      deviceType={data.userAgent?.deviceType}
-      lastActiveIp={data.lastActiveIp || undefined}
-      lastActiveAt={lastActiveAt}
-    >
-      {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
-    </Session>
+    <Card.Root>
+      <Card.LinkBody
+        to="/sessions/$id"
+        params={{ id: data.id }}
+        disabled={!!data.finishedAt}
+      >
+        <Card.Header type={deviceType}>
+          <Card.Name name={deviceName} />
+          {clientName && <Card.Client name={clientName} />}
+        </Card.Header>
+
+        <Card.Metadata>
+          {lastActiveAt && (
+            <Card.Info label={t("frontend.session.last_active_label")}>
+              <LastActive lastActive={lastActiveAt} />
+            </Card.Info>
+          )}
+          <Card.Info label={t("frontend.session.signed_in_label")}>
+            <DateTime datetime={createdAt} />
+          </Card.Info>
+          <Card.Info label={t("frontend.session.device_id_label")}>
+            {data.deviceId}
+          </Card.Info>
+        </Card.Metadata>
+      </Card.LinkBody>
+
+      {!data.finishedAt && (
+        <Card.Action>
+          <EndSessionButton endSession={onSessionEnd}>
+            <Card.Body compact>
+              <Card.Header type={deviceType}>
+                <Card.Name name={deviceName} />
+                {clientName && <Card.Client name={clientName} />}
+              </Card.Header>
+            </Card.Body>
+          </EndSessionButton>
+        </Card.Action>
+      )}
+    </Card.Root>
   );
 };
 
