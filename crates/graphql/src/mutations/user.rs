@@ -18,7 +18,7 @@ use mas_storage::{
     job::{DeactivateUserJob, JobRepositoryExt, ProvisionUserJob},
     user::UserRepository,
 };
-use tracing::info;
+use tracing::{info, warn};
 
 use crate::{
     model::{NodeType, User},
@@ -36,6 +36,13 @@ pub struct UserMutations {
 struct AddUserInput {
     /// The username of the user to add.
     username: String,
+
+    /// Skip checking with the homeserver whether the username is valid.
+    ///
+    /// Use this with caution! The main reason to use this, is when a user used
+    /// by an application service needs to exist in MAS to craft special
+    /// tokens (like with admin access) for them
+    skip_homeserver_check: Option<bool>,
 }
 
 /// The status of the `addUser` mutation.
@@ -47,6 +54,9 @@ enum AddUserStatus {
     /// The user already exists.
     Exists,
 
+    /// The username is reserved.
+    Reserved,
+
     /// The username is invalid.
     Invalid,
 }
@@ -56,6 +66,7 @@ enum AddUserStatus {
 enum AddUserPayload {
     Added(mas_data_model::User),
     Exists(mas_data_model::User),
+    Reserved,
     Invalid,
 }
 
@@ -66,6 +77,7 @@ impl AddUserPayload {
         match self {
             Self::Added(_) => AddUserStatus::Added,
             Self::Exists(_) => AddUserStatus::Exists,
+            Self::Reserved => AddUserStatus::Reserved,
             Self::Invalid => AddUserStatus::Invalid,
         }
     }
@@ -74,7 +86,7 @@ impl AddUserPayload {
     async fn user(&self) -> Option<User> {
         match self {
             Self::Added(user) | Self::Exists(user) => Some(User(user.clone())),
-            Self::Invalid => None,
+            Self::Invalid | Self::Reserved => None,
         }
     }
 }
@@ -243,6 +255,21 @@ impl UserMutations {
         // Do some basic check on the username
         if !username_valid(&input.username) {
             return Ok(AddUserPayload::Invalid);
+        }
+
+        // Ask the homeserver if the username is available
+        let homeserver_available = state
+            .homeserver_connection()
+            .is_localpart_available(&input.username)
+            .await?;
+
+        if !homeserver_available {
+            if !input.skip_homeserver_check.unwrap_or(false) {
+                return Ok(AddUserPayload::Reserved);
+            }
+
+            // If we skipped the check, we still want to shout about it
+            warn!("Skipped homeserver check for username {}", input.username);
         }
 
         let user = repo.user().add(&mut rng, &clock, input.username).await?;
