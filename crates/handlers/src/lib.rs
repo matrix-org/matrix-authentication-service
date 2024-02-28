@@ -43,6 +43,7 @@ use hyper::{
 use mas_axum_utils::{cookies::CookieJar, FancyError};
 use mas_http::CorsLayerExt;
 use mas_keystore::{Encrypter, Keystore};
+use mas_matrix::BoxHomeserverConnection;
 use mas_policy::Policy;
 use mas_router::{Route, UrlBuilder};
 use mas_storage::{BoxClock, BoxRepository, BoxRng};
@@ -88,7 +89,6 @@ pub use mas_axum_utils::{
 
 pub use self::{
     activity_tracker::{ActivityTracker, Bound as BoundActivityTracker},
-    compat::MatrixHomeserver,
     graphql::schema as graphql_schema,
     preferred_language::PreferredLanguage,
     site_config::SiteConfig,
@@ -253,7 +253,7 @@ where
     S: Clone + Send + Sync + 'static,
     UrlBuilder: FromRef<S>,
     SiteConfig: FromRef<S>,
-    MatrixHomeserver: FromRef<S>,
+    BoxHomeserverConnection: FromRef<S>,
     PasswordManager: FromRef<S>,
     BoundActivityTracker: FromRequestParts<S>,
     BoxRepository: FromRequestParts<S>,

@@ -14,7 +14,13 @@
 
 mod mock;
 
+use std::sync::Arc;
+
 pub use self::mock::HomeserverConnection as MockHomeserverConnection;
+
+// TODO: this should probably be another error type by default
+pub type BoxHomeserverConnection<Error = anyhow::Error> =
+    Box<dyn HomeserverConnection<Error = Error>>;
 
 #[derive(Debug)]
 pub struct MatrixUser {
@@ -309,6 +315,52 @@ pub trait HomeserverConnection: Send + Sync {
 
 #[async_trait::async_trait]
 impl<T: HomeserverConnection + Send + Sync + ?Sized> HomeserverConnection for &T {
+    type Error = T::Error;
+
+    fn homeserver(&self) -> &str {
+        (**self).homeserver()
+    }
+
+    async fn query_user(&self, mxid: &str) -> Result<MatrixUser, Self::Error> {
+        (**self).query_user(mxid).await
+    }
+
+    async fn provision_user(&self, request: &ProvisionRequest) -> Result<bool, Self::Error> {
+        (**self).provision_user(request).await
+    }
+
+    async fn is_localpart_available(&self, localpart: &str) -> Result<bool, Self::Error> {
+        (**self).is_localpart_available(localpart).await
+    }
+
+    async fn create_device(&self, mxid: &str, device_id: &str) -> Result<(), Self::Error> {
+        (**self).create_device(mxid, device_id).await
+    }
+
+    async fn delete_device(&self, mxid: &str, device_id: &str) -> Result<(), Self::Error> {
+        (**self).delete_device(mxid, device_id).await
+    }
+
+    async fn delete_user(&self, mxid: &str, erase: bool) -> Result<(), Self::Error> {
+        (**self).delete_user(mxid, erase).await
+    }
+
+    async fn set_displayname(&self, mxid: &str, displayname: &str) -> Result<(), Self::Error> {
+        (**self).set_displayname(mxid, displayname).await
+    }
+
+    async fn unset_displayname(&self, mxid: &str) -> Result<(), Self::Error> {
+        (**self).unset_displayname(mxid).await
+    }
+
+    async fn allow_cross_signing_reset(&self, mxid: &str) -> Result<(), Self::Error> {
+        (**self).allow_cross_signing_reset(mxid).await
+    }
+}
+
+// Implement for Arc<T> where T: HomeserverConnection
+#[async_trait::async_trait]
+impl<T: HomeserverConnection + ?Sized> HomeserverConnection for Arc<T> {
     type Error = T::Error;
 
     fn homeserver(&self) -> &str {

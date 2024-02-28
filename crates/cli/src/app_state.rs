@@ -21,10 +21,12 @@ use axum::{
 use ipnetwork::IpNetwork;
 use mas_handlers::{
     passwords::PasswordManager, ActivityTracker, BoundActivityTracker, CookieManager, ErrorWrapper,
-    HttpClientFactory, MatrixHomeserver, MetadataCache, SiteConfig,
+    HttpClientFactory, MetadataCache, SiteConfig,
 };
 use mas_i18n::Translator;
 use mas_keystore::{Encrypter, Keystore};
+use mas_matrix::BoxHomeserverConnection;
+use mas_matrix_synapse::SynapseConnection;
 use mas_policy::{Policy, PolicyFactory};
 use mas_router::UrlBuilder;
 use mas_storage::{BoxClock, BoxRepository, BoxRng, Repository, SystemClock};
@@ -45,7 +47,7 @@ pub struct AppState {
     pub cookie_manager: CookieManager,
     pub encrypter: Encrypter,
     pub url_builder: UrlBuilder,
-    pub homeserver: MatrixHomeserver,
+    pub homeserver_connection: SynapseConnection,
     pub policy_factory: Arc<PolicyFactory>,
     pub graphql_schema: mas_graphql::Schema,
     pub http_client_factory: HttpClientFactory,
@@ -177,12 +179,6 @@ impl FromRef<AppState> for UrlBuilder {
     }
 }
 
-impl FromRef<AppState> for MatrixHomeserver {
-    fn from_ref(input: &AppState) -> Self {
-        input.homeserver.clone()
-    }
-}
-
 impl FromRef<AppState> for HttpClientFactory {
     fn from_ref(input: &AppState) -> Self {
         input.http_client_factory.clone()
@@ -210,6 +206,12 @@ impl FromRef<AppState> for MetadataCache {
 impl FromRef<AppState> for SiteConfig {
     fn from_ref(input: &AppState) -> Self {
         input.site_config.clone()
+    }
+}
+
+impl FromRef<AppState> for BoxHomeserverConnection {
+    fn from_ref(input: &AppState) -> Self {
+        Box::new(input.homeserver_connection.clone())
     }
 }
 

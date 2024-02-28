@@ -17,6 +17,7 @@ use chrono::Duration;
 use hyper::StatusCode;
 use mas_axum_utils::sentry::SentryEventID;
 use mas_data_model::{CompatSession, CompatSsoLoginState, Device, TokenType, User, UserAgent};
+use mas_matrix::BoxHomeserverConnection;
 use mas_storage::{
     compat::{
         CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository,
@@ -32,7 +33,7 @@ use serde_with::{serde_as, skip_serializing_none, DurationMilliSeconds};
 use thiserror::Error;
 use zeroize::Zeroizing;
 
-use super::{MatrixError, MatrixHomeserver};
+use super::MatrixError;
 use crate::{
     impl_from_error_for_route, passwords::PasswordManager, site_config::SiteConfig,
     BoundActivityTracker,
@@ -215,7 +216,7 @@ pub(crate) async fn post(
     State(password_manager): State<PasswordManager>,
     mut repo: BoxRepository,
     activity_tracker: BoundActivityTracker,
-    State(homeserver): State<MatrixHomeserver>,
+    State(homeserver): State<BoxHomeserverConnection>,
     State(site_config): State<SiteConfig>,
     user_agent: Option<TypedHeader<headers::UserAgent>>,
     Json(input): Json<RequestBody>,
@@ -254,7 +255,7 @@ pub(crate) async fn post(
             .await?;
     }
 
-    let user_id = format!("@{username}:{homeserver}", username = user.username);
+    let user_id = homeserver.mxid(&user.username);
 
     // If the client asked for a refreshable token, make it expire
     let expires_in = if input.refresh_token {

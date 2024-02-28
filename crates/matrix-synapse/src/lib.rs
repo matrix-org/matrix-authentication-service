@@ -22,6 +22,7 @@ use url::Url;
 
 static SYNAPSE_AUTH_PROVIDER: &str = "oauth-delegated";
 
+#[derive(Clone)]
 pub struct SynapseConnection {
     homeserver: String,
     endpoint: Url,

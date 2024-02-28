@@ -18,9 +18,7 @@ use anyhow::Context;
 use clap::Parser;
 use itertools::Itertools;
 use mas_config::AppConfig;
-use mas_handlers::{
-    ActivityTracker, CookieManager, HttpClientFactory, MatrixHomeserver, MetadataCache, SiteConfig,
-};
+use mas_handlers::{ActivityTracker, CookieManager, HttpClientFactory, MetadataCache, SiteConfig};
 use mas_listener::{server::Server, shutdown::ShutdownStream};
 use mas_matrix_synapse::SynapseConnection;
 use mas_router::UrlBuilder;
@@ -123,6 +121,13 @@ impl Options {
 
         let http_client_factory = HttpClientFactory::new().await?;
 
+        let homeserver_connection = SynapseConnection::new(
+            config.matrix.homeserver.clone(),
+            config.matrix.endpoint.clone(),
+            config.matrix.secret.clone(),
+            http_client_factory.clone(),
+        );
+
         if !self.no_worker {
             let mailer = mailer_from_config(&config.email, &templates)?;
             mailer.test_connection().await?;
@@ -132,18 +137,12 @@ impl Options {
             let worker_name = Alphanumeric.sample_string(&mut rng, 10);
 
             info!(worker_name, "Starting task worker");
-            let conn = SynapseConnection::new(
-                config.matrix.homeserver.clone(),
-                config.matrix.endpoint.clone(),
-                config.matrix.secret.clone(),
-                http_client_factory.clone(),
-            );
-            let monitor = mas_tasks::init(&worker_name, &pool, &mailer, conn).await?;
+            let monitor =
+                mas_tasks::init(&worker_name, &pool, &mailer, homeserver_connection.clone())
+                    .await?;
             // TODO: grab the handle
             tokio::spawn(monitor.run());
         }
-
-        let homeserver = MatrixHomeserver::new(config.matrix.homeserver.clone());
 
         let listeners_config = config.http.listeners.clone();
 
@@ -151,13 +150,6 @@ impl Options {
 
         // The upstream OIDC metadata cache
         let metadata_cache = MetadataCache::new();
-
-        let conn = SynapseConnection::new(
-            config.matrix.homeserver.clone(),
-            config.matrix.endpoint.clone(),
-            config.matrix.secret.clone(),
-            http_client_factory.clone(),
-        );
 
         let site_config = SiteConfig {
             tos_uri: config.branding.tos_uri.clone(),
@@ -176,7 +168,8 @@ impl Options {
         // Listen for SIGHUP
         register_sighup(&templates, &activity_tracker)?;
 
-        let graphql_schema = mas_handlers::graphql_schema(&pool, &policy_factory, conn);
+        let graphql_schema =
+            mas_handlers::graphql_schema(&pool, &policy_factory, homeserver_connection.clone());
 
         let state = {
             let mut s = AppState {
@@ -187,7 +180,7 @@ impl Options {
                 cookie_manager,
                 encrypter,
                 url_builder,
-                homeserver,
+                homeserver_connection,
                 policy_factory,
                 graphql_schema,
                 http_client_factory,
