@@ -26,6 +26,7 @@ use mas_axum_utils::{
 };
 use mas_data_model::{User, UserAgent};
 use mas_jose::jwt::Jwt;
+use mas_matrix::BoxHomeserverConnection;
 use mas_policy::Policy;
 use mas_router::UrlBuilder;
 use mas_storage::{
@@ -93,6 +94,9 @@ pub(crate) enum RouteError {
 
     #[error("Invalid form action")]
     InvalidFormAction,
+
+    #[error("Homeserver connection error")]
+    HomeserverConnection(#[source] anyhow::Error),
 
     #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
@@ -196,6 +200,7 @@ pub(crate) async fn get(
     PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
+    State(homeserver): State<BoxHomeserverConnection>,
     cookie_jar: CookieJar,
     user_agent: Option<TypedHeader<headers::UserAgent>>,
     Path(link_id): Path<Ulid>,
@@ -406,10 +411,17 @@ pub(crate) async fn get(
                         // form, but this lead to poor UX. This is why we do
                         // it ahead of time here.
                         let maybe_existing_user = repo.user().find_by_username(&localpart).await?;
-                        if let Some(existing_user) = maybe_existing_user {
-                            // The mapper returned a username which already exists, but isn't linked
-                            // to this upstream user.
-                            warn!(username = %localpart, user_id = %existing_user.id, "Localpart template returned an existing username");
+                        let is_available = homeserver
+                            .is_localpart_available(&localpart)
+                            .await
+                            .map_err(RouteError::HomeserverConnection)?;
+
+                        if maybe_existing_user.is_some() || !is_available {
+                            if let Some(existing_user) = maybe_existing_user {
+                                // The mapper returned a username which already exists, but isn't
+                                // linked to this upstream user.
+                                warn!(username = %localpart, user_id = %existing_user.id, "Localpart template returned an existing username");
+                            }
 
                             // TODO: translate
                             let ctx = ErrorContext::new()
@@ -476,6 +488,7 @@ pub(crate) async fn post(
     mut policy: Policy,
     PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
+    State(homeserver): State<BoxHomeserverConnection>,
     State(url_builder): State<UrlBuilder>,
     State(site_config): State<SiteConfig>,
     Path(link_id): Path<Ulid>,
@@ -682,7 +695,14 @@ pub(crate) async fn post(
 
             // Check if there is an existing user
             let existing_user = repo.user().find_by_username(&username).await?;
-            if let Some(_existing_user) = existing_user {
+
+            // Ask the homeserver to make sure the username is valid
+            let is_available = homeserver
+                .is_localpart_available(&username)
+                .await
+                .map_err(RouteError::HomeserverConnection)?;
+
+            if existing_user.is_some() || !is_available {
                 // If there is an existing user, we can't create a new one
                 // with the same username, show an error
 

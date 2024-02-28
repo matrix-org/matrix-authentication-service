@@ -28,6 +28,7 @@ use mas_axum_utils::{
 };
 use mas_data_model::UserAgent;
 use mas_i18n::DataLocale;
+use mas_matrix::BoxHomeserverConnection;
 use mas_policy::Policy;
 use mas_router::UrlBuilder;
 use mas_storage::{
@@ -111,6 +112,7 @@ pub(crate) async fn post(
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
     State(site_config): State<SiteConfig>,
+    State(homeserver): State<BoxHomeserverConnection>,
     mut policy: Policy,
     mut repo: BoxRepository,
     activity_tracker: BoundActivityTracker,
@@ -135,6 +137,16 @@ pub(crate) async fn post(
         if form.username.is_empty() {
             state.add_error_on_field(RegisterFormField::Username, FieldError::Required);
         } else if repo.user().exists(&form.username).await? {
+            // The user already exists in the database
+            state.add_error_on_field(RegisterFormField::Username, FieldError::Exists);
+        } else if !homeserver.is_localpart_available(&form.username).await? {
+            // The user already exists on the homeserver
+            // XXX: we may want to return different errors like "this username is reserved"
+            tracing::warn!(
+                username = &form.username,
+                "User tried to register with a reserved username"
+            );
+
             state.add_error_on_field(RegisterFormField::Username, FieldError::Exists);
         }
 
