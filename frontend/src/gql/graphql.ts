@@ -76,6 +76,14 @@ export enum AddEmailStatus {
 
 /** The input for the `addUser` mutation. */
 export type AddUserInput = {
+  /**
+   * Skip checking with the homeserver whether the username is valid.
+   *
+   * Use this with caution! The main reason to use this, is when a user used
+   * by an application service needs to exist in MAS to craft special
+   * tokens (like with admin access) for them
+   */
+  skipHomeserverCheck?: InputMaybe<Scalars["Boolean"]["input"]>;
   /** The username of the user to add. */
   username: Scalars["String"]["input"];
 };
@@ -97,6 +105,8 @@ export enum AddUserStatus {
   Exists = "EXISTS",
   /** The username is invalid. */
   Invalid = "INVALID",
+  /** The username is reserved. */
+  Reserved = "RESERVED",
 }
 
 /** The input for the `allowUserCrossSigningReset` mutation. */
