@@ -293,13 +293,16 @@ async fn render(
 
 #[cfg(test)]
 mod tests {
-    use hyper::{header::LOCATION, Request, StatusCode};
+    use hyper::{
+        header::{CONTENT_TYPE, LOCATION},
+        Request, StatusCode,
+    };
     use mas_router::Route;
     use sqlx::PgPool;
 
     use crate::{
         passwords::PasswordManager,
-        test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState},
+        test_utils::{init_tracing, CookieHelper, RequestBuilderExt, ResponseExt, TestState},
     };
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
@@ -327,5 +330,235 @@ mod tests {
         );
         let response = state.request(request).await;
         response.assert_status(StatusCode::METHOD_NOT_ALLOWED);
+    }
+
+    /// Test the registration happy path
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_register(pool: PgPool) {
+        init_tracing();
+        let state = TestState::from_pool(pool).await.unwrap();
+        let cookies = CookieHelper::new();
+
+        // Render the registration page and get the CSRF token
+        let request = Request::get(&*mas_router::Register::default().path_and_query()).empty();
+        let request = cookies.with_cookies(request);
+        let response = state.request(request).await;
+        cookies.save_cookies(&response);
+        response.assert_status(StatusCode::OK);
+        response.assert_header_value(CONTENT_TYPE, "text/html; charset=utf-8");
+        // Extract the CSRF token from the response body
+        let csrf_token = response
+            .body()
+            .split("name=\"csrf\" value=\"")
+            .nth(1)
+            .unwrap()
+            .split('\"')
+            .next()
+            .unwrap();
+
+        // Submit the registration form
+        let request = Request::post(&*mas_router::Register::default().path_and_query()).form(
+            serde_json::json!({
+                "csrf": csrf_token,
+                "username": "john",
+                "email": "john@example.com",
+                "password": "hunter2",
+                "password_confirm": "hunter2",
+                "accept_terms": "on",
+            }),
+        );
+        let request = cookies.with_cookies(request);
+        let response = state.request(request).await;
+        cookies.save_cookies(&response);
+        response.assert_status(StatusCode::SEE_OTHER);
+
+        // Now if we get to the home page, we should see the user's username
+        let request = Request::get("/").empty();
+        let request = cookies.with_cookies(request);
+        let response = state.request(request).await;
+        cookies.save_cookies(&response);
+        response.assert_status(StatusCode::OK);
+        response.assert_header_value(CONTENT_TYPE, "text/html; charset=utf-8");
+        assert!(response.body().contains("john"));
+    }
+
+    /// When the two password fields mismatch, it should give an error
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_register_password_mismatch(pool: PgPool) {
+        init_tracing();
+        let state = TestState::from_pool(pool).await.unwrap();
+        let cookies = CookieHelper::new();
+
+        // Render the registration page and get the CSRF token
+        let request = Request::get(&*mas_router::Register::default().path_and_query()).empty();
+        let request = cookies.with_cookies(request);
+        let response = state.request(request).await;
+        cookies.save_cookies(&response);
+        response.assert_status(StatusCode::OK);
+        response.assert_header_value(CONTENT_TYPE, "text/html; charset=utf-8");
+        // Extract the CSRF token from the response body
+        let csrf_token = response
+            .body()
+            .split("name=\"csrf\" value=\"")
+            .nth(1)
+            .unwrap()
+            .split('\"')
+            .next()
+            .unwrap();
+
+        // Submit the registration form
+        let request = Request::post(&*mas_router::Register::default().path_and_query()).form(
+            serde_json::json!({
+                "csrf": csrf_token,
+                "username": "john",
+                "email": "john@example.com",
+                "password": "hunter2",
+                "password_confirm": "mismatch",
+                "accept_terms": "on",
+            }),
+        );
+        let request = cookies.with_cookies(request);
+        let response = state.request(request).await;
+        cookies.save_cookies(&response);
+        response.assert_status(StatusCode::OK);
+        assert!(response.body().contains("Password fields don't match"));
+    }
+
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_register_username_too_short(pool: PgPool) {
+        init_tracing();
+        let state = TestState::from_pool(pool).await.unwrap();
+        let cookies = CookieHelper::new();
+
+        // Render the registration page and get the CSRF token
+        let request = Request::get(&*mas_router::Register::default().path_and_query()).empty();
+        let request = cookies.with_cookies(request);
+        let response = state.request(request).await;
+        cookies.save_cookies(&response);
+        response.assert_status(StatusCode::OK);
+        response.assert_header_value(CONTENT_TYPE, "text/html; charset=utf-8");
+        // Extract the CSRF token from the response body
+        let csrf_token = response
+            .body()
+            .split("name=\"csrf\" value=\"")
+            .nth(1)
+            .unwrap()
+            .split('\"')
+            .next()
+            .unwrap();
+
+        // Submit the registration form
+        let request = Request::post(&*mas_router::Register::default().path_and_query()).form(
+            serde_json::json!({
+                "csrf": csrf_token,
+                "username": "a",
+                "email": "john@example.com",
+                "password": "hunter2",
+                "password_confirm": "hunter2",
+                "accept_terms": "on",
+            }),
+        );
+        let request = cookies.with_cookies(request);
+        let response = state.request(request).await;
+        cookies.save_cookies(&response);
+        response.assert_status(StatusCode::OK);
+        assert!(response.body().contains("username too short"));
+    }
+
+    /// When the user already exists in the database, it should give an error
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_register_user_exists(pool: PgPool) {
+        init_tracing();
+        let state = TestState::from_pool(pool).await.unwrap();
+        let mut rng = state.rng();
+        let cookies = CookieHelper::new();
+
+        // Insert a user in the database first
+        let mut repo = state.repository().await.unwrap();
+        repo.user()
+            .add(&mut rng, &state.clock, "john".to_owned())
+            .await
+            .unwrap();
+        repo.save().await.unwrap();
+
+        // Render the registration page and get the CSRF token
+        let request = Request::get(&*mas_router::Register::default().path_and_query()).empty();
+        let request = cookies.with_cookies(request);
+        let response = state.request(request).await;
+        cookies.save_cookies(&response);
+        response.assert_status(StatusCode::OK);
+        response.assert_header_value(CONTENT_TYPE, "text/html; charset=utf-8");
+        // Extract the CSRF token from the response body
+        let csrf_token = response
+            .body()
+            .split("name=\"csrf\" value=\"")
+            .nth(1)
+            .unwrap()
+            .split('\"')
+            .next()
+            .unwrap();
+
+        // Submit the registration form
+        let request = Request::post(&*mas_router::Register::default().path_and_query()).form(
+            serde_json::json!({
+                "csrf": csrf_token,
+                "username": "john",
+                "email": "john@example.com",
+                "password": "hunter2",
+                "password_confirm": "hunter2",
+                "accept_terms": "on",
+            }),
+        );
+        let request = cookies.with_cookies(request);
+        let response = state.request(request).await;
+        cookies.save_cookies(&response);
+        response.assert_status(StatusCode::OK);
+        assert!(response.body().contains("This username is already taken"));
+    }
+
+    /// When the username is already reserved on the homeserver, it should give
+    /// an error
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_register_user_reserved(pool: PgPool) {
+        init_tracing();
+        let state = TestState::from_pool(pool).await.unwrap();
+        let cookies = CookieHelper::new();
+
+        // Render the registration page and get the CSRF token
+        let request = Request::get(&*mas_router::Register::default().path_and_query()).empty();
+        let request = cookies.with_cookies(request);
+        let response = state.request(request).await;
+        cookies.save_cookies(&response);
+        response.assert_status(StatusCode::OK);
+        response.assert_header_value(CONTENT_TYPE, "text/html; charset=utf-8");
+        // Extract the CSRF token from the response body
+        let csrf_token = response
+            .body()
+            .split("name=\"csrf\" value=\"")
+            .nth(1)
+            .unwrap()
+            .split('\"')
+            .next()
+            .unwrap();
+
+        // Reserve "john" on the homeserver
+        state.homeserver_connection.reserve_localpart("john").await;
+
+        // Submit the registration form
+        let request = Request::post(&*mas_router::Register::default().path_and_query()).form(
+            serde_json::json!({
+                "csrf": csrf_token,
+                "username": "john",
+                "email": "john@example.com",
+                "password": "hunter2",
+                "password_confirm": "hunter2",
+                "accept_terms": "on",
+            }),
+        );
+        let request = cookies.with_cookies(request);
+        let response = state.request(request).await;
+        cookies.save_cookies(&response);
+        response.assert_status(StatusCode::OK);
+        assert!(response.body().contains("This username is already taken"));
     }
 }
