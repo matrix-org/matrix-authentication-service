@@ -38,7 +38,7 @@ use mas_axum_utils::{
 };
 use mas_i18n::Translator;
 use mas_keystore::{Encrypter, JsonWebKey, JsonWebKeySet, Keystore, PrivateKey};
-use mas_matrix::{HomeserverConnection, MockHomeserverConnection};
+use mas_matrix::{BoxHomeserverConnection, HomeserverConnection, MockHomeserverConnection};
 use mas_policy::{InstantiateError, Policy, PolicyFactory};
 use mas_router::{SimpleRoute, UrlBuilder};
 use mas_storage::{clock::MockClock, BoxClock, BoxRepository, BoxRng, Repository};
@@ -55,7 +55,7 @@ use crate::{
     passwords::{Hasher, PasswordManager},
     site_config::SiteConfig,
     upstream_oauth2::cache::MetadataCache,
-    ActivityTracker, BoundActivityTracker, MatrixHomeserver,
+    ActivityTracker, BoundActivityTracker,
 };
 
 // This might fail if it's not the first time it's being called, which is fine,
@@ -99,7 +99,7 @@ pub(crate) struct TestState {
     pub metadata_cache: MetadataCache,
     pub encrypter: Encrypter,
     pub url_builder: UrlBuilder,
-    pub homeserver: MatrixHomeserver,
+    pub homeserver_connection: Arc<MockHomeserverConnection>,
     pub policy_factory: Arc<PolicyFactory>,
     pub graphql_schema: mas_graphql::Schema,
     pub http_client_factory: HttpClientFactory,
@@ -148,11 +148,9 @@ impl TestState {
 
         let password_manager = PasswordManager::new([(1, Hasher::argon2id(None))])?;
 
-        let homeserver = MatrixHomeserver::new("example.com".to_owned());
-
         let policy_factory = policy_factory(serde_json::json!({})).await?;
 
-        let homeserver_connection = MockHomeserverConnection::new("example.com");
+        let homeserver_connection = Arc::new(MockHomeserverConnection::new("example.com"));
 
         let http_client_factory = HttpClientFactory::new().await?;
 
@@ -167,7 +165,7 @@ impl TestState {
         let graphql_state = TestGraphQLState {
             pool: pool.clone(),
             policy_factory: Arc::clone(&policy_factory),
-            homeserver_connection,
+            homeserver_connection: Arc::clone(&homeserver_connection),
             rng: Arc::clone(&rng),
             clock: Arc::clone(&clock),
         };
@@ -186,7 +184,7 @@ impl TestState {
             metadata_cache,
             encrypter,
             url_builder,
-            homeserver,
+            homeserver_connection,
             policy_factory,
             graphql_schema,
             http_client_factory,
@@ -281,7 +279,7 @@ impl TestState {
 
 struct TestGraphQLState {
     pool: PgPool,
-    homeserver_connection: MockHomeserverConnection,
+    homeserver_connection: Arc<MockHomeserverConnection>,
     policy_factory: Arc<PolicyFactory>,
     clock: Arc<MockClock>,
     rng: Arc<Mutex<ChaChaRng>>,
@@ -360,12 +358,6 @@ impl FromRef<TestState> for UrlBuilder {
     }
 }
 
-impl FromRef<TestState> for MatrixHomeserver {
-    fn from_ref(input: &TestState) -> Self {
-        input.homeserver.clone()
-    }
-}
-
 impl FromRef<TestState> for HttpClientFactory {
     fn from_ref(input: &TestState) -> Self {
         input.http_client_factory.clone()
@@ -393,6 +385,12 @@ impl FromRef<TestState> for MetadataCache {
 impl FromRef<TestState> for SiteConfig {
     fn from_ref(input: &TestState) -> Self {
         input.site_config.clone()
+    }
+}
+
+impl FromRef<TestState> for BoxHomeserverConnection {
+    fn from_ref(input: &TestState) -> Self {
+        Box::new(input.homeserver_connection.clone())
     }
 }
 

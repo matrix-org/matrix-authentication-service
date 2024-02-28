@@ -22,22 +22,6 @@ pub(crate) mod login_sso_redirect;
 pub(crate) mod logout;
 pub(crate) mod refresh;
 
-#[derive(Debug, Clone)]
-pub struct MatrixHomeserver(String);
-
-impl MatrixHomeserver {
-    #[must_use]
-    pub const fn new(hs: String) -> Self {
-        Self(hs)
-    }
-}
-
-impl std::fmt::Display for MatrixHomeserver {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
 #[derive(Debug, Serialize)]
 struct MatrixError {
     errcode: &'static str,
