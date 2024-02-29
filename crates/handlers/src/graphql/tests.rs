@@ -568,3 +568,210 @@ async fn test_oauth2_client_credentials(pool: PgPool) {
         .unwrap();
     assert!(token.is_some());
 }
+
+/// Test the addUser mutation
+#[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+async fn test_add_user(pool: PgPool) {
+    init_tracing();
+    let state = TestState::from_pool(pool).await.unwrap();
+
+    // Provision a client
+    let request =
+        Request::post(mas_router::OAuth2RegistrationEndpoint::PATH).json(serde_json::json!({
+            "client_uri": "https://example.com/",
+            "contacts": ["contact@example.com"],
+            "token_endpoint_auth_method": "client_secret_post",
+            "grant_types": ["client_credentials"],
+        }));
+    let response = state.request(request).await;
+    response.assert_status(StatusCode::CREATED);
+
+    let response: ClientRegistrationResponse = response.json();
+    let client_id = response.client_id;
+    let client_secret = response.client_secret.expect("to have a client secret");
+
+    // Make the client admin
+    let state = {
+        let mut state = state;
+        state.policy_factory = test_utils::policy_factory(serde_json::json!({
+            "admin_clients": [client_id],
+        }))
+        .await
+        .unwrap();
+        state
+    };
+
+    // Ask for a token with the admin scope
+    let request = Request::post(mas_router::OAuth2TokenEndpoint::PATH).form(serde_json::json!({
+        "grant_type": "client_credentials",
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "scope": "urn:mas:graphql:* urn:mas:admin",
+    }));
+
+    let response = state.request(request).await;
+    response.assert_status(StatusCode::OK);
+    let AccessTokenResponse { access_token, .. } = response.json();
+
+    // We should now be able to call the addUser mutation
+    let request = Request::post("/graphql")
+        .bearer(&access_token)
+        .json(serde_json::json!({
+            "query": r#"
+                mutation {
+                    addUser(input: {username: "alice"}) {
+                        status
+                        user {
+                            id
+                            username
+                        }
+                    }
+                }
+            "#,
+        }));
+    let response = state.request(request).await;
+    response.assert_status(StatusCode::OK);
+    let response: GraphQLResponse = response.json();
+    assert!(response.errors.is_empty(), "{:?}", response.errors);
+    let user_id = &response.data["addUser"]["user"]["id"];
+
+    assert_eq!(
+        response.data,
+        serde_json::json!({
+            "addUser": {
+                "status": "ADDED",
+                "user": {
+                    "id": user_id,
+                    "username": "alice"
+                }
+            }
+        })
+    );
+
+    // If we add again, it should return the user with a status of "EXISTS"
+    let request = Request::post("/graphql")
+        .bearer(&access_token)
+        .json(serde_json::json!({
+            "query": r#"
+                mutation {
+                    addUser(input: {username: "alice"}) {
+                        status
+                        user {
+                            id
+                            username
+                        }
+                    }
+                }
+            "#,
+        }));
+    let response = state.request(request).await;
+    response.assert_status(StatusCode::OK);
+    let response: GraphQLResponse = response.json();
+    assert!(response.errors.is_empty(), "{:?}", response.errors);
+
+    assert_eq!(
+        response.data,
+        serde_json::json!({
+            "addUser": {
+                "status": "EXISTS",
+                "user": {
+                    "id": user_id,
+                    "username": "alice"
+                }
+            }
+        })
+    );
+
+    // Reserve a username on the homeserver and try to add it
+    state.homeserver_connection.reserve_localpart("bob").await;
+    let request = Request::post("/graphql")
+        .bearer(&access_token)
+        .json(serde_json::json!({
+            "query": r#"
+                mutation {
+                    addUser(input: {username: "bob"}) {
+                        status
+                        user {
+                            username
+                        }
+                    }
+                }
+            "#,
+        }));
+    let response = state.request(request).await;
+    response.assert_status(StatusCode::OK);
+    let response: GraphQLResponse = response.json();
+    assert!(response.errors.is_empty(), "{:?}", response.errors);
+
+    assert_eq!(
+        response.data,
+        serde_json::json!({
+            "addUser": {
+                "status": "RESERVED",
+                "user": null,
+            }
+        })
+    );
+
+    // But we can force it with the skipHomeserverCheck flag
+    let request = Request::post("/graphql")
+        .bearer(&access_token)
+        .json(serde_json::json!({
+            "query": r#"
+                mutation {
+                    addUser(input: {username: "bob", skipHomeserverCheck: true}) {
+                        status
+                        user {
+                            username
+                        }
+                    }
+                }
+            "#,
+        }));
+    let response = state.request(request).await;
+    response.assert_status(StatusCode::OK);
+    let response: GraphQLResponse = response.json();
+    assert!(response.errors.is_empty(), "{:?}", response.errors);
+
+    assert_eq!(
+        response.data,
+        serde_json::json!({
+            "addUser": {
+                "status": "ADDED",
+                "user": {
+                    "username": "bob",
+                },
+            }
+        })
+    );
+
+    // This mutation shouldn't accept an invalid username
+    let request = Request::post("/graphql")
+        .bearer(&access_token)
+        .json(serde_json::json!({
+            "query": r#"
+                mutation {
+                    addUser(input: {username: "this is invalid"}) {
+                        status
+                        user {
+                            username
+                        }
+                    }
+                }
+            "#,
+        }));
+    let response = state.request(request).await;
+    response.assert_status(StatusCode::OK);
+    let response: GraphQLResponse = response.json();
+    assert!(response.errors.is_empty(), "{:?}", response.errors);
+
+    assert_eq!(
+        response.data,
+        serde_json::json!({
+            "addUser": {
+                "status": "INVALID",
+                "user": null,
+            }
+        })
+    );
+}
