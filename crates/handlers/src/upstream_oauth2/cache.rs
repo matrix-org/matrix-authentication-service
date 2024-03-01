@@ -505,6 +505,7 @@ mod tests {
             token_endpoint_auth_method: OAuthClientAuthenticationMethod::None,
             created_at: clock.now(),
             claims_imports: UpstreamOAuthProviderClaimsImports::default(),
+            additional_authorization_parameters: Vec::new(),
         };
 
         // Without any override, it should just use discovery

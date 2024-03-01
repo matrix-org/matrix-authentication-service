@@ -925,6 +925,7 @@ mod tests {
                     jwks_uri_override: None,
                     discovery_mode: mas_data_model::UpstreamOAuthProviderDiscoveryMode::Oidc,
                     pkce_mode: mas_data_model::UpstreamOAuthProviderPkceMode::Auto,
+                    additional_authorization_parameters: Vec::new(),
                 },
             )
             .await

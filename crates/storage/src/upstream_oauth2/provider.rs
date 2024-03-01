@@ -74,6 +74,9 @@ pub struct UpstreamOAuthProviderParams {
 
     /// How should PKCE be used
     pub pkce_mode: UpstreamOAuthProviderPkceMode,
+
+    /// Additional parameters to include in the authorization request
+    pub additional_authorization_parameters: Vec<(String, String)>,
 }
 
 /// Filter parameters for listing upstream OAuth 2.0 providers
