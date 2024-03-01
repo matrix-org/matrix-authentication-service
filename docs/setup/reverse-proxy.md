@@ -29,6 +29,10 @@ http:
         # OR bind on a Unix domain socket
         #- socket: /var/run/mas.sock
 
+        # OR bind on a systemd socket
+        #- fd: 0
+        #  kind: tcp # or unix
+
       # Optional: use the PROXY protocol
       #proxy_protocol: true
 ```
