@@ -54,7 +54,7 @@
     "@storybook/react": "^7.6.17",
     "@storybook/react-vite": "^7.6.17",
     "@tanstack/router-devtools": "^1.16.6",
-    "@tanstack/router-vite-plugin": "^1.16.5",
+    "@tanstack/router-vite-plugin": "^1.18.0",
     "@testing-library/react": "^14.2.1",
     "@types/node": "^20.11.24",
     "@types/react": "^18.2.61",
