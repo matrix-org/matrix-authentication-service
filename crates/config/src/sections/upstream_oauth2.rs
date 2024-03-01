@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::ops::Deref;
+use std::{ops::Deref, collections::BTreeMap};
 
 use async_trait::async_trait;
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
@@ -302,6 +302,12 @@ pub struct Provider {
     /// provider
     #[serde(default)]
     pub claims_imports: ClaimsImports,
+
+    /// Additional parameters to include in the authorization request
+    ///
+    /// Orders of the keys are not preserved.
+    #[serde(default)]
+    pub additional_authorization_parameters: BTreeMap<String, String>,
 }
 
 impl Deref for Provider {
