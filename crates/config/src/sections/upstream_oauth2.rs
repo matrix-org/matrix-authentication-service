@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{ops::Deref, collections::BTreeMap};
+use std::{collections::BTreeMap, ops::Deref};
 
 use async_trait::async_trait;
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
