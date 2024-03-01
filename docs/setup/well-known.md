@@ -20,4 +20,6 @@ If the .well-known is hosted elsewhere then `org.matrix.msc2965.authentication` 
 }
 ```
 
+Any Element Web clients configured with a `"default_server_config"` will not look up `.well-known/matrix/client` from the homeserver. So, that configuration needs to include the same `org.matrix.msc2965.authentication` entries as what is served by the homeserver.
+
 For more context on what the correct values are, see [here](./).
