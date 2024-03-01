@@ -9,19 +9,19 @@
     "scope"
   ],
   "properties": {
+    "user": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "client": {
       "type": "object",
       "additionalProperties": true
     },
-    "grant_type": {
-      "$ref": "#/definitions/GrantType"
-    },
     "scope": {
       "type": "string"
     },
-    "user": {
-      "type": "object",
-      "additionalProperties": true
+    "grant_type": {
+      "$ref": "#/definitions/GrantType"
     }
   },
   "definitions": {

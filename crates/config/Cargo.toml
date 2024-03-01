@@ -23,7 +23,7 @@ camino = { workspace = true, features = ["serde1"] }
 chrono.workspace = true
 figment = { version = "0.10.14", features = ["env", "yaml", "test"] }
 ipnetwork = { version = "0.20.0", features = ["serde", "schemars"] }
-schemars = { version = "0.8.16", features = ["url", "chrono"] }
+schemars.workspace = true
 ulid.workspace = true
 url.workspace = true
 
