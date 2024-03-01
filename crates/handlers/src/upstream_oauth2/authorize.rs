@@ -107,11 +107,20 @@ pub(crate) async fn get(
     };
 
     // Build an authorization request for it
-    let (url, data) = mas_oidc_client::requests::authorization_code::build_authorization_url(
+    let (mut url, data) = mas_oidc_client::requests::authorization_code::build_authorization_url(
         lazy_metadata.authorization_endpoint().await?.clone(),
         data,
         &mut rng,
     )?;
+
+    // We do that in a block because params borrows url mutably
+    {
+        // Add any additional parameters to the query
+        let mut params = url.query_pairs_mut();
+        for (key, value) in &provider.additional_authorization_parameters {
+            params.append_pair(key, value);
+        }
+    }
 
     let session = repo
         .upstream_oauth_session()
