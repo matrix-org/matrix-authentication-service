@@ -2084,6 +2084,14 @@
               "$ref": "#/definitions/ClaimsImports"
             }
           ]
+        },
+        "additional_authorization_parameters": {
+          "description": "Additional parameters to include in the authorization request\n\nOrders of the keys are not preserved.",
+          "default": {},
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       }
     },
