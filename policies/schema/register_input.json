@@ -12,12 +12,6 @@
         "username"
       ],
       "properties": {
-        "email": {
-          "type": "string"
-        },
-        "password": {
-          "type": "string"
-        },
         "registration_method": {
           "type": "string",
           "enum": [
@@ -25,6 +19,12 @@
           ]
         },
         "username": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "email": {
           "type": "string"
         }
       }
@@ -36,9 +36,6 @@
         "username"
       ],
       "properties": {
-        "email": {
-          "type": "string"
-        },
         "registration_method": {
           "type": "string",
           "enum": [
@@ -46,6 +43,9 @@
           ]
         },
         "username": {
+          "type": "string"
+        },
+        "email": {
           "type": "string"
         }
       }
