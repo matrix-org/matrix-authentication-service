@@ -110,6 +110,7 @@ pub enum UpstreamOAuthProviders {
     ClaimsImports,
     DiscoveryMode,
     PkceMode,
+    AdditionalParameters,
     JwksUriOverride,
     TokenEndpointOverride,
     AuthorizationEndpointOverride,

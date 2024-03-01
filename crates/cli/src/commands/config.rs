@@ -310,6 +310,8 @@ async fn sync(root: &super::Options, prune: bool, dry_run: bool) -> anyhow::Resu
                         jwks_uri_override: provider.jwks_uri,
                         discovery_mode,
                         pkce_mode,
+                        // TODO: get that from the config
+                        additional_authorization_parameters: Vec::new(),
                     },
                 )
                 .await?;

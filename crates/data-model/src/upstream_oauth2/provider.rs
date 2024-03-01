@@ -142,6 +142,7 @@ pub struct UpstreamOAuthProvider {
     pub token_endpoint_auth_method: OAuthClientAuthenticationMethod,
     pub created_at: DateTime<Utc>,
     pub claims_imports: ClaimsImports,
+    pub additional_authorization_parameters: Vec<(String, String)>,
 }
 
 /// Whether to set the email as verified when importing it from the upstream
