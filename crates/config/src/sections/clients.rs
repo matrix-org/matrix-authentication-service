@@ -170,6 +170,15 @@ impl DerefMut for ClientsConfig {
     }
 }
 
+impl IntoIterator for ClientsConfig {
+    type Item = ClientConfig;
+    type IntoIter = std::vec::IntoIter<ClientConfig>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
 #[async_trait]
 impl ConfigurationSection for ClientsConfig {
     fn path() -> &'static str {
