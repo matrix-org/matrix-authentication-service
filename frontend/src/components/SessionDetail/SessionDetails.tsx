@@ -13,10 +13,10 @@
 // limitations under the License.
 
 import IconChat from "@vector-im/compound-design-tokens/icons/chat.svg?react";
-import IconCheckCircle from "@vector-im/compound-design-tokens/icons/check-circle.svg?react";
 import IconComputer from "@vector-im/compound-design-tokens/icons/computer.svg?react";
 import IconError from "@vector-im/compound-design-tokens/icons/error.svg?react";
 import IconInfo from "@vector-im/compound-design-tokens/icons/info.svg?react";
+import IconSend from "@vector-im/compound-design-tokens/icons/send.svg?react";
 import IconUserProfile from "@vector-im/compound-design-tokens/icons/user-profile.svg?react";
 import { Text } from "@vector-im/compound-web";
 import { ReactNode } from "react";
@@ -55,7 +55,7 @@ const Scope: React.FC<{ scope: string }> = ({ scope }) => {
     ],
     "urn:matrix:org.matrix.msc2967.client:api:*": [
       [IconChat, t("mas.scope.view_messages")],
-      [IconCheckCircle, t("mas.scope.send_messages")],
+      [IconSend, t("mas.scope.send_messages")],
     ],
     "urn:synapse:admin:*": [[IconError, t("mas.scope.synapse_admin")]],
     "urn:mas:admin": [[IconError, t("mas.scope.mas_admin")]],
