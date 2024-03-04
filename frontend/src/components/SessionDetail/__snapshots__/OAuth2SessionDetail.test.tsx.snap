@@ -21,7 +21,7 @@ exports[`<OAuth2SessionDetail> > renders a finished session details 1`] = `
           xmlns="http://www.w3.org/2000/svg"
         >
           <path
-            d="M12.207 5.293a1 1 0 0 1 0 1.414L7.914 11H18.5a1 1 0 1 1 0 2H7.914l4.293 4.293a1 1 0 0 1-1.414 1.414l-6-6a1 1 0 0 1 0-1.414l6-6a1 1 0 0 1 1.414 0Z"
+            d="m13.3 17.3-4.6-4.6a.877.877 0 0 1-.212-.325A1.107 1.107 0 0 1 8.425 12c0-.133.02-.258.063-.375A.877.877 0 0 1 8.7 11.3l4.6-4.6a.948.948 0 0 1 .7-.275.95.95 0 0 1 .7.275.948.948 0 0 1 .275.7.948.948 0 0 1-.275.7L10.8 12l3.9 3.9a.948.948 0 0 1 .275.7.948.948 0 0 1-.275.7.948.948 0 0 1-.7.275.949.949 0 0 1-.7-.275Z"
           />
         </svg>
       </a>
@@ -34,147 +34,175 @@ exports[`<OAuth2SessionDetail> > renders a finished session details 1`] = `
     <div
       class="_block_17898c"
     >
-      <h6
-        class="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64"
+      <h4
+        class="_typography_yh5dq_162 _font-heading-sm-semibold_yh5dq_102 _title_17898c"
       >
-        Session
-      </h6>
-      <ul
-        class="_list_040867"
+        Device details
+      </h4>
+      <div
+        class="_wrapper_040867"
       >
-        <li
-          class="_detailRow_040867"
+        <div
+          class="_datum_040867"
         >
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
-          >
-            ID
-          </p>
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
-          >
-            <code>
-              session-id
-            </code>
-          </p>
-        </li>
-        <li
-          class="_detailRow_040867"
-        >
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
-          >
-            Device ID
-          </p>
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
-          >
-            <code>
-              abcd1234
-            </code>
-          </p>
-        </li>
-        <li
-          class="_detailRow_040867"
-        >
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
-          >
-            Signed in
-          </p>
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
-          >
-            <time
-              datetime="2023-06-29T03:35:17Z"
-            >
-              Thu, 29 Jun 2023, 03:35
-            </time>
-          </p>
-        </li>
-        <li
-          class="_detailRow_040867"
-        >
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
-          >
-            Finished
-          </p>
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
-          >
-            <time
-              datetime="2023-07-29T03:35:17Z"
-            >
-              Sat, 29 Jul 2023, 03:35
-            </time>
-          </p>
-        </li>
-        <li
-          class="_detailRow_040867"
-        >
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          <h5
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40"
           >
             Last Active
-          </p>
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+          </h5>
+          <span
+            class="_datumValue_040867"
+            title="Sat, 29 Jul 2023, 03:35"
           >
-            <span
-              title="Sat, 29 Jul 2023, 03:35"
-            >
-              Inactive for 90+ days
-            </span>
-          </p>
-        </li>
-        <li
-          class="_detailRow_040867"
+            Inactive for 90+ days
+          </span>
+        </div>
+        <div
+          class="_datum_040867"
         >
+          <h5
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40"
+          >
+            Signed in
+          </h5>
+          <time
+            class="_datumValue_040867"
+            datetime="2023-06-29T03:35:17Z"
+          >
+            Thu, 29 Jun 2023, 03:35
+          </time>
+        </div>
+        <div
+          class="_datum_040867"
+        >
+          <h5
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40"
+          >
+            Device ID
+          </h5>
           <p
-            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+            class="_typography_yh5dq_162 _font-body-md-regular_yh5dq_59 _datumValue_040867"
+          >
+            abcd1234
+          </p>
+        </div>
+        <div
+          class="_datum_040867"
+        >
+          <h5
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40"
           >
             IP Address
-          </p>
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+          </h5>
+          <code
+            class="_datumValue_040867"
           >
-            <code>
-              1.2.3.4
-            </code>
-          </p>
-        </li>
-        <li
-          class="_detailRow_040867"
+            1.2.3.4
+          </code>
+        </div>
+        <div
+          class="_datum_040867"
         >
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          <h5
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40"
           >
-            Scopes
-          </p>
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+            Finished
+          </h5>
+          <time
+            datetime="2023-07-29T03:35:17Z"
           >
-            <span>
-              <code>
-                openid
-              </code>
-              <code>
-                urn:matrix:org.matrix.msc2967.client:api:*
-              </code>
-              <code>
-                urn:matrix:org.matrix.msc2967.client:device:abcd1234
-              </code>
-            </span>
-          </p>
-        </li>
-      </ul>
+            Sat, 29 Jul 2023, 03:35
+          </time>
+        </div>
+      </div>
+      <div
+        class="_datum_040867"
+      >
+        <h5
+          class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40"
+        >
+          Scopes
+        </h5>
+        <ul
+          class="_scopeList_040867"
+        >
+          <li
+            class="_scope_040867"
+          >
+            <svg
+              class="cpd-icon"
+              fill="currentColor"
+              height="1em"
+              viewBox="0 0 24 24"
+              width="1em"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M9.175 13.825C9.958 14.608 10.9 15 12 15s2.042-.392 2.825-1.175C15.608 13.042 16 12.1 16 11s-.392-2.042-1.175-2.825C14.042 7.392 13.1 7 12 7s-2.042.392-2.825 1.175C8.392 8.958 8 9.9 8 11s.392 2.042 1.175 2.825Zm4.237-1.412A1.926 1.926 0 0 1 12 13c-.55 0-1.02-.196-1.412-.588A1.926 1.926 0 0 1 10 11c0-.55.196-1.02.588-1.412A1.926 1.926 0 0 1 12 9c.55 0 1.02.196 1.412.588.392.391.588.862.588 1.412 0 .55-.196 1.02-.588 1.412Z"
+              />
+              <path
+                d="M22 12c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2s10 4.477 10 10Zm-2 0a8 8 0 1 0-16 0 8 8 0 0 0 16 0Z"
+              />
+              <path
+                d="M16.23 18.792a12.47 12.47 0 0 0-1.455-.455 11.6 11.6 0 0 0-5.55 0c-.487.12-.972.271-1.455.455a8.04 8.04 0 0 1-1.729-1.454c.89-.412 1.794-.729 2.709-.95A13.76 13.76 0 0 1 12 16c1.1 0 2.183.13 3.25.387a14.78 14.78 0 0 1 2.709.95 8.042 8.042 0 0 1-1.73 1.455Z"
+              />
+            </svg>
+            <p
+              class="_typography_yh5dq_162 _font-body-md-medium_yh5dq_69"
+            >
+              See your profile info and contact details
+            </p>
+          </li>
+          <li
+            class="_scope_040867"
+          >
+            <svg
+              class="cpd-icon"
+              fill="currentColor"
+              height="1em"
+              viewBox="0 0 24 24"
+              width="1em"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m1.5 21.25 1.45-4.95a10.232 10.232 0 0 1-.712-2.1A10.167 10.167 0 0 1 2 12a9.74 9.74 0 0 1 .788-3.9 10.099 10.099 0 0 1 2.137-3.175c.9-.9 1.958-1.612 3.175-2.137A9.738 9.738 0 0 1 12 2a9.74 9.74 0 0 1 3.9.788 10.098 10.098 0 0 1 3.175 2.137c.9.9 1.613 1.958 2.137 3.175A9.738 9.738 0 0 1 22 12a9.738 9.738 0 0 1-.788 3.9 10.098 10.098 0 0 1-2.137 3.175c-.9.9-1.958 1.613-3.175 2.137A9.737 9.737 0 0 1 12 22c-.75 0-1.483-.08-2.2-.238a10.23 10.23 0 0 1-2.1-.712L2.75 22.5a.936.936 0 0 1-1-.25.936.936 0 0 1-.25-1Zm2.45-1.2 3.2-.95a.949.949 0 0 1 .275-.063c.1-.008.192-.012.275-.012.15 0 .296.013.438.038.141.024.279.07.412.137a7.434 7.434 0 0 0 1.675.6c.583.133 1.175.2 1.775.2 2.233 0 4.125-.775 5.675-2.325C19.225 16.125 20 14.233 20 12c0-2.233-.775-4.125-2.325-5.675C16.125 4.775 14.233 4 12 4c-2.233 0-4.125.775-5.675 2.325C4.775 7.875 4 9.767 4 12c0 .6.067 1.192.2 1.775s.333 1.142.6 1.675c.117.217.18.446.188.688a2.29 2.29 0 0 1-.088.712l-.95 3.2Z"
+              />
+            </svg>
+            <p
+              class="_typography_yh5dq_162 _font-body-md-medium_yh5dq_69"
+            >
+              View your existing messages and data
+            </p>
+          </li>
+          <li
+            class="_scope_040867"
+          >
+            <svg
+              class="cpd-icon"
+              fill="currentColor"
+              height="1em"
+              viewBox="0 0 24 24"
+              width="1em"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m10.6 13.8-2.15-2.15a.948.948 0 0 0-.7-.275.948.948 0 0 0-.7.275.948.948 0 0 0-.275.7.95.95 0 0 0 .275.7L9.9 15.9c.2.2.433.3.7.3.267 0 .5-.1.7-.3l5.65-5.65a.948.948 0 0 0 .275-.7.948.948 0 0 0-.275-.7.948.948 0 0 0-.7-.275.948.948 0 0 0-.7.275L10.6 13.8ZM12 22a9.738 9.738 0 0 1-3.9-.788 10.099 10.099 0 0 1-3.175-2.137c-.9-.9-1.612-1.958-2.137-3.175A9.738 9.738 0 0 1 2 12a9.74 9.74 0 0 1 .788-3.9 10.099 10.099 0 0 1 2.137-3.175c.9-.9 1.958-1.612 3.175-2.137A9.738 9.738 0 0 1 12 2a9.74 9.74 0 0 1 3.9.788 10.098 10.098 0 0 1 3.175 2.137c.9.9 1.613 1.958 2.137 3.175A9.738 9.738 0 0 1 22 12a9.738 9.738 0 0 1-.788 3.9 10.098 10.098 0 0 1-2.137 3.175c-.9.9-1.958 1.613-3.175 2.137A9.738 9.738 0 0 1 12 22Zm0-2c2.233 0 4.125-.775 5.675-2.325C19.225 16.125 20 14.233 20 12c0-2.233-.775-4.125-2.325-5.675C16.125 4.775 14.233 4 12 4c-2.233 0-4.125.775-5.675 2.325C4.775 7.875 4 9.767 4 12c0 2.233.775 4.125 2.325 5.675C7.875 19.225 9.767 20 12 20Z"
+              />
+            </svg>
+            <p
+              class="_typography_yh5dq_162 _font-body-md-medium_yh5dq_69"
+            >
+              Send new messages on your behalf
+            </p>
+          </li>
+        </ul>
+      </div>
     </div>
     <div
       class="_block_17898c"
     >
-      <h6
-        class="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64"
+      <h4
+        class="_typography_yh5dq_162 _font-heading-sm-semibold_yh5dq_102 _title_17898c"
       >
         <a
           class="_link_1mzip_17"
@@ -182,63 +210,51 @@ exports[`<OAuth2SessionDetail> > renders a finished session details 1`] = `
           href="/clients/test-id"
           rel="noreferrer noopener"
         >
-          Client
+          Client info
         </a>
-      </h6>
-      <ul
-        class="_list_040867"
+      </h4>
+      <div
+        class="_wrapper_040867"
       >
-        <li
-          class="_detailRow_040867"
+        <div
+          class="_datum_040867"
         >
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          <h5
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40"
           >
             Name
-          </p>
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
-          >
-            Element
-          </p>
-        </li>
-        <li
-          class="_detailRow_040867"
+          </h5>
+          Element
+        </div>
+        <div
+          class="_datum_040867"
         >
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          <h5
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40"
           >
-            ID
-          </p>
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
-          >
-            <code>
-              test-client-id
-            </code>
-          </p>
-        </li>
-        <li
-          class="_detailRow_040867"
+            Client ID
+          </h5>
+          <code>
+            test-client-id
+          </code>
+        </div>
+        <div
+          class="_datum_040867"
         >
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          <h5
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40"
           >
             Uri
-          </p>
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+          </h5>
+          <a
+            href="https://element.io"
+            rel="noreferrer"
+            target="_blank"
           >
-            <a
-              href="https://element.io"
-              rel="noreferrer"
-              target="_blank"
-            >
-              https://element.io
-            </a>
-          </p>
-        </li>
-      </ul>
+            https://element.io
+          </a>
+        </div>
+      </div>
     </div>
   </div>
 </DocumentFragment>
@@ -265,7 +281,7 @@ exports[`<OAuth2SessionDetail> > renders session details 1`] = `
           xmlns="http://www.w3.org/2000/svg"
         >
           <path
-            d="M12.207 5.293a1 1 0 0 1 0 1.414L7.914 11H18.5a1 1 0 1 1 0 2H7.914l4.293 4.293a1 1 0 0 1-1.414 1.414l-6-6a1 1 0 0 1 0-1.414l6-6a1 1 0 0 1 1.414 0Z"
+            d="m13.3 17.3-4.6-4.6a.877.877 0 0 1-.212-.325A1.107 1.107 0 0 1 8.425 12c0-.133.02-.258.063-.375A.877.877 0 0 1 8.7 11.3l4.6-4.6a.948.948 0 0 1 .7-.275.95.95 0 0 1 .7.275.948.948 0 0 1 .275.7.948.948 0 0 1-.275.7L10.8 12l3.9 3.9a.948.948 0 0 1 .275.7.948.948 0 0 1-.275.7.948.948 0 0 1-.7.275.949.949 0 0 1-.7-.275Z"
           />
         </svg>
       </a>
@@ -278,129 +294,161 @@ exports[`<OAuth2SessionDetail> > renders session details 1`] = `
     <div
       class="_block_17898c"
     >
-      <h6
-        class="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64"
+      <h4
+        class="_typography_yh5dq_162 _font-heading-sm-semibold_yh5dq_102 _title_17898c"
       >
-        Session
-      </h6>
-      <ul
-        class="_list_040867"
+        Device details
+      </h4>
+      <div
+        class="_wrapper_040867"
       >
-        <li
-          class="_detailRow_040867"
+        <div
+          class="_datum_040867"
         >
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
-          >
-            ID
-          </p>
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
-          >
-            <code>
-              session-id
-            </code>
-          </p>
-        </li>
-        <li
-          class="_detailRow_040867"
-        >
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
-          >
-            Device ID
-          </p>
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
-          >
-            <code>
-              abcd1234
-            </code>
-          </p>
-        </li>
-        <li
-          class="_detailRow_040867"
-        >
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
-          >
-            Signed in
-          </p>
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
-          >
-            <time
-              datetime="2023-06-29T03:35:17Z"
-            >
-              Thu, 29 Jun 2023, 03:35
-            </time>
-          </p>
-        </li>
-        <li
-          class="_detailRow_040867"
-        >
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          <h5
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40"
           >
             Last Active
-          </p>
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+          </h5>
+          <span
+            class="_datumValue_040867"
+            title="Sat, 29 Jul 2023, 03:35"
           >
-            <span
-              title="Sat, 29 Jul 2023, 03:35"
-            >
-              Inactive for 90+ days
-            </span>
-          </p>
-        </li>
-        <li
-          class="_detailRow_040867"
+            Inactive for 90+ days
+          </span>
+        </div>
+        <div
+          class="_datum_040867"
         >
+          <h5
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40"
+          >
+            Signed in
+          </h5>
+          <time
+            class="_datumValue_040867"
+            datetime="2023-06-29T03:35:17Z"
+          >
+            Thu, 29 Jun 2023, 03:35
+          </time>
+        </div>
+        <div
+          class="_datum_040867"
+        >
+          <h5
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40"
+          >
+            Device ID
+          </h5>
           <p
-            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+            class="_typography_yh5dq_162 _font-body-md-regular_yh5dq_59 _datumValue_040867"
+          >
+            abcd1234
+          </p>
+        </div>
+        <div
+          class="_datum_040867"
+        >
+          <h5
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40"
           >
             IP Address
-          </p>
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+          </h5>
+          <code
+            class="_datumValue_040867"
           >
-            <code>
-              1.2.3.4
-            </code>
-          </p>
-        </li>
-        <li
-          class="_detailRow_040867"
+            1.2.3.4
+          </code>
+        </div>
+      </div>
+      <div
+        class="_datum_040867"
+      >
+        <h5
+          class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40"
         >
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          Scopes
+        </h5>
+        <ul
+          class="_scopeList_040867"
+        >
+          <li
+            class="_scope_040867"
           >
-            Scopes
-          </p>
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+            <svg
+              class="cpd-icon"
+              fill="currentColor"
+              height="1em"
+              viewBox="0 0 24 24"
+              width="1em"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M9.175 13.825C9.958 14.608 10.9 15 12 15s2.042-.392 2.825-1.175C15.608 13.042 16 12.1 16 11s-.392-2.042-1.175-2.825C14.042 7.392 13.1 7 12 7s-2.042.392-2.825 1.175C8.392 8.958 8 9.9 8 11s.392 2.042 1.175 2.825Zm4.237-1.412A1.926 1.926 0 0 1 12 13c-.55 0-1.02-.196-1.412-.588A1.926 1.926 0 0 1 10 11c0-.55.196-1.02.588-1.412A1.926 1.926 0 0 1 12 9c.55 0 1.02.196 1.412.588.392.391.588.862.588 1.412 0 .55-.196 1.02-.588 1.412Z"
+              />
+              <path
+                d="M22 12c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2s10 4.477 10 10Zm-2 0a8 8 0 1 0-16 0 8 8 0 0 0 16 0Z"
+              />
+              <path
+                d="M16.23 18.792a12.47 12.47 0 0 0-1.455-.455 11.6 11.6 0 0 0-5.55 0c-.487.12-.972.271-1.455.455a8.04 8.04 0 0 1-1.729-1.454c.89-.412 1.794-.729 2.709-.95A13.76 13.76 0 0 1 12 16c1.1 0 2.183.13 3.25.387a14.78 14.78 0 0 1 2.709.95 8.042 8.042 0 0 1-1.73 1.455Z"
+              />
+            </svg>
+            <p
+              class="_typography_yh5dq_162 _font-body-md-medium_yh5dq_69"
+            >
+              See your profile info and contact details
+            </p>
+          </li>
+          <li
+            class="_scope_040867"
           >
-            <span>
-              <code>
-                openid
-              </code>
-              <code>
-                urn:matrix:org.matrix.msc2967.client:api:*
-              </code>
-              <code>
-                urn:matrix:org.matrix.msc2967.client:device:abcd1234
-              </code>
-            </span>
-          </p>
-        </li>
-      </ul>
+            <svg
+              class="cpd-icon"
+              fill="currentColor"
+              height="1em"
+              viewBox="0 0 24 24"
+              width="1em"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m1.5 21.25 1.45-4.95a10.232 10.232 0 0 1-.712-2.1A10.167 10.167 0 0 1 2 12a9.74 9.74 0 0 1 .788-3.9 10.099 10.099 0 0 1 2.137-3.175c.9-.9 1.958-1.612 3.175-2.137A9.738 9.738 0 0 1 12 2a9.74 9.74 0 0 1 3.9.788 10.098 10.098 0 0 1 3.175 2.137c.9.9 1.613 1.958 2.137 3.175A9.738 9.738 0 0 1 22 12a9.738 9.738 0 0 1-.788 3.9 10.098 10.098 0 0 1-2.137 3.175c-.9.9-1.958 1.613-3.175 2.137A9.737 9.737 0 0 1 12 22c-.75 0-1.483-.08-2.2-.238a10.23 10.23 0 0 1-2.1-.712L2.75 22.5a.936.936 0 0 1-1-.25.936.936 0 0 1-.25-1Zm2.45-1.2 3.2-.95a.949.949 0 0 1 .275-.063c.1-.008.192-.012.275-.012.15 0 .296.013.438.038.141.024.279.07.412.137a7.434 7.434 0 0 0 1.675.6c.583.133 1.175.2 1.775.2 2.233 0 4.125-.775 5.675-2.325C19.225 16.125 20 14.233 20 12c0-2.233-.775-4.125-2.325-5.675C16.125 4.775 14.233 4 12 4c-2.233 0-4.125.775-5.675 2.325C4.775 7.875 4 9.767 4 12c0 .6.067 1.192.2 1.775s.333 1.142.6 1.675c.117.217.18.446.188.688a2.29 2.29 0 0 1-.088.712l-.95 3.2Z"
+              />
+            </svg>
+            <p
+              class="_typography_yh5dq_162 _font-body-md-medium_yh5dq_69"
+            >
+              View your existing messages and data
+            </p>
+          </li>
+          <li
+            class="_scope_040867"
+          >
+            <svg
+              class="cpd-icon"
+              fill="currentColor"
+              height="1em"
+              viewBox="0 0 24 24"
+              width="1em"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="m10.6 13.8-2.15-2.15a.948.948 0 0 0-.7-.275.948.948 0 0 0-.7.275.948.948 0 0 0-.275.7.95.95 0 0 0 .275.7L9.9 15.9c.2.2.433.3.7.3.267 0 .5-.1.7-.3l5.65-5.65a.948.948 0 0 0 .275-.7.948.948 0 0 0-.275-.7.948.948 0 0 0-.7-.275.948.948 0 0 0-.7.275L10.6 13.8ZM12 22a9.738 9.738 0 0 1-3.9-.788 10.099 10.099 0 0 1-3.175-2.137c-.9-.9-1.612-1.958-2.137-3.175A9.738 9.738 0 0 1 2 12a9.74 9.74 0 0 1 .788-3.9 10.099 10.099 0 0 1 2.137-3.175c.9-.9 1.958-1.612 3.175-2.137A9.738 9.738 0 0 1 12 2a9.74 9.74 0 0 1 3.9.788 10.098 10.098 0 0 1 3.175 2.137c.9.9 1.613 1.958 2.137 3.175A9.738 9.738 0 0 1 22 12a9.738 9.738 0 0 1-.788 3.9 10.098 10.098 0 0 1-2.137 3.175c-.9.9-1.958 1.613-3.175 2.137A9.738 9.738 0 0 1 12 22Zm0-2c2.233 0 4.125-.775 5.675-2.325C19.225 16.125 20 14.233 20 12c0-2.233-.775-4.125-2.325-5.675C16.125 4.775 14.233 4 12 4c-2.233 0-4.125.775-5.675 2.325C4.775 7.875 4 9.767 4 12c0 2.233.775 4.125 2.325 5.675C7.875 19.225 9.767 20 12 20Z"
+              />
+            </svg>
+            <p
+              class="_typography_yh5dq_162 _font-body-md-medium_yh5dq_69"
+            >
+              Send new messages on your behalf
+            </p>
+          </li>
+        </ul>
+      </div>
     </div>
     <div
       class="_block_17898c"
     >
-      <h6
-        class="_typography_yh5dq_162 _font-body-md-semibold_yh5dq_64"
+      <h4
+        class="_typography_yh5dq_162 _font-heading-sm-semibold_yh5dq_102 _title_17898c"
       >
         <a
           class="_link_1mzip_17"
@@ -408,63 +456,51 @@ exports[`<OAuth2SessionDetail> > renders session details 1`] = `
           href="/clients/test-id"
           rel="noreferrer noopener"
         >
-          Client
+          Client info
         </a>
-      </h6>
-      <ul
-        class="_list_040867"
+      </h4>
+      <div
+        class="_wrapper_040867"
       >
-        <li
-          class="_detailRow_040867"
+        <div
+          class="_datum_040867"
         >
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          <h5
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40"
           >
             Name
-          </p>
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
-          >
-            Element
-          </p>
-        </li>
-        <li
-          class="_detailRow_040867"
+          </h5>
+          Element
+        </div>
+        <div
+          class="_datum_040867"
         >
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          <h5
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40"
           >
-            ID
-          </p>
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
-          >
-            <code>
-              test-client-id
-            </code>
-          </p>
-        </li>
-        <li
-          class="_detailRow_040867"
+            Client ID
+          </h5>
+          <code>
+            test-client-id
+          </code>
+        </div>
+        <div
+          class="_datum_040867"
         >
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-semibold_yh5dq_45 _detailLabel_040867"
+          <h5
+            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40"
           >
             Uri
-          </p>
-          <p
-            class="_typography_yh5dq_162 _font-body-sm-regular_yh5dq_40 _detailValue_040867"
+          </h5>
+          <a
+            href="https://element.io"
+            rel="noreferrer"
+            target="_blank"
           >
-            <a
-              href="https://element.io"
-              rel="noreferrer"
-              target="_blank"
-            >
-              https://element.io
-            </a>
-          </p>
-        </li>
-      </ul>
+            https://element.io
+          </a>
+        </div>
+      </div>
     </div>
     <button
       aria-controls="radix-:r0:"
