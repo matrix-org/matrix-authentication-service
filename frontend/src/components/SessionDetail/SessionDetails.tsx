@@ -34,7 +34,6 @@ type Props = {
   lastActive?: Date;
   signedIn?: Date;
   deviceId?: string;
-  sessionId?: string;
   ipAddress?: string;
   scopes?: string[];
   details?: Detail[];
@@ -105,7 +104,6 @@ const SessionDetails: React.FC<Props> = ({
   lastActive,
   signedIn,
   deviceId,
-  sessionId,
   ipAddress,
   details,
   scopes,
@@ -139,9 +137,6 @@ const SessionDetails: React.FC<Props> = ({
             label={t("frontend.session.device_id_label")}
             value={deviceId}
           />
-        )}
-        {sessionId && (
-          <Datum label={t("frontend.session.id_label")} value={sessionId} />
         )}
         {ipAddress && (
           <Datum

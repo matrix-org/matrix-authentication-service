@@ -98,7 +98,6 @@ const BrowserSessionDetail: React.FC<Props> = ({ session, isCurrent }) => {
             ? parseISO(data.lastAuthentication.createdAt)
             : undefined
         }
-        sessionId={data.id}
         ipAddress={data.lastActiveIp ?? undefined}
         details={sessionDetails}
       />

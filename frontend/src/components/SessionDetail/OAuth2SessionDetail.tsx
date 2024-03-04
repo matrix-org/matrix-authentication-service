@@ -25,7 +25,7 @@ import { END_SESSION_MUTATION } from "../OAuth2Session";
 import ClientAvatar from "../Session/ClientAvatar";
 import EndSessionButton from "../Session/EndSessionButton";
 
-import SessionDetails, { Detail } from "./SessionDetails";
+import SessionDetails from "./SessionDetails";
 import SessionHeader from "./SessionHeader";
 
 export const FRAGMENT = graphql(/* GraphQL */ `
@@ -117,7 +117,6 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
         lastActive={data.lastActiveAt ? parseISO(data.lastActiveAt) : undefined}
         signedIn={parseISO(data.createdAt)}
         deviceId={deviceId}
-        sessionId={data.id}
         ipAddress={data.lastActiveIp ?? undefined}
         scopes={data.scope.split(" ")}
         details={sessionDetails}

@@ -92,7 +92,6 @@ const CompatSessionDetail: React.FC<Props> = ({ session }) => {
       <SessionHeader to="/sessions">{data.deviceId || data.id}</SessionHeader>
       <SessionDetails
         title={t("frontend.compat_session_detail.session_details_title")}
-        sessionId={data.id}
         deviceId={data.deviceId}
         signedIn={parseISO(data.createdAt)}
         lastActive={data.lastActiveAt ? parseISO(data.lastActiveAt) : undefined}
