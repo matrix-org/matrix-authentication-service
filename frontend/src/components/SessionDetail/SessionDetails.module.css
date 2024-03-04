@@ -13,28 +13,51 @@
  * limitations under the License.
  */
 
-.list {
-    display: flex;
-    flex-direction: column;
-    margin-top: var(--cpd-space-1x);
-    gap: var(--cpd-space-1x);
+.wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+  margin-top: 32px;
 }
 
-.detail-row {
-    display: flex;
-    flex-direction: row;
-    gap: var(--cpd-space-4x);
+.wrapper h5 {
+  color: var(--cpd-color-text-secondary);
 }
 
-.detail-label {
-    flex: 0 0 20%;
-    color: var(--cpd-color-text-secondary);
+.wrapper .datum {
+  width: max-content;
 }
 
-.detail-value {
-    overflow-wrap: anywhere;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: var(--cpd-space-1x);
+.datum {
+  flex-grow: 1;
+  max-width: 100%;
+}
+
+.datum-value {
+  font-size: var(--cpd-font-size-body-md);
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.scope-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cpd-space-scale);
+  border-radius: var(--cpd-space-5x);
+  overflow: hidden;
+}
+
+.scope {
+  background: var(--cpd-color-bg-subtle-secondary);
+  padding: 12px 20px 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.scope svg {
+  inline-size: var(--cpd-space-6x);
+  block-size: var(--cpd-space-6x);
+  color: var(--cpd-color-icon-tertiary);
 }

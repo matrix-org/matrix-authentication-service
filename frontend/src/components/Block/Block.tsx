@@ -12,18 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Heading } from "@vector-im/compound-web";
 import cx from "classnames";
+import { ReactNode } from "react";
 
 import styles from "./Block.module.css";
 
 type Props = React.PropsWithChildren<{
+  title?: ReactNode;
   className?: string;
   highlight?: boolean;
 }>;
 
-const Block: React.FC<Props> = ({ children, className, highlight }) => {
+const Block: React.FC<Props> = ({ children, className, highlight, title }) => {
   return (
     <div className={cx(styles.block, className)} data-active={highlight}>
+      {title && (
+        <Heading as="h4" size="sm" weight="semibold" className={styles.title}>
+          {title}
+        </Heading>
+      )}
+
       {children}
     </div>
   );

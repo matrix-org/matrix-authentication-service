@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { Link } from "@tanstack/react-router";
-import IconArrowLeft from "@vector-im/compound-design-tokens/icons/arrow-left.svg?react";
+import IconChevronLeft from "@vector-im/compound-design-tokens/icons/chevron-left.svg?react";
 import { H3 } from "@vector-im/compound-web";
 
 import styles from "./SessionHeader.module.css";
@@ -25,7 +25,7 @@ const SessionHeader: React.FC<React.ComponentProps<typeof Link>> = ({
   return (
     <header className={styles.header}>
       <Link className={styles.backButton} {...rest}>
-        <IconArrowLeft />
+        <IconChevronLeft />
       </Link>
       <H3>{children}</H3>
     </header>

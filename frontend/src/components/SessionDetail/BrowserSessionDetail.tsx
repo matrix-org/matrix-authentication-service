@@ -21,7 +21,6 @@ import BlockList from "../BlockList/BlockList";
 import { useEndBrowserSession } from "../BrowserSession";
 import DateTime from "../DateTime";
 import EndSessionButton from "../Session/EndSessionButton";
-import LastActive from "../Session/LastActive";
 
 import styles from "./BrowserSessionDetail.module.css";
 import SessionDetails from "./SessionDetails";
@@ -81,54 +80,7 @@ const BrowserSessionDetail: React.FC<Props> = ({ session, isCurrent }) => {
       ]
     : [];
 
-  const lastActiveIp = data.lastActiveIp
-    ? [
-        {
-          label: t("frontend.session.ip_label"),
-          value: <code>{data.lastActiveIp}</code>,
-        },
-      ]
-    : [];
-
-  const lastActiveAt = data.lastActiveAt
-    ? [
-        {
-          label: t("frontend.session.last_active_label"),
-          value: <LastActive lastActive={parseISO(data.lastActiveAt)} />,
-        },
-      ]
-    : [];
-
-  const lastAuthentication = data.lastAuthentication
-    ? [
-        {
-          label: t("frontend.session.last_auth_label"),
-          value: (
-            <DateTime datetime={parseISO(data.lastAuthentication.createdAt)} />
-          ),
-        },
-      ]
-    : [];
-
-  const sessionDetails = [
-    { label: t("frontend.session.id_label"), value: <code>{data.id}</code> },
-    {
-      label: t("frontend.session.user_id_label"),
-      value: <code>{data.user.id}</code>,
-    },
-    {
-      label: t("frontend.session.username_label"),
-      value: <code>{data.user.username}</code>,
-    },
-    {
-      label: t("frontend.session.signed_in_label"),
-      value: <DateTime datetime={data.createdAt} />,
-    },
-    ...finishedAt,
-    ...lastActiveAt,
-    ...lastActiveIp,
-    ...lastAuthentication,
-  ];
+  const sessionDetails = [...finishedAt];
 
   return (
     <BlockList>
@@ -139,7 +91,15 @@ const BrowserSessionDetail: React.FC<Props> = ({ session, isCurrent }) => {
       )}
       <SessionHeader to="/sessions/browsers">{sessionName}</SessionHeader>
       <SessionDetails
-        title={t("frontend.browser_session_details.session_details_title")}
+        title={t("frontend.session.title")}
+        lastActive={data.lastActiveAt ? parseISO(data.lastActiveAt) : undefined}
+        signedIn={
+          data.lastAuthentication
+            ? parseISO(data.lastAuthentication.createdAt)
+            : undefined
+        }
+        sessionId={data.id}
+        ipAddress={data.lastActiveIp ?? undefined}
         details={sessionDetails}
       />
       {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}

@@ -60,7 +60,7 @@
       "view_all_button": "View all"
     },
     "compat_session_detail": {
-      "client_details_title": "Client",
+      "client_details_title": "Client info",
       "name": "Name",
       "session_details_title": "Session"
     },
@@ -92,7 +92,7 @@
     "not_found_alert_title": "Not found.",
     "not_logged_in_alert": "You're not logged in.",
     "oauth2_client_detail": {
-      "details_title": "Client",
+      "details_title": "Client info",
       "id": "Client ID",
       "name": "Name",
       "policy": "Policy",
@@ -100,7 +100,7 @@
     },
     "oauth2_session_detail": {
       "client_details_name": "Name",
-      "client_title": "Client",
+      "client_title": "Client info",
       "session_details_title": "Session"
     },
     "pagination_controls": {
@@ -121,9 +121,11 @@
     },
     "session": {
       "current": "Current",
+      "title": "Device details",
       "device_id_label": "Device ID",
       "finished_label": "Finished",
-      "id_label": "ID",
+      "client_id_label": "Client ID",
+      "id_label": "Session ID",
       "ip_label": "IP Address",
       "last_active_label": "Last Active",
       "last_auth_label": "Last Authentication",
@@ -185,6 +187,17 @@
         "title": "You entered the wrong code"
       },
       "resend_code": "Resend code"
+    }
+  },
+  "mas": {
+    "scope": {
+      "edit_profile": "Edit your profile and contact details",
+      "manage_sessions": "Manage your devices and sessions",
+      "mas_admin": "Administer any user on the matrix-authentication-service",
+      "send_messages": "Send new messages on your behalf",
+      "synapse_admin": "Administer the Synapse homeserver",
+      "view_messages": "View your existing messages and data",
+      "view_profile": "See your profile info and contact details"
     }
   }
 }

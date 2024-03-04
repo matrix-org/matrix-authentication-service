@@ -22,7 +22,6 @@ import { END_SESSION_MUTATION, simplifyUrl } from "../CompatSession";
 import DateTime from "../DateTime";
 import ExternalLink from "../ExternalLink/ExternalLink";
 import EndSessionButton from "../Session/EndSessionButton";
-import LastActive from "../Session/LastActive";
 
 import SessionDetails from "./SessionDetails";
 import SessionHeader from "./SessionHeader";
@@ -69,38 +68,7 @@ const CompatSessionDetail: React.FC<Props> = ({ session }) => {
       ]
     : [];
 
-  const lastActiveIp = data.lastActiveIp
-    ? [
-        {
-          label: t("frontend.session.ip_label"),
-          value: <code>{data.lastActiveIp}</code>,
-        },
-      ]
-    : [];
-
-  const lastActiveAt = data.lastActiveAt
-    ? [
-        {
-          label: t("frontend.session.last_active_label"),
-          value: <LastActive lastActive={parseISO(data.lastActiveAt)} />,
-        },
-      ]
-    : [];
-
-  const sessionDetails = [
-    { label: t("frontend.session.id_label"), value: <code>{data.id}</code> },
-    {
-      label: t("frontend.session.device_id_label"),
-      value: <code>{data.deviceId}</code>,
-    },
-    {
-      label: t("frontend.session.signed_in_label"),
-      value: <DateTime datetime={parseISO(data.createdAt)} />,
-    },
-    ...finishedAt,
-    ...lastActiveAt,
-    ...lastActiveIp,
-  ];
+  const sessionDetails = [...finishedAt];
 
   const clientDetails: { label: string; value: string | JSX.Element }[] = [];
 
@@ -124,6 +92,11 @@ const CompatSessionDetail: React.FC<Props> = ({ session }) => {
       <SessionHeader to="/sessions">{data.deviceId || data.id}</SessionHeader>
       <SessionDetails
         title={t("frontend.compat_session_detail.session_details_title")}
+        sessionId={data.id}
+        deviceId={data.deviceId}
+        signedIn={parseISO(data.createdAt)}
+        lastActive={data.lastActiveAt ? parseISO(data.lastActiveAt) : undefined}
+        ipAddress={data.lastActiveIp ?? undefined}
         details={sessionDetails}
       />
       {clientDetails.length > 0 ? (

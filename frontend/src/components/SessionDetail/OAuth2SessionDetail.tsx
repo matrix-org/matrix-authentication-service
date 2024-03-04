@@ -24,9 +24,8 @@ import { Link } from "../Link";
 import { END_SESSION_MUTATION } from "../OAuth2Session";
 import ClientAvatar from "../Session/ClientAvatar";
 import EndSessionButton from "../Session/EndSessionButton";
-import LastActive from "../Session/LastActive";
 
-import SessionDetails from "./SessionDetails";
+import SessionDetails, { Detail } from "./SessionDetails";
 import SessionHeader from "./SessionHeader";
 
 export const FRAGMENT = graphql(/* GraphQL */ `
@@ -62,8 +61,6 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
 
   const deviceId = getDeviceIdFromScope(data.scope);
 
-  const scopes = data.scope.split(" ");
-
   const finishedAt = data.finishedAt
     ? [
         {
@@ -73,48 +70,7 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
       ]
     : [];
 
-  const lastActiveIp = data.lastActiveIp
-    ? [
-        {
-          label: t("frontend.session.ip_label"),
-          value: <code>{data.lastActiveIp}</code>,
-        },
-      ]
-    : [];
-
-  const lastActiveAt = data.lastActiveAt
-    ? [
-        {
-          label: t("frontend.session.last_active_label"),
-          value: <LastActive lastActive={parseISO(data.lastActiveAt)} />,
-        },
-      ]
-    : [];
-
-  const sessionDetails = [
-    { label: t("frontend.session.id_label"), value: <code>{data.id}</code> },
-    {
-      label: t("frontend.session.device_id_label"),
-      value: <code>{deviceId}</code>,
-    },
-    {
-      label: t("frontend.session.signed_in_label"),
-      value: <DateTime datetime={data.createdAt} />,
-    },
-    ...finishedAt,
-    ...lastActiveAt,
-    ...lastActiveIp,
-    {
-      label: t("frontend.session.scopes_label"),
-      value: (
-        <span>
-          {scopes.map((scope) => (
-            <code key={scope}>{scope}</code>
-          ))}
-        </span>
-      ),
-    },
-  ];
+  const sessionDetails = [...finishedAt];
 
   const clientTitle = (
     <Link to="/clients/$id" params={{ id: data.client.id }}>
@@ -136,7 +92,7 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
       ),
     },
     {
-      label: t("frontend.session.id_label"),
+      label: t("frontend.session.client_id_label"),
       value: <code>{data.client.clientId}</code>,
     },
     {
@@ -157,7 +113,13 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
     <BlockList>
       <SessionHeader to="/sessions">{deviceId || data.id}</SessionHeader>
       <SessionDetails
-        title={t("frontend.oauth2_session_detail.session_details_title")}
+        title={t("frontend.session.title")}
+        lastActive={data.lastActiveAt ? parseISO(data.lastActiveAt) : undefined}
+        signedIn={parseISO(data.createdAt)}
+        deviceId={deviceId}
+        sessionId={data.id}
+        ipAddress={data.lastActiveIp ?? undefined}
+        scopes={data.scope.split(" ")}
         details={sessionDetails}
       />
       <SessionDetails title={clientTitle} details={clientDetails} />
