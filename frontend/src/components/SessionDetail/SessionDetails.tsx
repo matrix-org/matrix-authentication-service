@@ -145,7 +145,7 @@ const SessionDetails: React.FC<Props> = ({
           />
         )}
         {details?.map(({ label, value }) => (
-          <Datum label={label} value={value} />
+          <Datum key={label} label={label} value={value} />
         ))}
       </div>
 
@@ -155,7 +155,7 @@ const SessionDetails: React.FC<Props> = ({
           value={
             <ul className={styles.scopeList}>
               {scopes.map((scope) => (
-                <Scope scope={scope} />
+                <Scope key={scope} scope={scope} />
               ))}
             </ul>
           }
