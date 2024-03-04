@@ -50,8 +50,7 @@
       }
     },
     "browser_session_details": {
-      "current_badge": "Current",
-      "session_details_title": "Session"
+      "current_badge": "Current"
     },
     "browser_sessions_overview": {
       "body:one": "{{count}} active session",
@@ -93,15 +92,13 @@
     "not_logged_in_alert": "You're not logged in.",
     "oauth2_client_detail": {
       "details_title": "Client info",
-      "id": "Client ID",
       "name": "Name",
       "policy": "Policy",
       "terms": "Terms of service"
     },
     "oauth2_session_detail": {
       "client_details_name": "Name",
-      "client_title": "Client info",
-      "session_details_title": "Session"
+      "client_title": "Client info"
     },
     "pagination_controls": {
       "total": "Total: {{totalCount}}"
@@ -120,23 +117,19 @@
       }
     },
     "session": {
+      "client_id_label": "Client ID",
       "current": "Current",
-      "title": "Device details",
       "device_id_label": "Device ID",
       "finished_label": "Finished",
-      "client_id_label": "Client ID",
-      "id_label": "Session ID",
       "ip_label": "IP Address",
       "last_active_label": "Last Active",
-      "last_auth_label": "Last Authentication",
       "name_for_platform": "{{name}} for {{platform}}",
       "scopes_label": "Scopes",
       "signed_in_label": "Signed in",
+      "title": "Device details",
       "unknown_browser": "Unknown browser",
       "unknown_device": "Unknown device",
-      "uri_label": "Uri",
-      "user_id_label": "User ID",
-      "username_label": "User name"
+      "uri_label": "Uri"
     },
     "session_detail": {
       "alert": {
