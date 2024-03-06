@@ -28,7 +28,7 @@ sentry = { version = "0.31.8", default-features = false }
 
 # Web server
 hyper = { version = "0.14.27", features = ["full"] }
-tower = "0.4.13"
+tower.workspace = true
 tower-http = { version = "0.4.4", features = ["cors"] }
 axum = "0.6.20"
 axum-macros = "0.3.8"
@@ -90,9 +90,3 @@ oauth2-types.workspace = true
 insta = "1.34.0"
 tracing-subscriber.workspace = true
 cookie_store = "0.20.0"
-
-[features]
-# Use the native root certificates
-native-roots = ["mas-axum-utils/native-roots", "mas-http/native-roots"]
-# Use the webpki root certificates
-webpki-roots = ["mas-axum-utils/webpki-roots", "mas-http/webpki-roots"]

@@ -146,7 +146,7 @@ impl Options {
         )
         .await?;
 
-        let http_client_factory = HttpClientFactory::new().await?;
+        let http_client_factory = HttpClientFactory::new();
 
         let homeserver_connection = SynapseConnection::new(
             config.matrix.homeserver.clone(),

@@ -21,7 +21,7 @@ use std::time::Duration;
 use http::{header::USER_AGENT, HeaderValue};
 use http_body::Full;
 use hyper::client::{connect::dns::GaiResolver, HttpConnector};
-use hyper_rustls::{ConfigBuilderExt, HttpsConnectorBuilder};
+use hyper_rustls::HttpsConnectorBuilder;
 use mas_http::BodyToBytesResponseLayer;
 use tower::{BoxError, ServiceBuilder};
 use tower_http::{timeout::TimeoutLayer, ServiceBuilderExt};
@@ -44,10 +44,7 @@ pub fn hyper_service() -> HttpService {
     let mut http = HttpConnector::new_with_resolver(resolver);
     http.enforce_http(false);
 
-    let tls_config = rustls::ClientConfig::builder()
-        .with_native_roots()
-        .expect("Failed to load native TLS")
-        .with_no_client_auth();
+    let tls_config = rustls_platform_verifier::tls_config();
 
     let https = HttpsConnectorBuilder::new()
         .with_tls_config(tls_config)

@@ -43,7 +43,7 @@ use url::Url;
 static METER_PROVIDER: OnceCell<MeterProvider> = OnceCell::const_new();
 static PROMETHEUS_REGISTRY: OnceCell<Registry> = OnceCell::const_new();
 
-pub async fn setup(config: &TelemetryConfig) -> anyhow::Result<Option<Tracer>> {
+pub fn setup(config: &TelemetryConfig) -> anyhow::Result<Option<Tracer>> {
     global::set_error_handler(|e| tracing::error!("{}", e))?;
     let propagator = propagator(&config.tracing.propagators);
 
@@ -52,9 +52,7 @@ pub async fn setup(config: &TelemetryConfig) -> anyhow::Result<Option<Tracer>> {
     mas_http::set_propagator(&propagator);
     global::set_text_map_propagator(propagator);
 
-    let tracer = tracer(&config.tracing.exporter)
-        .await
-        .context("Failed to configure traces exporter")?;
+    let tracer = tracer(&config.tracing.exporter).context("Failed to configure traces exporter")?;
 
     init_meter(&config.metrics.exporter).context("Failed to configure metrics exporter")?;
 
@@ -86,13 +84,9 @@ fn propagator(propagators: &[Propagator]) -> impl TextMapPropagator {
     TextMapCompositePropagator::new(propagators)
 }
 
-async fn http_client() -> anyhow::Result<impl opentelemetry_http::HttpClient + 'static> {
-    let client = mas_http::make_untraced_client()
-        .await
-        .context("Failed to build HTTP client used by telemetry exporter")?;
-    let client =
-        opentelemetry_http::hyper::HyperClient::new_with_timeout(client, Duration::from_secs(30));
-    Ok(client)
+fn http_client() -> impl opentelemetry_http::HttpClient + 'static {
+    let client = mas_http::make_untraced_client();
+    opentelemetry_http::hyper::HyperClient::new_with_timeout(client, Duration::from_secs(30))
 }
 
 fn stdout_tracer_provider() -> TracerProvider {
@@ -133,12 +127,12 @@ fn jaeger_agent_tracer_provider(host: &str, port: u16) -> anyhow::Result<TracerP
     Ok(tracer_provider)
 }
 
-async fn jaeger_collector_tracer_provider(
+fn jaeger_collector_tracer_provider(
     endpoint: &str,
     username: Option<&str>,
     password: Option<&str>,
 ) -> anyhow::Result<TracerProvider> {
-    let http_client = http_client().await?;
+    let http_client = http_client();
     let mut pipeline = opentelemetry_jaeger::new_collector_pipeline()
         .with_service_name(env!("CARGO_PKG_NAME"))
         .with_trace_config(trace_config())
@@ -160,8 +154,8 @@ async fn jaeger_collector_tracer_provider(
     Ok(tracer_provider)
 }
 
-async fn zipkin_tracer(collector_endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
-    let http_client = http_client().await?;
+fn zipkin_tracer(collector_endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
+    let http_client = http_client();
 
     let mut pipeline = opentelemetry_zipkin::new_pipeline()
         .with_http_client(http_client)
@@ -179,7 +173,7 @@ async fn zipkin_tracer(collector_endpoint: &Option<Url>) -> anyhow::Result<Trace
     Ok(tracer)
 }
 
-async fn tracer(config: &TracingExporterConfig) -> anyhow::Result<Option<Tracer>> {
+fn tracer(config: &TracingExporterConfig) -> anyhow::Result<Option<Tracer>> {
     let tracer_provider = match config {
         TracingExporterConfig::None => return Ok(None),
         TracingExporterConfig::Stdout => stdout_tracer_provider(),
@@ -195,13 +189,10 @@ async fn tracer(config: &TracingExporterConfig) -> anyhow::Result<Option<Tracer>
             endpoint,
             username,
             password,
-        }) => {
-            jaeger_collector_tracer_provider(endpoint, username.as_deref(), password.as_deref())
-                .await?
-        }
+        }) => jaeger_collector_tracer_provider(endpoint, username.as_deref(), password.as_deref())?,
         TracingExporterConfig::Zipkin { collector_endpoint } => {
             // The Zipkin exporter already creates a tracer and installs it
-            return Ok(Some(zipkin_tracer(collector_endpoint).await?));
+            return Ok(Some(zipkin_tracer(collector_endpoint)?));
         }
     };
 
