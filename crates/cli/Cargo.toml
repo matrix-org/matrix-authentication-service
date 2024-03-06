@@ -24,12 +24,12 @@ itertools = "0.12.1"
 listenfd = "1.0.1"
 rand.workspace = true
 rand_chacha = "0.3.1"
-rustls = "0.22.2"
+rustls.workspace = true
 serde_json.workspace = true
 serde_yaml = "0.9.30"
 sqlx = { version = "0.7.3", features = ["runtime-tokio-rustls", "postgres"] }
 tokio = { version = "1.35.1", features = ["full"] }
-tower = "0.4.13"
+tower.workspace = true
 tower-http = { version = "0.4.4", features = ["fs"] }
 url.workspace = true
 zeroize = "1.7.0"
@@ -57,7 +57,7 @@ mas-data-model.workspace = true
 mas-email.workspace = true
 mas-graphql.workspace = true
 mas-handlers = { workspace = true }
-mas-http = { workspace = true, features = ["axum", "client"] }
+mas-http = { workspace = true, features = ["client"] }
 mas-i18n.workspace = true
 mas-iana.workspace = true
 mas-keystore.workspace = true
@@ -75,18 +75,13 @@ mas-tower.workspace = true
 oauth2-types.workspace = true
 
 [features]
-default = ["webpki-roots", "policy-cache"]
+default = ["policy-cache"]
 
 # Features used for the prebuilt binaries
-dist = ["policy-cache", "native-roots", "mas-config/dist"]
+dist = ["policy-cache", "mas-config/dist"]
 
 # Features used in the Docker image
-docker = ["native-roots", "mas-config/docker"]
+docker = ["mas-config/docker"]
 
 # Enable wasmtime compilation cache
 policy-cache = ["mas-policy/cache"]
-
-# Use the native root certificates
-native-roots = ["mas-http/native-roots", "mas-handlers/native-roots"]
-# Use the webpki root certificates
-webpki-roots = ["mas-http/webpki-roots", "mas-handlers/webpki-roots"]

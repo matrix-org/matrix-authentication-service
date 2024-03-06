@@ -55,7 +55,7 @@ impl Options {
         let mailer = mailer_from_config(&config.email, &templates)?;
         mailer.test_connection().await?;
 
-        let http_client_factory = HttpClientFactory::new().await?;
+        let http_client_factory = HttpClientFactory::new();
         let conn = SynapseConnection::new(
             config.matrix.homeserver.clone(),
             config.matrix.endpoint.clone(),

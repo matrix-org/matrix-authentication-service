@@ -102,7 +102,6 @@ pub(crate) enum RouteError {
 }
 
 impl_from_error_for_route!(mas_storage::RepositoryError);
-impl_from_error_for_route!(mas_http::ClientInitError);
 impl_from_error_for_route!(mas_oidc_client::error::DiscoveryError);
 impl_from_error_for_route!(mas_oidc_client::error::JwksError);
 impl_from_error_for_route!(mas_oidc_client::error::TokenAuthorizationCodeError);

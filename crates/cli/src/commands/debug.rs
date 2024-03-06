@@ -67,7 +67,7 @@ impl Options {
     #[tracing::instrument(skip_all)]
     pub async fn run(self, root: &super::Options) -> anyhow::Result<()> {
         use Subcommand as SC;
-        let http_client_factory = HttpClientFactory::new().await?;
+        let http_client_factory = HttpClientFactory::new();
         match self.subcommand {
             SC::Http {
                 show_headers,

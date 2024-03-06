@@ -41,7 +41,7 @@ impl Options {
         let config: RootConfig = root.load_config()?;
 
         // We'll need an HTTP client
-        let http_client_factory = HttpClientFactory::new().await?;
+        let http_client_factory = HttpClientFactory::new();
         let base_url = config.http.public_base.as_str();
         let issuer = config.http.issuer.as_ref().map(url::Url::as_str);
         let issuer = issuer.unwrap_or(base_url);

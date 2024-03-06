@@ -44,7 +44,6 @@ pub(crate) enum RouteError {
     Internal(Box<dyn std::error::Error>),
 }
 
-impl_from_error_for_route!(mas_http::ClientInitError);
 impl_from_error_for_route!(mas_oidc_client::error::DiscoveryError);
 impl_from_error_for_route!(mas_oidc_client::error::AuthorizationError);
 impl_from_error_for_route!(mas_storage::RepositoryError);

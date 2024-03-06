@@ -31,7 +31,7 @@ serde_urlencoded = "0.7.1"
 serde_json.workspace = true
 thiserror.workspace = true
 tokio = "1.35.1"
-tower = { version = "0.4.13", features = ["util"] }
+tower.workspace = true
 tracing.workspace = true
 url.workspace = true
 ulid.workspace = true
@@ -44,7 +44,3 @@ mas-jose.workspace = true
 mas-keystore.workspace = true
 mas-storage.workspace = true
 mas-templates.workspace = true
-
-[features]
-native-roots = ["mas-http/native-roots"]
-webpki-roots = ["mas-http/webpki-roots"]

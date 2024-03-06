@@ -77,7 +77,7 @@ async fn try_main() -> anyhow::Result<()> {
         telemetry_config.sentry.dsn.as_deref(),
         sentry::ClientOptions {
             transport: Some(Arc::new(HyperTransportFactory::new(
-                mas_http::make_untraced_client().await?,
+                mas_http::make_untraced_client(),
             ))),
             traces_sample_rate: 1.0,
             auto_session_tracking: true,
@@ -99,9 +99,7 @@ async fn try_main() -> anyhow::Result<()> {
     });
 
     // Setup OpenTelemetry tracing and metrics
-    let tracer = telemetry::setup(&telemetry_config)
-        .await
-        .context("failed to setup OpenTelemetry")?;
+    let tracer = telemetry::setup(&telemetry_config).context("failed to setup OpenTelemetry")?;
 
     let telemetry_layer = tracer.map(|tracer| {
         tracing_opentelemetry::layer()
