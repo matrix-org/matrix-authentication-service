@@ -22,6 +22,7 @@ use mas_handlers::{ActivityTracker, CookieManager, HttpClientFactory, MetadataCa
 use mas_listener::{server::Server, shutdown::ShutdownStream};
 use mas_matrix_synapse::SynapseConnection;
 use mas_router::UrlBuilder;
+use mas_storage::SystemClock;
 use mas_storage_pg::MIGRATOR;
 use rand::{
     distributions::{Alphanumeric, DistString},
@@ -39,6 +40,7 @@ use crate::{
     },
 };
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Parser, Debug, Default)]
 pub(super) struct Options {
     /// Do not apply pending migrations on start
@@ -53,6 +55,10 @@ pub(super) struct Options {
     /// Do not start the task worker
     #[arg(long)]
     no_worker: bool,
+
+    /// Do not sync the configuration with the database
+    #[arg(long)]
+    no_sync: bool,
 }
 
 impl Options {
@@ -88,6 +94,28 @@ impl Options {
                 .context("could not run migrations")?;
         }
 
+        let encrypter = config.secrets.encrypter();
+
+        if self.no_sync {
+            info!("Skipping configuration sync");
+        } else {
+            // Sync the configuration with the database
+            let mut conn = pool.acquire().await?;
+            let clients_config = root.load_config()?;
+            let upstream_oauth2_config = root.load_config()?;
+
+            crate::sync::config_sync(
+                upstream_oauth2_config,
+                clients_config,
+                &mut conn,
+                &encrypter,
+                &SystemClock::default(),
+                false,
+                false,
+            )
+            .await?;
+        }
+
         // Initialize the key store
         let key_store = config
             .secrets
@@ -95,7 +123,6 @@ impl Options {
             .await
             .context("could not import keys from config")?;
 
-        let encrypter = config.secrets.encrypter();
         let cookie_manager =
             CookieManager::derive_from(config.http.public_base.clone(), &config.secrets.encryption);
 
@@ -119,7 +146,7 @@ impl Options {
         )
         .await?;
 
-        let http_client_factory = HttpClientFactory::new().await?;
+        let http_client_factory = HttpClientFactory::new();
 
         let homeserver_connection = SynapseConnection::new(
             config.matrix.homeserver.clone(),

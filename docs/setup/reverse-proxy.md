@@ -27,7 +27,11 @@ http:
           port: 8080
           
         # OR bind on a Unix domain socket
-        #- path: /var/run/mas.sock
+        #- socket: /var/run/mas.sock
+
+        # OR bind on a systemd socket
+        #- fd: 0
+        #  kind: tcp # or unix
 
       # Optional: use the PROXY protocol
       #proxy_protocol: true

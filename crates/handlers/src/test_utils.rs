@@ -152,7 +152,7 @@ impl TestState {
 
         let homeserver_connection = Arc::new(MockHomeserverConnection::new("example.com"));
 
-        let http_client_factory = HttpClientFactory::new().await?;
+        let http_client_factory = HttpClientFactory::new();
 
         let site_config = SiteConfig {
             tos_uri: Some("https://example.com/tos".parse().unwrap()),

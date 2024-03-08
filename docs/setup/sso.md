@@ -11,7 +11,8 @@ A deployment which requires SAML or LDAP-based authentication should use a servi
 ## General configuration
 
 Configuration of upstream providers is done in the `upstream_oauth2` section of the configuration file, which has a `providers` list.
-This section needs to be synced with the database every time it changes, using the [`mas-cli config sync`](../usage/cli/config.md#config-sync---prune---dry-run) command.
+Additions and changes to this sections are synced with the database on startup.
+Removals need to be applied using the [`mas-cli config sync --prune`](../usage/cli/config.md#config-sync---prune---dry-run) command.
 
 **An exhaustive list of all the parameters is available in the [configuration file reference](../usage/configuration.md#upstream_oauth2).**
 

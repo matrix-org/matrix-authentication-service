@@ -14,8 +14,8 @@
 
 use axum::body::Full;
 use mas_http::{
-    make_traced_connector, BodyToBytesResponseLayer, Client, ClientInitError, ClientLayer,
-    ClientService, HttpService, TracedClient, TracedConnector,
+    make_traced_connector, BodyToBytesResponseLayer, Client, ClientLayer, ClientService,
+    HttpService, TracedClient, TracedConnector,
 };
 use tower::{
     util::{MapErrLayer, MapRequestLayer},
@@ -28,18 +28,20 @@ pub struct HttpClientFactory {
     client_layer: ClientLayer,
 }
 
+impl Default for HttpClientFactory {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HttpClientFactory {
     /// Constructs a new HTTP client factory
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the client factory failed to initialise, which can
-    /// happen when it fails to load the system's CA certificates.
-    pub async fn new() -> Result<Self, ClientInitError> {
-        Ok(Self {
-            traced_connector: make_traced_connector().await?,
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            traced_connector: make_traced_connector(),
             client_layer: ClientLayer::new(),
-        })
+        }
     }
 
     /// Constructs a new HTTP client

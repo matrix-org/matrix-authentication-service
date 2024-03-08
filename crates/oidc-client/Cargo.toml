@@ -18,6 +18,7 @@ hyper = [
     "dep:hyper",
     "dep:hyper-rustls",
     "dep:rustls",
+    "dep:rustls-platform-verifier",
     "dep:tower-http",
     "tower/limit",
 ]
@@ -32,7 +33,6 @@ futures-util = "0.3.30"
 headers = "0.3.9"
 http.workspace = true
 language-tags = "0.3.2"
-once_cell = "1.19.0"
 mime = "0.3.17"
 rand.workspace = true
 serde.workspace = true
@@ -40,8 +40,7 @@ serde_json.workspace = true
 serde_urlencoded = "0.7.1"
 serde_with = "3.5.1"
 thiserror.workspace = true
-tokio = { version = "1.35.1", features = ["rt", "macros", "rt-multi-thread"] }
-tower = { version = "0.4.13", features = ["full"] }
+tower.workspace = true
 tracing.workspace = true
 url.workspace = true
 
@@ -53,16 +52,15 @@ oauth2-types.workspace = true
 
 # Default http service
 http-body = { version = "0.4.5", optional = true }
-rustls = { version = "0.22.2", optional = true }
-[dependencies.hyper-rustls]
-version = "0.25.0"
-features = ["http1", "http2", "rustls-native-certs"]
-default-features = false
-optional = true
+rustls = { workspace = true, optional = true }
+rustls-platform-verifier = { workspace = true, optional = true }
+hyper-rustls = { workspace = true, optional = true }
+
 [dependencies.hyper]
 version = "0.14.27"
-features = ["client", "http1", "http2", "stream", "runtime" ]
+features = ["client", "http1", "http2", "stream", "runtime"]
 optional = true
+
 [dependencies.tower-http]
 version = "0.4.4"
 features = ["follow-redirect", "set-header", "timeout", "map-request-body", "util"]
@@ -73,4 +71,5 @@ assert_matches = "1.5.0"
 bitflags = "2.4.2"
 mas-keystore.workspace = true
 rand_chacha = "0.3.1"
+tokio = { version = "1.35.1", features = ["rt", "macros", "rt-multi-thread"] }
 wiremock = "0.5.22"

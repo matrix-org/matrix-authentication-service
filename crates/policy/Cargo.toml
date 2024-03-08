@@ -16,7 +16,7 @@ anyhow.workspace = true
 opa-wasm = { git = "https://github.com/matrix-org/rust-opa-wasm.git" }
 serde.workspace = true
 serde_json.workspace = true
-schemars = {version = "0.8.16", optional = true }
+schemars = { workspace = true, optional = true }
 thiserror.workspace = true
 tokio = { version = "1.35.1", features = ["io-util", "rt"] }
 tracing.workspace = true

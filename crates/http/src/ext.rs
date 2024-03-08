@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::ops::RangeBounds;
+use std::{ops::RangeBounds, sync::OnceLock};
 
 use http::{header::HeaderName, Request, StatusCode};
-use once_cell::sync::OnceCell;
 use tower::Service;
 use tower_http::cors::CorsLayer;
 
@@ -25,7 +24,7 @@ use crate::layers::{
     json_request::JsonRequest, json_response::JsonResponse,
 };
 
-static PROPAGATOR_HEADERS: OnceCell<Vec<HeaderName>> = OnceCell::new();
+static PROPAGATOR_HEADERS: OnceLock<Vec<HeaderName>> = OnceLock::new();
 
 /// Notify the CORS layer what opentelemetry propagators are being used. This
 /// helps whitelisting headers in CORS requests.

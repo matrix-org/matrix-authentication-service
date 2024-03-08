@@ -21,7 +21,7 @@ serde.workspace = true
 thiserror.workspace = true
 tokio = { version = "1.35.1", features = ["sync"] }
 tracing.workspace = true
-tower = { version = "0.4.13", features = ["util"] }
+tower.workspace = true
 ulid.workspace = true
 url.workspace = true
 

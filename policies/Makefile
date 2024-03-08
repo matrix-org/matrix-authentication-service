@@ -1,5 +1,6 @@
 # Set to 1 to run OPA through Docker
 DOCKER := 0
+PODMAN := 0
 OPA_DOCKER_IMAGE := docker.io/openpolicyagent/opa:0.59.0-debug
 
 INPUTS := \
@@ -9,12 +10,16 @@ INPUTS := \
 	password.rego \
 	email.rego
 
-ifeq ($(DOCKER), 0)
-	OPA := opa
-	OPA_RW := opa
-else
+ifeq ($(DOCKER), 1)
 	OPA := docker run -i -v $(shell pwd):/policies:ro -w /policies --rm $(OPA_DOCKER_IMAGE)
 	OPA_RW := docker run -i -v $(shell pwd):/policies -w /policies --rm $(OPA_DOCKER_IMAGE)
+else ifeq ($(PODMAN), 1)
+	# When running rootless, the volume directory may need to be given global write permissions on the host
+	OPA := podman run -i -v $(shell pwd):/policies:ro:Z -w /policies --rm $(OPA_DOCKER_IMAGE)
+	OPA_RW := podman run -i -v $(shell pwd):/policies:Z -w /policies --rm $(OPA_DOCKER_IMAGE)
+else
+	OPA := opa
+	OPA_RW := opa
 endif
 
 policy.wasm: $(INPUTS)

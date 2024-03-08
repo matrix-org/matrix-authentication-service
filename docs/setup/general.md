@@ -62,25 +62,13 @@ Many [tools in text editors](https://json-schema.org/implementations.html#editor
 
 Some sections of the configuration file need to be synced every time the configuration file is updated.
 This includes the [`clients`](../usage/configuration.md#clients) and [`upstream_oauth`](../usage/configuration.md#upstream-oauth) sections.
-Once the database is initialized, the [`config sync`](../usage/cli/config.md#config-sync---prune---dry-run) command can be used to sync the configuration file with the database:
+The configuration is synced by default on startup, and can be manually synced using the [`config sync`](../usage/cli/config.md#config-sync---prune---dry-run) command.
 
-```sh
-mas-cli config sync
-```
-
-By default, this will only add new clients and upstream OAuth providers, and will not remove entries that were removed from the configuration file.
+By default, this will only add new clients and upstream OAuth providers and update existing ones, but will not remove entries that were removed from the configuration file.
 To do so, use the `--prune` option:
 
 ```sh
 mas-cli config sync --prune
-```
-
-Before synchronizing the configuration file, it is *recommended* to do it in with the `--dry-run` option to see what will be changed, without committing the changes to the database:
-
-```sh
-mas-cli config sync --dry-run
-# with the --prune option
-mas-cli config sync --dry-run --prune
 ```
 
 ## Next step
