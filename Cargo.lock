@@ -183,17 +183,33 @@ dependencies = [
 ]
 
 [[package]]
-name = "apalis-cron"
-version = "0.4.9"
+name = "apalis-core"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43310b7e0132f9520b09224fb6faafb32eec82a672aa79c09e46b5b488ed505b"
+checksum = "27eece247534bc138c6d18cedd0b24139bbbb71e13e8490f9b156ebccf051949"
 dependencies = [
- "apalis-core",
+ "async-oneshot",
+ "async-timer",
+ "futures",
+ "pin-project-lite",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tower",
+ "ulid",
+]
+
+[[package]]
+name = "apalis-cron"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c9a23cc31f40b8ac6d5c7a24979846154642daeb32651b932790a3cf0ecab236"
+dependencies = [
+ "apalis-core 0.5.0",
  "async-stream",
  "chrono",
  "cron",
  "futures",
- "tokio",
  "tower",
 ]
 
@@ -440,6 +456,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-oneshot"
+version = "0.5.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae47de2a02d543205f3f5457a90b6ecbc9494db70557bd29590ec8f1ddff5463"
+dependencies = [
+ "futures-micro",
+]
+
+[[package]]
 name = "async-process"
 version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -528,6 +553,17 @@ name = "async-task"
 version = "4.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fbb36e985947064623dbd357f727af08ffd077f93d696782f3c56365fa2e2799"
+
+[[package]]
+name = "async-timer"
+version = "1.0.0-beta.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "312c45355a5673af115235efb90c3c3cbabcd1957d98ae6a7c4706389cd71218"
+dependencies = [
+ "error-code",
+ "libc",
+ "wasm-bindgen",
+]
 
 [[package]]
 name = "async-trait"
@@ -1644,6 +1680,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "error-code"
+version = "3.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0474425d51df81997e2f90a21591180b38eccf27292d755f3e30750225c175b"
+
+[[package]]
 name = "etcetera"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1887,6 +1929,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.48",
+]
+
+[[package]]
+name = "futures-micro"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b460264b3593d68b16a7bc35f7bc226ddfebdf9a1c8db1ed95d5cc6b7168c826"
+dependencies = [
+ "pin-project-lite",
 ]
 
 [[package]]
@@ -3483,7 +3534,7 @@ dependencies = [
 name = "mas-storage"
 version = "0.8.0"
 dependencies = [
- "apalis-core",
+ "apalis-core 0.4.9",
  "async-trait",
  "chrono",
  "futures-util",
@@ -3533,7 +3584,7 @@ name = "mas-tasks"
 version = "0.8.0"
 dependencies = [
  "anyhow",
- "apalis-core",
+ "apalis-core 0.4.9",
  "apalis-cron",
  "async-stream",
  "async-trait",
@@ -6439,9 +6490,9 @@ checksum = "ed646292ffc8188ef8ea4d1e0e0150fb15a5c2e12ad9b8fc191ae7a8a7f3c4b9"
 
 [[package]]
 name = "ulid"
-version = "1.1.1"
+version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e3c3b4dcec1e4729aab50688a1a0631483d79e65b194851425e7748287715a6"
+checksum = "34778c17965aa2a08913b57e1f34db9b4a63f5de31768b55bf20d2795f921259"
 dependencies = [
  "getrandom 0.2.12",
  "rand 0.8.5",
