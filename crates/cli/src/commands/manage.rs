@@ -154,6 +154,11 @@ impl Options {
                     .context("Email not found")?;
                 let email = repo.user_email().mark_as_verified(&clock, email).await?;
 
+                // If the user has no primary email, set this one as primary.
+                if user.primary_user_email_id.is_none() {
+                    repo.user_email().set_as_primary(&email).await?;
+                }
+
                 repo.into_inner().commit().await?;
                 info!(?email, "Email marked as verified");
 
