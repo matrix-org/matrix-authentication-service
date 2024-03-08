@@ -17,9 +17,17 @@
     width: 100%;
     color: var(--cpd-color-text-primary);
     padding-bottom: var(--cpd-space-5x);
-    border-bottom: 1px solid var(--cpd-color-border-interactive-secondary);
 
     &:last-child {
         border-bottom: none;
     }
+}
+
+.title {
+  padding-bottom: var(--cpd-space-2x);
+  border-bottom: var(--cpd-border-width-2) solid var(--cpd-color-gray-400);
+
+  /* Workaround compound design tokens heading style being broken */
+  font-weight: var(--cpd-font-weight-semibold) !important;
+  font-size: var(--cpd-font-size-heading-sm) !important;
 }

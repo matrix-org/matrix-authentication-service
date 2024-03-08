@@ -313,7 +313,7 @@
       },
       "send_messages": "Send new messages on your behalf",
       "@send_messages": {
-        "context": "components/scope.html:27:43-71"
+        "context": "components/scope.html:27:35-63"
       },
       "synapse_admin": "Administer the Synapse homeserver",
       "@synapse_admin": {

@@ -58,10 +58,6 @@ const OAuth2ClientDetail: React.FC<Props> = ({ client }) => {
   const details = [
     { label: t("frontend.oauth2_client_detail.name"), value: data.clientName },
     {
-      label: t("frontend.oauth2_client_detail.id"),
-      value: <code>{data.clientId}</code>,
-    },
-    {
       label: t("frontend.oauth2_client_detail.terms"),
       value: data.tosUri && <FriendlyExternalLink uri={data.tosUri} />,
     },
