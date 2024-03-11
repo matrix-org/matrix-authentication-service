@@ -203,6 +203,19 @@ impl UserAgent {
             result.os_version = version.into();
         }
 
+        // Special handling for Electron applications e.g. Element Desktop
+        if user_agent.contains("Electron/") {
+            let regex = regex::Regex::new(r"(?m)\w+/[\w.]+").unwrap();
+            let omit_keys = ["Mozilla", "AppleWebKit", "Chrome", "Electron", "Safari"];
+            let app = regex
+                .find_iter(&user_agent)
+                .map(|caps| caps.as_str().split_once("/").unwrap())
+                .find_map(|pair| if !omit_keys.contains(&pair.0) { Some(pair) } else { None })
+                .unwrap();
+            result.name = app.0;
+            result.version = app.1;
+        }
+
         Self {
             name: (result.name != VALUE_UNKNOWN).then(|| result.name.to_owned()),
             version: (result.version != VALUE_UNKNOWN).then(|| result.version.to_owned()),
