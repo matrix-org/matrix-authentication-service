@@ -209,14 +209,8 @@ impl UserAgent {
             let omit_keys = ["Mozilla", "AppleWebKit", "Chrome", "Electron", "Safari"];
             let app = regex
                 .find_iter(&user_agent)
-                .map(|caps| caps.as_str().split_once("/").unwrap())
-                .find_map(|pair| {
-                    if !omit_keys.contains(&pair.0) {
-                        Some(pair)
-                    } else {
-                        None
-                    }
-                })
+                .map(|caps| caps.as_str().split_once('/').unwrap())
+                .find(|pair| !omit_keys.contains(&pair.0))
                 .unwrap();
             result.name = app.0;
             result.version = app.1;
