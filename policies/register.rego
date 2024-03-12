@@ -19,7 +19,7 @@ violation[{"field": "username", "msg": "username too short"}] {
 }
 
 violation[{"field": "username", "msg": "username too long"}] {
-	count(input.username) >= 15
+	count(input.username) >= 64
 }
 
 violation[{"field": "username", "msg": "username contains invalid characters"}] {
