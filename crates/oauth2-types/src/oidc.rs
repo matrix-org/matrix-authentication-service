@@ -164,6 +164,78 @@ pub enum ClaimType {
     Distributed,
 }
 
+/// An account management action that a user can take.
+///
+/// Source: <https://github.com/matrix-org/matrix-spec-proposals/pull/2965>
+#[derive(
+    SerializeDisplay, DeserializeFromStr, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash,
+)]
+#[non_exhaustive]
+pub enum AccountManagementAction {
+    /// `org.matrix.profile`
+    ///
+    /// The user wishes to view their profile (name, avatar, contact details).
+    Profile,
+
+    /// `org.matrix.sessions_list`
+    ///
+    /// The user wishes to view a list of their sessions.
+    SessionsList,
+
+    /// `org.matrix.session_view`
+    ///
+    /// The user wishes to view the details of a specific session.
+    SessionView,
+
+    /// `org.matrix.session_end`
+    ///
+    /// The user wishes to end/log out of a specific session.
+    SessionEnd,
+
+    /// `org.matrix.account_deactivate`
+    ///
+    /// The user wishes to deactivate their account.
+    AccountDeactivate,
+
+    /// `org.matrix.cross_signing_reset`
+    ///
+    /// The user wishes to reset their cross-signing keys.
+    CrossSigningReset,
+
+    /// An unknown value.
+    Unknown(String),
+}
+
+impl core::fmt::Display for AccountManagementAction {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Profile => write!(f, "org.matrix.profile"),
+            Self::SessionsList => write!(f, "org.matrix.sessions_list"),
+            Self::SessionView => write!(f, "org.matrix.session_view"),
+            Self::SessionEnd => write!(f, "org.matrix.session_end"),
+            Self::AccountDeactivate => write!(f, "org.matrix.account_deactivate"),
+            Self::CrossSigningReset => write!(f, "org.matrix.cross_signing_reset"),
+            Self::Unknown(value) => write!(f, "{value}"),
+        }
+    }
+}
+
+impl core::str::FromStr for AccountManagementAction {
+    type Err = core::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "org.matrix.profile" => Ok(Self::Profile),
+            "org.matrix.sessions_list" => Ok(Self::SessionsList),
+            "org.matrix.session_view" => Ok(Self::SessionView),
+            "org.matrix.session_end" => Ok(Self::SessionEnd),
+            "org.matrix.account_deactivate" => Ok(Self::AccountDeactivate),
+            "org.matrix.cross_signing_reset" => Ok(Self::CrossSigningReset),
+            value => Ok(Self::Unknown(value.to_owned())),
+        }
+    }
+}
+
 /// The default value of `response_modes_supported` if it is not set.
 pub static DEFAULT_RESPONSE_MODES_SUPPORTED: &[ResponseMode] =
     &[ResponseMode::Query, ResponseMode::Fragment];
@@ -479,6 +551,17 @@ pub struct ProviderMetadata {
     ///
     /// [RP-Initiated Logout endpoint]: https://openid.net/specs/openid-connect-rpinitiated-1_0.html
     pub end_session_endpoint: Option<Url>,
+
+    /// URL where the user is able to access the account management capabilities
+    /// of this OP.
+    ///
+    /// This is a Matrix extension introduced in [MSC2965](https://github.com/matrix-org/matrix-spec-proposals/pull/2965).
+    pub account_management_uri: Option<Url>,
+
+    /// Array of actions that the account management URL supports.
+    ///
+    /// This is a Matrix extension introduced in [MSC2965](https://github.com/matrix-org/matrix-spec-proposals/pull/2965).
+    pub account_management_actions_supported: Option<Vec<AccountManagementAction>>,
 }
 
 impl ProviderMetadata {

@@ -14,6 +14,7 @@
 
 //! Methods to interact with OpenID Connect and OAuth2.0 endpoints.
 
+pub mod account_management;
 pub mod authorization_code;
 pub mod client_credentials;
 pub mod discovery;
