@@ -340,7 +340,10 @@ impl RequestClientCredentials {
                         let key = keystore
                             .signing_key_for_algorithm(&signing_algorithm)
                             .ok_or(CredentialsError::NoPrivateKeyFound)?;
-                        let signer = key.params().signing_key_for_alg(&signing_algorithm)?;
+                        let signer = key
+                            .params()
+                            .signing_key_for_alg(&signing_algorithm)
+                            .map_err(|_| CredentialsError::JwtWrongAlgorithm)?;
                         let mut header = JsonWebSignatureHeader::new(signing_algorithm);
 
                         if let Some(kid) = key.kid() {
