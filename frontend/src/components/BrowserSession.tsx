@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import IconChrome from "@browser-logos/chrome/chrome.svg?url";
-import IconFirefox from "@browser-logos/firefox/firefox.svg?url";
-import IconSafari from "@browser-logos/safari/safari.svg?url";
+import IconChrome from "@browser-logos/chrome/chrome_64x64.png?url";
+import IconFirefox from "@browser-logos/firefox/firefox_64x64.png?url";
+import IconSafari from "@browser-logos/safari/safari_64x64.png?url";
 import { Badge } from "@vector-im/compound-web";
 import { parseISO } from "date-fns";
 import { useCallback } from "react";
