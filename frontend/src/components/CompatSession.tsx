@@ -19,6 +19,7 @@ import { useMutation } from "urql";
 import { FragmentType, graphql, useFragment } from "../gql";
 import { DeviceType } from "../gql/graphql";
 
+import { browserLogoUri } from "./BrowserSession";
 import DateTime from "./DateTime";
 import EndSessionButton from "./Session/EndSessionButton";
 import LastActive from "./Session/LastActive";
@@ -120,7 +121,12 @@ const CompatSession: React.FC<{
       >
         <Card.Header type={deviceType}>
           <Card.Name name={deviceName} />
-          {clientName && <Card.Client name={clientName} />}
+          {clientName && (
+            <Card.Client
+              name={clientName}
+              logoUri={browserLogoUri(data.userAgent?.name ?? undefined)}
+            />
+          )}
         </Card.Header>
 
         <Card.Metadata>
