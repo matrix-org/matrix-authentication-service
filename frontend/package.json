@@ -21,7 +21,7 @@
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-dialog": "^1.0.5",
     "@radix-ui/react-form": "^0.0.3",
-    "@tanstack/react-router": "^1.16.6",
+    "@tanstack/react-router": "^1.19.15",
     "@types/ua-parser-js": "^0.7.39",
     "@urql/core": "^4.2.3",
     "@urql/devtools": "^2.0.3",
