@@ -80,6 +80,15 @@ impl UserAgent {
         }
     }
 
+    fn parse_electron(user_agent: &str) -> Option<(&str, &str)> {
+        let regex = regex::Regex::new(r"(?m)\w+/[\w.]+").unwrap();
+        let omit_keys = ["Mozilla", "AppleWebKit", "Chrome", "Electron", "Safari"];
+        return regex
+            .find_iter(&user_agent)
+            .map(|caps| caps.as_str().split_once('/').unwrap())
+            .find(|pair| !omit_keys.contains(&pair.0));
+    }
+
     #[must_use]
     pub fn parse(user_agent: String) -> Self {
         if !user_agent.contains("Mozilla/") {
@@ -205,15 +214,10 @@ impl UserAgent {
 
         // Special handling for Electron applications e.g. Element Desktop
         if user_agent.contains("Electron/") {
-            let regex = regex::Regex::new(r"(?m)\w+/[\w.]+").unwrap();
-            let omit_keys = ["Mozilla", "AppleWebKit", "Chrome", "Electron", "Safari"];
-            let app = regex
-                .find_iter(&user_agent)
-                .map(|caps| caps.as_str().split_once('/').unwrap())
-                .find(|pair| !omit_keys.contains(&pair.0))
-                .unwrap();
-            result.name = app.0;
-            result.version = app.1;
+            if let Some(app) = UserAgent::parse_electron(&user_agent) {
+                result.name = app.0;
+                result.version = app.1;
+            }
         }
 
         Self {
