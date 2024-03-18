@@ -49,6 +49,9 @@ const actionSchema = z
   ])
   .catch({ action: undefined });
 
+// XXX: we probably shouldn't have to specify the search parameters on /sessions/
+const PAGE_SIZE = 6;
+
 export const Route = createRootRouteWithContext<{
   client: Client;
 }>()({
@@ -62,7 +65,7 @@ export const Route = createRootRouteWithContext<{
 
       case "sessions_list":
       case "org.matrix.sessions_list":
-        throw redirect({ to: "/sessions" });
+        throw redirect({ to: "/sessions/", search: { last: PAGE_SIZE } });
 
       case "session_view":
       case "org.matrix.session_view":
@@ -71,7 +74,7 @@ export const Route = createRootRouteWithContext<{
             to: "/devices/$id",
             params: { id: search.device_id },
           });
-        throw redirect({ to: "/sessions" });
+        throw redirect({ to: "/sessions/", search: { last: PAGE_SIZE } });
 
       case "session_end":
       case "org.matrix.session_end":
@@ -80,11 +83,11 @@ export const Route = createRootRouteWithContext<{
             to: "/devices/$id",
             params: { id: search.device_id },
           });
-        throw redirect({ to: "/sessions" });
+        throw redirect({ to: "/sessions/", search: { last: PAGE_SIZE } });
 
       case "org.matrix.cross_signing_reset":
         throw redirect({
-          to: "/reset-cross-signing",
+          to: "/reset-cross-signing/",
           search: { deepLink: true },
         });
     }

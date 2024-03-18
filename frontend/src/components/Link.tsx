@@ -12,23 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { LinkComponent, useLinkProps } from "@tanstack/react-router";
+import { createLink, useLinkProps } from "@tanstack/react-router";
 import { Link as CompoundLink } from "@vector-im/compound-web";
-import { forwardRef } from "react";
 
-type Props = {
-  kind?: "primary" | "critical";
-};
-
-export const Link: LinkComponent<Props> = forwardRef<
-  HTMLAnchorElement,
-  Parameters<typeof useLinkProps>[0] & Props
->(({ children, kind, ...props }, ref) => {
+export const Link: ReturnType<typeof createLink<typeof CompoundLink>> = ({
+  children,
+  ...props
+}: Parameters<typeof useLinkProps>[0]) => {
   const linkProps = useLinkProps(props);
-
-  return (
-    <CompoundLink kind={kind} ref={ref} {...linkProps}>
-      {children}
-    </CompoundLink>
-  );
-}) as LinkComponent<Props>;
+  return <CompoundLink {...linkProps}>{children}</CompoundLink>;
+};

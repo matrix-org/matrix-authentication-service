@@ -133,7 +133,7 @@ function BrowserSessions(): React.ReactElement {
           size="sm"
           disabled={!forwardPage}
           to={Route.fullPath}
-          search={forwardPage}
+          search={forwardPage || pagination}
         >
           {t("common.previous")}
         </ButtonLink>
@@ -146,7 +146,7 @@ function BrowserSessions(): React.ReactElement {
           size="sm"
           disabled={!backwardPage}
           to={Route.fullPath}
-          search={backwardPage}
+          search={backwardPage || pagination}
         >
           {t("common.next")}
         </ButtonLink>

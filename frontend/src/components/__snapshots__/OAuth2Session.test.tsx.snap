@@ -5,13 +5,14 @@ exports[`<OAuth2Session /> > renders a finished session 1`] = `
   className="_sessionCardRoot_e2909e"
 >
   <a
+    aria-disabled={true}
     className="_sessionCard_e2909e _disabled_e2909e"
-    href="/sessions/session-id"
     onClick={[Function]}
     onFocus={[Function]}
     onMouseEnter={[Function]}
     onMouseLeave={[Function]}
     onTouchStart={[Function]}
+    role="link"
     style={{}}
   >
     <header
@@ -198,13 +199,14 @@ exports[`<OAuth2Session /> > renders correct icon for a native session 1`] = `
   className="_sessionCardRoot_e2909e"
 >
   <a
+    aria-disabled={true}
     className="_sessionCard_e2909e _disabled_e2909e"
-    href="/sessions/session-id"
     onClick={[Function]}
     onFocus={[Function]}
     onMouseEnter={[Function]}
     onMouseLeave={[Function]}
     onTouchStart={[Function]}
+    role="link"
     style={{}}
   >
     <header

@@ -89,6 +89,10 @@ updates:
       graphql-codegen:
         patterns:
           - "@graphql-codegen/*"
+      tanstack-router:
+        patterns:
+          - "@tanstack/react-router"
+          - "@tanstack/router-*"
       types:
         patterns:
           - "@types/*"
