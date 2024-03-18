@@ -84,7 +84,7 @@ impl UserAgent {
         let regex = regex::Regex::new(r"(?m)\w+/[\w.]+").unwrap();
         let omit_keys = ["Mozilla", "AppleWebKit", "Chrome", "Electron", "Safari"];
         return regex
-            .find_iter(&user_agent)
+            .find_iter(user_agent)
             .map(|caps| caps.as_str().split_once('/').unwrap())
             .find(|pair| !omit_keys.contains(&pair.0));
     }
