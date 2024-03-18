@@ -64,7 +64,6 @@ skip = [
     { name = "event-listener", version = "2.5.3" }, # async-channel (wiremock) and sqlx-core depend on the old version
     { name = "regex-syntax", version = "0.6.29" }, # tracing-subscriber[env-filter] -> matchers depends on the old version
     { name = "regex-automata", version = "0.1.10" }, # ^
-    { name = "ordered-float", version = "2.10.0" }, # opentelemetry-jaeger -> thrift depends on the old version
     { name = "itertools", version = "0.10.5" }, # wasmtime & others depends on the old version
     { name = "bitflags", version = "1.3.2" }, # axum depends on an old version
     { name = "hashbrown" }, # Too many versions :(
