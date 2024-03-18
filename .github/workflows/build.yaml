@@ -41,7 +41,7 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.1.2
 
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.2.0
@@ -141,7 +141,7 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.1.2
 
       - name: Docker meta
         id: meta
@@ -210,7 +210,7 @@ jobs:
       # For pull-requests, only read from the cache, do not try to push to the
       # cache or the image itself
       - name: Build
-        uses: docker/bake-action@v4.1.0
+        uses: docker/bake-action@v4.3.0
         if: github.event_name == 'pull_request'
         with:
           files: |
@@ -225,7 +225,7 @@ jobs:
 
       - name: Build and push
         id: bake
-        uses: docker/bake-action@v4.1.0
+        uses: docker/bake-action@v4.3.0
         if: github.event_name != 'pull_request'
         with:
           files: |
@@ -262,7 +262,7 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.1.2
 
       - name: Install Node
         uses: actions/setup-node@v4.0.2
@@ -321,7 +321,7 @@ jobs:
           done
 
       - name: Prepare a release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           body: |
             ### Docker image

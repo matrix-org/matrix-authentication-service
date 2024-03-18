@@ -175,11 +175,16 @@ impl std::ops::Deref for AuthorizationGrant {
     }
 }
 
+const DEFAULT_MAX_AGE: Duration = Duration::microseconds(3600 * 24 * 365 * 1000 * 1000);
+
 impl AuthorizationGrant {
     #[must_use]
     pub fn max_auth_time(&self) -> DateTime<Utc> {
-        let max_age: Option<i64> = self.max_age.map(|x| x.get().into());
-        self.created_at - Duration::seconds(max_age.unwrap_or(3600 * 24 * 365))
+        let max_age = self
+            .max_age
+            .and_then(|x| Duration::try_seconds(x.get().into()))
+            .unwrap_or(DEFAULT_MAX_AGE);
+        self.created_at - max_age
     }
 
     /// Mark the authorization grant as exchanged.

@@ -45,7 +45,7 @@ test_short_username {
 }
 
 test_long_username {
-	not allow with input as {"username": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "registration_method": "upstream-oauth2"}
+	not allow with input as {"username": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "registration_method": "upstream-oauth2"}
 }
 
 test_invalid_username {

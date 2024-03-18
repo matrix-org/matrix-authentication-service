@@ -1253,104 +1253,7 @@
             "endpoint": {
               "description": "OTLP compatible endpoint",
               "examples": [
-                "https://localhost:4317"
-              ],
-              "type": "string",
-              "format": "uri"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "description": "Export traces to a Jaeger agent",
-          "type": "object",
-          "oneOf": [
-            {
-              "description": "Thrift over HTTP",
-              "type": "object",
-              "required": [
-                "endpoint",
-                "protocol"
-              ],
-              "properties": {
-                "protocol": {
-                  "type": "string",
-                  "enum": [
-                    "http/thrift.binary"
-                  ]
-                },
-                "endpoint": {
-                  "description": "Full URL of the Jaeger HTTP endpoint\n\nDefaults to `http://localhost:14268/api/traces`",
-                  "type": "string"
-                },
-                "username": {
-                  "description": "Username to be used for HTTP basic authentication",
-                  "type": "string"
-                },
-                "password": {
-                  "description": "Password to be used for HTTP basic authentication",
-                  "type": "string"
-                }
-              }
-            },
-            {
-              "description": "Thrift with compact encoding over UDP",
-              "type": "object",
-              "required": [
-                "agent_host",
-                "agent_port",
-                "protocol"
-              ],
-              "properties": {
-                "protocol": {
-                  "type": "string",
-                  "enum": [
-                    "udp/thrift.compact"
-                  ]
-                },
-                "agent_host": {
-                  "description": "Hostname of the Jaeger agent\n\nDefaults to `localhost`",
-                  "type": "string"
-                },
-                "agent_port": {
-                  "description": "`udp/thrift.compact` port of the Jaeger agent\n\nDefaults to `6831`",
-                  "type": "integer",
-                  "format": "uint16",
-                  "minimum": 0.0
-                }
-              }
-            }
-          ],
-          "required": [
-            "exporter"
-          ],
-          "properties": {
-            "exporter": {
-              "type": "string",
-              "enum": [
-                "jaeger"
-              ]
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "description": "Export traces to a Zipkin collector",
-          "type": "object",
-          "required": [
-            "exporter"
-          ],
-          "properties": {
-            "exporter": {
-              "type": "string",
-              "enum": [
-                "zipkin"
-              ]
-            },
-            "collector_endpoint": {
-              "description": "Zipkin collector endpoint",
-              "examples": [
-                "http://127.0.0.1:9411/api/v2/spans"
+                "https://localhost:4318"
               ],
               "type": "string",
               "format": "uri"
@@ -1394,20 +1297,6 @@
           "type": "string",
           "enum": [
             "jaeger"
-          ]
-        },
-        {
-          "description": "Propagate trace context with Zipkin compatible headers (single `b3` header variant)",
-          "type": "string",
-          "enum": [
-            "b3"
-          ]
-        },
-        {
-          "description": "Propagate trace context with Zipkin compatible headers (multiple `x-b3-*` headers variant)",
-          "type": "string",
-          "enum": [
-            "b3multi"
           ]
         }
       ]
@@ -1462,7 +1351,7 @@
             "endpoint": {
               "description": "OTLP compatible endpoint",
               "examples": [
-                "https://localhost:4317"
+                "https://localhost:4318"
               ],
               "type": "string",
               "format": "uri"

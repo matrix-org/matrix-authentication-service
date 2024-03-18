@@ -337,7 +337,7 @@ where
             .as_secs()
             .try_into()
             .map_err(|e| StorageError::Database(Box::new(e)))?;
-        let wait = chrono::Duration::seconds(wait);
+        let wait = chrono::Duration::microseconds(wait * 1000 * 1000);
         // TODO: should we use a clock here?
         #[allow(clippy::disallowed_methods)]
         let run_at = Utc::now().add(wait);

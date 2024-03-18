@@ -68,11 +68,11 @@ fn id_token(
 
     if flag == Some(IdTokenFlag::WrongExpiration) {
         claims::EXP
-            .insert(&mut claims, now - Duration::hours(1))
+            .insert(&mut claims, now - Duration::try_hours(1).unwrap())
             .unwrap();
     } else {
         claims::EXP
-            .insert(&mut claims, now + Duration::hours(1))
+            .insert(&mut claims, now + Duration::try_hours(1).unwrap())
             .unwrap();
     }
 
@@ -229,7 +229,7 @@ async fn fail_verify_id_token_wrong_auth_time() {
     let issuer = "http://localhost/";
     let now = now();
     let (auth_id_token, _) = id_token(issuer, None, Some(now));
-    let (id_token, jwks) = id_token(issuer, None, Some(now + Duration::hours(1)));
+    let (id_token, jwks) = id_token(issuer, None, Some(now + Duration::try_hours(1).unwrap()));
 
     let verification_data = JwtVerificationData {
         issuer,

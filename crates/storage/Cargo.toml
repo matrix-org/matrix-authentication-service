@@ -12,7 +12,7 @@ publish = false
 workspace = true
 
 [dependencies]
-async-trait = "0.1.77"
+async-trait.workspace = true
 chrono.workspace = true
 thiserror.workspace = true
 futures-util = "0.3.30"

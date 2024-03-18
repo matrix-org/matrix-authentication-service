@@ -340,7 +340,10 @@ impl RequestClientCredentials {
                         let key = keystore
                             .signing_key_for_algorithm(&signing_algorithm)
                             .ok_or(CredentialsError::NoPrivateKeyFound)?;
-                        let signer = key.params().signing_key_for_alg(&signing_algorithm)?;
+                        let signer = key
+                            .params()
+                            .signing_key_for_alg(&signing_algorithm)
+                            .map_err(|_| CredentialsError::JwtWrongAlgorithm)?;
                         let mut header = JsonWebSignatureHeader::new(signing_algorithm);
 
                         if let Some(kid) = key.kid() {
@@ -396,7 +399,10 @@ fn prepare_claims(
     claims::SUB.insert(&mut claims, iss)?;
     claims::AUD.insert(&mut claims, aud)?;
     claims::IAT.insert(&mut claims, now)?;
-    claims::EXP.insert(&mut claims, now + Duration::minutes(5))?;
+    claims::EXP.insert(
+        &mut claims,
+        now + Duration::microseconds(5 * 60 * 1000 * 1000),
+    )?;
 
     let mut jti = [0u8; 16];
     rng.fill(&mut jti);
