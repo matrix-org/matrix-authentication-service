@@ -55,6 +55,7 @@ enum FileType {
     Woff,
     Woff2,
     Json,
+    Png,
 }
 
 impl FileType {
@@ -65,6 +66,7 @@ impl FileType {
             Some("woff") => Some(Self::Woff),
             Some("woff2") => Some(Self::Woff2),
             Some("json") => Some(Self::Json),
+            Some("png") => Some(Self::Png),
             _ => None,
         }
     }
@@ -127,6 +129,9 @@ impl<'a> Asset<'a> {
             FileType::Json => {
                 format!(r#"<link rel="preload" href="{href}" as="fetch" crossorigin {integrity}/>"#,)
             }
+            FileType::Png => {
+                format!(r#"<link rel="preload" href="{href}" as="image" crossorigin {integrity}/>"#,)
+            }
         }
     }
 
@@ -145,7 +150,7 @@ impl<'a> Asset<'a> {
             FileType::Script => Some(format!(
                 r#"<script type="module" src="{src}" crossorigin {integrity}></script>"#
             )),
-            FileType::Woff | FileType::Woff2 | FileType::Json => None,
+            FileType::Woff | FileType::Woff2 | FileType::Json | FileType::Png => None,
         }
     }
 
@@ -171,6 +176,12 @@ impl<'a> Asset<'a> {
     #[must_use]
     pub fn is_font(&self) -> bool {
         self.file_type == FileType::Woff || self.file_type == FileType::Woff2
+    }
+
+    /// Returns `true` if the asset type is image
+    #[must_use]
+    pub fn is_image(&self) -> bool {
+        self.file_type == FileType::Png
     }
 }
 

@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import IconChrome from "@browser-logos/chrome/chrome_64x64.png?url";
+import IconFirefox from "@browser-logos/firefox/firefox_64x64.png?url";
+import IconSafari from "@browser-logos/safari/safari_64x64.png?url";
 import { Badge } from "@vector-im/compound-web";
 import { parseISO } from "date-fns";
 import { useCallback } from "react";
@@ -75,6 +78,22 @@ export const useEndBrowserSession = (
   return onSessionEnd;
 };
 
+export const browserLogoUri = (browser?: string): string | undefined => {
+  const lcBrowser = browser?.toLowerCase();
+
+  if (lcBrowser?.includes("chrome") || lcBrowser?.includes("chromium")) {
+    return IconChrome;
+  }
+
+  if (lcBrowser?.includes("firefox")) {
+    return IconFirefox;
+  }
+
+  if (lcBrowser?.includes("safari")) {
+    return IconSafari;
+  }
+};
+
 type Props = {
   session: FragmentType<typeof FRAGMENT>;
   isCurrent: boolean;
@@ -125,7 +144,12 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
       >
         <Card.Header type={deviceType}>
           <Card.Name name={deviceName} />
-          {clientName && <Card.Client name={clientName} />}
+          {clientName && (
+            <Card.Client
+              name={clientName}
+              logoUri={browserLogoUri(data.userAgent?.name ?? undefined)}
+            />
+          )}
         </Card.Header>
 
         <Card.Metadata>

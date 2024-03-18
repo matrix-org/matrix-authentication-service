@@ -46,6 +46,9 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@browser-logos/chrome": "^2.0.0",
+    "@browser-logos/firefox": "^3.0.10",
+    "@browser-logos/safari": "^2.1.0",
     "@graphql-codegen/cli": "^5.0.2",
     "@graphql-codegen/client-preset": "^4.2.4",
     "@graphql-codegen/urql-introspection": "^3.0.0",
