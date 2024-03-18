@@ -66,9 +66,9 @@ impl Clock for SystemClock {
 /// let t2 = clock.now();
 /// assert_eq!(t1, t2);
 ///
-/// clock.advance(Duration::seconds(10));
+/// clock.advance(Duration::microseconds(10 * 1000 * 1000));
 /// let t3 = clock.now();
-/// assert_eq!(t2 + Duration::seconds(10), t3);
+/// assert_eq!(t2 + Duration::microseconds(10 * 1000 * 1000), t3);
 /// ```
 pub struct MockClock {
     timestamp: AtomicI64,
@@ -121,9 +121,9 @@ mod tests {
         assert_eq!(first, second);
 
         // Clock can be advanced by a fixed duration
-        clock.advance(Duration::seconds(10));
+        clock.advance(Duration::microseconds(10 * 1000 * 1000));
         let third = clock.now();
-        assert_eq!(first + Duration::seconds(10), third);
+        assert_eq!(first + Duration::microseconds(10 * 1000 * 1000), third);
     }
 
     #[test]

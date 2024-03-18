@@ -69,7 +69,13 @@ async fn verify_email(
     // Save the verification code in the database
     let verification = repo
         .user_email()
-        .add_verification_code(&mut rng, &clock, &user_email, Duration::hours(8), code)
+        .add_verification_code(
+            &mut rng,
+            &clock,
+            &user_email,
+            Duration::try_hours(8).unwrap(),
+            code,
+        )
         .await?;
 
     // And send the verification email

@@ -179,7 +179,7 @@ impl OAuth2SessionMutations {
         let ttl = if permanent {
             None
         } else {
-            Some(Duration::minutes(5))
+            Some(Duration::microseconds(5 * 60 * 1000 * 1000))
         };
         let access_token = repo
             .oauth2_access_token()

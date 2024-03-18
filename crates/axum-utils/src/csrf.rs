@@ -153,8 +153,8 @@ impl CsrfExt for CookieJar {
         };
 
         let token = maybe_token.map_or_else(
-            || CsrfToken::generate(now, rng, Duration::hours(1)),
-            |token| token.refresh(now, Duration::hours(1)),
+            || CsrfToken::generate(now, rng, Duration::try_hours(1).unwrap()),
+            |token| token.refresh(now, Duration::try_hours(1).unwrap()),
         );
 
         let jar = self.save("csrf", &token, false);

@@ -321,7 +321,7 @@ async fn token_login(
             session_id,
             ..
         } => {
-            if now > fulfilled_at + Duration::seconds(30) {
+            if now > fulfilled_at + Duration::microseconds(30 * 1000 * 1000) {
                 return Err(RouteError::LoginTookTooLong);
             }
 
@@ -332,7 +332,7 @@ async fn token_login(
             session_id,
             ..
         } => {
-            if now > exchanged_at + Duration::seconds(30) {
+            if now > exchanged_at + Duration::microseconds(30 * 1000 * 1000) {
                 // TODO: log that session out
                 tracing::error!(
                     compat_sso_login.id = %login.id,
@@ -706,7 +706,9 @@ mod tests {
         let (_device, token) = get_login_token(&state, &user).await;
 
         // Advance the clock to make the token expire.
-        state.clock.advance(Duration::minutes(1));
+        state
+            .clock
+            .advance(Duration::microseconds(60 * 1000 * 1000));
 
         let request = Request::post("/_matrix/client/v3/login").json(serde_json::json!({
             "type": "m.login.token",

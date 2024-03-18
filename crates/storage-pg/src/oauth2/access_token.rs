@@ -208,7 +208,7 @@ impl<'c> OAuth2AccessTokenRepository for PgOAuth2AccessTokenRepository<'c> {
 
     async fn cleanup_expired(&mut self, clock: &dyn Clock) -> Result<usize, Self::Error> {
         // Cleanup token which expired more than 15 minutes ago
-        let threshold = clock.now() - Duration::minutes(15);
+        let threshold = clock.now() - Duration::microseconds(15 * 60 * 1000 * 1000);
         let res = sqlx::query!(
             r#"
                 DELETE FROM oauth2_access_tokens

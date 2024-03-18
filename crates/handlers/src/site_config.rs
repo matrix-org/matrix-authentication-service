@@ -26,8 +26,8 @@ pub struct SiteConfig {
 impl Default for SiteConfig {
     fn default() -> Self {
         Self {
-            access_token_ttl: Duration::minutes(5),
-            compat_token_ttl: Duration::minutes(5),
+            access_token_ttl: Duration::microseconds(5 * 60 * 1000 * 1000),
+            compat_token_ttl: Duration::microseconds(5 * 60 * 1000 * 1000),
             tos_uri: None,
         }
     }
