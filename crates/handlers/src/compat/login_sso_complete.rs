@@ -103,7 +103,7 @@ pub async fn get(
         .context("Could not find compat SSO login")?;
 
     // Bail out if that login session is more than 30min old
-    if clock.now() > login.created_at + Duration::minutes(30) {
+    if clock.now() > login.created_at + Duration::microseconds(30 * 60 * 1000 * 1000) {
         let ctx = ErrorContext::new()
             .with_code("compat_sso_login_expired")
             .with_description("This login session expired.".to_owned())
@@ -174,7 +174,7 @@ pub async fn post(
         .context("Could not find compat SSO login")?;
 
     // Bail out if that login session is more than 30min old
-    if clock.now() > login.created_at + Duration::minutes(30) {
+    if clock.now() > login.created_at + Duration::microseconds(30 * 60 * 1000 * 1000) {
         let ctx = ErrorContext::new()
             .with_code("compat_sso_login_expired")
             .with_description("This login session expired.".to_owned())

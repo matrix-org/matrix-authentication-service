@@ -174,7 +174,7 @@ async fn pass_pushed_authorization_request() {
         .respond_with(
             ResponseTemplate::new(200).set_body_json(PushedAuthorizationResponse {
                 request_uri: REQUEST_URI.to_owned(),
-                expires_in: Duration::seconds(30),
+                expires_in: Duration::microseconds(30 * 1000 * 1000),
             }),
         )
         .mount(&mock_server)

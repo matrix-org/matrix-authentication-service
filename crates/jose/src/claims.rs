@@ -203,7 +203,7 @@ impl TimeOptions {
     pub fn new(when: chrono::DateTime<chrono::Utc>) -> Self {
         Self {
             when,
-            leeway: chrono::Duration::minutes(5),
+            leeway: chrono::Duration::microseconds(5 * 60 * 1000 * 1000),
         }
     }
 
@@ -586,7 +586,7 @@ mod tests {
         let now = chrono::Utc
             .with_ymd_and_hms(2018, 1, 18, 1, 30, 22)
             .unwrap();
-        let expiration = now + chrono::Duration::minutes(5);
+        let expiration = now + chrono::Duration::microseconds(5 * 60 * 1000 * 1000);
         let time_options = TimeOptions::new(now).leeway(chrono::Duration::zero());
 
         let claims = serde_json::json!({
@@ -660,7 +660,7 @@ mod tests {
         }
 
         // Let's go back in time a bit
-        let now = now - chrono::Duration::minutes(1);
+        let now = now - chrono::Duration::microseconds(60 * 1000 * 1000);
 
         {
             // There is now a time variance between the two parties...
@@ -686,7 +686,8 @@ mod tests {
             let mut claims = claims.clone();
 
             // but no time variance is allowed. "iat" and "nbf" validation will fail
-            let time_options = TimeOptions::new(now).leeway(chrono::Duration::minutes(2));
+            let time_options =
+                TimeOptions::new(now).leeway(chrono::Duration::microseconds(2 * 60 * 1000 * 1000));
             assert!(IAT
                 .extract_required_with_options(&mut claims, &time_options)
                 .is_ok());
@@ -699,7 +700,7 @@ mod tests {
         }
 
         // Let's wait some time so it expires
-        let now = now + chrono::Duration::minutes(1 + 6);
+        let now = now + chrono::Duration::microseconds((1 + 6) * 60 * 1000 * 1000);
 
         {
             // At this point, the claims expired one minute ago
@@ -723,7 +724,8 @@ mod tests {
             let mut claims = claims;
 
             // Same, but with a 2 minutes leeway should be fine then
-            let time_options = TimeOptions::new(now).leeway(chrono::Duration::minutes(2));
+            let time_options =
+                TimeOptions::new(now).leeway(chrono::Duration::try_minutes(2).unwrap());
             assert!(IAT
                 .extract_required_with_options(&mut claims, &time_options)
                 .is_ok());

@@ -266,7 +266,7 @@ mod tests {
                 .await
                 .unwrap();
             ids.push(provider.id);
-            clock.advance(Duration::seconds(10));
+            clock.advance(Duration::microseconds(10 * 1000 * 1000));
         }
 
         // Now we have 20 providers

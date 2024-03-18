@@ -550,7 +550,7 @@ mod tests {
                 &state.clock,
                 &mut repo,
                 &session,
-                Duration::minutes(5),
+                Duration::microseconds(5 * 60 * 1000 * 1000),
             )
             .await
             .unwrap();
@@ -633,7 +633,7 @@ mod tests {
 
         // Advance the clock to invalidate the access token
         let old_now = state.clock.now();
-        state.clock.advance(Duration::hours(1));
+        state.clock.advance(Duration::try_hours(1).unwrap());
 
         let request = Request::post(OAuth2Introspection::PATH)
             .basic_auth(&introspecting_client_id, &introspecting_client_secret)
@@ -808,7 +808,7 @@ mod tests {
         assert!(!response.active); // It shouldn't be active
 
         // Advance the clock to invalidate the access token
-        state.clock.advance(Duration::hours(1));
+        state.clock.advance(Duration::try_hours(1).unwrap());
 
         let request = Request::post(OAuth2Introspection::PATH)
             .basic_auth(&introspecting_client_id, &introspecting_client_secret)

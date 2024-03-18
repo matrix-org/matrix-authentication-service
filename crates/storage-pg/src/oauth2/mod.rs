@@ -272,7 +272,7 @@ mod tests {
                 &clock,
                 &session,
                 "aabbcc".to_owned(),
-                Some(Duration::minutes(5)),
+                Some(Duration::try_minutes(5).unwrap()),
             )
             .await
             .unwrap();
@@ -343,11 +343,11 @@ mod tests {
         assert_eq!(refresh_token, refresh_token_lookup);
 
         assert!(access_token.is_valid(clock.now()));
-        clock.advance(Duration::minutes(6));
+        clock.advance(Duration::try_minutes(6).unwrap());
         assert!(!access_token.is_valid(clock.now()));
 
         // XXX: we might want to create a new access token
-        clock.advance(Duration::minutes(-6)); // Go back in time
+        clock.advance(Duration::try_minutes(-6).unwrap()); // Go back in time
         assert!(access_token.is_valid(clock.now()));
 
         // Mark the access token as revoked
@@ -487,28 +487,28 @@ mod tests {
             .add_from_browser_session(&mut rng, &clock, &client1, &user1_session, scope.clone())
             .await
             .unwrap();
-        clock.advance(Duration::minutes(1));
+        clock.advance(Duration::try_minutes(1).unwrap());
 
         let session12 = repo
             .oauth2_session()
             .add_from_browser_session(&mut rng, &clock, &client1, &user2_session, scope.clone())
             .await
             .unwrap();
-        clock.advance(Duration::minutes(1));
+        clock.advance(Duration::try_minutes(1).unwrap());
 
         let session21 = repo
             .oauth2_session()
             .add_from_browser_session(&mut rng, &clock, &client2, &user1_session, scope2.clone())
             .await
             .unwrap();
-        clock.advance(Duration::minutes(1));
+        clock.advance(Duration::try_minutes(1).unwrap());
 
         let session22 = repo
             .oauth2_session()
             .add_from_browser_session(&mut rng, &clock, &client2, &user2_session, scope2.clone())
             .await
             .unwrap();
-        clock.advance(Duration::minutes(1));
+        clock.advance(Duration::try_minutes(1).unwrap());
 
         // We're also finishing two of the sessions
         let session11 = repo
@@ -775,7 +775,7 @@ mod tests {
                     scope: scope.clone(),
                     device_code: device_code.to_owned(),
                     user_code: user_code.to_owned(),
-                    expires_in: Duration::minutes(5),
+                    expires_in: Duration::try_minutes(5).unwrap(),
                     ip_address: None,
                     user_agent: None,
                 },
@@ -880,7 +880,7 @@ mod tests {
                     scope: scope.clone(),
                     device_code: "second_devicecode".to_owned(),
                     user_code: "second_usercode".to_owned(),
-                    expires_in: Duration::minutes(5),
+                    expires_in: Duration::try_minutes(5).unwrap(),
                     ip_address: None,
                     user_agent: None,
                 },

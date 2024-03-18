@@ -365,7 +365,7 @@ async fn authorization_code_grant(
             debug!(%exchanged_at, %fulfilled_at, "Authorization code was already exchanged");
 
             // Ending the session if the token was already exchanged more than 20s ago
-            if now - exchanged_at > Duration::seconds(20) {
+            if now - exchanged_at > Duration::microseconds(20 * 1000 * 1000) {
                 debug!("Ending potentially compromised session");
                 let session = repo
                     .oauth2_session()
@@ -386,7 +386,7 @@ async fn authorization_code_grant(
             session_id,
             fulfilled_at,
         } => {
-            if now - fulfilled_at > Duration::minutes(10) {
+            if now - fulfilled_at > Duration::microseconds(10 * 60 * 1000 * 1000) {
                 debug!("Code exchange took more than 10 minutes");
                 return Err(RouteError::InvalidGrant);
             }
@@ -928,7 +928,7 @@ mod tests {
         assert!(state.is_access_token_valid(&access_token).await);
 
         // Now wait a bit
-        state.clock.advance(Duration::minutes(1));
+        state.clock.advance(Duration::try_minutes(1).unwrap());
 
         // Exchange it again, this it should fail
         let request =
@@ -994,7 +994,9 @@ mod tests {
         repo.save().await.unwrap();
 
         // Now wait a bit
-        state.clock.advance(Duration::minutes(15));
+        state
+            .clock
+            .advance(Duration::microseconds(15 * 60 * 1000 * 1000));
 
         // Exchange it, it should fail
         let request =
@@ -1075,7 +1077,7 @@ mod tests {
                 &state.clock,
                 &mut repo,
                 &session,
-                Duration::minutes(5),
+                Duration::microseconds(5 * 60 * 1000 * 1000),
             )
             .await
             .unwrap();
@@ -1386,7 +1388,7 @@ mod tests {
         let ClientError { error, .. } = response.json();
         assert_eq!(error, ClientErrorCode::AuthorizationPending);
 
-        state.clock.advance(Duration::hours(1));
+        state.clock.advance(Duration::try_hours(1).unwrap());
 
         // Poll again, it should be expired
         let request =

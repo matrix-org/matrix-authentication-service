@@ -399,7 +399,10 @@ fn prepare_claims(
     claims::SUB.insert(&mut claims, iss)?;
     claims::AUD.insert(&mut claims, aud)?;
     claims::IAT.insert(&mut claims, now)?;
-    claims::EXP.insert(&mut claims, now + Duration::minutes(5))?;
+    claims::EXP.insert(
+        &mut claims,
+        now + Duration::microseconds(5 * 60 * 1000 * 1000),
+    )?;
 
     let mut jti = [0u8; 16];
     rng.fill(&mut jti);

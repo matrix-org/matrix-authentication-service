@@ -185,10 +185,10 @@ impl UserEmailVerification {
     pub fn samples(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self> {
         let states = [
             UserEmailVerificationState::AlreadyUsed {
-                when: now - Duration::minutes(5),
+                when: now - Duration::microseconds(5 * 60 * 1000 * 1000),
             },
             UserEmailVerificationState::Expired {
-                when: now - Duration::hours(5),
+                when: now - Duration::microseconds(5 * 60 * 1000 * 1000),
             },
             UserEmailVerificationState::Valid,
         ];
@@ -204,7 +204,7 @@ impl UserEmailVerification {
                         id: Ulid::from_datetime_with_source(now.into(), &mut rng),
                         user_email_id: email.id,
                         code: "123456".to_owned(),
-                        created_at: now - Duration::minutes(10),
+                        created_at: now - Duration::microseconds(10 * 60 * 1000 * 1000),
                         state: state.clone(),
                     })
             })
