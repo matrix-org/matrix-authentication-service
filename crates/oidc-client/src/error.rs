@@ -24,7 +24,6 @@ use mas_jose::{
     jwa::InvalidAlgorithm,
     jwt::{JwtDecodeError, JwtSignatureError, NoKeyWorked},
 };
-use mas_keystore::WrongAlgorithmError;
 use oauth2_types::{
     errors::ClientErrorCode, oidc::ProviderMetadataVerificationError, pkce::CodeChallengeError,
 };
@@ -693,8 +692,8 @@ pub enum CredentialsError {
     JwtClaims(#[from] ClaimError),
 
     /// The key found cannot be used with the algorithm.
-    #[error(transparent)]
-    JwtWrongAlgorithm(#[from] WrongAlgorithmError),
+    #[error("Wrong algorithm for key")]
+    JwtWrongAlgorithm,
 
     /// An error occurred when signing the JWT.
     #[error(transparent)]

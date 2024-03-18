@@ -12,7 +12,7 @@ publish = false
 workspace = true
 
 [dependencies]
-async-trait = "0.1.77"
+async-trait.workspace = true
 axum = { version = "0.6.20", features = ["headers"] }
 axum-extra = { version = "0.8.0", features = ["cookie-private", "cookie-key-expansion"] }
 chrono.workspace = true

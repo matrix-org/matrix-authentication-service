@@ -326,7 +326,7 @@ mod tests {
                 &state.clock,
                 &mut repo,
                 &session,
-                Duration::minutes(5),
+                Duration::microseconds(5 * 60 * 1000 * 1000),
             )
             .await
             .unwrap();
@@ -393,7 +393,7 @@ mod tests {
                 &state.clock,
                 &mut repo,
                 &session,
-                Duration::minutes(5),
+                Duration::microseconds(5 * 60 * 1000 * 1000),
             )
             .await
             .unwrap();

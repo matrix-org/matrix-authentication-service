@@ -191,7 +191,7 @@ async fn test_user_email_repo(pool: PgPool) {
             &mut rng,
             &clock,
             &user_email,
-            Duration::hours(8),
+            Duration::try_hours(8).unwrap(),
             CODE.to_owned(),
         )
         .await
@@ -208,7 +208,7 @@ async fn test_user_email_repo(pool: PgPool) {
             &mut rng,
             &clock,
             &user_email,
-            Duration::hours(8),
+            Duration::try_hours(8).unwrap(),
             CODE2.to_owned(),
         )
         .await
@@ -395,7 +395,7 @@ async fn test_user_password_repo(pool: PgPool) {
 
     // Getting the last inserted password is based on the clock, so we need to
     // advance it
-    clock.advance(Duration::seconds(10));
+    clock.advance(Duration::microseconds(10 * 1000 * 1000));
 
     let second_password = repo
         .user_password()

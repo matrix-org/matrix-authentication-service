@@ -608,7 +608,7 @@ mod tests {
 
         // We're moving the clock forward by 1 minute between each session to ensure
         // we're getting consistent ordering in lists.
-        clock.advance(Duration::minutes(1));
+        clock.advance(Duration::try_minutes(1).unwrap());
 
         let oauth_session = repo
             .oauth2_session()

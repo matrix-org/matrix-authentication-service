@@ -22,7 +22,7 @@ use serde_with::serde_as;
 use crate::ConfigurationSection;
 
 fn default_token_ttl() -> Duration {
-    Duration::minutes(5)
+    Duration::microseconds(5 * 60 * 1000 * 1000)
 }
 
 /// Configuration sections for experimental options

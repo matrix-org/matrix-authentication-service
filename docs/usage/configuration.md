@@ -293,30 +293,13 @@ telemetry:
       - baggage
       # Propagate trace context with Jaeger compatible headers
       - jaeger
-      # Propagate trace context with Zipkin compatible headers (single `b3` header variant)
-      - b3
-      # Propagate trace context with Zipkin compatible headers (multiple `x-b3-*` headers variant)
-      - b3multi
 
     # The default: don't export traces
     exporter: none
 
     # Export traces to an OTLP-compatible endpoint
     #exporter: otlp
-    #endpoint: https://localhost:4317
-
-    # Export traces to a Jaeger endpoint
-    #exporter: jaeger
-    #protocol: http/thrift.binary | udp/thrift.compact
-    #endpoint: http://localhost:14268/api/traces # for http/thrift.binary
-    #username: username # for http/thrift.binary
-    #password: password # for http/thrift.binary
-    #agent_host: localhost # for udp/thrift.compact
-    #agent_port: 6831 # for udp/thrift.compact
-
-    # Export traces to a Zipkin endpoint
-    #exporter: zipkin
-    #collector_endpoint: http://localhost:9411/api/v2/spans
+    #endpoint: https://localhost:4318
 
   metrics:
     # The default: don't export metrics

@@ -124,7 +124,7 @@ pub(crate) async fn post(
         // XXX: Is this really how we do empty scopes?
         .unwrap_or(std::iter::empty::<ScopeToken>().collect());
 
-    let expires_in = Duration::minutes(20);
+    let expires_in = Duration::microseconds(20 * 60 * 1000 * 1000);
 
     let user_agent = user_agent.map(|ua| UserAgent::parse(ua.as_str().to_owned()));
     let ip_address = activity_tracker.ip();
@@ -157,7 +157,7 @@ pub(crate) async fn post(
         verification_uri: url_builder.device_code_link(),
         verification_uri_complete: Some(url_builder.device_code_link_full(device_code.user_code)),
         expires_in,
-        interval: Some(Duration::seconds(5)),
+        interval: Some(Duration::microseconds(5 * 1000 * 1000)),
     };
 
     Ok((

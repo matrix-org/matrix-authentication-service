@@ -321,7 +321,7 @@ mod tests {
                 &clock,
                 &session,
                 FIRST_TOKEN.to_owned(),
-                Some(Duration::minutes(1)),
+                Some(Duration::try_minutes(1).unwrap()),
             )
             .await
             .unwrap();
@@ -341,7 +341,7 @@ mod tests {
                     &clock,
                     &session,
                     FIRST_TOKEN.to_owned(),
-                    Some(Duration::minutes(1)),
+                    Some(Duration::try_minutes(1).unwrap()),
                 )
                 .await
                 .is_err());
@@ -374,7 +374,7 @@ mod tests {
         // Token is currently valid
         assert!(token.is_valid(clock.now()));
 
-        clock.advance(Duration::minutes(1));
+        clock.advance(Duration::try_minutes(1).unwrap());
         // Token should have expired
         assert!(!token.is_valid(clock.now()));
 

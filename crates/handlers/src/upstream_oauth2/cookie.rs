@@ -14,7 +14,7 @@
 
 // TODO: move that to a standalone cookie manager
 
-use chrono::{DateTime, Duration, NaiveDateTime, TimeZone, Utc};
+use chrono::{DateTime, Duration, Utc};
 use mas_axum_utils::cookies::CookieJar;
 use mas_router::PostAuthAction;
 use mas_storage::Clock;
@@ -26,7 +26,7 @@ use ulid::Ulid;
 static COOKIE_NAME: &str = "upstream-oauth2-sessions";
 
 /// Sessions expire after 10 minutes
-static SESSION_MAX_TIME_SECS: i64 = 60 * 10;
+static SESSION_MAX_TIME: Duration = Duration::microseconds(10 * 60 * 1000 * 1000);
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Payload {
@@ -42,12 +42,10 @@ impl Payload {
         let Ok(ts) = self.session.timestamp_ms().try_into() else {
             return true;
         };
-        let Some(when) = NaiveDateTime::from_timestamp_millis(ts) else {
+        let Some(when) = DateTime::from_timestamp_millis(ts) else {
             return true;
         };
-        let when = Utc.from_utc_datetime(&when);
-        let max_age = Duration::seconds(SESSION_MAX_TIME_SECS);
-        now - when > max_age
+        now - when > SESSION_MAX_TIME
     }
 }
 
@@ -184,7 +182,7 @@ mod tests {
         let first_state = "first-state";
         let sessions = sessions.add(first_session, provider_a, first_state.into(), None);
 
-        let now = now + Duration::minutes(5);
+        let now = now + Duration::microseconds(5 * 60 * 1000 * 1000);
 
         let second_session = Ulid::from_datetime_with_source(now.into(), &mut rng);
         let second_state = "second-state";
@@ -203,7 +201,7 @@ mod tests {
         assert!(sessions.find_session(provider_a, second_state).is_err());
 
         // Make the first session expire
-        let now = now + Duration::minutes(6);
+        let now = now + Duration::microseconds(6 * 60 * 1000 * 1000);
         let sessions = sessions.expire(now);
         assert!(sessions.find_session(provider_a, first_state).is_err());
         assert_eq!(

@@ -160,16 +160,22 @@ fn make_http_span<B>(req: &Request<B>) -> Span {
 
 fn on_http_request_labels<B>(request: &Request<B>) -> Vec<KeyValue> {
     vec![
-        NETWORK_PROTOCOL_NAME.string("http"),
-        NETWORK_PROTOCOL_VERSION.string(otel_net_protocol_version(request)),
-        HTTP_REQUEST_METHOD.string(otel_http_method(request)),
-        HTTP_ROUTE.string(otel_http_route(request).unwrap_or("FALLBACK").to_owned()),
-        URL_SCHEME.string(otel_url_scheme(request).as_ref()),
+        KeyValue::new(NETWORK_PROTOCOL_NAME, "http"),
+        KeyValue::new(NETWORK_PROTOCOL_VERSION, otel_net_protocol_version(request)),
+        KeyValue::new(HTTP_REQUEST_METHOD, otel_http_method(request)),
+        KeyValue::new(
+            HTTP_ROUTE,
+            otel_http_route(request).unwrap_or("FALLBACK").to_owned(),
+        ),
+        KeyValue::new(URL_SCHEME, otel_url_scheme(request)),
     ]
 }
 
 fn on_http_response_labels<B>(res: &Response<B>) -> Vec<KeyValue> {
-    vec![HTTP_RESPONSE_STATUS_CODE.i64(res.status().as_u16().into())]
+    vec![KeyValue::new(
+        HTTP_RESPONSE_STATUS_CODE,
+        i64::from(res.status().as_u16()),
+    )]
 }
 
 pub fn build_router<B>(

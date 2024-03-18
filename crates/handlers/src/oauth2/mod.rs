@@ -70,7 +70,7 @@ pub(crate) fn generate_id_token(
     claims::SUB.insert(&mut claims, &browser_session.user.sub)?;
     claims::AUD.insert(&mut claims, client.client_id.clone())?;
     claims::IAT.insert(&mut claims, now)?;
-    claims::EXP.insert(&mut claims, now + Duration::hours(1))?;
+    claims::EXP.insert(&mut claims, now + Duration::try_hours(1).unwrap())?;
 
     if let Some(nonce) = grant.and_then(|grant| grant.nonce.as_ref()) {
         claims::NONCE.insert(&mut claims, nonce)?;

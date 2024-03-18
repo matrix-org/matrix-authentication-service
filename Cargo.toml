@@ -55,6 +55,10 @@ mas-templates = { path = "./crates/templates/", version = "=0.8.0" }
 mas-tower = { path = "./crates/tower/", version = "=0.8.0" }
 oauth2-types = { path = "./crates/oauth2-types/", version = "=0.8.0" }
 
+# Utility to write and implement async traits
+[workspace.dependencies.async-trait]
+version = "0.1.77"
+
 # High-level error handling
 [workspace.dependencies.anyhow]
 version = "1.0.79"
@@ -65,7 +69,7 @@ version = "1.1.6"
 
 # Time utilities
 [workspace.dependencies.chrono]
-version = "0.4.33"
+version = "0.4.35"
 default-features = false
 features = ["serde", "clock"]
 
@@ -132,12 +136,15 @@ version = "0.3.18"
 
 # OpenTelemetry
 [workspace.dependencies.opentelemetry]
-version = "0.21.0"
-features = ["trace", "metrics"]
-[workspace.dependencies.opentelemetry-semantic-conventions]
-version = "0.13.0"
-[workspace.dependencies.tracing-opentelemetry]
 version = "0.22.0"
+features = ["trace", "metrics"]
+[workspace.dependencies.opentelemetry-http]
+version = "0.11.0"
+features = ["hyper", "tokio"]
+[workspace.dependencies.opentelemetry-semantic-conventions]
+version = "0.14.0"
+[workspace.dependencies.tracing-opentelemetry]
+version = "0.23.0"
 default-features = false
 
 # URL manipulation

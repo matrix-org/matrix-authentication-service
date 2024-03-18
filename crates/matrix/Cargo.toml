@@ -14,7 +14,7 @@ workspace = true
 [dependencies]
 anyhow.workspace = true
 serde.workspace = true
-async-trait = "0.1.77"
+async-trait.workspace = true
 http.workspace = true
 tokio = { version = "1.35.1", features = ["sync", "macros", "rt"] }
 url.workspace = true

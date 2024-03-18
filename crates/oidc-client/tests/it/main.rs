@@ -105,7 +105,7 @@ fn id_token(issuer: &str) -> (IdToken, PublicJsonWebKeySet) {
 
     claims::IAT.insert(&mut claims, now).unwrap();
     claims::EXP
-        .insert(&mut claims, now + Duration::hours(1))
+        .insert(&mut claims, now + Duration::try_hours(1).unwrap())
         .unwrap();
 
     claims::AT_HASH

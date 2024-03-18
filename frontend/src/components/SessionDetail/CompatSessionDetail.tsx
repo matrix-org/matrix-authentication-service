@@ -97,6 +97,8 @@ const CompatSessionDetail: React.FC<Props> = ({ session }) => {
         lastActive={data.lastActiveAt ? parseISO(data.lastActiveAt) : undefined}
         ipAddress={data.lastActiveIp ?? undefined}
         details={sessionDetails}
+        // These scopes need to be kept in sync with `templates/pages/sso.html`
+        scopes={["openid", "urn:matrix:org.matrix.msc2967.client:api:*"]}
       />
       {clientDetails.length > 0 ? (
         <SessionDetails

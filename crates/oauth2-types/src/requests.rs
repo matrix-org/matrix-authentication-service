@@ -366,7 +366,7 @@ pub struct DeviceAuthorizationRequest {
 
 /// The default value of the `interval` between polling requests, if it is not
 /// set.
-pub const DEFAULT_DEVICE_AUTHORIZATION_INTERVAL_SECONDS: i64 = 5;
+pub const DEFAULT_DEVICE_AUTHORIZATION_INTERVAL: Duration = Duration::microseconds(5 * 1000 * 1000);
 
 /// A successful response from the [Device Authorization Endpoint].
 ///
@@ -399,7 +399,7 @@ pub struct DeviceAuthorizationResponse {
     /// The minimum amount of time in seconds that the client should wait
     /// between polling requests to the token endpoint.
     ///
-    /// Defaults to [`DEFAULT_DEVICE_AUTHORIZATION_INTERVAL_SECONDS`].
+    /// Defaults to [`DEFAULT_DEVICE_AUTHORIZATION_INTERVAL`].
     #[serde_as(as = "Option<DurationSeconds<i64>>")]
     pub interval: Option<Duration>,
 }
@@ -408,11 +408,11 @@ impl DeviceAuthorizationResponse {
     /// The minimum amount of time in seconds that the client should wait
     /// between polling requests to the token endpoint.
     ///
-    /// Defaults to [`DEFAULT_DEVICE_AUTHORIZATION_INTERVAL_SECONDS`].
+    /// Defaults to [`DEFAULT_DEVICE_AUTHORIZATION_INTERVAL`].
     #[must_use]
     pub fn interval(&self) -> Duration {
         self.interval
-            .unwrap_or_else(|| Duration::seconds(DEFAULT_DEVICE_AUTHORIZATION_INTERVAL_SECONDS))
+            .unwrap_or(DEFAULT_DEVICE_AUTHORIZATION_INTERVAL)
     }
 }
 
