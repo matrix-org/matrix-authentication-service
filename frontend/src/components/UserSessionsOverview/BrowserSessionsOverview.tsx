@@ -47,7 +47,7 @@ const BrowserSessionsOverview: React.FC<{
           })}
         </Body>
       </div>
-      <Link to="/sessions/browsers">
+      <Link to="/sessions/browsers" search={{ first: 6 }}>
         {t("frontend.browser_sessions_overview.view_all_button")}
       </Link>
     </Block>

@@ -12,7 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { LinkComponent, useLinkProps } from "@tanstack/react-router";
+import {
+  UseLinkPropsOptions,
+  createLink,
+  useLinkProps,
+} from "@tanstack/react-router";
 import { Button } from "@vector-im/compound-web";
 import { forwardRef } from "react";
 
@@ -23,24 +27,15 @@ type Props = {
   destructive?: boolean;
 };
 
-export const ButtonLink: LinkComponent<Props> = forwardRef<
+// XXX: createLink is broken, so we work around it by using useLinkProps directly
+export const ButtonLink = forwardRef<
   HTMLAnchorElement,
-  Parameters<typeof useLinkProps>[0] & Props
->(({ children, kind, size, destructive, Icon, ...props }, ref) => {
+  Props & UseLinkPropsOptions
+>(({ children, ...props }, ref) => {
   const linkProps = useLinkProps(props);
-
   return (
-    <Button
-      as="a"
-      kind={kind}
-      size={size}
-      destructive={destructive}
-      disabled={props.disabled}
-      Icon={Icon}
-      ref={ref}
-      {...linkProps}
-    >
+    <Button as="a" {...linkProps} ref={ref}>
       {children}
     </Button>
   );
-}) as LinkComponent<Props>;
+}) as ReturnType<typeof createLink<typeof Button>>;
