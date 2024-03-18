@@ -16,31 +16,31 @@ use std::time::Duration;
 
 use anyhow::Context as _;
 use hyper::{header::CONTENT_TYPE, Body, Response};
-use mas_config::{
-    JaegerExporterProtocolConfig, MetricsExporterConfig, Propagator, TelemetryConfig,
-    TracingExporterConfig,
+use mas_config::{MetricsExporterConfig, Propagator, TelemetryConfig, TracingExporterConfig};
+use opentelemetry::{
+    global,
+    propagation::{TextMapCompositePropagator, TextMapPropagator},
+    trace::TracerProvider as _,
+    KeyValue,
 };
-use opentelemetry::{global, propagation::TextMapPropagator, trace::TracerProvider as _};
-use opentelemetry_jaeger::Propagator as JaegerPropagator;
 use opentelemetry_otlp::MetricsExporterBuilder;
 use opentelemetry_prometheus::PrometheusExporter;
 use opentelemetry_sdk::{
     self,
     metrics::{
         reader::{DefaultAggregationSelector, DefaultTemporalitySelector},
-        ManualReader, MeterProvider, PeriodicReader,
+        ManualReader, PeriodicReader, SdkMeterProvider,
     },
-    propagation::{BaggagePropagator, TextMapCompositePropagator, TraceContextPropagator},
+    propagation::{BaggagePropagator, TraceContextPropagator},
     trace::{Sampler, Tracer, TracerProvider},
     Resource,
 };
 use opentelemetry_semantic_conventions as semcov;
-use opentelemetry_zipkin::{B3Encoding, Propagator as ZipkinPropagator};
 use prometheus::Registry;
 use tokio::sync::OnceCell;
 use url::Url;
 
-static METER_PROVIDER: OnceCell<MeterProvider> = OnceCell::const_new();
+static METER_PROVIDER: OnceCell<SdkMeterProvider> = OnceCell::const_new();
 static PROMETHEUS_REGISTRY: OnceCell<Registry> = OnceCell::const_new();
 
 pub fn setup(config: &TelemetryConfig) -> anyhow::Result<Option<Tracer>> {
@@ -72,9 +72,7 @@ fn match_propagator(propagator: Propagator) -> Box<dyn TextMapPropagator + Send 
     match propagator {
         P::TraceContext => Box::new(TraceContextPropagator::new()),
         P::Baggage => Box::new(BaggagePropagator::new()),
-        P::Jaeger => Box::new(JaegerPropagator::new()),
-        P::B3 => Box::new(ZipkinPropagator::with_encoding(B3Encoding::SingleHeader)),
-        P::B3Multi => Box::new(ZipkinPropagator::with_encoding(B3Encoding::MultipleHeader)),
+        P::Jaeger => Box::new(opentelemetry_jaeger_propagator::Propagator::new()),
     }
 }
 
@@ -99,7 +97,9 @@ fn stdout_tracer_provider() -> TracerProvider {
 fn otlp_tracer(endpoint: Option<&Url>) -> anyhow::Result<Tracer> {
     use opentelemetry_otlp::WithExportConfig;
 
-    let mut exporter = opentelemetry_otlp::new_exporter().tonic();
+    let mut exporter = opentelemetry_otlp::new_exporter()
+        .http()
+        .with_http_client(http_client());
     if let Some(endpoint) = endpoint {
         exporter = exporter.with_endpoint(endpoint.to_string());
     }
@@ -114,65 +114,6 @@ fn otlp_tracer(endpoint: Option<&Url>) -> anyhow::Result<Tracer> {
     Ok(tracer)
 }
 
-fn jaeger_agent_tracer_provider(host: &str, port: u16) -> anyhow::Result<TracerProvider> {
-    let pipeline = opentelemetry_jaeger::new_agent_pipeline()
-        .with_service_name(env!("CARGO_PKG_NAME"))
-        .with_trace_config(trace_config())
-        .with_endpoint(format!("{host}:{port}"));
-
-    let tracer_provider = pipeline
-        .build_batch(opentelemetry_sdk::runtime::Tokio)
-        .context("Failed to configure Jaeger agent exporter")?;
-
-    Ok(tracer_provider)
-}
-
-fn jaeger_collector_tracer_provider(
-    endpoint: &str,
-    username: Option<&str>,
-    password: Option<&str>,
-) -> anyhow::Result<TracerProvider> {
-    let http_client = http_client();
-    let mut pipeline = opentelemetry_jaeger::new_collector_pipeline()
-        .with_service_name(env!("CARGO_PKG_NAME"))
-        .with_trace_config(trace_config())
-        .with_http_client(http_client)
-        .with_endpoint(endpoint);
-
-    if let Some(username) = username {
-        pipeline = pipeline.with_username(username);
-    }
-
-    if let Some(password) = password {
-        pipeline = pipeline.with_password(password);
-    }
-
-    let tracer_provider = pipeline
-        .build_batch(opentelemetry_sdk::runtime::Tokio)
-        .context("Failed to configure Jaeger collector exporter")?;
-
-    Ok(tracer_provider)
-}
-
-fn zipkin_tracer(collector_endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
-    let http_client = http_client();
-
-    let mut pipeline = opentelemetry_zipkin::new_pipeline()
-        .with_http_client(http_client)
-        .with_service_name(env!("CARGO_PKG_NAME"))
-        .with_trace_config(trace_config());
-
-    if let Some(collector_endpoint) = collector_endpoint {
-        pipeline = pipeline.with_collector_endpoint(collector_endpoint.as_str());
-    }
-
-    let tracer = pipeline
-        .install_batch(opentelemetry_sdk::runtime::Tokio)
-        .context("Failed to configure Zipkin exporter")?;
-
-    Ok(tracer)
-}
-
 fn tracer(config: &TracingExporterConfig) -> anyhow::Result<Option<Tracer>> {
     let tracer_provider = match config {
         TracingExporterConfig::None => return Ok(None),
@@ -180,19 +121,6 @@ fn tracer(config: &TracingExporterConfig) -> anyhow::Result<Option<Tracer>> {
         TracingExporterConfig::Otlp { endpoint } => {
             // The OTLP exporter already creates a tracer and installs it
             return Ok(Some(otlp_tracer(endpoint.as_ref())?));
-        }
-        TracingExporterConfig::Jaeger(JaegerExporterProtocolConfig::UdpThriftCompact {
-            agent_host,
-            agent_port,
-        }) => jaeger_agent_tracer_provider(agent_host, *agent_port)?,
-        TracingExporterConfig::Jaeger(JaegerExporterProtocolConfig::HttpThriftBinary {
-            endpoint,
-            username,
-            password,
-        }) => jaeger_collector_tracer_provider(endpoint, username.as_deref(), password.as_deref())?,
-        TracingExporterConfig::Zipkin { collector_endpoint } => {
-            // The Zipkin exporter already creates a tracer and installs it
-            return Ok(Some(zipkin_tracer(collector_endpoint)?));
         }
     };
 
@@ -210,7 +138,9 @@ fn tracer(config: &TracingExporterConfig) -> anyhow::Result<Option<Tracer>> {
 fn otlp_metric_reader(endpoint: Option<&url::Url>) -> anyhow::Result<PeriodicReader> {
     use opentelemetry_otlp::WithExportConfig;
 
-    let mut exporter = opentelemetry_otlp::new_exporter().tonic();
+    let mut exporter = opentelemetry_otlp::new_exporter()
+        .http()
+        .with_http_client(http_client());
     if let Some(endpoint) = endpoint {
         exporter = exporter.with_endpoint(endpoint.to_string());
     }
@@ -279,7 +209,7 @@ fn prometheus_metric_reader() -> anyhow::Result<PrometheusExporter> {
 }
 
 fn init_meter(config: &MetricsExporterConfig) -> anyhow::Result<()> {
-    let meter_provider_builder = MeterProvider::builder();
+    let meter_provider_builder = SdkMeterProvider::builder();
     let meter_provider_builder = match config {
         MetricsExporterConfig::None => meter_provider_builder.with_reader(ManualReader::default()),
         MetricsExporterConfig::Stdout => meter_provider_builder.with_reader(stdout_metric_reader()),
@@ -306,9 +236,9 @@ fn trace_config() -> opentelemetry_sdk::trace::Config {
 }
 
 fn resource() -> Resource {
-    let resource = Resource::new(vec![
-        semcov::resource::SERVICE_NAME.string(env!("CARGO_PKG_NAME")),
-        semcov::resource::SERVICE_VERSION.string(env!("CARGO_PKG_VERSION")),
+    let resource = Resource::new([
+        KeyValue::new(semcov::resource::SERVICE_NAME, env!("CARGO_PKG_NAME")),
+        KeyValue::new(semcov::resource::SERVICE_VERSION, env!("CARGO_PKG_VERSION")),
     ]);
 
     let detected = Resource::from_detectors(
