@@ -130,7 +130,7 @@ jobs:
         uses: actions/checkout@v4.1.2
 
       - name: Run `cargo-deny`
-        uses: EmbarkStudios/cargo-deny-action@v1.5.15
+        uses: EmbarkStudios/cargo-deny-action@v1.6.1
 
   
   check-schema:
