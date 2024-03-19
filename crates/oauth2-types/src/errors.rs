@@ -16,7 +16,6 @@
 
 use std::borrow::Cow;
 
-use parse_display::{Display, FromStr};
 use serde::{Deserialize, Serialize};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
@@ -60,8 +59,7 @@ impl From<ClientErrorCode> for ClientError {
 }
 
 /// Client error codes defined in OAuth2.0, OpenID Connect and their extensions.
-#[derive(Debug, Clone, PartialEq, Eq, Display, FromStr, SerializeDisplay, DeserializeFromStr)]
-#[display(style = "snake_case")]
+#[derive(Debug, Clone, PartialEq, Eq, SerializeDisplay, DeserializeFromStr)]
 pub enum ClientErrorCode {
     /// `invalid_request`
     ///
@@ -276,8 +274,75 @@ pub enum ClientErrorCode {
     UnsupportedTokenType,
 
     /// Another error code.
-    #[display("{0}")]
     Unknown(String),
+}
+
+impl core::fmt::Display for ClientErrorCode {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            ClientErrorCode::InvalidRequest => f.write_str("invalid_request"),
+            ClientErrorCode::InvalidClient => f.write_str("invalid_client"),
+            ClientErrorCode::InvalidGrant => f.write_str("invalid_grant"),
+            ClientErrorCode::UnauthorizedClient => f.write_str("unauthorized_client"),
+            ClientErrorCode::UnsupportedGrantType => f.write_str("unsupported_grant_type"),
+            ClientErrorCode::AccessDenied => f.write_str("access_denied"),
+            ClientErrorCode::UnsupportedResponseType => f.write_str("unsupported_response_type"),
+            ClientErrorCode::InvalidScope => f.write_str("invalid_scope"),
+            ClientErrorCode::ServerError => f.write_str("server_error"),
+            ClientErrorCode::TemporarilyUnavailable => f.write_str("temporarily_unavailable"),
+            ClientErrorCode::InteractionRequired => f.write_str("interaction_required"),
+            ClientErrorCode::LoginRequired => f.write_str("login_required"),
+            ClientErrorCode::AccountSelectionRequired => f.write_str("account_selection_required"),
+            ClientErrorCode::ConsentRequired => f.write_str("consent_required"),
+            ClientErrorCode::InvalidRequestUri => f.write_str("invalid_request_uri"),
+            ClientErrorCode::InvalidRequestObject => f.write_str("invalid_request_object"),
+            ClientErrorCode::RequestNotSupported => f.write_str("request_not_supported"),
+            ClientErrorCode::RequestUriNotSupported => f.write_str("request_uri_not_supported"),
+            ClientErrorCode::RegistrationNotSupported => f.write_str("registration_not_supported"),
+            ClientErrorCode::InvalidRedirectUri => f.write_str("invalid_redirect_uri"),
+            ClientErrorCode::InvalidClientMetadata => f.write_str("invalid_client_metadata"),
+            ClientErrorCode::AuthorizationPending => f.write_str("authorization_pending"),
+            ClientErrorCode::SlowDown => f.write_str("slow_down"),
+            ClientErrorCode::ExpiredToken => f.write_str("expired_token"),
+            ClientErrorCode::UnsupportedTokenType => f.write_str("unsupported_token_type"),
+            ClientErrorCode::Unknown(value) => f.write_str(value),
+        }
+    }
+}
+
+impl core::str::FromStr for ClientErrorCode {
+    type Err = core::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "invalid_request" => Ok(ClientErrorCode::InvalidRequest),
+            "invalid_client" => Ok(ClientErrorCode::InvalidClient),
+            "invalid_grant" => Ok(ClientErrorCode::InvalidGrant),
+            "unauthorized_client" => Ok(ClientErrorCode::UnauthorizedClient),
+            "unsupported_grant_type" => Ok(ClientErrorCode::UnsupportedGrantType),
+            "access_denied" => Ok(ClientErrorCode::AccessDenied),
+            "unsupported_response_type" => Ok(ClientErrorCode::UnsupportedResponseType),
+            "invalid_scope" => Ok(ClientErrorCode::InvalidScope),
+            "server_error" => Ok(ClientErrorCode::ServerError),
+            "temporarily_unavailable" => Ok(ClientErrorCode::TemporarilyUnavailable),
+            "interaction_required" => Ok(ClientErrorCode::InteractionRequired),
+            "login_required" => Ok(ClientErrorCode::LoginRequired),
+            "account_selection_required" => Ok(ClientErrorCode::AccountSelectionRequired),
+            "consent_required" => Ok(ClientErrorCode::ConsentRequired),
+            "invalid_request_uri" => Ok(ClientErrorCode::InvalidRequestUri),
+            "invalid_request_object" => Ok(ClientErrorCode::InvalidRequestObject),
+            "request_not_supported" => Ok(ClientErrorCode::RequestNotSupported),
+            "request_uri_not_supported" => Ok(ClientErrorCode::RequestUriNotSupported),
+            "registration_not_supported" => Ok(ClientErrorCode::RegistrationNotSupported),
+            "invalid_redirect_uri" => Ok(ClientErrorCode::InvalidRedirectUri),
+            "invalid_client_metadata" => Ok(ClientErrorCode::InvalidClientMetadata),
+            "authorization_pending" => Ok(ClientErrorCode::AuthorizationPending),
+            "slow_down" => Ok(ClientErrorCode::SlowDown),
+            "expired_token" => Ok(ClientErrorCode::ExpiredToken),
+            "unsupported_token_type" => Ok(ClientErrorCode::UnsupportedTokenType),
+            _ => Ok(ClientErrorCode::Unknown(s.to_owned())),
+        }
+    }
 }
 
 impl ClientErrorCode {
