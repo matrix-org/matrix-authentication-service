@@ -72,6 +72,8 @@ skip = [
     { name = "rustls-pemfile", version = "1.0.4" },
     { name = "rustls-webpki", version = "0.101.7" },
     { name = "webpki-roots", version = "0.25.3" },
+    # axum-macros, sqlx-macros and sea-query-attr use an old version
+    { name = "heck", version = "0.4.1" },
 ]
 
 skip-tree = [
