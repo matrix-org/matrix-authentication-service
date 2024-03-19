@@ -13,15 +13,15 @@ workspace = true
 
 [dependencies]
 bytes = "1.5.0"
-event-listener = "4.0.3"
+event-listener = "5.2.0"
 futures-util = "0.3.30"
-http-body = "0.4.5"
-hyper = { version = "0.14.27", features = ["server", "http1", "http2", "tcp"] }
-libc = "0.2.152"
+http-body.workspace = true
+hyper = { workspace = true, features = ["server"] }
+libc = "0.2.153"
 pin-project-lite = "0.2.13"
-socket2 = "0.5.5"
+socket2 = "0.5.6"
 thiserror.workspace = true
-tokio = { version = "1.35.1", features = ["net", "rt", "macros", "signal", "time"] }
+tokio = { version = "1.36.0", features = ["net", "rt", "macros", "signal", "time"] }
 tokio-rustls = "0.25.0"
 tower-http = { version = "0.4.4", features = ["add-extension"] }
 tower-service = "0.3.2"
@@ -29,9 +29,9 @@ tracing.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
-rustls-pemfile = "2.0.0"
-tokio = { version = "1.35.1", features = ["net", "rt", "macros", "signal", "time", "rt-multi-thread"] }
-tokio-test = "0.4.3"
+rustls-pemfile = "2.1.1"
+tokio = { version = "1.36.0", features = ["net", "rt", "macros", "signal", "time", "rt-multi-thread"] }
+tokio-test = "0.4.4"
 tracing-subscriber.workspace = true
 
 [[example]]

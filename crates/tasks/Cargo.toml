@@ -18,13 +18,13 @@ apalis-cron = "0.4.9"
 async-stream = "0.3.5"
 async-trait.workspace = true
 chrono.workspace = true
-event-listener = "4.0.3"
-futures-lite = "2.2.0"
+event-listener = "5.2.0"
+futures-lite = "2.3.0"
 rand.workspace = true
 rand_chacha = "0.3.1"
-sqlx = { version = "0.7.3", features = ["runtime-tokio-rustls", "postgres"] }
+sqlx.workspace = true
 thiserror.workspace = true
-tokio = { version = "1.35.1", features = ["rt"] }
+tokio = { version = "1.36.0", features = ["rt"] }
 tower.workspace = true
 tracing.workspace = true
 tracing-opentelemetry.workspace = true

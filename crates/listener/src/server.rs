@@ -254,7 +254,6 @@ pin_project! {
         connection: C,
         #[pin]
         shutdown_listener: EventListener,
-        shutdown_event: Arc<Event>,
         shutdown_in_progress: Arc<AtomicBool>,
         did_start_shutdown: bool,
     }
@@ -262,12 +261,10 @@ pin_project! {
 
 impl<C> AbortableConnection<C> {
     fn new(connection: C, shutdown_in_progress: &Arc<AtomicBool>, event: &Arc<Event>) -> Self {
-        let shutdown_listener = EventListener::new();
         Self {
             connection,
-            shutdown_listener,
+            shutdown_listener: event.listen(),
             shutdown_in_progress: Arc::clone(shutdown_in_progress),
-            shutdown_event: Arc::clone(event),
             did_start_shutdown: false,
         }
     }
@@ -288,14 +285,6 @@ where
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let mut this = self.project();
-
-        // If we aren't listening for the shutdown signal, start listening
-        if !this.shutdown_listener.is_listening() {
-            // XXX: it feels like we should setup the listener when we create it, but it
-            // needs a `Pin<&mut EventListener>` to do so, and I can't figure out
-            // how to get one outside of the `poll` method.
-            this.shutdown_listener.as_mut().listen(this.shutdown_event);
-        }
 
         // Poll the shutdown signal, so that wakers get registered.
         // XXX: I don't think we care about the result of this poll, since it's only

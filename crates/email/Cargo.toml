@@ -15,7 +15,7 @@ workspace = true
 async-trait.workspace = true
 tracing.workspace = true
 thiserror.workspace = true
-headers = "0.3.9"
+headers.workspace = true
 
 mas-templates.workspace = true
 

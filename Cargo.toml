@@ -57,11 +57,11 @@ oauth2-types = { path = "./crates/oauth2-types/", version = "=0.8.0" }
 
 # Utility to write and implement async traits
 [workspace.dependencies.async-trait]
-version = "0.1.77"
+version = "0.1.78"
 
 # High-level error handling
 [workspace.dependencies.anyhow]
-version = "1.0.79"
+version = "1.0.81"
 
 # UTF-8 paths
 [workspace.dependencies.camino]
@@ -78,9 +78,22 @@ features = ["serde", "clock"]
 version = "4.5.3"
 features = ["derive"]
 
+# HTTP headers
+[workspace.dependencies.headers]
+version = "0.3.9"
+
 # HTTP request/response
 [workspace.dependencies.http]
-version = "0.2.11"
+version = "0.2.12"
+
+# HTTP body trait
+[workspace.dependencies.http-body]
+version = "0.4.6"
+
+# HTTP client
+[workspace.dependencies.hyper]
+version = "0.14.28"
+features = ["client", "http1", "http2", "stream", "runtime"]
 
 # Hyper Rustls support
 [workspace.dependencies.hyper-rustls]
@@ -111,17 +124,22 @@ features = ["url", "chrono", "preserve_order"]
 
 # Serialization and deserialization
 [workspace.dependencies.serde]
-version = "1.0.196"
+version = "1.0.197"
 features = ["derive"] # Most of the time, if we need serde, we need derive
 
 # JSON serialization and deserialization
 [workspace.dependencies.serde_json]
-version = "1.0.112"
+version = "1.0.114"
 features = ["preserve_order"]
+
+# SQL database support
+[workspace.dependencies.sqlx]
+version = "0.7.4"
+features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "json", "uuid", "ipnetwork"]
 
 # Custom error types
 [workspace.dependencies.thiserror]
-version = "1.0.57"
+version = "1.0.58"
 
 # Tower services
 [workspace.dependencies.tower]
@@ -154,7 +172,7 @@ features = ["serde"]
 
 # ULID support
 [workspace.dependencies.ulid]
-version = "1.1.0"
+version = "1.1.2"
 features = ["serde"]
 
 # A few profile opt-level tweaks to make the test suite run faster
