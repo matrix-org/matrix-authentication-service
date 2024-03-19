@@ -16,14 +16,13 @@
 //!
 //! [OpenID Connect]: https://openid.net/connect/
 
-use std::{fmt, ops::Deref, str::FromStr};
+use std::{fmt, ops::Deref};
 
 use language_tags::LanguageTag;
 use mas_iana::{
     jose::{JsonWebEncryptionAlg, JsonWebEncryptionEnc, JsonWebSignatureAlg},
     oauth::{OAuthAccessTokenType, OAuthClientAuthenticationMethod, PkceCodeChallengeMethod},
 };
-use parse_display::{Display, FromStr, ParseError};
 use serde::{Deserialize, Serialize};
 use serde_with::{
     formats::SpaceSeparator, serde_as, skip_serializing_none, DeserializeFromStr, SerializeDisplay,
@@ -39,14 +38,12 @@ use crate::{
 
 /// An enum for types that accept either an [`OAuthClientAuthenticationMethod`]
 /// or an [`OAuthAccessTokenType`].
-#[derive(SerializeDisplay, DeserializeFromStr, Clone, PartialEq, Eq, Hash, Debug, Display)]
+#[derive(SerializeDisplay, DeserializeFromStr, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum AuthenticationMethodOrAccessTokenType {
     /// An authentication method.
-    #[display("{0}")]
     AuthenticationMethod(OAuthClientAuthenticationMethod),
 
     /// An access token type.
-    #[display("{0}")]
     AccessTokenType(OAuthAccessTokenType),
 
     /// An unknown value.
@@ -54,8 +51,35 @@ pub enum AuthenticationMethodOrAccessTokenType {
     /// Note that this variant should only be used as the result parsing a
     /// string of unknown type. To build a custom variant, first parse a
     /// string with the wanted type then use `.into()`.
-    #[display("{0}")]
     Unknown(String),
+}
+
+impl core::fmt::Display for AuthenticationMethodOrAccessTokenType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::AuthenticationMethod(m) => m.fmt(f),
+            Self::AccessTokenType(t) => t.fmt(f),
+            Self::Unknown(s) => s.fmt(f),
+        }
+    }
+}
+
+impl core::str::FromStr for AuthenticationMethodOrAccessTokenType {
+    type Err = core::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match OAuthClientAuthenticationMethod::from_str(s) {
+            Ok(OAuthClientAuthenticationMethod::Unknown(_)) | Err(_) => {}
+            Ok(m) => return Ok(m.into()),
+        }
+
+        match OAuthAccessTokenType::from_str(s) {
+            Ok(OAuthAccessTokenType::Unknown(_)) | Err(_) => {}
+            Ok(m) => return Ok(m.into()),
+        }
+
+        Ok(Self::Unknown(s.to_owned()))
+    }
 }
 
 impl AuthenticationMethodOrAccessTokenType {
@@ -80,28 +104,6 @@ impl AuthenticationMethodOrAccessTokenType {
     }
 }
 
-impl FromStr for AuthenticationMethodOrAccessTokenType {
-    type Err = ParseError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if let Ok(m) = OAuthClientAuthenticationMethod::from_str(s) {
-            match m {
-                OAuthClientAuthenticationMethod::Unknown(_) => {}
-                m => return Ok(m.into()),
-            }
-        }
-
-        if let Ok(t) = OAuthAccessTokenType::from_str(s) {
-            match t {
-                OAuthAccessTokenType::Unknown(_) => {}
-                t => return Ok(t.into()),
-            }
-        }
-
-        Ok(Self::Unknown(s.to_owned()))
-    }
-}
-
 impl From<OAuthClientAuthenticationMethod> for AuthenticationMethodOrAccessTokenType {
     fn from(t: OAuthClientAuthenticationMethod) -> Self {
         Self::AuthenticationMethod(t)
@@ -115,16 +117,38 @@ impl From<OAuthAccessTokenType> for AuthenticationMethodOrAccessTokenType {
 }
 
 /// The kind of an application.
-#[derive(
-    SerializeDisplay, DeserializeFromStr, Clone, Copy, PartialEq, Eq, Hash, Debug, Display, FromStr,
-)]
-#[display(style = "lowercase")]
+#[derive(SerializeDisplay, DeserializeFromStr, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum ApplicationType {
     /// A web application.
     Web,
 
     /// A native application.
     Native,
+
+    /// An unknown value.
+    Unknown(String),
+}
+
+impl core::fmt::Display for ApplicationType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Web => f.write_str("web"),
+            Self::Native => f.write_str("native"),
+            Self::Unknown(s) => f.write_str(s),
+        }
+    }
+}
+
+impl core::str::FromStr for ApplicationType {
+    type Err = core::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "web" => Ok(Self::Web),
+            "native" => Ok(Self::Native),
+            s => Ok(Self::Unknown(s.to_owned())),
+        }
+    }
 }
 
 /// Subject Identifier types.
@@ -132,10 +156,7 @@ pub enum ApplicationType {
 /// A Subject Identifier is a locally unique and never reassigned identifier
 /// within the Issuer for the End-User, which is intended to be consumed by the
 /// Client.
-#[derive(
-    SerializeDisplay, DeserializeFromStr, Clone, Copy, PartialEq, Eq, Hash, Debug, Display, FromStr,
-)]
-#[display(style = "lowercase")]
+#[derive(SerializeDisplay, DeserializeFromStr, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum SubjectType {
     /// This provides the same `sub` (subject) value to all Clients.
     Public,
@@ -144,13 +165,35 @@ pub enum SubjectType {
     /// enable Clients to correlate the End-User's activities without
     /// permission.
     Pairwise,
+
+    /// An unknown value.
+    Unknown(String),
+}
+
+impl core::fmt::Display for SubjectType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Public => f.write_str("public"),
+            Self::Pairwise => f.write_str("pairwise"),
+            Self::Unknown(s) => f.write_str(s),
+        }
+    }
+}
+
+impl core::str::FromStr for SubjectType {
+    type Err = core::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "public" => Ok(Self::Public),
+            "pairwise" => Ok(Self::Pairwise),
+            s => Ok(Self::Unknown(s.to_owned())),
+        }
+    }
 }
 
 /// Claim types.
-#[derive(
-    SerializeDisplay, DeserializeFromStr, Clone, Copy, PartialEq, Eq, Hash, Debug, Display, FromStr,
-)]
-#[display(style = "lowercase")]
+#[derive(SerializeDisplay, DeserializeFromStr, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum ClaimType {
     /// Claims that are directly asserted by the OpenID Provider.
     Normal,
@@ -162,6 +205,33 @@ pub enum ClaimType {
     /// Claims that are asserted by a Claims Provider other than the OpenID
     /// Provider but are returned as references by the OpenID Provider.
     Distributed,
+
+    /// An unknown value.
+    Unknown(String),
+}
+
+impl core::fmt::Display for ClaimType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Normal => f.write_str("normal"),
+            Self::Aggregated => f.write_str("aggregated"),
+            Self::Distributed => f.write_str("distributed"),
+            Self::Unknown(s) => f.write_str(s),
+        }
+    }
+}
+
+impl core::str::FromStr for ClaimType {
+    type Err = core::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "normal" => Ok(Self::Normal),
+            "aggregated" => Ok(Self::Aggregated),
+            "distributed" => Ok(Self::Distributed),
+            s => Ok(Self::Unknown(s.to_owned())),
+        }
+    }
 }
 
 /// An account management action that a user can take.

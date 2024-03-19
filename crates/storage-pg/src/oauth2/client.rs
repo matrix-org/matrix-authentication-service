@@ -463,7 +463,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
             "#,
             Uuid::from(id),
             encrypted_client_secret,
-            application_type.map(|a| a.to_string()),
+            application_type.as_ref().map(ToString::to_string),
             &redirect_uris_array,
             grant_types.contains(&GrantType::AuthorizationCode),
             grant_types.contains(&GrantType::RefreshToken),

@@ -613,7 +613,9 @@ impl ClientMetadata {
     /// Defaults to [`DEFAULT_APPLICATION_TYPE`].
     #[must_use]
     pub fn application_type(&self) -> ApplicationType {
-        self.application_type.unwrap_or(DEFAULT_APPLICATION_TYPE)
+        self.application_type
+            .clone()
+            .unwrap_or(DEFAULT_APPLICATION_TYPE)
     }
 
     /// Requested client authentication method for the [token endpoint].

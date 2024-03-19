@@ -268,7 +268,7 @@ pub(crate) async fn post(
             &clock,
             metadata.redirect_uris().to_vec(),
             encrypted_client_secret,
-            metadata.application_type,
+            metadata.application_type.clone(),
             //&metadata.response_types(),
             metadata.grant_types().to_vec(),
             metadata.contacts.clone().unwrap_or_default(),

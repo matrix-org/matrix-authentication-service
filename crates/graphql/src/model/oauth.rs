@@ -197,9 +197,10 @@ impl OAuth2Client {
 
     /// The application type advertised by the client.
     pub async fn application_type(&self) -> Option<OAuth2ApplicationType> {
-        match self.0.application_type? {
+        match self.0.application_type.as_ref()? {
             ApplicationType::Web => Some(OAuth2ApplicationType::Web),
             ApplicationType::Native => Some(OAuth2ApplicationType::Native),
+            ApplicationType::Unknown(_) => None,
         }
     }
 }

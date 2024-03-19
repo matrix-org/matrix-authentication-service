@@ -21,7 +21,6 @@
 use std::{collections::BTreeSet, fmt, iter::FromIterator, str::FromStr};
 
 use mas_iana::oauth::OAuthAuthorizationEndpointResponseType;
-use parse_display::{Display, FromStr};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 use thiserror::Error;
 
@@ -38,19 +37,8 @@ pub struct InvalidResponseType;
 /// This type also accepts unknown tokens that can be constructed via it's
 /// `FromStr` implementation or used via its `Display` implementation.
 #[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Display,
-    FromStr,
-    SerializeDisplay,
-    DeserializeFromStr,
+    Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr,
 )]
-#[display(style = "snake_case")]
 #[non_exhaustive]
 pub enum ResponseTypeToken {
     /// `code`
@@ -63,8 +51,31 @@ pub enum ResponseTypeToken {
     Token,
 
     /// Unknown token.
-    #[display("{0}")]
     Unknown(String),
+}
+
+impl core::fmt::Display for ResponseTypeToken {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            ResponseTypeToken::Code => f.write_str("code"),
+            ResponseTypeToken::IdToken => f.write_str("id_token"),
+            ResponseTypeToken::Token => f.write_str("token"),
+            ResponseTypeToken::Unknown(s) => f.write_str(s),
+        }
+    }
+}
+
+impl core::str::FromStr for ResponseTypeToken {
+    type Err = core::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "code" => Ok(Self::Code),
+            "id_token" => Ok(Self::IdToken),
+            "token" => Ok(Self::Token),
+            s => Ok(Self::Unknown(s.to_owned())),
+        }
+    }
 }
 
 /// An [OAuth 2.0 `response_type` value] that the client can use

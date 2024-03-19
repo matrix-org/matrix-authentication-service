@@ -21,7 +21,6 @@ use std::{collections::HashSet, fmt, hash::Hash, num::NonZeroU32};
 use chrono::{DateTime, Duration, Utc};
 use language_tags::LanguageTag;
 use mas_iana::oauth::{OAuthAccessTokenType, OAuthTokenTypeHint};
-use parse_display::{Display, FromStr};
 use serde::{Deserialize, Serialize};
 use serde_with::{
     formats::SpaceSeparator, serde_as, skip_serializing_none, DeserializeFromStr, DisplayFromStr,
@@ -38,19 +37,8 @@ use crate::{response_type::ResponseType, scope::Scope};
 ///
 /// Defined in [OAuth 2.0 Multiple Response Type Encoding Practices](https://openid.net/specs/oauth-v2-multiple-response-types-1_0.html#ResponseModes).
 #[derive(
-    Debug,
-    Hash,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Clone,
-    Display,
-    FromStr,
-    SerializeDisplay,
-    DeserializeFromStr,
+    Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Clone, SerializeDisplay, DeserializeFromStr,
 )]
-#[display(style = "snake_case")]
 #[non_exhaustive]
 pub enum ResponseMode {
     /// Authorization Response parameters are encoded in the query string added
@@ -71,8 +59,31 @@ pub enum ResponseMode {
     FormPost,
 
     /// An unknown value.
-    #[display("{0}")]
     Unknown(String),
+}
+
+impl core::fmt::Display for ResponseMode {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            ResponseMode::Query => f.write_str("query"),
+            ResponseMode::Fragment => f.write_str("fragment"),
+            ResponseMode::FormPost => f.write_str("form_post"),
+            ResponseMode::Unknown(s) => f.write_str(s),
+        }
+    }
+}
+
+impl core::str::FromStr for ResponseMode {
+    type Err = core::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "query" => Ok(ResponseMode::Query),
+            "fragment" => Ok(ResponseMode::Fragment),
+            "form_post" => Ok(ResponseMode::FormPost),
+            s => Ok(ResponseMode::Unknown(s.to_owned())),
+        }
+    }
 }
 
 /// Value that specifies how the Authorization Server displays the
@@ -80,19 +91,8 @@ pub enum ResponseMode {
 ///
 /// Defined in [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest).
 #[derive(
-    Debug,
-    Hash,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Clone,
-    Display,
-    FromStr,
-    SerializeDisplay,
-    DeserializeFromStr,
+    Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Clone, SerializeDisplay, DeserializeFromStr,
 )]
-#[display(style = "snake_case")]
 #[non_exhaustive]
 pub enum Display {
     /// The Authorization Server should display the authentication and consent
@@ -114,8 +114,33 @@ pub enum Display {
     Wap,
 
     /// An unknown value.
-    #[display("{0}")]
     Unknown(String),
+}
+
+impl core::fmt::Display for Display {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Display::Page => f.write_str("page"),
+            Display::Popup => f.write_str("popup"),
+            Display::Touch => f.write_str("touch"),
+            Display::Wap => f.write_str("wap"),
+            Display::Unknown(s) => f.write_str(s),
+        }
+    }
+}
+
+impl core::str::FromStr for Display {
+    type Err = core::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "page" => Ok(Display::Page),
+            "popup" => Ok(Display::Popup),
+            "touch" => Ok(Display::Touch),
+            "wap" => Ok(Display::Wap),
+            s => Ok(Display::Unknown(s.to_owned())),
+        }
+    }
 }
 
 impl Default for Display {
@@ -129,19 +154,8 @@ impl Default for Display {
 ///
 /// Defined in [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest).
 #[derive(
-    Debug,
-    Hash,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Clone,
-    Display,
-    FromStr,
-    SerializeDisplay,
-    DeserializeFromStr,
+    Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Clone, SerializeDisplay, DeserializeFromStr,
 )]
-#[display(style = "snake_case")]
 #[non_exhaustive]
 pub enum Prompt {
     /// The Authorization Server must not display any authentication or consent
@@ -171,8 +185,35 @@ pub enum Prompt {
     Create,
 
     /// An unknown value.
-    #[display("{0}")]
     Unknown(String),
+}
+
+impl core::fmt::Display for Prompt {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Prompt::None => f.write_str("none"),
+            Prompt::Login => f.write_str("login"),
+            Prompt::Consent => f.write_str("consent"),
+            Prompt::SelectAccount => f.write_str("select_account"),
+            Prompt::Create => f.write_str("create"),
+            Prompt::Unknown(s) => f.write_str(s),
+        }
+    }
+}
+
+impl core::str::FromStr for Prompt {
+    type Err = core::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "none" => Ok(Prompt::None),
+            "login" => Ok(Prompt::Login),
+            "consent" => Ok(Prompt::Consent),
+            "select_account" => Ok(Prompt::SelectAccount),
+            "create" => Ok(Prompt::Create),
+            s => Ok(Prompt::Unknown(s.to_owned())),
+        }
+    }
 }
 
 /// The body of a request to the [Authorization Endpoint].
@@ -511,20 +552,8 @@ impl fmt::Debug for DeviceCodeGrant {
 
 /// All possible values for the `grant_type` parameter.
 #[derive(
-    Debug,
-    Hash,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Clone,
-    Copy,
-    Display,
-    FromStr,
-    SerializeDisplay,
-    DeserializeFromStr,
+    Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Clone, SerializeDisplay, DeserializeFromStr,
 )]
-#[display(style = "snake_case")]
 pub enum GrantType {
     /// [`authorization_code`](https://www.rfc-editor.org/rfc/rfc6749#section-4.1)
     AuthorizationCode,
@@ -542,16 +571,54 @@ pub enum GrantType {
     Password,
 
     /// [`urn:ietf:params:oauth:grant-type:device_code`](https://www.rfc-editor.org/rfc/rfc8628)
-    #[display("urn:ietf:params:oauth:grant-type:device_code")]
     DeviceCode,
 
     /// [`https://datatracker.ietf.org/doc/html/rfc7523#section-2.1`](https://www.rfc-editor.org/rfc/rfc7523#section-2.1)
-    #[display("urn:ietf:params:oauth:grant-type:jwt-bearer")]
     JwtBearer,
 
     /// [`urn:openid:params:grant-type:ciba`](https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html)
-    #[display("urn:openid:params:grant-type:ciba")]
     ClientInitiatedBackchannelAuthentication,
+
+    /// An unknown value.
+    Unknown(String),
+}
+
+impl core::fmt::Display for GrantType {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            GrantType::AuthorizationCode => f.write_str("authorization_code"),
+            GrantType::RefreshToken => f.write_str("refresh_token"),
+            GrantType::Implicit => f.write_str("implicit"),
+            GrantType::ClientCredentials => f.write_str("client_credentials"),
+            GrantType::Password => f.write_str("password"),
+            GrantType::DeviceCode => f.write_str("urn:ietf:params:oauth:grant-type:device_code"),
+            GrantType::JwtBearer => f.write_str("urn:ietf:params:oauth:grant-type:jwt-bearer"),
+            GrantType::ClientInitiatedBackchannelAuthentication => {
+                f.write_str("urn:openid:params:grant-type:ciba")
+            }
+            GrantType::Unknown(s) => f.write_str(s),
+        }
+    }
+}
+
+impl core::str::FromStr for GrantType {
+    type Err = core::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "authorization_code" => Ok(GrantType::AuthorizationCode),
+            "refresh_token" => Ok(GrantType::RefreshToken),
+            "implicit" => Ok(GrantType::Implicit),
+            "client_credentials" => Ok(GrantType::ClientCredentials),
+            "password" => Ok(GrantType::Password),
+            "urn:ietf:params:oauth:grant-type:device_code" => Ok(GrantType::DeviceCode),
+            "urn:ietf:params:oauth:grant-type:jwt-bearer" => Ok(GrantType::JwtBearer),
+            "urn:openid:params:grant-type:ciba" => {
+                Ok(GrantType::ClientInitiatedBackchannelAuthentication)
+            }
+            s => Ok(GrantType::Unknown(s.to_owned())),
+        }
+    }
 }
 
 /// An enum representing the possible requests to the [Token Endpoint].
