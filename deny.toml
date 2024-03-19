@@ -1,3 +1,4 @@
+[graph]
 targets = [
     { triple = "x86_64-unknown-linux-gnu" },
     { triple = "aarch64-unknown-linux-gnu" },
@@ -6,12 +7,9 @@ targets = [
 ]
 
 [advisories]
+version = 2
 db-path = "~/.cargo/advisory-db"
 db-urls = ["https://github.com/rustsec/advisory-db"]
-vulnerability = "deny"
-unmaintained = "warn"
-yanked = "warn"
-notice = "warn"
 ignore = [
     # `wasmtime` depends on `mach`
     # PR to migrate to `mach2`: https://github.com/bytecodealliance/wasmtime/pull/6164
@@ -23,20 +21,20 @@ ignore = [
 ]
 
 [licenses]
-# Deny unlicensed crates and those with a copyleft license
-unlicensed = "deny"
-copyleft = "deny"
-default = "deny"
-
-# By default, allow all licenses that are OSI or FSF approved
-allow-osi-fsf-free = "both"
+version = 2
 allow = [
+    "0BSD",
+    "Apache-2.0 WITH LLVM-exception",
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "MIT",
     "MPL-2.0",
-    "0BSD", # Used by `quoted_printable`
-    "OpenSSL", # Used by `ring`
-    "Unicode-DFS-2016", # Used by `unicode-ident`
+    "OpenSSL",
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
 ]
-deny = []
 
 # Ring's license is a bit complicated, so we need to specify it manually
 [[licenses.clarify]]
