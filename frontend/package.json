@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@fontsource/inconsolata": "^5.0.16",
-    "@fontsource/inter": "^5.0.16",
+    "@fontsource/inter": "^5.0.17",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-dialog": "^1.0.5",
     "@radix-ui/react-form": "^0.0.3",
