@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use opentelemetry_semantic_conventions::trace::DB_STATEMENT;
 use tracing::Span;
 
 /// An extension trait for [`sqlx::Execute`] that records the SQL statement as
@@ -34,7 +35,7 @@ where
     DB: sqlx::Database,
 {
     fn record(self, span: &Span) -> Self {
-        span.record("db.statement", self.sql());
+        span.record(DB_STATEMENT, self.sql());
         self
     }
 }

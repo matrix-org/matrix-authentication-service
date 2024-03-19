@@ -39,6 +39,7 @@ use mas_storage::{
     BoxClock, BoxRepository, BoxRng, Clock, Repository, RepositoryError, SystemClock,
 };
 use mas_storage_pg::PgRepository;
+use opentelemetry_semantic_conventions::trace::{GRAPHQL_DOCUMENT, GRAPHQL_OPERATION_NAME};
 use rand::{thread_rng, SeedableRng};
 use rand_chacha::ChaChaRng;
 use sqlx::PgPool;
@@ -112,13 +113,13 @@ fn span_for_graphql_request(request: &async_graphql::Request) -> tracing::Span {
         "GraphQL operation",
         "otel.name" = tracing::field::Empty,
         "otel.kind" = "server",
-        "graphql.document" = request.query,
-        "graphql.operation.name" = tracing::field::Empty,
+        { GRAPHQL_DOCUMENT } = request.query,
+        { GRAPHQL_OPERATION_NAME } = tracing::field::Empty,
     );
 
     if let Some(name) = &request.operation_name {
         span.record("otel.name", name);
-        span.record("graphql.operation.name", name);
+        span.record(GRAPHQL_OPERATION_NAME, name);
     }
 
     span

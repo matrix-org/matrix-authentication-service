@@ -21,6 +21,7 @@ use mas_storage::{
     },
     Clock, Page, Pagination,
 };
+use opentelemetry_semantic_conventions::trace::DB_STATEMENT;
 use rand::RngCore;
 use sea_query::{enum_def, Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
@@ -333,7 +334,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
             let span = info_span!(
                 "db.oauth2_client.delete_by_id.authorization_sessions",
                 upstream_oauth_provider.id = %id,
-                db.statement = tracing::field::Empty,
+                { DB_STATEMENT } = tracing::field::Empty,
             );
             sqlx::query!(
                 r#"
@@ -354,7 +355,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
             let span = info_span!(
                 "db.oauth2_client.delete_by_id.links",
                 upstream_oauth_provider.id = %id,
-                db.statement = tracing::field::Empty,
+                { DB_STATEMENT } = tracing::field::Empty,
             );
             sqlx::query!(
                 r#"

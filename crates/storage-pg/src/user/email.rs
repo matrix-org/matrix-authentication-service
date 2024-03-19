@@ -19,6 +19,7 @@ use mas_storage::{
     user::{UserEmailFilter, UserEmailRepository},
     Clock, Page, Pagination,
 };
+use opentelemetry_semantic_conventions::trace::DB_STATEMENT;
 use rand::RngCore;
 use sea_query::{enum_def, Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
@@ -382,7 +383,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
     async fn remove(&mut self, user_email: UserEmail) -> Result<(), Self::Error> {
         let span = info_span!(
             "db.user_email.remove.codes",
-            db.statement = tracing::field::Empty
+            { DB_STATEMENT } = tracing::field::Empty
         );
         sqlx::query!(
             r#"
