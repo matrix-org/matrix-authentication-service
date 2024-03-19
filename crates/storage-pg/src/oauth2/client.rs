@@ -31,6 +31,7 @@ use oauth2_types::{
     requests::GrantType,
     scope::{Scope, ScopeToken},
 };
+use opentelemetry_semantic_conventions::trace::DB_STATEMENT;
 use rand::RngCore;
 use sqlx::PgConnection;
 use tracing::{info_span, Instrument};
@@ -786,7 +787,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
         {
             let span = info_span!(
                 "db.oauth2_client.delete_by_id.authorization_grants",
-                db.statement = tracing::field::Empty,
+                { DB_STATEMENT } = tracing::field::Empty,
             );
 
             sqlx::query!(
@@ -806,7 +807,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
         {
             let span = info_span!(
                 "db.oauth2_client.delete_by_id.consents",
-                db.statement = tracing::field::Empty,
+                { DB_STATEMENT } = tracing::field::Empty,
             );
 
             sqlx::query!(
@@ -826,7 +827,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
         {
             let span = info_span!(
                 "db.oauth2_client.delete_by_id.access_tokens",
-                db.statement = tracing::field::Empty,
+                { DB_STATEMENT } = tracing::field::Empty,
             );
 
             sqlx::query!(
@@ -849,7 +850,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
         {
             let span = info_span!(
                 "db.oauth2_client.delete_by_id.refresh_tokens",
-                db.statement = tracing::field::Empty,
+                { DB_STATEMENT } = tracing::field::Empty,
             );
 
             sqlx::query!(
@@ -872,7 +873,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
         {
             let span = info_span!(
                 "db.oauth2_client.delete_by_id.sessions",
-                db.statement = tracing::field::Empty,
+                { DB_STATEMENT } = tracing::field::Empty,
             );
 
             sqlx::query!(

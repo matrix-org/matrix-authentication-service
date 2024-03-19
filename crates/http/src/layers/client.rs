@@ -23,6 +23,11 @@ use mas_tower::{
     TraceLayer, TraceService,
 };
 use opentelemetry::KeyValue;
+use opentelemetry_semantic_conventions::trace::{
+    CLIENT_ADDRESS, CLIENT_PORT, HTTP_REQUEST_BODY_SIZE, HTTP_REQUEST_METHOD,
+    HTTP_RESPONSE_BODY_SIZE, HTTP_RESPONSE_STATUS_CODE, NETWORK_PROTOCOL_NAME, NETWORK_TRANSPORT,
+    NETWORK_TYPE, SERVER_ADDRESS, SERVER_PORT, URL_FULL, USER_AGENT_ORIGINAL,
+};
 use tower::{
     limit::{ConcurrencyLimit, GlobalConcurrencyLimitLayer},
     Layer,
@@ -69,27 +74,25 @@ impl<B> MakeSpan<Request<B>> for MakeSpanForRequest {
             .typed_get::<UserAgent>()
             .map(tracing::field::display);
         let content_length = headers.typed_get().map(|ContentLength(len)| len);
-        let net_sock_peer_name = request.uri().host();
         let category = self.category.unwrap_or("UNSET");
 
         tracing::info_span!(
             "http.client.request",
             "otel.kind" = "client",
             "otel.status_code" = tracing::field::Empty,
-            "http.method" = %request.method(),
-            "http.url" = %request.uri(),
-            "http.status_code" = tracing::field::Empty,
-            "http.host" = host,
-            "http.request_content_length" = content_length,
-            "http.response_content_length" = tracing::field::Empty,
-            "net.transport" = "ip_tcp",
-            "net.sock.family" = tracing::field::Empty,
-            "net.sock.peer.name" = net_sock_peer_name,
-            "net.sock.peer.addr" = tracing::field::Empty,
-            "net.sock.peer.port" = tracing::field::Empty,
-            "net.sock.host.addr" = tracing::field::Empty,
-            "net.sock.host.port" = tracing::field::Empty,
-            "user_agent.original" = user_agent,
+            { HTTP_REQUEST_METHOD } = %request.method(),
+            { URL_FULL } = %request.uri(),
+            { HTTP_RESPONSE_STATUS_CODE } = tracing::field::Empty,
+            { SERVER_ADDRESS } = host,
+            { HTTP_REQUEST_BODY_SIZE } = content_length,
+            { HTTP_RESPONSE_BODY_SIZE } = tracing::field::Empty,
+            { NETWORK_TRANSPORT } = "tcp",
+            { NETWORK_TYPE } = tracing::field::Empty,
+            { SERVER_ADDRESS } = tracing::field::Empty,
+            { SERVER_PORT } = tracing::field::Empty,
+            { CLIENT_ADDRESS } = tracing::field::Empty,
+            { CLIENT_PORT } = tracing::field::Empty,
+            { USER_AGENT_ORIGINAL } = user_agent,
             "rust.error" = tracing::field::Empty,
             "mas.category" = category,
         )
@@ -102,22 +105,22 @@ pub struct EnrichSpanOnResponse;
 impl<B> EnrichSpan<Response<B>> for EnrichSpanOnResponse {
     fn enrich_span(&self, span: &Span, response: &Response<B>) {
         span.record("otel.status_code", "OK");
-        span.record("http.status_code", response.status().as_u16());
+        span.record(HTTP_RESPONSE_STATUS_CODE, response.status().as_u16());
 
         if let Some(ContentLength(content_length)) = response.headers().typed_get() {
-            span.record("http.response_content_length", content_length);
+            span.record(HTTP_RESPONSE_BODY_SIZE, content_length);
         }
 
         if let Some(http_info) = response.extensions().get::<HttpInfo>() {
             let local = http_info.local_addr();
             let remote = http_info.remote_addr();
 
-            let family = if local.is_ipv4() { "inet" } else { "inet6" };
-            span.record("net.sock.family", family);
-            span.record("net.sock.peer.addr", remote.ip().to_string());
-            span.record("net.sock.peer.port", remote.port());
-            span.record("net.sock.host.addr", local.ip().to_string());
-            span.record("net.sock.host.port", local.port());
+            let family = if local.is_ipv4() { "ipv4" } else { "ipv6" };
+            span.record(NETWORK_TYPE, family);
+            span.record(CLIENT_ADDRESS, remote.ip().to_string());
+            span.record(CLIENT_PORT, remote.port());
+            span.record(SERVER_ADDRESS, local.ip().to_string());
+            span.record(SERVER_PORT, local.port());
         } else {
             tracing::warn!("No HttpInfo injected in response extensions");
         }
@@ -149,8 +152,8 @@ where
     type Iter<'a> = std::array::IntoIter<KeyValue, 3>;
     fn attributes<'a>(&'a self, t: &'a Request<B>) -> Self::Iter<'a> {
         [
-            KeyValue::new("http.request.method", t.method().as_str().to_owned()),
-            KeyValue::new("network.protocol.name", "http"),
+            KeyValue::new(HTTP_REQUEST_METHOD, t.method().as_str().to_owned()),
+            KeyValue::new(NETWORK_PROTOCOL_NAME, "http"),
             KeyValue::new("mas.category", self.category.unwrap_or("UNSET")),
         ]
         .into_iter()
@@ -167,7 +170,7 @@ where
     type Iter<'a> = std::iter::Once<KeyValue>;
     fn attributes<'a>(&'a self, t: &'a Response<B>) -> Self::Iter<'a> {
         std::iter::once(KeyValue::new(
-            "http.response.status_code",
+            HTTP_RESPONSE_STATUS_CODE,
             i64::from(t.status().as_u16()),
         ))
     }

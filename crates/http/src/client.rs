@@ -22,6 +22,7 @@ use mas_tower::{
     DurationRecorderLayer, DurationRecorderService, FnWrapper, InFlightCounterLayer,
     InFlightCounterService, TraceLayer, TraceService,
 };
+use opentelemetry_semantic_conventions::trace::SERVER_ADDRESS;
 use tower::Layer;
 use tracing::Span;
 
@@ -54,9 +55,10 @@ where
     let trace_layer = TraceLayer::from_fn(
         (|request: &Name| {
             tracing::info_span!(
-                "dns.resolve",
+                "dns.lookup",
                 "otel.kind" = "client",
-                "net.host.name" = %request,
+                { SERVER_ADDRESS } = %request,
+
             )
         }) as fn(&Name) -> Span,
     );

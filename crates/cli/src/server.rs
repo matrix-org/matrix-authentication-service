@@ -42,7 +42,7 @@ use opentelemetry::{Key, KeyValue};
 use opentelemetry_http::HeaderExtractor;
 use opentelemetry_semantic_conventions::trace::{
     HTTP_REQUEST_METHOD, HTTP_RESPONSE_STATUS_CODE, HTTP_ROUTE, NETWORK_PROTOCOL_NAME,
-    NETWORK_PROTOCOL_VERSION, URL_SCHEME,
+    NETWORK_PROTOCOL_VERSION, URL_PATH, URL_QUERY, URL_SCHEME, USER_AGENT_ORIGINAL,
 };
 use rustls::ServerConfig;
 use sentry_tower::{NewSentryLayer, SentryHttpLayer};
@@ -120,30 +120,31 @@ fn make_http_span<B>(req: &Request<B>) -> Span {
         "otel.kind" = "server",
         "otel.name" = span_name,
         "otel.status_code" = tracing::field::Empty,
-        "network.protocol.name" = "http",
-        "network.protocol.version" = otel_net_protocol_version(req),
-        "http.method" = method,
-        "http.route" = tracing::field::Empty,
-        "http.response.status_code" = tracing::field::Empty,
-        "url.path" = req.uri().path(),
-        "url.query" = tracing::field::Empty,
-        "url.scheme" = otel_url_scheme(req),
-        "user_agent.original" = tracing::field::Empty,
+        { NETWORK_PROTOCOL_NAME } = "http",
+        { NETWORK_PROTOCOL_VERSION } = otel_net_protocol_version(req),
+        { HTTP_REQUEST_METHOD } = method,
+        { HTTP_ROUTE } = tracing::field::Empty,
+        { HTTP_RESPONSE_STATUS_CODE } = tracing::field::Empty,
+        { URL_PATH } = req.uri().path(),
+        { URL_QUERY } = tracing::field::Empty,
+        { URL_SCHEME } = otel_url_scheme(req),
+        { USER_AGENT_ORIGINAL } = tracing::field::Empty,
     );
 
     if let Some(route) = route.as_ref() {
-        span.record("http.route", route);
+        span.record(HTTP_ROUTE, route);
     }
 
     if let Some(query) = req.uri().query() {
-        span.record("url.query", query);
+        span.record(URL_QUERY, query);
     }
 
-    if let Some(user_agent) = req.headers().get(USER_AGENT) {
-        span.record(
-            "user_agent.original",
-            user_agent.to_str().unwrap_or("INVALID"),
-        );
+    if let Some(user_agent) = req
+        .headers()
+        .get(USER_AGENT)
+        .and_then(|ua| ua.to_str().ok())
+    {
+        span.record(USER_AGENT_ORIGINAL, user_agent);
     }
 
     // Extract the parent span context from the request headers
