@@ -90,7 +90,7 @@ default-features = false
 
 # Templates
 [workspace.dependencies.minijinja]
-version = "1.0.12"
+version = "1.0.13"
 
 # Random values
 [workspace.dependencies.rand]
