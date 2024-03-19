@@ -54,6 +54,7 @@ updates:
       storybook:
         patterns:
          - "storybook"
+         - "storybook-*"
          - "@storybook/*"
       vitest:
         patterns:
