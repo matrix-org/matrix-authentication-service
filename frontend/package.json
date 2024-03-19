@@ -16,7 +16,7 @@
     "i18n": "i18next"
   },
   "dependencies": {
-    "@fontsource/inconsolata": "^5.0.16",
+    "@fontsource/inconsolata": "^5.0.17",
     "@fontsource/inter": "^5.0.17",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-dialog": "^1.0.5",
