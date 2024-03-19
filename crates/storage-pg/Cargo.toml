@@ -13,7 +13,7 @@ workspace = true
 
 [dependencies]
 async-trait.workspace = true
-sqlx = { version = "0.7.3", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "json", "uuid", "ipnetwork"] }
+sqlx.workspace = true
 sea-query = { version = "0.30.7", features = ["derive", "attr", "with-uuid", "with-chrono", "postgres-array"] }
 sea-query-binder = { version = "0.5.0", features = ["sqlx-postgres", "with-uuid", "with-chrono", "postgres-array"] }
 chrono.workspace = true
@@ -26,7 +26,7 @@ futures-util = "0.3.30"
 rand.workspace = true
 rand_chacha = "0.3.1"
 url.workspace = true
-uuid = "1.7.0"
+uuid = "1.8.0"
 ulid = { workspace = true, features = ["uuid"] }
 
 oauth2-types.workspace = true

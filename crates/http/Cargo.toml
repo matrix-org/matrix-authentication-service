@@ -14,10 +14,10 @@ workspace = true
 [dependencies]
 bytes = "1.5.0"
 futures-util = "0.3.30"
-headers = "0.3.9"
+headers.workspace = true
 http.workspace = true
-http-body = "0.4.5"
-hyper = "0.14.27"
+http-body.workspace = true
+hyper.workspace = true
 hyper-rustls = { workspace = true, optional = true }
 opentelemetry.workspace = true
 rustls = { workspace = true, optional = true }
@@ -35,7 +35,7 @@ mas-tower = { workspace = true, optional = true }
 
 [dev-dependencies]
 anyhow.workspace = true
-tokio = { version = "1.35.1", features = ["macros", "rt"] }
+tokio = { version = "1.36.0", features = ["macros", "rt"] }
 
 [features]
 client = [

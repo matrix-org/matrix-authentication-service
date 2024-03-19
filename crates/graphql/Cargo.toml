@@ -19,7 +19,7 @@ chrono.workspace = true
 lettre = { version = "0.11.4", default-features = false  }
 serde.workspace = true
 thiserror.workspace = true
-tokio = { version = "1.35.1", features = ["sync"] }
+tokio = { version = "1.36.0", features = ["sync"] }
 tracing.workspace = true
 tower.workspace = true
 ulid.workspace = true

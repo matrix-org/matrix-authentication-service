@@ -18,7 +18,7 @@ camino.workspace = true
 clap.workspace = true
 dotenvy = "0.15.7"
 httpdate = "1.0.3"
-hyper = { version = "0.14.28", features = ["full"] }
+hyper.workspace = true
 ipnetwork = "0.20.0"
 itertools = "0.12.1"
 listenfd = "1.0.1"
@@ -26,9 +26,9 @@ rand.workspace = true
 rand_chacha = "0.3.1"
 rustls.workspace = true
 serde_json.workspace = true
-serde_yaml = "0.9.30"
-sqlx = { version = "0.7.3", features = ["runtime-tokio-rustls", "postgres"] }
-tokio = { version = "1.35.1", features = ["full"] }
+serde_yaml = "0.9.33"
+sqlx.workspace = true
+tokio = { version = "1.36.0", features = ["full"] }
 tower.workspace = true
 tower-http = { version = "0.4.4", features = ["fs"] }
 url.workspace = true

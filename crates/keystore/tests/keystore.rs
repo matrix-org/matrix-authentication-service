@@ -166,16 +166,16 @@ fn generate_sign_and_verify() {
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(42);
 
     let rsa = PrivateKey::generate_rsa(&mut rng).expect("Failed to generate RSA key");
-    insta::assert_snapshot!(rsa.to_pem(LineEnding::LF).unwrap());
+    insta::assert_snapshot!(&*rsa.to_pem(LineEnding::LF).unwrap());
 
     let ec_p256 = PrivateKey::generate_ec_p256(&mut rng);
-    insta::assert_snapshot!(ec_p256.to_pem(LineEnding::LF).unwrap());
+    insta::assert_snapshot!(&*ec_p256.to_pem(LineEnding::LF).unwrap());
 
     let ec_p384 = PrivateKey::generate_ec_p384(&mut rng);
-    insta::assert_snapshot!(ec_p384.to_pem(LineEnding::LF).unwrap());
+    insta::assert_snapshot!(&*ec_p384.to_pem(LineEnding::LF).unwrap());
 
     let ec_k256 = PrivateKey::generate_ec_k256(&mut rng);
-    insta::assert_snapshot!(ec_k256.to_pem(LineEnding::LF).unwrap());
+    insta::assert_snapshot!(&*ec_k256.to_pem(LineEnding::LF).unwrap());
 
     // Create a keystore out of the keys
     let keyset = Keystore::new(JsonWebKeySet::new(vec![
