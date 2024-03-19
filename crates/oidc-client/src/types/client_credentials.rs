@@ -21,9 +21,10 @@ use chrono::{DateTime, Duration, Utc};
 use headers::{Authorization, HeaderMapExt};
 use http::Request;
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
+#[cfg(feature = "keystore")]
+use mas_jose::constraints::Constrainable;
 use mas_jose::{
     claims::{self, ClaimError},
-    constraints::Constrainable,
     jwa::SymmetricKey,
     jwt::{JsonWebSignatureHeader, Jwt},
 };
@@ -101,6 +102,7 @@ impl JwtSigningMethod {
     pub fn jwt_custom(&self) -> Option<&JwtSigningFn> {
         match self {
             JwtSigningMethod::Custom(s) => Some(s.as_ref()),
+            #[cfg(feature = "keystore")]
             JwtSigningMethod::Keystore(_) => None,
         }
     }
