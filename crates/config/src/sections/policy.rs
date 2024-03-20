@@ -106,9 +106,7 @@ impl Default for PolicyConfig {
 
 #[async_trait]
 impl ConfigurationSection for PolicyConfig {
-    fn path() -> &'static str {
-        "policy"
-    }
+    const PATH: Option<&'static str> = Some("policy");
 
     async fn generate<R>(_rng: R) -> anyhow::Result<Self>
     where

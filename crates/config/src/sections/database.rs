@@ -146,9 +146,7 @@ pub struct DatabaseConfig {
 
 #[async_trait]
 impl ConfigurationSection for DatabaseConfig {
-    fn path() -> &'static str {
-        "database"
-    }
+    const PATH: Option<&'static str> = Some("database");
 
     async fn generate<R>(_rng: R) -> anyhow::Result<Self>
     where

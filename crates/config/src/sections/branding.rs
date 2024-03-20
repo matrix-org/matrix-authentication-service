@@ -46,9 +46,7 @@ pub struct BrandingConfig {
 
 #[async_trait]
 impl ConfigurationSection for BrandingConfig {
-    fn path() -> &'static str {
-        "branding"
-    }
+    const PATH: Option<&'static str> = Some("branding");
 
     async fn generate<R>(_rng: R) -> anyhow::Result<Self>
     where

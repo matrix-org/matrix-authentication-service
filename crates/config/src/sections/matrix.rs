@@ -50,9 +50,7 @@ pub struct MatrixConfig {
 
 #[async_trait]
 impl ConfigurationSection for MatrixConfig {
-    fn path() -> &'static str {
-        "matrix"
-    }
+    const PATH: Option<&'static str> = Some("matrix");
 
     async fn generate<R>(mut rng: R) -> anyhow::Result<Self>
     where

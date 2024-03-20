@@ -181,9 +181,7 @@ impl IntoIterator for ClientsConfig {
 
 #[async_trait]
 impl ConfigurationSection for ClientsConfig {
-    fn path() -> &'static str {
-        "clients"
-    }
+    const PATH: Option<&'static str> = Some("clients");
 
     async fn generate<R>(_rng: R) -> anyhow::Result<Self>
     where

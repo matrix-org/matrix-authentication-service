@@ -34,9 +34,7 @@ pub struct UpstreamOAuth2Config {
 
 #[async_trait]
 impl ConfigurationSection for UpstreamOAuth2Config {
-    fn path() -> &'static str {
-        "upstream_oauth2"
-    }
+    const PATH: Option<&'static str> = Some("upstream_oauth2");
 
     async fn generate<R>(_rng: R) -> anyhow::Result<Self>
     where

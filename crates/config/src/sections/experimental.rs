@@ -56,9 +56,7 @@ impl Default for ExperimentalConfig {
 
 #[async_trait]
 impl ConfigurationSection for ExperimentalConfig {
-    fn path() -> &'static str {
-        "experimental"
-    }
+    const PATH: Option<&'static str> = Some("experimental");
 
     async fn generate<R>(_rng: R) -> anyhow::Result<Self>
     where

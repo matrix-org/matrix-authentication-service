@@ -96,9 +96,7 @@ impl Default for TemplatesConfig {
 
 #[async_trait]
 impl ConfigurationSection for TemplatesConfig {
-    fn path() -> &'static str {
-        "templates"
-    }
+    const PATH: Option<&'static str> = Some("templates");
 
     async fn generate<R>(_rng: R) -> anyhow::Result<Self>
     where

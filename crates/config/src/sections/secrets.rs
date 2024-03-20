@@ -139,9 +139,7 @@ impl SecretsConfig {
 
 #[async_trait]
 impl ConfigurationSection for SecretsConfig {
-    fn path() -> &'static str {
-        "secrets"
-    }
+    const PATH: Option<&'static str> = Some("secrets");
 
     #[tracing::instrument(skip_all)]
     async fn generate<R>(mut rng: R) -> anyhow::Result<Self>
