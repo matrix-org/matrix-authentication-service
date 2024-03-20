@@ -21,7 +21,7 @@ anyhow.workspace = true
 
 camino = { workspace = true, features = ["serde1"] }
 chrono.workspace = true
-figment = { version = "0.10.15", features = ["env", "yaml", "test"] }
+figment.workspace = true
 ipnetwork = { version = "0.20.0", features = ["serde", "schemars"] }
 schemars.workspace = true
 ulid.workspace = true

@@ -13,7 +13,8 @@
 // limitations under the License.
 
 use clap::Parser;
-use mas_config::{BrandingConfig, MatrixConfig, TemplatesConfig};
+use figment::Figment;
+use mas_config::{BrandingConfig, ConfigurationSection, MatrixConfig, TemplatesConfig};
 use mas_storage::{Clock, SystemClock};
 use rand::SeedableRng;
 use tracing::info_span;
@@ -33,15 +34,15 @@ enum Subcommand {
 }
 
 impl Options {
-    pub async fn run(self, root: &super::Options) -> anyhow::Result<()> {
+    pub async fn run(self, figment: &Figment) -> anyhow::Result<()> {
         use Subcommand as SC;
         match self.subcommand {
             SC::Check => {
                 let _span = info_span!("cli.templates.check").entered();
 
-                let template_config: TemplatesConfig = root.load_config()?;
-                let branding_config: BrandingConfig = root.load_config()?;
-                let matrix_config: MatrixConfig = root.load_config()?;
+                let template_config = TemplatesConfig::extract(figment)?;
+                let branding_config = BrandingConfig::extract(figment)?;
+                let matrix_config = MatrixConfig::extract(figment)?;
 
                 let clock = SystemClock::default();
                 // XXX: we should disallow SeedableRng::from_entropy

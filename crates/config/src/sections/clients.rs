@@ -201,7 +201,10 @@ impl ConfigurationSection for ClientsConfig {
 mod tests {
     use std::str::FromStr;
 
-    use figment::Jail;
+    use figment::{
+        providers::{Format, Yaml},
+        Figment, Jail,
+    };
 
     use super::*;
 
@@ -249,7 +252,9 @@ mod tests {
                 "#,
             )?;
 
-            let config = ClientsConfig::load_from_file("config.yaml")?;
+            let config = Figment::new()
+                .merge(Yaml::file("config.yaml"))
+                .extract_inner::<ClientsConfig>("clients")?;
 
             assert_eq!(config.0.len(), 5);
 

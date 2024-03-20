@@ -19,7 +19,8 @@
 
 use anyhow::Context;
 use clap::Parser;
-use mas_config::RootConfig;
+use figment::Figment;
+use mas_config::{ConfigurationSection, RootConfig};
 use mas_handlers::HttpClientFactory;
 use mas_http::HttpServiceExt;
 use tower::{Service, ServiceExt};
@@ -34,11 +35,11 @@ pub(super) struct Options {}
 
 impl Options {
     #[allow(clippy::too_many_lines)]
-    pub async fn run(self, root: &super::Options) -> anyhow::Result<()> {
+    pub async fn run(self, figment: &Figment) -> anyhow::Result<()> {
         let _span = info_span!("cli.doctor").entered();
         info!("💡 Running diagnostics, make sure that both MAS and Synapse are running, and that MAS is using the same configuration files as this tool.");
 
-        let config: RootConfig = root.load_config()?;
+        let config = RootConfig::extract(figment)?;
 
         // We'll need an HTTP client
         let http_client_factory = HttpClientFactory::new();

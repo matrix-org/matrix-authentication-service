@@ -14,7 +14,8 @@
 
 use anyhow::Context;
 use clap::Parser;
-use mas_config::DatabaseConfig;
+use figment::Figment;
+use mas_config::{ConfigurationSection, DatabaseConfig};
 use mas_storage_pg::MIGRATOR;
 use tracing::{info_span, Instrument};
 
@@ -33,9 +34,9 @@ enum Subcommand {
 }
 
 impl Options {
-    pub async fn run(self, root: &super::Options) -> anyhow::Result<()> {
+    pub async fn run(self, figment: &Figment) -> anyhow::Result<()> {
         let _span = info_span!("cli.database.migrate").entered();
-        let config: DatabaseConfig = root.load_config()?;
+        let config = DatabaseConfig::extract(figment)?;
         let mut conn = database_connection_from_config(&config).await?;
 
         // Run pending migrations

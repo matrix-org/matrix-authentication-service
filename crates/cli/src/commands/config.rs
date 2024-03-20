@@ -15,6 +15,7 @@
 use anyhow::Context;
 use camino::Utf8PathBuf;
 use clap::Parser;
+use figment::Figment;
 use mas_config::{ConfigurationSection, RootConfig, SyncConfig};
 use mas_storage::SystemClock;
 use mas_storage_pg::MIGRATOR;
@@ -67,13 +68,13 @@ enum Subcommand {
 }
 
 impl Options {
-    pub async fn run(self, root: &super::Options) -> anyhow::Result<()> {
+    pub async fn run(self, figment: &Figment) -> anyhow::Result<()> {
         use Subcommand as SC;
         match self.subcommand {
             SC::Dump { output } => {
                 let _span = info_span!("cli.config.dump").entered();
 
-                let config: RootConfig = root.load_config()?;
+                let config = RootConfig::extract(figment)?;
                 let config = serde_yaml::to_string(&config)?;
 
                 if let Some(output) = output {
@@ -89,8 +90,8 @@ impl Options {
             SC::Check => {
                 let _span = info_span!("cli.config.check").entered();
 
-                let _config: RootConfig = root.load_config()?;
-                info!(path = ?root.config, "Configuration file looks good");
+                let _config = RootConfig::extract(figment)?;
+                info!("Configuration file looks good");
             }
 
             SC::Generate { output } => {
@@ -98,7 +99,7 @@ impl Options {
 
                 // XXX: we should disallow SeedableRng::from_entropy
                 let rng = rand_chacha::ChaChaRng::from_entropy();
-                let config = RootConfig::load_and_generate(rng).await?;
+                let config = RootConfig::generate(rng).await?;
                 let config = serde_yaml::to_string(&config)?;
 
                 if let Some(output) = output {
@@ -112,7 +113,7 @@ impl Options {
             }
 
             SC::Sync { prune, dry_run } => {
-                let config: SyncConfig = root.load_config()?;
+                let config = SyncConfig::extract(figment)?;
                 let clock = SystemClock::default();
                 let encrypter = config.secrets.encrypter();
 

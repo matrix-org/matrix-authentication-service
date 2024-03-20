@@ -3023,6 +3023,7 @@ dependencies = [
  "camino",
  "clap",
  "dotenvy",
+ "figment",
  "httpdate",
  "hyper",
  "ipnetwork",

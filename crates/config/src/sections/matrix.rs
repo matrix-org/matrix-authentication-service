@@ -76,7 +76,10 @@ impl ConfigurationSection for MatrixConfig {
 
 #[cfg(test)]
 mod tests {
-    use figment::Jail;
+    use figment::{
+        providers::{Format, Yaml},
+        Figment, Jail,
+    };
 
     use super::*;
 
@@ -92,10 +95,12 @@ mod tests {
                 ",
             )?;
 
-            let config = MatrixConfig::load_from_file("config.yaml")?;
+            let config = Figment::new()
+                .merge(Yaml::file("config.yaml"))
+                .extract_inner::<MatrixConfig>("matrix")?;
 
-            assert_eq!(config.homeserver, "matrix.org".to_owned());
-            assert_eq!(config.secret, "test".to_owned());
+            assert_eq!(&config.homeserver, "matrix.org");
+            assert_eq!(&config.secret, "test");
 
             Ok(())
         });
