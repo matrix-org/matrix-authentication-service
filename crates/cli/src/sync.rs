@@ -259,10 +259,10 @@ pub async fn config_sync(
                 continue;
             }
 
-            let client_secret = client.client_secret();
+            let client_secret = client.client_secret.as_deref();
             let client_auth_method = client.client_auth_method();
-            let jwks = client.jwks();
-            let jwks_uri = client.jwks_uri();
+            let jwks = client.jwks.as_ref();
+            let jwks_uri = client.jwks_uri.as_ref();
 
             // TODO: should be moved somewhere else
             let encrypted_client_secret = client_secret
