@@ -394,9 +394,7 @@ impl Default for HttpConfig {
 
 #[async_trait]
 impl ConfigurationSection for HttpConfig {
-    fn path() -> &'static str {
-        "http"
-    }
+    const PATH: Option<&'static str> = Some("http");
 
     async fn generate<R>(_rng: R) -> anyhow::Result<Self>
     where

@@ -57,9 +57,7 @@ impl Default for PasswordsConfig {
 
 #[async_trait]
 impl ConfigurationSection for PasswordsConfig {
-    fn path() -> &'static str {
-        "passwords"
-    }
+    const PATH: Option<&'static str> = Some("passwords");
 
     async fn generate<R>(_rng: R) -> anyhow::Result<Self>
     where

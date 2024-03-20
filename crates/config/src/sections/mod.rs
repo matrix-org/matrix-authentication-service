@@ -116,10 +116,6 @@ pub struct RootConfig {
 
 #[async_trait]
 impl ConfigurationSection for RootConfig {
-    fn path() -> &'static str {
-        ""
-    }
-
     async fn generate<R>(mut rng: R) -> anyhow::Result<Self>
     where
         R: Rng + Send,
@@ -195,10 +191,6 @@ pub struct AppConfig {
 
 #[async_trait]
 impl ConfigurationSection for AppConfig {
-    fn path() -> &'static str {
-        ""
-    }
-
     async fn generate<R>(mut rng: R) -> anyhow::Result<Self>
     where
         R: Rng + Send,
@@ -251,10 +243,6 @@ pub struct SyncConfig {
 
 #[async_trait]
 impl ConfigurationSection for SyncConfig {
-    fn path() -> &'static str {
-        ""
-    }
-
     async fn generate<R>(mut rng: R) -> anyhow::Result<Self>
     where
         R: Rng + Send,

@@ -22,7 +22,7 @@ use serde::{de::DeserializeOwned, Serialize};
 /// of the config and generate the sample config.
 pub trait ConfigurationSection: Sized + DeserializeOwned + Serialize {
     /// Specify where this section should live relative to the root.
-    fn path() -> &'static str;
+    const PATH: Option<&'static str> = None;
 
     /// Generate a sample configuration for this section.
     async fn generate<R>(rng: R) -> anyhow::Result<Self>
@@ -35,7 +35,11 @@ pub trait ConfigurationSection: Sized + DeserializeOwned + Serialize {
     ///
     /// Returns an error if the configuration could not be loaded
     fn extract(figment: &Figment) -> Result<Self, FigmentError> {
-        figment.extract_inner(Self::path())
+        if let Some(path) = Self::PATH {
+            figment.extract_inner(path)
+        } else {
+            figment.extract()
+        }
     }
 
     /// Generate config used in unit tests

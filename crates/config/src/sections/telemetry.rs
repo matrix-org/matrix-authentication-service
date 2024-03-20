@@ -145,9 +145,7 @@ pub struct TelemetryConfig {
 
 #[async_trait]
 impl ConfigurationSection for TelemetryConfig {
-    fn path() -> &'static str {
-        "telemetry"
-    }
+    const PATH: Option<&'static str> = Some("telemetry");
 
     async fn generate<R>(_rng: R) -> anyhow::Result<Self>
     where

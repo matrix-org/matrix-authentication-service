@@ -128,9 +128,7 @@ impl Default for EmailConfig {
 
 #[async_trait]
 impl ConfigurationSection for EmailConfig {
-    fn path() -> &'static str {
-        "email"
-    }
+    const PATH: Option<&'static str> = Some("email");
 
     async fn generate<R>(_rng: R) -> anyhow::Result<Self>
     where
