@@ -164,7 +164,10 @@ impl ConfigurationSection for DatabaseConfig {
 
 #[cfg(test)]
 mod tests {
-    use figment::Jail;
+    use figment::{
+        providers::{Format, Yaml},
+        Figment, Jail,
+    };
 
     use super::*;
 
@@ -179,7 +182,9 @@ mod tests {
                 ",
             )?;
 
-            let config = DatabaseConfig::load_from_file("config.yaml")?;
+            let config = Figment::new()
+                .merge(Yaml::file("config.yaml"))
+                .extract_inner::<DatabaseConfig>("database")?;
 
             assert_eq!(
                 config.options,

@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use anyhow::Context;
 use camino::Utf8PathBuf;
 use clap::Parser;
-use mas_config::ConfigurationSection;
+use figment::{
+    providers::{Env, Format, Yaml},
+    Figment,
+};
 
 mod config;
 mod database;
@@ -65,22 +67,23 @@ pub struct Options {
 }
 
 impl Options {
-    pub async fn run(mut self) -> anyhow::Result<()> {
+    pub async fn run(self, figment: &Figment) -> anyhow::Result<()> {
         use Subcommand as S;
-        match self.subcommand.take() {
-            Some(S::Config(c)) => c.run(&self).await,
-            Some(S::Database(c)) => c.run(&self).await,
-            Some(S::Server(c)) => c.run(&self).await,
-            Some(S::Worker(c)) => c.run(&self).await,
-            Some(S::Manage(c)) => c.run(&self).await,
-            Some(S::Templates(c)) => c.run(&self).await,
-            Some(S::Debug(c)) => c.run(&self).await,
-            Some(S::Doctor(c)) => c.run(&self).await,
-            None => self::server::Options::default().run(&self).await,
+        match self.subcommand {
+            Some(S::Config(c)) => c.run(figment).await,
+            Some(S::Database(c)) => c.run(figment).await,
+            Some(S::Server(c)) => c.run(figment).await,
+            Some(S::Worker(c)) => c.run(figment).await,
+            Some(S::Manage(c)) => c.run(figment).await,
+            Some(S::Templates(c)) => c.run(figment).await,
+            Some(S::Debug(c)) => c.run(figment).await,
+            Some(S::Doctor(c)) => c.run(figment).await,
+            None => self::server::Options::default().run(figment).await,
         }
     }
 
-    pub fn load_config<T: ConfigurationSection>(&self) -> anyhow::Result<T> {
+    /// Get a [`Figment`] instance with the configuration loaded
+    pub fn figment(&self) -> Figment {
         let configs = if self.config.is_empty() {
             // Read the MAS_CONFIG environment variable
             std::env::var("MAS_CONFIG")
@@ -93,7 +96,10 @@ impl Options {
         } else {
             self.config.clone()
         };
+        let base = Figment::new().merge(Env::prefixed("MAS_").split("_"));
 
-        T::load_from_files(&configs).context("could not load configuration")
+        configs
+            .into_iter()
+            .fold(base, |f, path| f.merge(Yaml::file(path)))
     }
 }

@@ -13,8 +13,9 @@
 // limitations under the License.
 
 use clap::Parser;
+use figment::Figment;
 use hyper::{Response, Uri};
-use mas_config::PolicyConfig;
+use mas_config::{ConfigurationSection, PolicyConfig};
 use mas_handlers::HttpClientFactory;
 use mas_http::HttpServiceExt;
 use tokio::io::AsyncWriteExt;
@@ -65,7 +66,7 @@ fn print_headers(parts: &hyper::http::response::Parts) {
 
 impl Options {
     #[tracing::instrument(skip_all)]
-    pub async fn run(self, root: &super::Options) -> anyhow::Result<()> {
+    pub async fn run(self, figment: &Figment) -> anyhow::Result<()> {
         use Subcommand as SC;
         let http_client_factory = HttpClientFactory::new();
         match self.subcommand {
@@ -120,7 +121,7 @@ impl Options {
 
             SC::Policy => {
                 let _span = info_span!("cli.debug.policy").entered();
-                let config: PolicyConfig = root.load_config()?;
+                let config = PolicyConfig::extract(figment)?;
                 info!("Loading and compiling the policy module");
                 let policy_factory = policy_factory_from_config(&config).await?;
 

@@ -17,6 +17,7 @@ axum = "0.6.20"
 camino.workspace = true
 clap.workspace = true
 dotenvy = "0.15.7"
+figment.workspace = true
 httpdate = "1.0.3"
 hyper.workspace = true
 ipnetwork = "0.20.0"

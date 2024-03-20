@@ -18,7 +18,7 @@ use std::{io::IsTerminal, sync::Arc};
 
 use anyhow::Context;
 use clap::Parser;
-use mas_config::TelemetryConfig;
+use mas_config::{ConfigurationSection, TelemetryConfig};
 use sentry_tracing::EventFilter;
 use tracing_subscriber::{
     filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer, Registry,
@@ -67,10 +67,13 @@ async fn try_main() -> anyhow::Result<()> {
     // Parse the CLI arguments
     let opts = self::commands::Options::parse();
 
+    // Load the base configuration files
+    let figment = opts.figment();
+
     // Telemetry config could fail to load, but that's probably OK, since the whole
     // config will be loaded afterwards, and crash if there is a problem.
     // Falling back to default.
-    let telemetry_config: TelemetryConfig = opts.load_config().unwrap_or_default();
+    let telemetry_config = TelemetryConfig::extract(&figment).unwrap_or_default();
 
     // Setup Sentry
     let sentry = sentry::init((
@@ -126,7 +129,7 @@ async fn try_main() -> anyhow::Result<()> {
 
     // And run the command
     tracing::trace!(?opts, "Running command");
-    opts.run().await?;
+    opts.run(&figment).await?;
 
     Ok(())
 }

@@ -13,7 +13,8 @@
 // limitations under the License.
 
 use clap::Parser;
-use mas_config::AppConfig;
+use figment::Figment;
+use mas_config::{AppConfig, ConfigurationSection};
 use mas_handlers::HttpClientFactory;
 use mas_matrix_synapse::SynapseConnection;
 use mas_router::UrlBuilder;
@@ -29,9 +30,9 @@ use crate::util::{database_pool_from_config, mailer_from_config, templates_from_
 pub(super) struct Options {}
 
 impl Options {
-    pub async fn run(self, root: &super::Options) -> anyhow::Result<()> {
+    pub async fn run(self, figment: &Figment) -> anyhow::Result<()> {
         let span = info_span!("cli.worker.init").entered();
-        let config: AppConfig = root.load_config()?;
+        let config = AppConfig::extract(figment)?;
 
         // Connect to the database
         info!("Connecting to the database");

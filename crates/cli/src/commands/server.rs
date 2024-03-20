@@ -16,8 +16,9 @@ use std::{collections::BTreeSet, sync::Arc, time::Duration};
 
 use anyhow::Context;
 use clap::Parser;
+use figment::Figment;
 use itertools::Itertools;
-use mas_config::AppConfig;
+use mas_config::{AppConfig, ClientsConfig, ConfigurationSection, UpstreamOAuth2Config};
 use mas_handlers::{ActivityTracker, CookieManager, HttpClientFactory, MetadataCache, SiteConfig};
 use mas_listener::{server::Server, shutdown::ShutdownStream};
 use mas_matrix_synapse::SynapseConnection;
@@ -63,9 +64,9 @@ pub(super) struct Options {
 
 impl Options {
     #[allow(clippy::too_many_lines)]
-    pub async fn run(self, root: &super::Options) -> anyhow::Result<()> {
+    pub async fn run(self, figment: &Figment) -> anyhow::Result<()> {
         let span = info_span!("cli.run.init").entered();
-        let config: AppConfig = root.load_config()?;
+        let config = AppConfig::extract(figment)?;
 
         if self.migrate {
             warn!("The `--migrate` flag is deprecated and will be removed in a future release. Please use `--no-migrate` to disable automatic migrations on startup.");
@@ -101,8 +102,8 @@ impl Options {
         } else {
             // Sync the configuration with the database
             let mut conn = pool.acquire().await?;
-            let clients_config = root.load_config()?;
-            let upstream_oauth2_config = root.load_config()?;
+            let clients_config = ClientsConfig::extract(figment)?;
+            let upstream_oauth2_config = UpstreamOAuth2Config::extract(figment)?;
 
             crate::sync::config_sync(
                 upstream_oauth2_config,

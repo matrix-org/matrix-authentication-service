@@ -14,7 +14,8 @@
 
 use anyhow::Context;
 use clap::Parser;
-use mas_config::{DatabaseConfig, PasswordsConfig};
+use figment::Figment;
+use mas_config::{ConfigurationSection, DatabaseConfig, PasswordsConfig};
 use mas_data_model::{Device, TokenType};
 use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatSessionRepository},
@@ -89,7 +90,7 @@ enum Subcommand {
 
 impl Options {
     #[allow(clippy::too_many_lines)]
-    pub async fn run(self, root: &super::Options) -> anyhow::Result<()> {
+    pub async fn run(self, figment: &Figment) -> anyhow::Result<()> {
         use Subcommand as SC;
         let clock = SystemClock::default();
         // XXX: we should disallow SeedableRng::from_entropy
@@ -100,8 +101,8 @@ impl Options {
                 let _span =
                     info_span!("cli.manage.set_password", user.username = %username).entered();
 
-                let database_config: DatabaseConfig = root.load_config()?;
-                let passwords_config: PasswordsConfig = root.load_config()?;
+                let database_config = DatabaseConfig::extract(figment)?;
+                let passwords_config = PasswordsConfig::extract(figment)?;
 
                 let mut conn = database_connection_from_config(&database_config).await?;
                 let password_manager = password_manager_from_config(&passwords_config).await?;
@@ -136,7 +137,7 @@ impl Options {
                 )
                 .entered();
 
-                let database_config: DatabaseConfig = root.load_config()?;
+                let database_config = DatabaseConfig::extract(figment)?;
                 let mut conn = database_connection_from_config(&database_config).await?;
                 let txn = conn.begin().await?;
                 let mut repo = PgRepository::from_conn(txn);
@@ -170,7 +171,7 @@ impl Options {
                 admin,
                 device_id,
             } => {
-                let database_config: DatabaseConfig = root.load_config()?;
+                let database_config = DatabaseConfig::extract(figment)?;
                 let mut conn = database_connection_from_config(&database_config).await?;
                 let txn = conn.begin().await?;
                 let mut repo = PgRepository::from_conn(txn);
@@ -215,7 +216,7 @@ impl Options {
 
             SC::ProvisionAllUsers => {
                 let _span = info_span!("cli.manage.provision_all_users").entered();
-                let database_config: DatabaseConfig = root.load_config()?;
+                let database_config = DatabaseConfig::extract(figment)?;
                 let mut conn = database_connection_from_config(&database_config).await?;
                 let mut txn = conn.begin().await?;
 
@@ -241,7 +242,7 @@ impl Options {
             SC::KillSessions { username, dry_run } => {
                 let _span =
                     info_span!("cli.manage.kill_sessions", user.username = username).entered();
-                let database_config: DatabaseConfig = root.load_config()?;
+                let database_config = DatabaseConfig::extract(figment)?;
                 let mut conn = database_connection_from_config(&database_config).await?;
                 let txn = conn.begin().await?;
                 let mut repo = PgRepository::from_conn(txn);
@@ -361,7 +362,7 @@ impl Options {
                 deactivate,
             } => {
                 let _span = info_span!("cli.manage.lock_user", user.username = username).entered();
-                let config: DatabaseConfig = root.load_config()?;
+                let config = DatabaseConfig::extract(figment)?;
                 let mut conn = database_connection_from_config(&config).await?;
                 let txn = conn.begin().await?;
                 let mut repo = PgRepository::from_conn(txn);
@@ -393,7 +394,7 @@ impl Options {
 
             SC::UnlockUser { username } => {
                 let _span = info_span!("cli.manage.lock_user", user.username = username).entered();
-                let config: DatabaseConfig = root.load_config()?;
+                let config = DatabaseConfig::extract(figment)?;
                 let mut conn = database_connection_from_config(&config).await?;
                 let txn = conn.begin().await?;
                 let mut repo = PgRepository::from_conn(txn);

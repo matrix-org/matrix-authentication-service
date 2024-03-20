@@ -12,14 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use anyhow::Context;
 use async_trait::async_trait;
-use camino::Utf8Path;
-use figment::{
-    error::Error as FigmentError,
-    providers::{Env, Format, Serialized, Yaml},
-    Figment, Profile,
-};
+use figment::{error::Error as FigmentError, Figment};
 use rand::Rng;
 use serde::{de::DeserializeOwned, Serialize};
 
@@ -35,64 +29,13 @@ pub trait ConfigurationSection: Sized + DeserializeOwned + Serialize {
     where
         R: Rng + Send;
 
-    /// Generate a sample configuration and override it with environment
-    /// variables.
-    ///
-    /// This is what backs the `config generate` subcommand, allowing to
-    /// programmatically generate a configuration file, e.g.
-    ///
-    /// ```sh
-    /// export MAS_OAUTH2_ISSUER=https://example.com/
-    /// export MAS_HTTP_ADDRESS=127.0.0.1:1234
-    /// matrix-authentication-service config generate
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the configuration could not be generated or if the
-    /// existing configuration could not be loaded
-    async fn load_and_generate<R>(rng: R) -> anyhow::Result<Self>
-    where
-        R: Rng + Send,
-    {
-        let base = Self::generate(rng)
-            .await
-            .context("could not generate configuration")?;
-
-        Figment::new()
-            .merge(Serialized::from(&base, Profile::Default))
-            .merge(Env::prefixed("MAS_").split("_"))
-            .extract_inner(Self::path())
-            .context("could not load configuration")
-    }
-
-    /// Load configuration from a list of files and environment variables.
+    /// Extract configuration from a Figment instance.
     ///
     /// # Errors
     ///
     /// Returns an error if the configuration could not be loaded
-    fn load_from_files<P>(paths: &[P]) -> Result<Self, FigmentError>
-    where
-        P: AsRef<Utf8Path>,
-    {
-        let base = Figment::new().merge(Env::prefixed("MAS_").split("_"));
-
-        paths
-            .iter()
-            .fold(base, |f, path| f.merge(Yaml::file(path.as_ref())))
-            .extract_inner(Self::path())
-    }
-
-    /// Load configuration from a file and environment variables.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the configuration could not be loaded
-    fn load_from_file<P>(path: P) -> Result<Self, FigmentError>
-    where
-        P: AsRef<Utf8Path>,
-    {
-        Self::load_from_files(&[path])
+    fn extract(figment: &Figment) -> Result<Self, FigmentError> {
+        figment.extract_inner(Self::path())
     }
 
     /// Generate config used in unit tests
