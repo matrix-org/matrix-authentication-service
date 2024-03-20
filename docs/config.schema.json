@@ -1016,60 +1016,44 @@
     "DatabaseConfig": {
       "description": "Database connection configuration",
       "type": "object",
-      "anyOf": [
-        {
-          "description": "Connect via a full URI",
-          "type": "object",
-          "properties": {
-            "uri": {
-              "description": "Connection URI",
-              "default": "postgresql://",
-              "type": "string",
-              "format": "uri"
-            }
-          }
-        },
-        {
-          "description": "Connect via a map of options",
-          "type": "object",
-          "properties": {
-            "host": {
-              "description": "Name of host to connect to",
-              "default": null,
-              "type": "string",
-              "format": "hostname"
-            },
-            "port": {
-              "description": "Port number to connect at the server host",
-              "default": null,
-              "type": "integer",
-              "maximum": 65535.0,
-              "minimum": 1.0
-            },
-            "socket": {
-              "description": "Directory containing the UNIX socket to connect to",
-              "default": null,
-              "type": "string"
-            },
-            "username": {
-              "description": "PostgreSQL user name to connect as",
-              "default": null,
-              "type": "string"
-            },
-            "password": {
-              "description": "Password to be used if the server demands password authentication",
-              "default": null,
-              "type": "string"
-            },
-            "database": {
-              "description": "The database name",
-              "default": null,
-              "type": "string"
-            }
-          }
-        }
-      ],
       "properties": {
+        "uri": {
+          "description": "Connection URI\n\nThis must not be specified if `host`, `port`, `socket`, `username`, `password`, or `database` are specified.",
+          "default": "postgresql://",
+          "type": "string",
+          "format": "uri"
+        },
+        "host": {
+          "description": "Name of host to connect to\n\nThis must not be specified if `uri` is specified.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Hostname"
+            }
+          ]
+        },
+        "port": {
+          "description": "Port number to connect at the server host\n\nThis must not be specified if `uri` is specified.",
+          "type": "integer",
+          "format": "uint16",
+          "maximum": 65535.0,
+          "minimum": 1.0
+        },
+        "socket": {
+          "description": "Directory containing the UNIX socket to connect to\n\nThis must not be specified if `uri` is specified.",
+          "type": "string"
+        },
+        "username": {
+          "description": "PostgreSQL user name to connect as\n\nThis must not be specified if `uri` is specified.",
+          "type": "string"
+        },
+        "password": {
+          "description": "Password to be used if the server demands password authentication\n\nThis must not be specified if `uri` is specified.",
+          "type": "string"
+        },
+        "database": {
+          "description": "The database name\n\nThis must not be specified if `uri` is specified.",
+          "type": "string"
+        },
         "max_connections": {
           "description": "Set the maximum number of connections the pool should maintain",
           "default": 10,
@@ -1106,6 +1090,10 @@
           "minimum": 0.0
         }
       }
+    },
+    "Hostname": {
+      "type": "string",
+      "format": "hostname"
     },
     "TelemetryConfig": {
       "description": "Configuration related to sending monitoring data",
@@ -1401,8 +1389,11 @@
             },
             "hostname": {
               "description": "Hostname to connect to",
-              "type": "string",
-              "format": "hostname"
+              "allOf": [
+                {
+                  "$ref": "#/definitions/Hostname"
+                }
+              ]
             },
             "port": {
               "description": "Port to connect to. Default is 25 for plain, 465 for TLS and 587 for StartTLS",

@@ -16,8 +16,8 @@ use std::time::Duration;
 
 use anyhow::Context;
 use mas_config::{
-    BrandingConfig, DatabaseConfig, DatabaseConnectConfig, EmailConfig, EmailSmtpMode,
-    EmailTransportConfig, PasswordsConfig, PolicyConfig, TemplatesConfig,
+    BrandingConfig, DatabaseConfig, EmailConfig, EmailSmtpMode, EmailTransportConfig,
+    PasswordsConfig, PolicyConfig, TemplatesConfig,
 };
 use mas_email::{MailTransport, Mailer};
 use mas_handlers::{passwords::PasswordManager, ActivityTracker};
@@ -151,47 +151,37 @@ pub async fn templates_from_config(
 fn database_connect_options_from_config(
     config: &DatabaseConfig,
 ) -> Result<PgConnectOptions, anyhow::Error> {
-    let options = match &config.options {
-        DatabaseConnectConfig::Uri { uri } => uri
-            .parse()
-            .context("could not parse database connection string")?,
-        DatabaseConnectConfig::Options {
-            host,
-            port,
-            socket,
-            username,
-            password,
-            database,
-        } => {
-            let mut opts =
-                PgConnectOptions::new().application_name("matrix-authentication-service");
+    let options = if let Some(uri) = config.uri.as_deref() {
+        uri.parse()
+            .context("could not parse database connection string")?
+    } else {
+        let mut opts = PgConnectOptions::new().application_name("matrix-authentication-service");
 
-            if let Some(host) = host {
-                opts = opts.host(host);
-            }
-
-            if let Some(port) = port {
-                opts = opts.port(*port);
-            }
-
-            if let Some(socket) = socket {
-                opts = opts.socket(socket);
-            }
-
-            if let Some(username) = username {
-                opts = opts.username(username);
-            }
-
-            if let Some(password) = password {
-                opts = opts.password(password);
-            }
-
-            if let Some(database) = database {
-                opts = opts.database(database);
-            }
-
-            opts
+        if let Some(host) = config.host.as_deref() {
+            opts = opts.host(host);
         }
+
+        if let Some(port) = config.port {
+            opts = opts.port(port);
+        }
+
+        if let Some(socket) = config.socket.as_deref() {
+            opts = opts.socket(socket);
+        }
+
+        if let Some(username) = config.username.as_deref() {
+            opts = opts.username(username);
+        }
+
+        if let Some(password) = config.password.as_deref() {
+            opts = opts.password(password);
+        }
+
+        if let Some(database) = config.database.as_deref() {
+            opts = opts.database(database);
+        }
+
+        opts
     };
 
     let options = options

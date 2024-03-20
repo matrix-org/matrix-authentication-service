@@ -19,13 +19,14 @@ use camino::Utf8PathBuf;
 use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, skip_serializing_none};
+use serde_with::serde_as;
 
 use super::ConfigurationSection;
 use crate::schema;
 
-fn default_connection_string() -> String {
-    "postgresql://".to_owned()
+#[allow(clippy::unnecessary_wraps)]
+fn default_connection_string() -> Option<String> {
+    Some("postgresql://".to_owned())
 }
 
 fn default_max_connections() -> NonZeroU32 {
@@ -49,7 +50,13 @@ fn default_max_lifetime() -> Option<Duration> {
 impl Default for DatabaseConfig {
     fn default() -> Self {
         Self {
-            options: ConnectConfig::default(),
+            uri: default_connection_string(),
+            host: None,
+            port: None,
+            socket: None,
+            username: None,
+            password: None,
+            database: None,
             max_connections: default_max_connections(),
             min_connections: Default::default(),
             connect_timeout: default_connect_timeout(),
@@ -60,62 +67,55 @@ impl Default for DatabaseConfig {
 }
 
 /// Database connection configuration
-#[derive(Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
-#[serde(untagged)]
-pub enum ConnectConfig {
-    /// Connect via a full URI
-    Uri {
-        /// Connection URI
-        #[schemars(url, default = "default_connection_string")]
-        uri: String,
-    },
-    /// Connect via a map of options
-    Options {
-        /// Name of host to connect to
-        #[schemars(schema_with = "schema::hostname")]
-        #[serde(default)]
-        host: Option<String>,
-
-        /// Port number to connect at the server host
-        #[schemars(schema_with = "schema::port")]
-        #[serde(default)]
-        port: Option<u16>,
-
-        /// Directory containing the UNIX socket to connect to
-        #[serde(default)]
-        #[schemars(with = "Option<String>")]
-        socket: Option<Utf8PathBuf>,
-
-        /// PostgreSQL user name to connect as
-        #[serde(default)]
-        username: Option<String>,
-
-        /// Password to be used if the server demands password authentication
-        #[serde(default)]
-        password: Option<String>,
-
-        /// The database name
-        #[serde(default)]
-        database: Option<String>,
-    },
-}
-
-impl Default for ConnectConfig {
-    fn default() -> Self {
-        Self::Uri {
-            uri: default_connection_string(),
-        }
-    }
-}
-
-/// Database connection configuration
 #[serde_as]
-#[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct DatabaseConfig {
-    /// Options related to how to connect to the database
-    #[serde(default, flatten)]
-    pub options: ConnectConfig,
+    /// Connection URI
+    ///
+    /// This must not be specified if `host`, `port`, `socket`, `username`,
+    /// `password`, or `database` are specified.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(url, default = "default_connection_string")]
+    pub uri: Option<String>,
+
+    /// Name of host to connect to
+    ///
+    /// This must not be specified if `uri` is specified.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(with = "Option::<schema::Hostname>")]
+    pub host: Option<String>,
+
+    /// Port number to connect at the server host
+    ///
+    /// This must not be specified if `uri` is specified.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(range(min = 1, max = 65535))]
+    pub port: Option<u16>,
+
+    /// Directory containing the UNIX socket to connect to
+    ///
+    /// This must not be specified if `uri` is specified.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(with = "Option<String>")]
+    pub socket: Option<Utf8PathBuf>,
+
+    /// PostgreSQL user name to connect as
+    ///
+    /// This must not be specified if `uri` is specified.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub username: Option<String>,
+
+    /// Password to be used if the server demands password authentication
+    ///
+    /// This must not be specified if `uri` is specified.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub password: Option<String>,
+
+    /// The database name
+    ///
+    /// This must not be specified if `uri` is specified.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub database: Option<String>,
 
     /// Set the maximum number of connections the pool should maintain
     #[serde(default = "default_max_connections")]
@@ -133,13 +133,19 @@ pub struct DatabaseConfig {
 
     /// Set a maximum idle duration for individual connections
     #[schemars(with = "Option<u64>")]
-    #[serde(default = "default_idle_timeout")]
+    #[serde(
+        default = "default_idle_timeout",
+        skip_serializing_if = "Option::is_none"
+    )]
     #[serde_as(as = "Option<serde_with::DurationSeconds<u64>>")]
     pub idle_timeout: Option<Duration>,
 
     /// Set the maximum lifetime of individual connections
     #[schemars(with = "u64")]
-    #[serde(default = "default_max_lifetime")]
+    #[serde(
+        default = "default_max_lifetime",
+        skip_serializing_if = "Option::is_none"
+    )]
     #[serde_as(as = "Option<serde_with::DurationSeconds<u64>>")]
     pub max_lifetime: Option<Duration>,
 }
@@ -153,6 +159,31 @@ impl ConfigurationSection for DatabaseConfig {
         R: Rng + Send,
     {
         Ok(Self::default())
+    }
+
+    fn validate(&self, figment: &figment::Figment) -> Result<(), figment::error::Error> {
+        let metadata = figment.find_metadata(Self::PATH.unwrap());
+
+        // Check that the user did not specify both `uri` and the split options at the
+        // same time
+        let has_split_options = self.host.is_some()
+            || self.port.is_some()
+            || self.socket.is_some()
+            || self.username.is_some()
+            || self.password.is_some()
+            || self.database.is_some();
+
+        if self.uri.is_some() && has_split_options {
+            let mut error = figment::error::Error::from(
+                "uri must not be specified if host, port, socket, username, password, or database are specified".to_owned(),
+            );
+            error.metadata = metadata.cloned();
+            error.profile = Some(figment::Profile::Default);
+            error.path = vec![Self::PATH.unwrap().to_owned(), "uri".to_owned()];
+            return Err(error);
+        }
+
+        Ok(())
     }
 
     fn test() -> Self {
@@ -185,10 +216,8 @@ mod tests {
                 .extract_inner::<DatabaseConfig>("database")?;
 
             assert_eq!(
-                config.options,
-                ConnectConfig::Uri {
-                    uri: "postgresql://user:password@host/database".to_string()
-                }
+                config.uri.as_deref(),
+                Some("postgresql://user:password@host/database")
             );
 
             Ok(())

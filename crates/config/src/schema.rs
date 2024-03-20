@@ -16,36 +16,27 @@
 
 use schemars::{
     gen::SchemaGenerator,
-    schema::{InstanceType, NumberValidation, Schema, SchemaObject},
+    schema::{InstanceType, Schema, SchemaObject},
+    JsonSchema,
 };
 
-/// A network port
-pub fn port(_gen: &mut SchemaGenerator) -> Schema {
-    Schema::Object(SchemaObject {
-        instance_type: Some(InstanceType::Integer.into()),
-        number: Some(Box::new(NumberValidation {
-            minimum: Some(1.0),
-            maximum: Some(65535.0),
-            ..NumberValidation::default()
-        })),
-        ..SchemaObject::default()
-    })
+/// A network hostname
+pub struct Hostname;
+
+impl JsonSchema for Hostname {
+    fn schema_name() -> String {
+        "Hostname".to_string()
+    }
+
+    fn json_schema(gen: &mut SchemaGenerator) -> Schema {
+        hostname(gen)
+    }
 }
 
-/// A network hostname
-pub fn hostname(_gen: &mut SchemaGenerator) -> Schema {
+fn hostname(_gen: &mut SchemaGenerator) -> Schema {
     Schema::Object(SchemaObject {
         instance_type: Some(InstanceType::String.into()),
         format: Some("hostname".to_owned()),
-        ..SchemaObject::default()
-    })
-}
-
-/// An email address
-pub fn mailbox(_gen: &mut SchemaGenerator) -> Schema {
-    Schema::Object(SchemaObject {
-        instance_type: Some(InstanceType::String.into()),
-        format: Some("email".to_owned()),
         ..SchemaObject::default()
     })
 }

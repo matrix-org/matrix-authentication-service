@@ -34,7 +34,7 @@ mod upstream_oauth2;
 pub use self::{
     branding::BrandingConfig,
     clients::{ClientAuthMethodConfig, ClientConfig, ClientsConfig},
-    database::{ConnectConfig as DatabaseConnectConfig, DatabaseConfig},
+    database::DatabaseConfig,
     email::{EmailConfig, EmailSmtpMode, EmailTransportConfig},
     experimental::ExperimentalConfig,
     http::{
@@ -137,6 +137,24 @@ impl ConfigurationSection for RootConfig {
         })
     }
 
+    fn validate(&self, figment: &figment::Figment) -> Result<(), figment::error::Error> {
+        self.clients.validate(figment)?;
+        self.http.validate(figment)?;
+        self.database.validate(figment)?;
+        self.telemetry.validate(figment)?;
+        self.templates.validate(figment)?;
+        self.email.validate(figment)?;
+        self.passwords.validate(figment)?;
+        self.secrets.validate(figment)?;
+        self.matrix.validate(figment)?;
+        self.policy.validate(figment)?;
+        self.upstream_oauth2.validate(figment)?;
+        self.branding.validate(figment)?;
+        self.experimental.validate(figment)?;
+
+        Ok(())
+    }
+
     fn test() -> Self {
         Self {
             clients: ClientsConfig::test(),
@@ -207,6 +225,21 @@ impl ConfigurationSection for AppConfig {
             branding: BrandingConfig::generate(&mut rng).await?,
             experimental: ExperimentalConfig::generate(&mut rng).await?,
         })
+    }
+
+    fn validate(&self, figment: &figment::Figment) -> Result<(), figment::error::Error> {
+        self.http.validate(figment)?;
+        self.database.validate(figment)?;
+        self.templates.validate(figment)?;
+        self.email.validate(figment)?;
+        self.passwords.validate(figment)?;
+        self.secrets.validate(figment)?;
+        self.matrix.validate(figment)?;
+        self.policy.validate(figment)?;
+        self.branding.validate(figment)?;
+        self.experimental.validate(figment)?;
+
+        Ok(())
     }
 
     fn test() -> Self {

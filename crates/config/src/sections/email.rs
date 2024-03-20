@@ -59,7 +59,7 @@ pub enum EmailTransportConfig {
         mode: EmailSmtpMode,
 
         /// Hostname to connect to
-        #[schemars(schema_with = "crate::schema::hostname")]
+        #[schemars(with = "crate::schema::Hostname")]
         hostname: String,
 
         /// Port to connect to. Default is 25 for plain, 465 for TLS and 587 for
@@ -103,12 +103,12 @@ fn default_sendmail_command() -> String {
 pub struct EmailConfig {
     /// Email address to use as From when sending emails
     #[serde(default = "default_email")]
-    #[schemars(schema_with = "crate::schema::mailbox")]
+    #[schemars(email)]
     pub from: String,
 
     /// Email address to use as Reply-To when sending emails
     #[serde(default = "default_email")]
-    #[schemars(schema_with = "crate::schema::mailbox")]
+    #[schemars(email)]
     pub reply_to: String,
 
     /// What backend should be used when sending emails
