@@ -29,17 +29,29 @@ pub trait ConfigurationSection: Sized + DeserializeOwned + Serialize {
     where
         R: Rng + Send;
 
+    /// Validate the configuration section
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the configuration is invalid
+    fn validate(&self, _figment: &Figment) -> Result<(), FigmentError> {
+        Ok(())
+    }
+
     /// Extract configuration from a Figment instance.
     ///
     /// # Errors
     ///
     /// Returns an error if the configuration could not be loaded
     fn extract(figment: &Figment) -> Result<Self, FigmentError> {
-        if let Some(path) = Self::PATH {
-            figment.extract_inner(path)
+        let this: Self = if let Some(path) = Self::PATH {
+            figment.extract_inner(path)?
         } else {
-            figment.extract()
-        }
+            figment.extract()?
+        };
+
+        this.validate(figment)?;
+        Ok(this)
     }
 
     /// Generate config used in unit tests

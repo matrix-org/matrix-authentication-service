@@ -239,126 +239,8 @@
     "ClientConfig": {
       "description": "An OAuth 2.0 client configuration",
       "type": "object",
-      "oneOf": [
-        {
-          "description": "`none`: No authentication",
-          "type": "object",
-          "required": [
-            "client_auth_method"
-          ],
-          "properties": {
-            "client_auth_method": {
-              "type": "string",
-              "enum": [
-                "none"
-              ]
-            }
-          }
-        },
-        {
-          "description": "`client_secret_basic`: `client_id` and `client_secret` used as basic authorization credentials",
-          "type": "object",
-          "required": [
-            "client_auth_method",
-            "client_secret"
-          ],
-          "properties": {
-            "client_auth_method": {
-              "type": "string",
-              "enum": [
-                "client_secret_basic"
-              ]
-            },
-            "client_secret": {
-              "description": "The client secret",
-              "type": "string"
-            }
-          }
-        },
-        {
-          "description": "`client_secret_post`: `client_id` and `client_secret` sent in the request body",
-          "type": "object",
-          "required": [
-            "client_auth_method",
-            "client_secret"
-          ],
-          "properties": {
-            "client_auth_method": {
-              "type": "string",
-              "enum": [
-                "client_secret_post"
-              ]
-            },
-            "client_secret": {
-              "description": "The client secret",
-              "type": "string"
-            }
-          }
-        },
-        {
-          "description": "`client_secret_basic`: a `client_assertion` sent in the request body and signed using the `client_secret`",
-          "type": "object",
-          "required": [
-            "client_auth_method",
-            "client_secret"
-          ],
-          "properties": {
-            "client_auth_method": {
-              "type": "string",
-              "enum": [
-                "client_secret_jwt"
-              ]
-            },
-            "client_secret": {
-              "description": "The client secret",
-              "type": "string"
-            }
-          }
-        },
-        {
-          "description": "`client_secret_basic`: a `client_assertion` sent in the request body and signed by an asymmetric key",
-          "type": "object",
-          "oneOf": [
-            {
-              "type": "object",
-              "required": [
-                "jwks"
-              ],
-              "properties": {
-                "jwks": {
-                  "$ref": "#/definitions/JsonWebKeySet_for_JsonWebKeyPublicParameters"
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "required": [
-                "jwks_uri"
-              ],
-              "properties": {
-                "jwks_uri": {
-                  "type": "string",
-                  "format": "uri"
-                }
-              },
-              "additionalProperties": false
-            }
-          ],
-          "required": [
-            "client_auth_method"
-          ],
-          "properties": {
-            "client_auth_method": {
-              "type": "string",
-              "enum": [
-                "private_key_jwt"
-              ]
-            }
-          }
-        }
-      ],
       "required": [
+        "client_auth_method",
         "client_id"
       ],
       "properties": {
@@ -367,9 +249,33 @@
           "type": "string",
           "pattern": "^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{26}$"
         },
+        "client_auth_method": {
+          "description": "Authentication method used for this client",
+          "allOf": [
+            {
+              "$ref": "#/definitions/ClientAuthMethodConfig"
+            }
+          ]
+        },
+        "client_secret": {
+          "description": "The client secret, used by the `client_secret_basic`, `client_secret_post` and `client_secret_jwt` authentication methods",
+          "type": "string"
+        },
+        "jwks": {
+          "description": "The JSON Web Key Set (JWKS) used by the `private_key_jwt` authentication method. Mutually exclusive with `jwks_uri`",
+          "allOf": [
+            {
+              "$ref": "#/definitions/JsonWebKeySet_for_JsonWebKeyPublicParameters"
+            }
+          ]
+        },
+        "jwks_uri": {
+          "description": "The URL of the JSON Web Key Set (JWKS) used by the `private_key_jwt` authentication method. Mutually exclusive with `jwks`",
+          "type": "string",
+          "format": "uri"
+        },
         "redirect_uris": {
           "description": "List of allowed redirect URIs",
-          "default": [],
           "type": "array",
           "items": {
             "type": "string",
@@ -377,6 +283,46 @@
           }
         }
       }
+    },
+    "ClientAuthMethodConfig": {
+      "description": "Authentication method used by clients",
+      "oneOf": [
+        {
+          "description": "`none`: No authentication",
+          "type": "string",
+          "enum": [
+            "none"
+          ]
+        },
+        {
+          "description": "`client_secret_basic`: `client_id` and `client_secret` used as basic authorization credentials",
+          "type": "string",
+          "enum": [
+            "client_secret_basic"
+          ]
+        },
+        {
+          "description": "`client_secret_post`: `client_id` and `client_secret` sent in the request body",
+          "type": "string",
+          "enum": [
+            "client_secret_post"
+          ]
+        },
+        {
+          "description": "`client_secret_basic`: a `client_assertion` sent in the request body and signed using the `client_secret`",
+          "type": "string",
+          "enum": [
+            "client_secret_jwt"
+          ]
+        },
+        {
+          "description": "`client_secret_basic`: a `client_assertion` sent in the request body and signed by an asymmetric key",
+          "type": "string",
+          "enum": [
+            "private_key_jwt"
+          ]
+        }
+      ]
     },
     "JsonWebKeySet_for_JsonWebKeyPublicParameters": {
       "type": "object",
