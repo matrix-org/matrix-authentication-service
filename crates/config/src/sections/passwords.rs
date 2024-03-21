@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::borrow::Cow;
-
 use anyhow::bail;
 use async_trait::async_trait;
 use camino::Utf8PathBuf;
@@ -27,7 +25,9 @@ fn default_schemes() -> Vec<HashingScheme> {
     vec![HashingScheme {
         version: 1,
         algorithm: Algorithm::Argon2id,
+        cost: None,
         secret: None,
+        secret_file: None,
     }]
 }
 
@@ -66,6 +66,36 @@ impl ConfigurationSection for PasswordsConfig {
         Ok(Self::default())
     }
 
+    fn validate(&self, figment: &figment::Figment) -> Result<(), figment::Error> {
+        let annotate = |mut error: figment::Error| {
+            error.metadata = figment.find_metadata(Self::PATH.unwrap()).cloned();
+            error.profile = Some(figment::Profile::Default);
+            error.path = vec![Self::PATH.unwrap().to_owned()];
+            Err(error)
+        };
+
+        if !self.enabled {
+            // Skip validation if password-based authentication is disabled
+            return Ok(());
+        }
+
+        if self.schemes.is_empty() {
+            return annotate(figment::Error::from(
+                "Requires at least one password scheme in the config".to_owned(),
+            ));
+        }
+
+        for scheme in &self.schemes {
+            if scheme.secret.is_some() && scheme.secret_file.is_some() {
+                return annotate(figment::Error::from(
+                    "Cannot specify both `secret` and `secret_file`".to_owned(),
+                ));
+            }
+        }
+
+        Ok(())
+    }
+
     fn test() -> Self {
         Self::default()
     }
@@ -84,7 +114,9 @@ impl PasswordsConfig {
     ///
     /// Returns an error if the config is invalid, or if the secret file could
     /// not be read.
-    pub async fn load(&self) -> Result<Vec<(u16, Algorithm, Option<Vec<u8>>)>, anyhow::Error> {
+    pub async fn load(
+        &self,
+    ) -> Result<Vec<(u16, Algorithm, Option<u32>, Option<Vec<u8>>)>, anyhow::Error> {
         let mut schemes: Vec<&HashingScheme> = self.schemes.iter().collect();
         schemes.sort_unstable_by_key(|a| a.version);
         schemes.dedup_by_key(|a| a.version);
@@ -102,13 +134,17 @@ impl PasswordsConfig {
         let mut mapped_result = Vec::with_capacity(schemes.len());
 
         for scheme in schemes {
-            let secret = if let Some(secret_or_file) = &scheme.secret {
-                Some(secret_or_file.load().await?.into_owned())
-            } else {
-                None
+            let secret = match (&scheme.secret, &scheme.secret_file) {
+                (Some(secret), None) => Some(secret.clone().into_bytes()),
+                (None, Some(secret_file)) => {
+                    let secret = tokio::fs::read(secret_file).await?;
+                    Some(secret)
+                }
+                (Some(_), Some(_)) => bail!("Cannot specify both `secret` and `secret_file`"),
+                (None, None) => None,
             };
 
-            mapped_result.push((scheme.version, scheme.algorithm, secret));
+            mapped_result.push((scheme.version, scheme.algorithm, scheme.cost, secret));
         }
 
         Ok(mapped_result)
@@ -116,50 +152,35 @@ impl PasswordsConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum SecretOrFile {
-    Secret(String),
-    #[schemars(with = "String")]
-    SecretFile(Utf8PathBuf),
-}
-
-impl SecretOrFile {
-    async fn load(&self) -> Result<Cow<'_, [u8]>, std::io::Error> {
-        match self {
-            Self::Secret(secret) => Ok(Cow::Borrowed(secret.as_bytes())),
-            Self::SecretFile(path) => {
-                let secret = tokio::fs::read(path).await?;
-                Ok(Cow::Owned(secret))
-            }
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct HashingScheme {
     version: u16,
 
-    #[serde(flatten)]
     algorithm: Algorithm,
 
-    #[serde(flatten)]
-    secret: Option<SecretOrFile>,
+    /// Cost for the bcrypt algorithm
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(default = "default_bcrypt_cost")]
+    cost: Option<u32>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    secret: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(with = "Option<String>")]
+    secret_file: Option<Utf8PathBuf>,
 }
 
-fn default_bcrypt_cost() -> u32 {
-    12
+#[allow(clippy::unnecessary_wraps)]
+fn default_bcrypt_cost() -> Option<u32> {
+    Some(12)
 }
 
 /// A hashing algorithm
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "lowercase", tag = "algorithm")]
+#[serde(rename_all = "lowercase")]
 pub enum Algorithm {
     /// bcrypt
-    Bcrypt {
-        /// Hashing cost
-        #[serde(default = "default_bcrypt_cost")]
-        cost: u32,
-    },
+    Bcrypt,
 
     /// argon2id
     Argon2id,
