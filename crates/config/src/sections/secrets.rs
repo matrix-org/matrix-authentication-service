@@ -14,7 +14,7 @@
 
 use std::borrow::Cow;
 
-use anyhow::Context;
+use anyhow::{bail, Context};
 use async_trait::async_trait;
 use camino::Utf8PathBuf;
 use mas_jose::jwk::{JsonWebKey, JsonWebKeySet};
@@ -36,30 +36,22 @@ fn example_secret() -> &'static str {
 }
 
 #[derive(JsonSchema, Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
-pub enum KeyOrFile {
-    Key(String),
-    #[schemars(with = "String")]
-    KeyFile(Utf8PathBuf),
-}
-
-#[derive(JsonSchema, Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
-pub enum PasswordOrFile {
-    Password(String),
-    #[schemars(with = "String")]
-    PasswordFile(Utf8PathBuf),
-}
-
-#[derive(JsonSchema, Serialize, Deserialize, Clone, Debug)]
 pub struct KeyConfig {
     kid: String,
 
-    #[serde(flatten)]
-    password: Option<PasswordOrFile>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    password: Option<String>,
 
-    #[serde(flatten)]
-    key: KeyOrFile,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(with = "Option<String>")]
+    password_file: Option<Utf8PathBuf>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    key: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(with = "Option<String>")]
+    key_file: Option<Utf8PathBuf>,
 }
 
 /// Application secrets
@@ -90,17 +82,20 @@ impl SecretsConfig {
     pub async fn key_store(&self) -> anyhow::Result<Keystore> {
         let mut keys = Vec::with_capacity(self.keys.len());
         for item in &self.keys {
-            let password = match &item.password {
-                Some(PasswordOrFile::Password(password)) => Some(Cow::Borrowed(password.as_str())),
-                Some(PasswordOrFile::PasswordFile(path)) => {
-                    Some(Cow::Owned(tokio::fs::read_to_string(path).await?))
+            let password = match (&item.password, &item.password_file) {
+                (None, None) => None,
+                (Some(_), Some(_)) => {
+                    bail!("Cannot specify both `password` and `password_file`")
                 }
-                None => None,
+                (Some(password), None) => Some(Cow::Borrowed(password)),
+                (None, Some(path)) => Some(Cow::Owned(tokio::fs::read_to_string(path).await?)),
             };
 
             // Read the key either embedded in the config file or on disk
-            let key = match &item.key {
-                KeyOrFile::Key(key) => {
+            let key = match (&item.key, &item.key_file) {
+                (None, None) => bail!("Missing `key` or `key_file`"),
+                (Some(_), Some(_)) => bail!("Cannot specify both `key` and `key_file`"),
+                (Some(key), None) => {
                     // If the key was embedded in the config file, assume it is formatted as PEM
                     if let Some(password) = password {
                         PrivateKey::load_encrypted_pem(key, password.as_bytes())?
@@ -108,7 +103,7 @@ impl SecretsConfig {
                         PrivateKey::load_pem(key)?
                     }
                 }
-                KeyOrFile::KeyFile(path) => {
+                (None, Some(path)) => {
                     // When reading from disk, it might be either PEM or DER. `PrivateKey::load*`
                     // will try both.
                     let key = tokio::fs::read(path).await?;
@@ -161,7 +156,9 @@ impl ConfigurationSection for SecretsConfig {
         let rsa_key = KeyConfig {
             kid: Alphanumeric.sample_string(&mut rng, 10),
             password: None,
-            key: KeyOrFile::Key(rsa_key.to_pem(pem_rfc7468::LineEnding::LF)?.to_string()),
+            password_file: None,
+            key: Some(rsa_key.to_pem(pem_rfc7468::LineEnding::LF)?.to_string()),
+            key_file: None,
         };
 
         let span = tracing::info_span!("ec_p256");
@@ -177,7 +174,9 @@ impl ConfigurationSection for SecretsConfig {
         let ec_p256_key = KeyConfig {
             kid: Alphanumeric.sample_string(&mut rng, 10),
             password: None,
-            key: KeyOrFile::Key(ec_p256_key.to_pem(pem_rfc7468::LineEnding::LF)?.to_string()),
+            password_file: None,
+            key: Some(ec_p256_key.to_pem(pem_rfc7468::LineEnding::LF)?.to_string()),
+            key_file: None,
         };
 
         let span = tracing::info_span!("ec_p384");
@@ -193,7 +192,9 @@ impl ConfigurationSection for SecretsConfig {
         let ec_p384_key = KeyConfig {
             kid: Alphanumeric.sample_string(&mut rng, 10),
             password: None,
-            key: KeyOrFile::Key(ec_p384_key.to_pem(pem_rfc7468::LineEnding::LF)?.to_string()),
+            password_file: None,
+            key: Some(ec_p384_key.to_pem(pem_rfc7468::LineEnding::LF)?.to_string()),
+            key_file: None,
         };
 
         let span = tracing::info_span!("ec_k256");
@@ -209,7 +210,9 @@ impl ConfigurationSection for SecretsConfig {
         let ec_k256_key = KeyConfig {
             kid: Alphanumeric.sample_string(&mut rng, 10),
             password: None,
-            key: KeyOrFile::Key(ec_k256_key.to_pem(pem_rfc7468::LineEnding::LF)?.to_string()),
+            password_file: None,
+            key: Some(ec_k256_key.to_pem(pem_rfc7468::LineEnding::LF)?.to_string()),
+            key_file: None,
         };
 
         Ok(Self {
@@ -218,11 +221,49 @@ impl ConfigurationSection for SecretsConfig {
         })
     }
 
+    fn validate(&self, figment: &figment::Figment) -> Result<(), figment::Error> {
+        for (index, key) in self.keys.iter().enumerate() {
+            let annotate = |mut error: figment::Error| {
+                error.metadata = figment
+                    .find_metadata(&format!("{root}.keys", root = Self::PATH.unwrap()))
+                    .cloned();
+                error.profile = Some(figment::Profile::Default);
+                error.path = vec![
+                    Self::PATH.unwrap().to_owned(),
+                    "keys".to_owned(),
+                    index.to_string(),
+                ];
+                Err(error)
+            };
+
+            if key.key.is_none() && key.key_file.is_none() {
+                return annotate(figment::Error::from(
+                    "Missing `key` or `key_file`".to_owned(),
+                ));
+            }
+
+            if key.key.is_some() && key.key_file.is_some() {
+                return annotate(figment::Error::from(
+                    "Cannot specify both `key` and `key_file`".to_owned(),
+                ));
+            }
+
+            if key.password.is_some() && key.password_file.is_some() {
+                return annotate(figment::Error::from(
+                    "Cannot specify both `password` and `password_file`".to_owned(),
+                ));
+            }
+        }
+
+        Ok(())
+    }
+
     fn test() -> Self {
         let rsa_key = KeyConfig {
             kid: "abcdef".to_owned(),
             password: None,
-            key: KeyOrFile::Key(
+            password_file: None,
+            key: Some(
                 indoc::indoc! {r"
                   -----BEGIN PRIVATE KEY-----
                   MIIBVQIBADANBgkqhkiG9w0BAQEFAASCAT8wggE7AgEAAkEAymS2RkeIZo7pUeEN
@@ -237,11 +278,13 @@ impl ConfigurationSection for SecretsConfig {
                 "}
                 .to_owned(),
             ),
+            key_file: None,
         };
         let ecdsa_key = KeyConfig {
             kid: "ghijkl".to_owned(),
             password: None,
-            key: KeyOrFile::Key(
+            password_file: None,
+            key: Some(
                 indoc::indoc! {r"
                   -----BEGIN PRIVATE KEY-----
                   MIGEAgEAMBAGByqGSM49AgEGBSuBBAAKBG0wawIBAQQgqfn5mYO/5Qq/wOOiWgHA
@@ -251,6 +294,7 @@ impl ConfigurationSection for SecretsConfig {
                 "}
                 .to_owned(),
             ),
+            key_file: None,
         };
 
         Self {
