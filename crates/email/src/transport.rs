@@ -92,10 +92,13 @@ impl Transport {
 
     /// Construct a Sendmail transport
     #[must_use]
-    pub fn sendmail(command: impl Into<OsString>) -> Self {
-        Self::new(TransportInner::Sendmail(
-            AsyncSendmailTransport::new_with_command(command),
-        ))
+    pub fn sendmail(command: Option<impl Into<OsString>>) -> Self {
+        let transport = if let Some(command) = command {
+            AsyncSendmailTransport::new_with_command(command)
+        } else {
+            AsyncSendmailTransport::new()
+        };
+        Self::new(TransportInner::Sendmail(transport))
     }
 }
 

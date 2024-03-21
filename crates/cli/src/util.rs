@@ -16,7 +16,7 @@ use std::time::Duration;
 
 use anyhow::Context;
 use mas_config::{
-    BrandingConfig, DatabaseConfig, EmailConfig, EmailSmtpMode, EmailTransportConfig,
+    BrandingConfig, DatabaseConfig, EmailConfig, EmailSmtpMode, EmailTransportKind,
     PasswordsConfig, PolicyConfig, TemplatesConfig,
 };
 use mas_email::{MailTransport, Mailer};
@@ -61,17 +61,28 @@ pub fn mailer_from_config(
 ) -> Result<Mailer, anyhow::Error> {
     let from = config.from.parse()?;
     let reply_to = config.reply_to.parse()?;
-    let transport = match &config.transport {
-        EmailTransportConfig::Blackhole => MailTransport::blackhole(),
-        EmailTransportConfig::Smtp {
-            mode,
-            hostname,
-            credentials,
-            port,
-        } => {
-            let credentials = credentials
-                .clone()
-                .map(|c| mas_email::SmtpCredentials::new(c.username, c.password));
+    let transport = match config.transport() {
+        EmailTransportKind::Blackhole => MailTransport::blackhole(),
+        EmailTransportKind::Smtp => {
+            // This should have been set ahead of time
+            let hostname = config
+                .hostname()
+                .context("invalid configuration: missing hostname")?;
+
+            let mode = config
+                .mode()
+                .context("invalid configuration: missing mode")?;
+
+            let credentials = match (config.username(), config.password()) {
+                (Some(username), Some(password)) => Some(mas_email::SmtpCredentials::new(
+                    username.to_owned(),
+                    password.to_owned(),
+                )),
+                (None, None) => None,
+                _ => {
+                    anyhow::bail!("invalid configuration: missing username or password");
+                }
+            };
 
             let mode = match mode {
                 EmailSmtpMode::Plain => mas_email::SmtpMode::Plain,
@@ -79,12 +90,10 @@ pub fn mailer_from_config(
                 EmailSmtpMode::Tls => mas_email::SmtpMode::Tls,
             };
 
-            MailTransport::smtp(mode, hostname, port.as_ref().copied(), credentials)
+            MailTransport::smtp(mode, hostname, config.port(), credentials)
                 .context("failed to build SMTP transport")?
         }
-        EmailTransportConfig::Sendmail { command } => MailTransport::sendmail(command),
-        #[allow(deprecated)]
-        EmailTransportConfig::AwsSes => anyhow::bail!("AWS SESv2 backend has been removed"),
+        EmailTransportKind::Sendmail => MailTransport::sendmail(config.command()),
     };
 
     Ok(Mailer::new(templates.clone(), transport, from, reply_to))
