@@ -1532,63 +1532,9 @@
       }
     },
     "HashingScheme": {
-      "description": "A hashing algorithm",
       "type": "object",
-      "oneOf": [
-        {
-          "description": "bcrypt",
-          "type": "object",
-          "required": [
-            "algorithm"
-          ],
-          "properties": {
-            "algorithm": {
-              "type": "string",
-              "enum": [
-                "bcrypt"
-              ]
-            },
-            "cost": {
-              "description": "Hashing cost",
-              "default": 12,
-              "type": "integer",
-              "format": "uint32",
-              "minimum": 0.0
-            }
-          }
-        },
-        {
-          "description": "argon2id",
-          "type": "object",
-          "required": [
-            "algorithm"
-          ],
-          "properties": {
-            "algorithm": {
-              "type": "string",
-              "enum": [
-                "argon2id"
-              ]
-            }
-          }
-        },
-        {
-          "description": "PBKDF2",
-          "type": "object",
-          "required": [
-            "algorithm"
-          ],
-          "properties": {
-            "algorithm": {
-              "type": "string",
-              "enum": [
-                "pbkdf2"
-              ]
-            }
-          }
-        }
-      ],
       "required": [
+        "algorithm",
         "version"
       ],
       "properties": {
@@ -1596,8 +1542,50 @@
           "type": "integer",
           "format": "uint16",
           "minimum": 0.0
+        },
+        "algorithm": {
+          "$ref": "#/definitions/Algorithm"
+        },
+        "cost": {
+          "description": "Cost for the bcrypt algorithm",
+          "default": 12,
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "secret": {
+          "type": "string"
+        },
+        "secret_file": {
+          "type": "string"
         }
       }
+    },
+    "Algorithm": {
+      "description": "A hashing algorithm",
+      "oneOf": [
+        {
+          "description": "bcrypt",
+          "type": "string",
+          "enum": [
+            "bcrypt"
+          ]
+        },
+        {
+          "description": "argon2id",
+          "type": "string",
+          "enum": [
+            "argon2id"
+          ]
+        },
+        {
+          "description": "PBKDF2",
+          "type": "string",
+          "enum": [
+            "pbkdf2"
+          ]
+        }
+      ]
     },
     "MatrixConfig": {
       "description": "Configuration related to the Matrix homeserver",

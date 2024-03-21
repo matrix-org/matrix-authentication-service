@@ -53,7 +53,7 @@ impl PasswordManager {
     /// PasswordManager::new([
     ///     (3, Hasher::argon2id(Some(b"a-secret-pepper".to_vec()))),
     ///     (2, Hasher::argon2id(None)),
-    ///     (1, Hasher::bcrypt(10, None)),
+    ///     (1, Hasher::bcrypt(Some(10), None)),
     /// ]).unwrap();
     /// ```
     ///
@@ -216,7 +216,7 @@ pub struct Hasher {
 impl Hasher {
     /// Creates a new hashing scheme based on the bcrypt algorithm
     #[must_use]
-    pub const fn bcrypt(cost: u32, pepper: Option<Vec<u8>>) -> Self {
+    pub const fn bcrypt(cost: Option<u32>, pepper: Option<Vec<u8>>) -> Self {
         let algorithm = Algorithm::Bcrypt { cost };
         Self { algorithm, pepper }
     }
@@ -252,7 +252,7 @@ impl Hasher {
 
 #[derive(Debug, Clone, Copy)]
 enum Algorithm {
-    Bcrypt { cost: u32 },
+    Bcrypt { cost: Option<u32> },
     Argon2id,
     Pbkdf2,
 }
@@ -273,7 +273,7 @@ impl Algorithm {
 
                 let salt = rng.gen();
 
-                let hashed = bcrypt::hash_with_salt(password, cost, salt)?;
+                let hashed = bcrypt::hash_with_salt(password, cost.unwrap_or(12), salt)?;
                 Ok(hashed.format_for_version(bcrypt::Version::TwoB))
             }
 
@@ -369,7 +369,7 @@ mod tests {
         let pepper = b"a-secret-pepper";
         let pepper2 = b"the-wrong-pepper";
 
-        let alg = Algorithm::Bcrypt { cost: 10 };
+        let alg = Algorithm::Bcrypt { cost: Some(10) };
         // Hash with a pepper
         let hash = alg
             .hash_blocking(&mut rng, password, Some(pepper))
@@ -454,6 +454,7 @@ mod tests {
         assert!(alg.verify_blocking(&hash, password, Some(pepper)).is_err());
     }
 
+    #[allow(clippy::too_many_lines)]
     #[tokio::test]
     async fn hash_verify_and_upgrade() {
         // Tests the whole password manager, by hashing a password and upgrading it
@@ -465,7 +466,10 @@ mod tests {
 
         let manager = PasswordManager::new([
             // Start with one hashing scheme: the one used by synapse, bcrypt + pepper
-            (1, Hasher::bcrypt(10, Some(b"a-secret-pepper".to_vec()))),
+            (
+                1,
+                Hasher::bcrypt(Some(10), Some(b"a-secret-pepper".to_vec())),
+            ),
         ])
         .unwrap();
 
@@ -511,7 +515,10 @@ mod tests {
 
         let manager = PasswordManager::new([
             (2, Hasher::argon2id(None)),
-            (1, Hasher::bcrypt(10, Some(b"a-secret-pepper".to_vec()))),
+            (
+                1,
+                Hasher::bcrypt(Some(10), Some(b"a-secret-pepper".to_vec())),
+            ),
         ])
         .unwrap();
 
@@ -562,7 +569,10 @@ mod tests {
         let manager = PasswordManager::new([
             (3, Hasher::argon2id(Some(b"a-secret-pepper".to_vec()))),
             (2, Hasher::argon2id(None)),
-            (1, Hasher::bcrypt(10, Some(b"a-secret-pepper".to_vec()))),
+            (
+                1,
+                Hasher::bcrypt(Some(10), Some(b"a-secret-pepper".to_vec())),
+            ),
         ])
         .unwrap();
 

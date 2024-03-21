@@ -41,11 +41,11 @@ pub async fn password_manager_from_config(
         .load()
         .await?
         .into_iter()
-        .map(|(version, algorithm, secret)| {
+        .map(|(version, algorithm, cost, secret)| {
             use mas_handlers::passwords::Hasher;
             let hasher = match algorithm {
                 mas_config::PasswordAlgorithm::Pbkdf2 => Hasher::pbkdf2(secret),
-                mas_config::PasswordAlgorithm::Bcrypt { cost } => Hasher::bcrypt(cost, secret),
+                mas_config::PasswordAlgorithm::Bcrypt => Hasher::bcrypt(cost, secret),
                 mas_config::PasswordAlgorithm::Argon2id => Hasher::argon2id(secret),
             };
 
