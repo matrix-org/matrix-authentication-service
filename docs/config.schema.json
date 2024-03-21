@@ -1348,105 +1348,8 @@
     "EmailConfig": {
       "description": "Configuration related to sending emails",
       "type": "object",
-      "oneOf": [
-        {
-          "description": "Don't send emails anywhere",
-          "type": "object",
-          "required": [
-            "transport"
-          ],
-          "properties": {
-            "transport": {
-              "type": "string",
-              "enum": [
-                "blackhole"
-              ]
-            }
-          }
-        },
-        {
-          "description": "Send emails via an SMTP relay",
-          "type": "object",
-          "required": [
-            "hostname",
-            "mode",
-            "transport"
-          ],
-          "properties": {
-            "transport": {
-              "type": "string",
-              "enum": [
-                "smtp"
-              ]
-            },
-            "mode": {
-              "description": "Connection mode to the relay",
-              "allOf": [
-                {
-                  "$ref": "#/definitions/EmailSmtpMode"
-                }
-              ]
-            },
-            "hostname": {
-              "description": "Hostname to connect to",
-              "allOf": [
-                {
-                  "$ref": "#/definitions/Hostname"
-                }
-              ]
-            },
-            "port": {
-              "description": "Port to connect to. Default is 25 for plain, 465 for TLS and 587 for StartTLS",
-              "type": "integer",
-              "format": "uint16",
-              "minimum": 1.0
-            },
-            "username": {
-              "description": "Username for use to authenticate when connecting to the SMTP server",
-              "type": "string"
-            },
-            "password": {
-              "description": "Password for use to authenticate when connecting to the SMTP server",
-              "type": "string"
-            }
-          }
-        },
-        {
-          "description": "Send emails by calling sendmail",
-          "type": "object",
-          "required": [
-            "transport"
-          ],
-          "properties": {
-            "transport": {
-              "type": "string",
-              "enum": [
-                "sendmail"
-              ]
-            },
-            "command": {
-              "description": "Command to execute",
-              "default": "sendmail",
-              "type": "string"
-            }
-          }
-        },
-        {
-          "description": "Send emails via the AWS SESv2 API",
-          "deprecated": true,
-          "type": "object",
-          "required": [
-            "transport"
-          ],
-          "properties": {
-            "transport": {
-              "type": "string",
-              "enum": [
-                "aws_ses"
-              ]
-            }
-          }
-        }
+      "required": [
+        "transport"
       ],
       "properties": {
         "from": {
@@ -1460,8 +1363,78 @@
           "default": "\"Authentication Service\" <root@localhost>",
           "type": "string",
           "format": "email"
+        },
+        "transport": {
+          "description": "What backend should be used when sending emails",
+          "allOf": [
+            {
+              "$ref": "#/definitions/EmailTransportKind"
+            }
+          ]
+        },
+        "mode": {
+          "description": "SMTP transport: Connection mode to the relay",
+          "allOf": [
+            {
+              "$ref": "#/definitions/EmailSmtpMode"
+            }
+          ]
+        },
+        "hostname": {
+          "description": "SMTP transport: Hostname to connect to",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Hostname"
+            }
+          ]
+        },
+        "port": {
+          "description": "SMTP transport: Port to connect to. Default is 25 for plain, 465 for TLS and 587 for StartTLS",
+          "type": "integer",
+          "format": "uint16",
+          "maximum": 65535.0,
+          "minimum": 1.0
+        },
+        "username": {
+          "description": "SMTP transport: Username for use to authenticate when connecting to the SMTP server\n\nMust be set if the `password` field is set",
+          "type": "string"
+        },
+        "password": {
+          "description": "SMTP transport: Password for use to authenticate when connecting to the SMTP server\n\nMust be set if the `username` field is set",
+          "type": "string"
+        },
+        "command": {
+          "description": "Sendmail transport: Command to use to send emails",
+          "default": "sendmail",
+          "type": "string"
         }
       }
+    },
+    "EmailTransportKind": {
+      "description": "What backend should be used when sending emails",
+      "oneOf": [
+        {
+          "description": "Don't send emails anywhere",
+          "type": "string",
+          "enum": [
+            "blackhole"
+          ]
+        },
+        {
+          "description": "Send emails via an SMTP relay",
+          "type": "string",
+          "enum": [
+            "smtp"
+          ]
+        },
+        {
+          "description": "Send emails by calling sendmail",
+          "type": "string",
+          "enum": [
+            "sendmail"
+          ]
+        }
+      ]
     },
     "EmailSmtpMode": {
       "description": "Encryption mode to use",

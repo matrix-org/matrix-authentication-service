@@ -35,7 +35,7 @@ pub use self::{
     branding::BrandingConfig,
     clients::{ClientAuthMethodConfig, ClientConfig, ClientsConfig},
     database::DatabaseConfig,
-    email::{EmailConfig, EmailSmtpMode, EmailTransportConfig},
+    email::{EmailConfig, EmailSmtpMode, EmailTransportKind},
     experimental::ExperimentalConfig,
     http::{
         BindConfig as HttpBindConfig, HttpConfig, ListenerConfig as HttpListenerConfig,
