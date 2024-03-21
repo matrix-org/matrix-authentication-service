@@ -46,8 +46,8 @@ pub use self::{
     policy::PolicyConfig,
     secrets::SecretsConfig,
     telemetry::{
-        MetricsConfig, MetricsExporterConfig, Propagator, TelemetryConfig, TracingConfig,
-        TracingExporterConfig,
+        MetricsConfig, MetricsExporterKind, Propagator, TelemetryConfig, TracingConfig,
+        TracingExporterKind,
     },
     templates::TemplatesConfig,
     upstream_oauth2::{

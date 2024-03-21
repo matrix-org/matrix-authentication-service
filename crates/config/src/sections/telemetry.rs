@@ -35,42 +35,38 @@ pub enum Propagator {
     Jaeger,
 }
 
-fn otlp_endpoint_example() -> &'static str {
-    "https://localhost:4318"
+#[allow(clippy::unnecessary_wraps)]
+fn otlp_endpoint_default() -> Option<String> {
+    Some("https://localhost:4318".to_owned())
 }
 
 /// Exporter to use when exporting traces
 #[skip_serializing_none]
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(tag = "exporter", rename_all = "lowercase", deny_unknown_fields)]
-pub enum TracingExporterConfig {
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, JsonSchema, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum TracingExporterKind {
     /// Don't export traces
+    #[default]
     None,
 
     /// Export traces to the standard output. Only useful for debugging
     Stdout,
 
     /// Export traces to an OpenTelemetry protocol compatible endpoint
-    Otlp {
-        /// OTLP compatible endpoint
-        #[schemars(url, example = "otlp_endpoint_example")]
-        #[serde(default)]
-        endpoint: Option<Url>,
-    },
-}
-
-impl Default for TracingExporterConfig {
-    fn default() -> Self {
-        Self::None
-    }
+    Otlp,
 }
 
 /// Configuration related to exporting traces
 #[derive(Clone, Debug, Default, Serialize, Deserialize, JsonSchema)]
 pub struct TracingConfig {
     /// Exporter to use when exporting traces
-    #[serde(default, flatten)]
-    pub exporter: TracingExporterConfig,
+    #[serde(default)]
+    pub exporter: TracingExporterKind,
+
+    /// OTLP exporter: OTLP over HTTP compatible endpoint
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(url, default = "otlp_endpoint_default")]
+    pub endpoint: Option<Url>,
 
     /// List of propagation formats to use for incoming and outgoing requests
     pub propagators: Vec<Propagator>,
@@ -78,40 +74,35 @@ pub struct TracingConfig {
 
 /// Exporter to use when exporting metrics
 #[skip_serializing_none]
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(tag = "exporter", rename_all = "lowercase")]
-pub enum MetricsExporterConfig {
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, JsonSchema, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum MetricsExporterKind {
     /// Don't export metrics
+    #[default]
     None,
 
     /// Export metrics to stdout. Only useful for debugging
     Stdout,
 
     /// Export metrics to an OpenTelemetry protocol compatible endpoint
-    Otlp {
-        /// OTLP compatible endpoint
-        #[schemars(url, example = "otlp_endpoint_example")]
-        #[serde(default)]
-        endpoint: Option<Url>,
-    },
+    Otlp,
 
     /// Export metrics via Prometheus. An HTTP listener with the `prometheus`
     /// resource must be setup to expose the Promethes metrics.
     Prometheus,
 }
 
-impl Default for MetricsExporterConfig {
-    fn default() -> Self {
-        Self::None
-    }
-}
-
 /// Configuration related to exporting metrics
 #[derive(Clone, Debug, Default, Serialize, Deserialize, JsonSchema)]
 pub struct MetricsConfig {
     /// Exporter to use when exporting metrics
-    #[serde(default, flatten)]
-    pub exporter: MetricsExporterConfig,
+    #[serde(default)]
+    pub exporter: MetricsExporterKind,
+
+    /// OTLP exporter: OTLP over HTTP compatible endpoint
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(url, default = "otlp_endpoint_default")]
+    pub endpoint: Option<Url>,
 }
 
 fn sentry_dsn_example() -> &'static str {
@@ -123,7 +114,7 @@ fn sentry_dsn_example() -> &'static str {
 pub struct SentryConfig {
     /// Sentry DSN
     #[schemars(url, example = "sentry_dsn_example")]
-    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub dsn: Option<String>,
 }
 
