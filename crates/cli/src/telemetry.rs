@@ -16,7 +16,10 @@ use std::time::Duration;
 
 use anyhow::Context as _;
 use hyper::{header::CONTENT_TYPE, Body, Response};
-use mas_config::{MetricsExporterConfig, Propagator, TelemetryConfig, TracingExporterConfig};
+use mas_config::{
+    MetricsConfig, MetricsExporterKind, Propagator, TelemetryConfig, TracingConfig,
+    TracingExporterKind,
+};
 use opentelemetry::{
     global,
     propagation::{TextMapCompositePropagator, TextMapPropagator},
@@ -52,9 +55,9 @@ pub fn setup(config: &TelemetryConfig) -> anyhow::Result<Option<Tracer>> {
     mas_http::set_propagator(&propagator);
     global::set_text_map_propagator(propagator);
 
-    let tracer = tracer(&config.tracing.exporter).context("Failed to configure traces exporter")?;
+    let tracer = tracer(&config.tracing).context("Failed to configure traces exporter")?;
 
-    init_meter(&config.metrics.exporter).context("Failed to configure metrics exporter")?;
+    init_meter(&config.metrics).context("Failed to configure metrics exporter")?;
 
     Ok(tracer)
 }
@@ -114,13 +117,13 @@ fn otlp_tracer(endpoint: Option<&Url>) -> anyhow::Result<Tracer> {
     Ok(tracer)
 }
 
-fn tracer(config: &TracingExporterConfig) -> anyhow::Result<Option<Tracer>> {
-    let tracer_provider = match config {
-        TracingExporterConfig::None => return Ok(None),
-        TracingExporterConfig::Stdout => stdout_tracer_provider(),
-        TracingExporterConfig::Otlp { endpoint } => {
+fn tracer(config: &TracingConfig) -> anyhow::Result<Option<Tracer>> {
+    let tracer_provider = match config.exporter {
+        TracingExporterKind::None => return Ok(None),
+        TracingExporterKind::Stdout => stdout_tracer_provider(),
+        TracingExporterKind::Otlp => {
             // The OTLP exporter already creates a tracer and installs it
-            return Ok(Some(otlp_tracer(endpoint.as_ref())?));
+            return Ok(Some(otlp_tracer(config.endpoint.as_ref())?));
         }
     };
 
@@ -208,15 +211,15 @@ fn prometheus_metric_reader() -> anyhow::Result<PrometheusExporter> {
     Ok(exporter)
 }
 
-fn init_meter(config: &MetricsExporterConfig) -> anyhow::Result<()> {
+fn init_meter(config: &MetricsConfig) -> anyhow::Result<()> {
     let meter_provider_builder = SdkMeterProvider::builder();
-    let meter_provider_builder = match config {
-        MetricsExporterConfig::None => meter_provider_builder.with_reader(ManualReader::default()),
-        MetricsExporterConfig::Stdout => meter_provider_builder.with_reader(stdout_metric_reader()),
-        MetricsExporterConfig::Otlp { endpoint } => {
-            meter_provider_builder.with_reader(otlp_metric_reader(endpoint.as_ref())?)
+    let meter_provider_builder = match config.exporter {
+        MetricsExporterKind::None => meter_provider_builder.with_reader(ManualReader::default()),
+        MetricsExporterKind::Stdout => meter_provider_builder.with_reader(stdout_metric_reader()),
+        MetricsExporterKind::Otlp => {
+            meter_provider_builder.with_reader(otlp_metric_reader(config.endpoint.as_ref())?)
         }
-        MetricsExporterConfig::Prometheus => {
+        MetricsExporterKind::Prometheus => {
             meter_provider_builder.with_reader(prometheus_metric_reader()?)
         }
     };

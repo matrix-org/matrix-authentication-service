@@ -110,9 +110,7 @@
         "metrics": {
           "exporter": "none"
         },
-        "sentry": {
-          "dsn": null
-        }
+        "sentry": {}
       },
       "allOf": [
         {
@@ -1108,9 +1106,7 @@
         },
         "sentry": {
           "description": "Configuration related to the Sentry integration",
-          "default": {
-            "dsn": null
-          },
+          "default": {},
           "allOf": [
             {
               "$ref": "#/definitions/SentryConfig"
@@ -1122,68 +1118,25 @@
     "TracingConfig": {
       "description": "Configuration related to exporting traces",
       "type": "object",
-      "oneOf": [
-        {
-          "description": "Don't export traces",
-          "type": "object",
-          "required": [
-            "exporter"
-          ],
-          "properties": {
-            "exporter": {
-              "type": "string",
-              "enum": [
-                "none"
-              ]
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "description": "Export traces to the standard output. Only useful for debugging",
-          "type": "object",
-          "required": [
-            "exporter"
-          ],
-          "properties": {
-            "exporter": {
-              "type": "string",
-              "enum": [
-                "stdout"
-              ]
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "description": "Export traces to an OpenTelemetry protocol compatible endpoint",
-          "type": "object",
-          "required": [
-            "exporter"
-          ],
-          "properties": {
-            "exporter": {
-              "type": "string",
-              "enum": [
-                "otlp"
-              ]
-            },
-            "endpoint": {
-              "description": "OTLP compatible endpoint",
-              "examples": [
-                "https://localhost:4318"
-              ],
-              "type": "string",
-              "format": "uri"
-            }
-          },
-          "additionalProperties": false
-        }
-      ],
       "required": [
         "propagators"
       ],
       "properties": {
+        "exporter": {
+          "description": "Exporter to use when exporting traces",
+          "default": "none",
+          "allOf": [
+            {
+              "$ref": "#/definitions/TracingExporterKind"
+            }
+          ]
+        },
+        "endpoint": {
+          "description": "OTLP exporter: OTLP over HTTP compatible endpoint",
+          "default": "https://localhost:4318",
+          "type": "string",
+          "format": "uri"
+        },
         "propagators": {
           "description": "List of propagation formats to use for incoming and outgoing requests",
           "type": "array",
@@ -1192,6 +1145,32 @@
           }
         }
       }
+    },
+    "TracingExporterKind": {
+      "description": "Exporter to use when exporting traces",
+      "oneOf": [
+        {
+          "description": "Don't export traces",
+          "type": "string",
+          "enum": [
+            "none"
+          ]
+        },
+        {
+          "description": "Export traces to the standard output. Only useful for debugging",
+          "type": "string",
+          "enum": [
+            "stdout"
+          ]
+        },
+        {
+          "description": "Export traces to an OpenTelemetry protocol compatible endpoint",
+          "type": "string",
+          "enum": [
+            "otlp"
+          ]
+        }
+      ]
     },
     "Propagator": {
       "description": "Propagation format for incoming and outgoing requests",
@@ -1222,74 +1201,54 @@
     "MetricsConfig": {
       "description": "Configuration related to exporting metrics",
       "type": "object",
+      "properties": {
+        "exporter": {
+          "description": "Exporter to use when exporting metrics",
+          "default": "none",
+          "allOf": [
+            {
+              "$ref": "#/definitions/MetricsExporterKind"
+            }
+          ]
+        },
+        "endpoint": {
+          "description": "OTLP exporter: OTLP over HTTP compatible endpoint",
+          "default": "https://localhost:4318",
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "MetricsExporterKind": {
+      "description": "Exporter to use when exporting metrics",
       "oneOf": [
         {
           "description": "Don't export metrics",
-          "type": "object",
-          "required": [
-            "exporter"
-          ],
-          "properties": {
-            "exporter": {
-              "type": "string",
-              "enum": [
-                "none"
-              ]
-            }
-          }
+          "type": "string",
+          "enum": [
+            "none"
+          ]
         },
         {
           "description": "Export metrics to stdout. Only useful for debugging",
-          "type": "object",
-          "required": [
-            "exporter"
-          ],
-          "properties": {
-            "exporter": {
-              "type": "string",
-              "enum": [
-                "stdout"
-              ]
-            }
-          }
+          "type": "string",
+          "enum": [
+            "stdout"
+          ]
         },
         {
           "description": "Export metrics to an OpenTelemetry protocol compatible endpoint",
-          "type": "object",
-          "required": [
-            "exporter"
-          ],
-          "properties": {
-            "exporter": {
-              "type": "string",
-              "enum": [
-                "otlp"
-              ]
-            },
-            "endpoint": {
-              "description": "OTLP compatible endpoint",
-              "examples": [
-                "https://localhost:4318"
-              ],
-              "type": "string",
-              "format": "uri"
-            }
-          }
+          "type": "string",
+          "enum": [
+            "otlp"
+          ]
         },
         {
           "description": "Export metrics via Prometheus. An HTTP listener with the `prometheus` resource must be setup to expose the Promethes metrics.",
-          "type": "object",
-          "required": [
-            "exporter"
-          ],
-          "properties": {
-            "exporter": {
-              "type": "string",
-              "enum": [
-                "prometheus"
-              ]
-            }
-          }
+          "type": "string",
+          "enum": [
+            "prometheus"
+          ]
         }
       ]
     },
@@ -1299,7 +1258,6 @@
       "properties": {
         "dsn": {
           "description": "Sentry DSN",
-          "default": null,
           "examples": [
             "https://public@host:port/1"
           ],
