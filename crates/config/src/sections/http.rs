@@ -25,10 +25,9 @@ use rand::Rng;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_with::skip_serializing_none;
 use url::Url;
 
-use super::{secrets::PasswordOrFile, ConfigurationSection};
+use super::ConfigurationSection;
 
 fn default_public_base() -> Url {
     "http://[::]:8080".parse().unwrap()
@@ -99,7 +98,6 @@ impl UnixOrTcp {
 }
 
 /// Configuration of a single listener
-#[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
 #[serde(untagged)]
 pub enum BindConfig {
@@ -108,7 +106,7 @@ pub enum BindConfig {
         /// Host on which to listen.
         ///
         /// Defaults to listening on all addresses
-        #[serde(default)]
+        #[serde(skip_serializing_if = "Option::is_none")]
         host: Option<String>,
 
         /// Port on which to listen.
@@ -153,37 +151,49 @@ pub enum BindConfig {
     },
 }
 
-#[derive(JsonSchema, Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
-pub enum KeyOrFile {
-    Key(String),
-    #[schemars(with = "String")]
-    KeyFile(Utf8PathBuf),
-}
-
-#[derive(JsonSchema, Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
-pub enum CertificateOrFile {
-    Certificate(String),
-    #[schemars(with = "String")]
-    CertificateFile(Utf8PathBuf),
-}
-
 /// Configuration related to TLS on a listener
-#[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
 pub struct TlsConfig {
     /// PEM-encoded X509 certificate chain
-    #[serde(flatten)]
-    pub certificate: CertificateOrFile,
+    ///
+    /// Exactly one of `certificate` or `certificate_file` must be set.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub certificate: Option<String>,
 
-    /// Private key
-    #[serde(flatten)]
-    pub key: KeyOrFile,
+    /// File containing the PEM-encoded X509 certificate chain
+    ///
+    /// Exactly one of `certificate` or `certificate_file` must be set.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(with = "Option<String>")]
+    pub certificate_file: Option<Utf8PathBuf>,
+
+    /// PEM-encoded private key
+    ///
+    /// Exactly one of `key` or `key_file` must be set.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub key: Option<String>,
+
+    /// File containing a PEM or DER-encoded private key
+    ///
+    /// Exactly one of `key` or `key_file` must be set.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(with = "Option<String>")]
+    pub key_file: Option<Utf8PathBuf>,
 
     /// Password used to decode the private key
-    #[serde(flatten)]
-    pub password: Option<PasswordOrFile>,
+    ///
+    /// One of `password` or `password_file` must be set if the key is
+    /// encrypted.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub password: Option<String>,
+
+    /// Password file used to decode the private key
+    ///
+    /// One of `password` or `password_file` must be set if the key is
+    /// encrypted.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(with = "Option<String>")]
+    pub password_file: Option<Utf8PathBuf>,
 }
 
 impl TlsConfig {
@@ -201,17 +211,20 @@ impl TlsConfig {
     pub fn load(
         &self,
     ) -> Result<(PrivateKeyDer<'static>, Vec<CertificateDer<'static>>), anyhow::Error> {
-        let password = match &self.password {
-            Some(PasswordOrFile::Password(password)) => Some(Cow::Borrowed(password.as_str())),
-            Some(PasswordOrFile::PasswordFile(path)) => {
-                Some(Cow::Owned(std::fs::read_to_string(path)?))
+        let password = match (&self.password, &self.password_file) {
+            (None, None) => None,
+            (Some(_), Some(_)) => {
+                bail!("Only one of `password` or `password_file` can be set at a time")
             }
-            None => None,
+            (Some(password), None) => Some(Cow::Borrowed(password)),
+            (None, Some(path)) => Some(Cow::Owned(std::fs::read_to_string(path)?)),
         };
 
         // Read the key either embedded in the config file or on disk
-        let key = match &self.key {
-            KeyOrFile::Key(key) => {
+        let key = match (&self.key, &self.key_file) {
+            (None, None) => bail!("Either `key` or `key_file` must be set"),
+            (Some(_), Some(_)) => bail!("Only one of `key` or `key_file` can be set at a time"),
+            (Some(key), None) => {
                 // If the key was embedded in the config file, assume it is formatted as PEM
                 if let Some(password) = password {
                     PrivateKey::load_encrypted_pem(key, password.as_bytes())?
@@ -219,7 +232,7 @@ impl TlsConfig {
                     PrivateKey::load_pem(key)?
                 }
             }
-            KeyOrFile::KeyFile(path) => {
+            (None, Some(path)) => {
                 // When reading from disk, it might be either PEM or DER. `PrivateKey::load*`
                 // will try both.
                 let key = std::fs::read(path)?;
@@ -235,9 +248,13 @@ impl TlsConfig {
         let key = key.to_pkcs8_der()?;
         let key = PrivatePkcs8KeyDer::from(key.to_vec()).into();
 
-        let certificate_chain_pem = match &self.certificate {
-            CertificateOrFile::Certificate(pem) => Cow::Borrowed(pem.as_str()),
-            CertificateOrFile::CertificateFile(path) => Cow::Owned(std::fs::read_to_string(path)?),
+        let certificate_chain_pem = match (&self.certificate, &self.certificate_file) {
+            (None, None) => bail!("Either `certificate` or `certificate_file` must be set"),
+            (Some(_), Some(_)) => {
+                bail!("Only one of `certificate` or `certificate_file` can be set at a time")
+            }
+            (Some(certificate), None) => Cow::Borrowed(certificate),
+            (None, Some(path)) => Cow::Owned(std::fs::read_to_string(path)?),
         };
 
         let mut certificate_chain_reader = Cursor::new(certificate_chain_pem.as_bytes());
@@ -254,7 +271,6 @@ impl TlsConfig {
 }
 
 /// HTTP resources to mount
-#[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
 #[serde(tag = "name", rename_all = "lowercase")]
 pub enum Resource {
@@ -295,28 +311,21 @@ pub enum Resource {
     /// the upstream connection
     #[serde(rename = "connection-info")]
     ConnectionInfo,
-
-    /// Mount the single page app
-    ///
-    /// This is deprecated and will be removed in a future release.
-    #[deprecated = "This resource is deprecated and will be removed in a future release"]
-    Spa,
 }
 
 /// Configuration of a listener
-#[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
 pub struct ListenerConfig {
     /// A unique name for this listener which will be shown in traces and in
     /// metrics labels
-    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
 
     /// List of resources to mount
     pub resources: Vec<Resource>,
 
     /// HTTP prefix to mount the resources on
-    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub prefix: Option<String>,
 
     /// List of sockets to bind
@@ -327,7 +336,7 @@ pub struct ListenerConfig {
     pub proxy_protocol: bool,
 
     /// If set, makes the listener use TLS with the provided certificate and key
-    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub tls: Option<TlsConfig>,
 }
 
@@ -401,6 +410,68 @@ impl ConfigurationSection for HttpConfig {
         R: Rng + Send,
     {
         Ok(Self::default())
+    }
+
+    fn validate(&self, figment: &figment::Figment) -> Result<(), figment::Error> {
+        for (index, listener) in self.listeners.iter().enumerate() {
+            let annotate = |mut error: figment::Error| {
+                error.metadata = figment
+                    .find_metadata(&format!("{root}.listeners", root = Self::PATH.unwrap()))
+                    .cloned();
+                error.profile = Some(figment::Profile::Default);
+                error.path = vec![
+                    Self::PATH.unwrap().to_owned(),
+                    "listeners".to_owned(),
+                    index.to_string(),
+                ];
+                Err(error)
+            };
+
+            if listener.resources.is_empty() {
+                return annotate(figment::Error::from("listener has no resources".to_owned()));
+            }
+
+            if listener.binds.is_empty() {
+                return annotate(figment::Error::from(
+                    "listener does not bind to any address".to_owned(),
+                ));
+            }
+
+            if let Some(tls_config) = &listener.tls {
+                if tls_config.certificate.is_some() && tls_config.certificate_file.is_some() {
+                    return annotate(figment::Error::from(
+                        "Only one of `certificate` or `certificate_file` can be set at a time"
+                            .to_owned(),
+                    ));
+                }
+
+                if tls_config.certificate.is_none() && tls_config.certificate_file.is_none() {
+                    return annotate(figment::Error::from(
+                        "TLS configuration is missing a certificate".to_owned(),
+                    ));
+                }
+
+                if tls_config.key.is_some() && tls_config.key_file.is_some() {
+                    return annotate(figment::Error::from(
+                        "Only one of `key` or `key_file` can be set at a time".to_owned(),
+                    ));
+                }
+
+                if tls_config.key.is_none() && tls_config.key_file.is_none() {
+                    return annotate(figment::Error::from(
+                        "TLS configuration is missing a private key".to_owned(),
+                    ));
+                }
+
+                if tls_config.password.is_some() && tls_config.password_file.is_some() {
+                    return annotate(figment::Error::from(
+                        "Only one of `password` or `password_file` can be set at a time".to_owned(),
+                    ));
+                }
+            }
+        }
+
+        Ok(())
     }
 
     fn test() -> Self {
