@@ -1473,37 +1473,23 @@
     },
     "KeyConfig": {
       "type": "object",
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "password"
-          ],
-          "properties": {
-            "password": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "password_file"
-          ],
-          "properties": {
-            "password_file": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        }
-      ],
       "required": [
         "kid"
       ],
       "properties": {
         "kid": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "password_file": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "key_file": {
           "type": "string"
         }
       }
