@@ -48,7 +48,7 @@ use rustls::ServerConfig;
 use sentry_tower::{NewSentryLayer, SentryHttpLayer};
 use tower::Layer;
 use tower_http::{services::ServeDir, set_header::SetResponseHeaderLayer};
-use tracing::{warn, Span};
+use tracing::Span;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use crate::app_state::AppState;
@@ -243,12 +243,6 @@ where
                     format!("{connection:?}")
                 }),
             ),
-
-            #[allow(deprecated)]
-            mas_config::HttpResource::Spa { .. } => {
-                warn!("The SPA HTTP resource is deprecated");
-                router
-            }
         }
     }
 

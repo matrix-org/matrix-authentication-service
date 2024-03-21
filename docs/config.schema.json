@@ -836,22 +836,6 @@
               ]
             }
           }
-        },
-        {
-          "description": "Mount the single page app\n\nThis is deprecated and will be removed in a future release.",
-          "deprecated": true,
-          "type": "object",
-          "required": [
-            "name"
-          ],
-          "properties": {
-            "name": {
-              "type": "string",
-              "enum": [
-                "spa"
-              ]
-            }
-          }
         }
       ]
     },
@@ -955,32 +939,32 @@
     "TlsConfig": {
       "description": "Configuration related to TLS on a listener",
       "type": "object",
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "certificate"
-          ],
-          "properties": {
-            "certificate": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
+      "properties": {
+        "certificate": {
+          "description": "PEM-encoded X509 certificate chain\n\nExactly one of `certificate` or `certificate_file` must be set.",
+          "type": "string"
         },
-        {
-          "type": "object",
-          "required": [
-            "certificate_file"
-          ],
-          "properties": {
-            "certificate_file": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
+        "certificate_file": {
+          "description": "File containing the PEM-encoded X509 certificate chain\n\nExactly one of `certificate` or `certificate_file` must be set.",
+          "type": "string"
+        },
+        "key": {
+          "description": "PEM-encoded private key\n\nExactly one of `key` or `key_file` must be set.",
+          "type": "string"
+        },
+        "key_file": {
+          "description": "File containing a PEM or DER-encoded private key\n\nExactly one of `key` or `key_file` must be set.",
+          "type": "string"
+        },
+        "password": {
+          "description": "Password used to decode the private key\n\nOne of `password` or `password_file` must be set if the key is encrypted.",
+          "type": "string"
+        },
+        "password_file": {
+          "description": "Password file used to decode the private key\n\nOne of `password` or `password_file` must be set if the key is encrypted.",
+          "type": "string"
         }
-      ]
+      }
     },
     "IpNetwork": {
       "oneOf": [
