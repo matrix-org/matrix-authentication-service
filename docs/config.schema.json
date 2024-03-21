@@ -188,7 +188,7 @@
         "authorization_grant_entrypoint": "authorization_grant/violation",
         "password_entrypoint": "password/violation",
         "email_entrypoint": "email/violation",
-        "data": null
+        "data": {}
       },
       "allOf": [
         {
@@ -1647,7 +1647,7 @@
         },
         "data": {
           "description": "Arbitrary data to pass to the policy",
-          "default": null
+          "default": {}
         }
       }
     },
