@@ -114,13 +114,9 @@ pub async fn policy_factory_from_config(
         password: config.password_entrypoint.clone(),
     };
 
-    PolicyFactory::load(
-        policy_file,
-        config.data.clone().unwrap_or_default(),
-        entrypoints,
-    )
-    .await
-    .context("failed to load the policy")
+    PolicyFactory::load(policy_file, config.data.clone(), entrypoints)
+        .await
+        .context("failed to load the policy")
 }
 
 pub async fn templates_from_config(
