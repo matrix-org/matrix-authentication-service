@@ -13,9 +13,7 @@
 // limitations under the License.
 
 use anyhow::bail;
-use async_trait::async_trait;
 use camino::Utf8PathBuf;
-use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -55,16 +53,8 @@ impl Default for PasswordsConfig {
     }
 }
 
-#[async_trait]
 impl ConfigurationSection for PasswordsConfig {
     const PATH: Option<&'static str> = Some("passwords");
-
-    async fn generate<R>(_rng: R) -> anyhow::Result<Self>
-    where
-        R: Rng + Send,
-    {
-        Ok(Self::default())
-    }
 
     fn validate(&self, figment: &figment::Figment) -> Result<(), figment::Error> {
         let annotate = |mut error: figment::Error| {
@@ -94,10 +84,6 @@ impl ConfigurationSection for PasswordsConfig {
         }
 
         Ok(())
-    }
-
-    fn test() -> Self {
-        Self::default()
     }
 }
 

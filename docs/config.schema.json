@@ -10,7 +10,6 @@
   "properties": {
     "clients": {
       "description": "List of OAuth 2.0/OIDC clients config",
-      "default": [],
       "type": "array",
       "items": {
         "$ref": "#/definitions/ClientConfig"
@@ -40,8 +39,7 @@
                 "playground": true
               },
               {
-                "name": "assets",
-                "path": "./frontend/dist/"
+                "name": "assets"
               }
             ],
             "binds": [
@@ -102,16 +100,6 @@
     },
     "telemetry": {
       "description": "Configuration related to sending monitoring data",
-      "default": {
-        "tracing": {
-          "exporter": "none",
-          "propagators": []
-        },
-        "metrics": {
-          "exporter": "none"
-        },
-        "sentry": {}
-      },
       "allOf": [
         {
           "$ref": "#/definitions/TelemetryConfig"
@@ -120,11 +108,6 @@
     },
     "templates": {
       "description": "Configuration related to templates",
-      "default": {
-        "path": "./templates/",
-        "assets_manifest": "./frontend/dist/manifest.json",
-        "translations_path": "./translations/"
-      },
       "allOf": [
         {
           "$ref": "#/definitions/TemplatesConfig"
@@ -179,15 +162,6 @@
     },
     "policy": {
       "description": "Configuration related to the OPA policies",
-      "default": {
-        "wasm_module": "./policies/policy.wasm",
-        "client_registration_entrypoint": "client_registration/violation",
-        "register_entrypoint": "register/violation",
-        "authorization_grant_entrypoint": "authorization_grant/violation",
-        "password_entrypoint": "password/violation",
-        "email_entrypoint": "email/violation",
-        "data": {}
-      },
       "allOf": [
         {
           "$ref": "#/definitions/PolicyConfig"
@@ -196,9 +170,6 @@
     },
     "upstream_oauth2": {
       "description": "Configuration related to upstream OAuth providers",
-      "default": {
-        "providers": []
-      },
       "allOf": [
         {
           "$ref": "#/definitions/UpstreamOAuth2Config"
@@ -207,13 +178,6 @@
     },
     "branding": {
       "description": "Configuration section for tweaking the branding of the service",
-      "default": {
-        "service_name": null,
-        "policy_uri": null,
-        "tos_uri": null,
-        "imprint": null,
-        "logo_uri": null
-      },
       "allOf": [
         {
           "$ref": "#/definitions/BrandingConfig"
@@ -222,10 +186,6 @@
     },
     "experimental": {
       "description": "Experimental configuration options",
-      "default": {
-        "access_token_ttl": 300,
-        "compat_token_ttl": 300
-      },
       "allOf": [
         {
           "$ref": "#/definitions/ExperimentalConfig"
@@ -815,7 +775,6 @@
             },
             "path": {
               "description": "Path to the directory to serve.",
-              "default": "./frontend/dist/",
               "type": "string"
             }
           }
@@ -1083,10 +1042,6 @@
       "properties": {
         "tracing": {
           "description": "Configuration related to exporting traces",
-          "default": {
-            "exporter": "none",
-            "propagators": []
-          },
           "allOf": [
             {
               "$ref": "#/definitions/TracingConfig"
@@ -1095,9 +1050,6 @@
         },
         "metrics": {
           "description": "Configuration related to exporting metrics",
-          "default": {
-            "exporter": "none"
-          },
           "allOf": [
             {
               "$ref": "#/definitions/MetricsConfig"
@@ -1106,7 +1058,6 @@
         },
         "sentry": {
           "description": "Configuration related to the Sentry integration",
-          "default": {},
           "allOf": [
             {
               "$ref": "#/definitions/SentryConfig"
@@ -1272,17 +1223,14 @@
       "properties": {
         "path": {
           "description": "Path to the folder which holds the templates",
-          "default": "./templates/",
           "type": "string"
         },
         "assets_manifest": {
           "description": "Path to the assets manifest",
-          "default": "./frontend/dist/manifest.json",
           "type": "string"
         },
         "translations_path": {
           "description": "Path to the translations",
-          "default": "./translations/",
           "type": "string"
         }
       }
@@ -1561,37 +1509,30 @@
       "properties": {
         "wasm_module": {
           "description": "Path to the WASM module",
-          "default": "./policies/policy.wasm",
           "type": "string"
         },
         "client_registration_entrypoint": {
           "description": "Entrypoint to use when evaluating client registrations",
-          "default": "client_registration/violation",
           "type": "string"
         },
         "register_entrypoint": {
           "description": "Entrypoint to use when evaluating user registrations",
-          "default": "register/violation",
           "type": "string"
         },
         "authorization_grant_entrypoint": {
           "description": "Entrypoint to use when evaluating authorization grants",
-          "default": "authorization_grant/violation",
           "type": "string"
         },
         "password_entrypoint": {
           "description": "Entrypoint to use when changing password",
-          "default": "password/violation",
           "type": "string"
         },
         "email_entrypoint": {
           "description": "Entrypoint to use when adding an email address",
-          "default": "email/violation",
           "type": "string"
         },
         "data": {
-          "description": "Arbitrary data to pass to the policy",
-          "default": {}
+          "description": "Arbitrary data to pass to the policy"
         }
       }
     },
@@ -2010,7 +1951,6 @@
       "properties": {
         "access_token_ttl": {
           "description": "Time-to-live of access tokens in seconds. Defaults to 5 minutes.",
-          "default": 300,
           "type": "integer",
           "format": "uint64",
           "maximum": 86400.0,
@@ -2018,7 +1958,6 @@
         },
         "compat_token_ttl": {
           "description": "Time-to-live of compatibility access tokens in seconds. Defaults to 5 minutes.",
-          "default": 300,
           "type": "integer",
           "format": "uint64",
           "maximum": 86400.0,

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use async_trait::async_trait;
 use rand::{
     distributions::{Alphanumeric, DistString},
     Rng,
@@ -48,22 +47,23 @@ pub struct MatrixConfig {
     pub endpoint: Url,
 }
 
-#[async_trait]
 impl ConfigurationSection for MatrixConfig {
     const PATH: Option<&'static str> = Some("matrix");
+}
 
-    async fn generate<R>(mut rng: R) -> anyhow::Result<Self>
+impl MatrixConfig {
+    pub(crate) fn generate<R>(mut rng: R) -> Self
     where
         R: Rng + Send,
     {
-        Ok(Self {
+        Self {
             homeserver: default_homeserver(),
             secret: Alphanumeric.sample_string(&mut rng, 32),
             endpoint: default_endpoint(),
-        })
+        }
     }
 
-    fn test() -> Self {
+    pub(crate) fn test() -> Self {
         Self {
             homeserver: default_homeserver(),
             secret: "test".to_owned(),

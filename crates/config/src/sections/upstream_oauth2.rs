@@ -14,9 +14,7 @@
 
 use std::collections::BTreeMap;
 
-use async_trait::async_trait;
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
-use rand::Rng;
 use schemars::JsonSchema;
 use serde::{de::Error, Deserialize, Serialize};
 use serde_with::skip_serializing_none;
@@ -32,16 +30,15 @@ pub struct UpstreamOAuth2Config {
     pub providers: Vec<Provider>,
 }
 
-#[async_trait]
+impl UpstreamOAuth2Config {
+    /// Returns true if the configuration is the default one
+    pub(crate) fn is_default(&self) -> bool {
+        self.providers.is_empty()
+    }
+}
+
 impl ConfigurationSection for UpstreamOAuth2Config {
     const PATH: Option<&'static str> = Some("upstream_oauth2");
-
-    async fn generate<R>(_rng: R) -> anyhow::Result<Self>
-    where
-        R: Rng + Send,
-    {
-        Ok(Self::default())
-    }
 
     fn validate(&self, figment: &figment::Figment) -> Result<(), figment::Error> {
         for (index, provider) in self.providers.iter().enumerate() {
@@ -94,10 +91,6 @@ impl ConfigurationSection for UpstreamOAuth2Config {
         }
 
         Ok(())
-    }
-
-    fn test() -> Self {
-        Self::default()
     }
 }
 

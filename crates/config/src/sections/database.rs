@@ -14,9 +14,7 @@
 
 use std::{num::NonZeroU32, time::Duration};
 
-use async_trait::async_trait;
 use camino::Utf8PathBuf;
-use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -150,16 +148,8 @@ pub struct DatabaseConfig {
     pub max_lifetime: Option<Duration>,
 }
 
-#[async_trait]
 impl ConfigurationSection for DatabaseConfig {
     const PATH: Option<&'static str> = Some("database");
-
-    async fn generate<R>(_rng: R) -> anyhow::Result<Self>
-    where
-        R: Rng + Send,
-    {
-        Ok(Self::default())
-    }
 
     fn validate(&self, figment: &figment::Figment) -> Result<(), figment::error::Error> {
         let metadata = figment.find_metadata(Self::PATH.unwrap());
@@ -184,10 +174,6 @@ impl ConfigurationSection for DatabaseConfig {
         }
 
         Ok(())
-    }
-
-    fn test() -> Self {
-        Self::default()
     }
 }
 

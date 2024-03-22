@@ -14,11 +14,9 @@
 
 use std::ops::Deref;
 
-use async_trait::async_trait;
 use figment::Figment;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
 use mas_jose::jwk::PublicJsonWebKeySet;
-use rand::Rng;
 use schemars::JsonSchema;
 use serde::{de::Error, Deserialize, Serialize};
 use ulid::Ulid;
@@ -211,6 +209,13 @@ impl ClientConfig {
 #[serde(transparent)]
 pub struct ClientsConfig(#[schemars(with = "Vec::<ClientConfig>")] Vec<ClientConfig>);
 
+impl ClientsConfig {
+    /// Returns true if all fields are at their default values
+    pub(crate) fn is_default(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
 impl Deref for ClientsConfig {
     type Target = Vec<ClientConfig>;
 
@@ -228,16 +233,8 @@ impl IntoIterator for ClientsConfig {
     }
 }
 
-#[async_trait]
 impl ConfigurationSection for ClientsConfig {
     const PATH: Option<&'static str> = Some("clients");
-
-    async fn generate<R>(_rng: R) -> anyhow::Result<Self>
-    where
-        R: Rng + Send,
-    {
-        Ok(Self::default())
-    }
 
     fn validate(&self, figment: &Figment) -> Result<(), figment::error::Error> {
         for (index, client) in self.0.iter().enumerate() {
@@ -252,10 +249,6 @@ impl ConfigurationSection for ClientsConfig {
         }
 
         Ok(())
-    }
-
-    fn test() -> Self {
-        Self::default()
     }
 }
 
