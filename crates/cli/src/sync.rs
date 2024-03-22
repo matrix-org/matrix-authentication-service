@@ -24,7 +24,7 @@ use sqlx::{postgres::PgAdvisoryLock, Connection, PgConnection};
 use tracing::{error, info, info_span, warn};
 
 fn map_import_action(
-    config: &mas_config::UpstreamOAuth2ImportAction,
+    config: mas_config::UpstreamOAuth2ImportAction,
 ) -> mas_data_model::UpstreamOAuthProviderImportAction {
     match config {
         mas_config::UpstreamOAuth2ImportAction::Ignore => {
@@ -50,15 +50,15 @@ fn map_claims_imports(
             template: config.subject.template.clone(),
         },
         localpart: mas_data_model::UpstreamOAuthProviderImportPreference {
-            action: map_import_action(&config.localpart.action),
+            action: map_import_action(config.localpart.action),
             template: config.localpart.template.clone(),
         },
         displayname: mas_data_model::UpstreamOAuthProviderImportPreference {
-            action: map_import_action(&config.displayname.action),
+            action: map_import_action(config.displayname.action),
             template: config.displayname.template.clone(),
         },
         email: mas_data_model::UpstreamOAuthProviderImportPreference {
-            action: map_import_action(&config.email.action),
+            action: map_import_action(config.email.action),
             template: config.email.template.clone(),
         },
         verify_email: match config.email.set_email_verification {
@@ -145,11 +145,10 @@ pub async fn config_sync(
             }
 
             let encrypted_client_secret = provider
-                .client_secret()
+                .client_secret
+                .as_deref()
                 .map(|client_secret| encrypter.encrypt_to_string(client_secret.as_bytes()))
                 .transpose()?;
-            let token_endpoint_auth_method = provider.client_auth_method();
-            let token_endpoint_signing_alg = provider.client_auth_signing_alg();
 
             let discovery_mode = match provider.discovery_mode {
                 mas_config::UpstreamOAuth2DiscoveryMode::Oidc => {
@@ -198,8 +197,10 @@ pub async fn config_sync(
                         human_name: provider.human_name,
                         brand_name: provider.brand_name,
                         scope: provider.scope.parse()?,
-                        token_endpoint_auth_method,
-                        token_endpoint_signing_alg,
+                        token_endpoint_auth_method: provider.token_endpoint_auth_method.into(),
+                        token_endpoint_signing_alg: provider
+                            .token_endpoint_auth_signing_alg
+                            .clone(),
                         client_id: provider.client_id,
                         encrypted_client_secret,
                         claims_imports: map_claims_imports(&provider.claims_imports),
