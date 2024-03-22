@@ -1612,108 +1612,13 @@
       }
     },
     "Provider": {
-      "description": "Authentication methods used against the OAuth 2.0 provider",
       "type": "object",
-      "oneOf": [
-        {
-          "description": "`none`: No authentication",
-          "type": "object",
-          "required": [
-            "token_endpoint_auth_method"
-          ],
-          "properties": {
-            "token_endpoint_auth_method": {
-              "type": "string",
-              "enum": [
-                "none"
-              ]
-            }
-          }
-        },
-        {
-          "description": "`client_secret_basic`: `client_id` and `client_secret` used as basic authorization credentials",
-          "type": "object",
-          "required": [
-            "client_secret",
-            "token_endpoint_auth_method"
-          ],
-          "properties": {
-            "token_endpoint_auth_method": {
-              "type": "string",
-              "enum": [
-                "client_secret_basic"
-              ]
-            },
-            "client_secret": {
-              "type": "string"
-            }
-          }
-        },
-        {
-          "description": "`client_secret_post`: `client_id` and `client_secret` sent in the request body",
-          "type": "object",
-          "required": [
-            "client_secret",
-            "token_endpoint_auth_method"
-          ],
-          "properties": {
-            "token_endpoint_auth_method": {
-              "type": "string",
-              "enum": [
-                "client_secret_post"
-              ]
-            },
-            "client_secret": {
-              "type": "string"
-            }
-          }
-        },
-        {
-          "description": "`client_secret_basic`: a `client_assertion` sent in the request body and signed using the `client_secret`",
-          "type": "object",
-          "required": [
-            "client_secret",
-            "token_endpoint_auth_method"
-          ],
-          "properties": {
-            "token_endpoint_auth_method": {
-              "type": "string",
-              "enum": [
-                "client_secret_jwt"
-              ]
-            },
-            "client_secret": {
-              "type": "string"
-            },
-            "token_endpoint_auth_signing_alg": {
-              "$ref": "#/definitions/JsonWebSignatureAlg"
-            }
-          }
-        },
-        {
-          "description": "`client_secret_basic`: a `client_assertion` sent in the request body and signed by an asymmetric key",
-          "type": "object",
-          "required": [
-            "token_endpoint_auth_method"
-          ],
-          "properties": {
-            "token_endpoint_auth_method": {
-              "type": "string",
-              "enum": [
-                "private_key_jwt"
-              ]
-            },
-            "token_endpoint_auth_signing_alg": {
-              "$ref": "#/definitions/JsonWebSignatureAlg"
-            }
-          }
-        }
-      ],
       "required": [
         "client_id",
         "id",
         "issuer",
-        "scope"
+        "scope",
+        "token_endpoint_auth_method"
       ],
       "properties": {
         "id": {
@@ -1737,13 +1642,32 @@
           "description": "The client ID to use when authenticating with the provider",
           "type": "string"
         },
+        "client_secret": {
+          "description": "The client secret to use when authenticating with the provider\n\nUsed by the `client_secret_basic`, `client_secret_post`, and `client_secret_jwt` methods",
+          "type": "string"
+        },
+        "token_endpoint_auth_method": {
+          "description": "The method to authenticate the client with the provider",
+          "allOf": [
+            {
+              "$ref": "#/definitions/TokenAuthMethod"
+            }
+          ]
+        },
+        "token_endpoint_auth_signing_alg": {
+          "description": "The JWS algorithm to use when authenticating the client with the provider\n\nUsed by the `client_secret_jwt` and `private_key_jwt` methods",
+          "allOf": [
+            {
+              "$ref": "#/definitions/JsonWebSignatureAlg"
+            }
+          ]
+        },
         "scope": {
           "description": "The scopes to request from the provider",
           "type": "string"
         },
         "discovery_mode": {
-          "description": "How to discover the provider's configuration\n\nDefaults to use OIDC discovery with strict metadata verification",
-          "default": "oidc",
+          "description": "How to discover the provider's configuration\n\nDefaults to `oidc`, which uses OIDC discovery with strict metadata verification",
           "allOf": [
             {
               "$ref": "#/definitions/DiscoveryMode"
@@ -1752,7 +1676,6 @@
         },
         "pkce_method": {
           "description": "Whether to use proof key for code exchange (PKCE) when requesting and exchanging the token.\n\nDefaults to `auto`, which uses PKCE if the provider supports it.",
-          "default": "auto",
           "allOf": [
             {
               "$ref": "#/definitions/PkceMethod"
@@ -1776,24 +1699,6 @@
         },
         "claims_imports": {
           "description": "How claims should be imported from the `id_token` provided by the provider",
-          "default": {
-            "subject": {
-              "template": null
-            },
-            "localpart": {
-              "action": "ignore",
-              "template": null
-            },
-            "displayname": {
-              "action": "ignore",
-              "template": null
-            },
-            "email": {
-              "action": "ignore",
-              "template": null,
-              "set_email_verification": "import"
-            }
-          },
           "allOf": [
             {
               "$ref": "#/definitions/ClaimsImports"
@@ -1802,13 +1707,52 @@
         },
         "additional_authorization_parameters": {
           "description": "Additional parameters to include in the authorization request\n\nOrders of the keys are not preserved.",
-          "default": {},
           "type": "object",
           "additionalProperties": {
             "type": "string"
           }
         }
       }
+    },
+    "TokenAuthMethod": {
+      "description": "Authentication methods used against the OAuth 2.0 provider",
+      "oneOf": [
+        {
+          "description": "`none`: No authentication",
+          "type": "string",
+          "enum": [
+            "none"
+          ]
+        },
+        {
+          "description": "`client_secret_basic`: `client_id` and `client_secret` used as basic authorization credentials",
+          "type": "string",
+          "enum": [
+            "client_secret_basic"
+          ]
+        },
+        {
+          "description": "`client_secret_post`: `client_id` and `client_secret` sent in the request body",
+          "type": "string",
+          "enum": [
+            "client_secret_post"
+          ]
+        },
+        {
+          "description": "`client_secret_jwt`: a `client_assertion` sent in the request body and signed using the `client_secret`",
+          "type": "string",
+          "enum": [
+            "client_secret_jwt"
+          ]
+        },
+        {
+          "description": "`private_key_jwt`: a `client_assertion` sent in the request body and signed by an asymmetric key",
+          "type": "string",
+          "enum": [
+            "private_key_jwt"
+          ]
+        }
+      ]
     },
     "DiscoveryMode": {
       "description": "How to discover the provider's configuration",
@@ -1868,9 +1812,6 @@
       "properties": {
         "subject": {
           "description": "How to determine the subject of the user",
-          "default": {
-            "template": null
-          },
           "allOf": [
             {
               "$ref": "#/definitions/SubjectImportPreference"
@@ -1879,10 +1820,6 @@
         },
         "localpart": {
           "description": "Import the localpart of the MXID",
-          "default": {
-            "action": "ignore",
-            "template": null
-          },
           "allOf": [
             {
               "$ref": "#/definitions/LocalpartImportPreference"
@@ -1891,10 +1828,6 @@
         },
         "displayname": {
           "description": "Import the displayname of the user.",
-          "default": {
-            "action": "ignore",
-            "template": null
-          },
           "allOf": [
             {
               "$ref": "#/definitions/DisplaynameImportPreference"
@@ -1903,11 +1836,6 @@
         },
         "email": {
           "description": "Import the email address of the user based on the `email` and `email_verified` claims",
-          "default": {
-            "action": "ignore",
-            "template": null,
-            "set_email_verification": "import"
-          },
           "allOf": [
             {
               "$ref": "#/definitions/EmailImportPreference"
@@ -1922,7 +1850,6 @@
       "properties": {
         "template": {
           "description": "The Jinja2 template to use for the subject attribute\n\nIf not provided, the default template is `{{ user.sub }}`",
-          "default": null,
           "type": "string"
         }
       }
@@ -1933,7 +1860,6 @@
       "properties": {
         "action": {
           "description": "How to handle the attribute",
-          "default": "ignore",
           "allOf": [
             {
               "$ref": "#/definitions/ImportAction"
@@ -1942,7 +1868,6 @@
         },
         "template": {
           "description": "The Jinja2 template to use for the localpart attribute\n\nIf not provided, the default template is `{{ user.preferred_username }}`",
-          "default": null,
           "type": "string"
         }
       }
@@ -1986,7 +1911,6 @@
       "properties": {
         "action": {
           "description": "How to handle the attribute",
-          "default": "ignore",
           "allOf": [
             {
               "$ref": "#/definitions/ImportAction"
@@ -1995,7 +1919,6 @@
         },
         "template": {
           "description": "The Jinja2 template to use for the displayname attribute\n\nIf not provided, the default template is `{{ user.name }}`",
-          "default": null,
           "type": "string"
         }
       }
@@ -2006,7 +1929,6 @@
       "properties": {
         "action": {
           "description": "How to handle the claim",
-          "default": "ignore",
           "allOf": [
             {
               "$ref": "#/definitions/ImportAction"
@@ -2015,12 +1937,10 @@
         },
         "template": {
           "description": "The Jinja2 template to use for the email address attribute\n\nIf not provided, the default template is `{{ user.email }}`",
-          "default": null,
           "type": "string"
         },
         "set_email_verification": {
           "description": "Should the email address be marked as verified",
-          "default": "import",
           "allOf": [
             {
               "$ref": "#/definitions/SetEmailVerification"

@@ -53,8 +53,7 @@ pub use self::{
     upstream_oauth2::{
         ClaimsImports as UpstreamOAuth2ClaimsImports, DiscoveryMode as UpstreamOAuth2DiscoveryMode,
         EmailImportPreference as UpstreamOAuth2EmailImportPreference,
-        ImportAction as UpstreamOAuth2ImportAction,
-        ImportPreference as UpstreamOAuth2ImportPreference, PkceMethod as UpstreamOAuth2PkceMethod,
+        ImportAction as UpstreamOAuth2ImportAction, PkceMethod as UpstreamOAuth2PkceMethod,
         SetEmailVerification as UpstreamOAuth2SetEmailVerification, UpstreamOAuth2Config,
     },
 };
