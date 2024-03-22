@@ -52,8 +52,8 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: |
-            x86_64-unknown-linux-musl
-            aarch64-unknown-linux-musl
+            x86_64-unknown-linux-gnu
+            aarch64-unknown-linux-gnu
             x86_64-apple-darwin
             aarch64-apple-darwin
 
@@ -66,7 +66,7 @@ jobs:
           version: 0.11.0
 
       - name: Install cargo-zigbuild
-        run: curl -L https://github.com/rust-cross/cargo-zigbuild/releases/download/v0.17.3/cargo-zigbuild-v0.17.3.x86_64-unknown-linux-musl.tar.gz | tar -z -x -C /usr/local/bin
+        run: curl -L https://github.com/rust-cross/cargo-zigbuild/releases/download/v0.18.3/cargo-zigbuild-v0.18.3.x86_64-unknown-linux-musl.tar.gz | tar -z -x -C /usr/local/bin
 
       - name: Download the macOS SDK
         run: curl -L "https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX11.3.sdk.tar.xz" | tar -J -x -C /opt
@@ -96,8 +96,8 @@ jobs:
         # See https://github.com/rust-cross/cargo-zigbuild/issues/165
         run: |
           cargo clean -p '' \
-            --target x86_64-unknown-linux-musl \
-            --target aarch64-unknown-linux-musl \
+            --target x86_64-unknown-linux-gnu \
+            --target aarch64-unknown-linux-gnu \
             --target x86_64-apple-darwin \
             --target aarch64-apple-darwin \
             || true
@@ -106,8 +106,8 @@ jobs:
         run: |
           cargo zigbuild \
             --release \
-            --target x86_64-unknown-linux-musl \
-            --target aarch64-unknown-linux-musl \
+            --target x86_64-unknown-linux-gnu.2.17 \
+            --target aarch64-unknown-linux-gnu.2.17 \
             --target x86_64-apple-darwin \
             --target aarch64-apple-darwin \
             --no-default-features \
