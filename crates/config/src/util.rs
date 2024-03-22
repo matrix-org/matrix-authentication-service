@@ -12,22 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use async_trait::async_trait;
 use figment::{error::Error as FigmentError, Figment};
-use rand::Rng;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::de::DeserializeOwned;
 
-#[async_trait]
 /// Trait implemented by all configuration section to help loading specific part
 /// of the config and generate the sample config.
-pub trait ConfigurationSection: Sized + DeserializeOwned + Serialize {
+pub trait ConfigurationSection: Sized + DeserializeOwned {
     /// Specify where this section should live relative to the root.
     const PATH: Option<&'static str> = None;
-
-    /// Generate a sample configuration for this section.
-    async fn generate<R>(rng: R) -> anyhow::Result<Self>
-    where
-        R: Rng + Send;
 
     /// Validate the configuration section
     ///
@@ -53,7 +45,4 @@ pub trait ConfigurationSection: Sized + DeserializeOwned + Serialize {
         this.validate(figment)?;
         Ok(this)
     }
-
-    /// Generate config used in unit tests
-    fn test() -> Self;
 }

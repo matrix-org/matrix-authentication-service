@@ -16,8 +16,6 @@
 
 use std::num::NonZeroU16;
 
-use async_trait::async_trait;
-use rand::Rng;
 use schemars::JsonSchema;
 use serde::{de::Error, Deserialize, Serialize};
 
@@ -181,16 +179,8 @@ impl Default for EmailConfig {
     }
 }
 
-#[async_trait]
 impl ConfigurationSection for EmailConfig {
     const PATH: Option<&'static str> = Some("email");
-
-    async fn generate<R>(_rng: R) -> anyhow::Result<Self>
-    where
-        R: Rng + Send,
-    {
-        Ok(Self::default())
-    }
 
     fn validate(&self, figment: &figment::Figment) -> Result<(), figment::error::Error> {
         let metadata = figment.find_metadata(Self::PATH.unwrap());
@@ -282,9 +272,5 @@ impl ConfigurationSection for EmailConfig {
         }
 
         Ok(())
-    }
-
-    fn test() -> Self {
-        Self::default()
     }
 }

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use async_trait::async_trait;
 use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -63,7 +62,7 @@ use crate::util::ConfigurationSection;
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct RootConfig {
     /// List of OAuth 2.0/OIDC clients config
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "ClientsConfig::is_default")]
     pub clients: ClientsConfig,
 
     /// Configuration of the HTTP server
@@ -75,11 +74,11 @@ pub struct RootConfig {
     pub database: DatabaseConfig,
 
     /// Configuration related to sending monitoring data
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "TelemetryConfig::is_default")]
     pub telemetry: TelemetryConfig,
 
     /// Configuration related to templates
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "TemplatesConfig::is_default")]
     pub templates: TemplatesConfig,
 
     /// Configuration related to sending emails
@@ -97,46 +96,24 @@ pub struct RootConfig {
     pub matrix: MatrixConfig,
 
     /// Configuration related to the OPA policies
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "PolicyConfig::is_default")]
     pub policy: PolicyConfig,
 
     /// Configuration related to upstream OAuth providers
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "UpstreamOAuth2Config::is_default")]
     pub upstream_oauth2: UpstreamOAuth2Config,
 
     /// Configuration section for tweaking the branding of the service
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "BrandingConfig::is_default")]
     pub branding: BrandingConfig,
 
     /// Experimental configuration options
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "ExperimentalConfig::is_default")]
     pub experimental: ExperimentalConfig,
 }
 
-#[async_trait]
 impl ConfigurationSection for RootConfig {
-    async fn generate<R>(mut rng: R) -> anyhow::Result<Self>
-    where
-        R: Rng + Send,
-    {
-        Ok(Self {
-            clients: ClientsConfig::generate(&mut rng).await?,
-            http: HttpConfig::generate(&mut rng).await?,
-            database: DatabaseConfig::generate(&mut rng).await?,
-            telemetry: TelemetryConfig::generate(&mut rng).await?,
-            templates: TemplatesConfig::generate(&mut rng).await?,
-            email: EmailConfig::generate(&mut rng).await?,
-            passwords: PasswordsConfig::generate(&mut rng).await?,
-            secrets: SecretsConfig::generate(&mut rng).await?,
-            matrix: MatrixConfig::generate(&mut rng).await?,
-            policy: PolicyConfig::generate(&mut rng).await?,
-            upstream_oauth2: UpstreamOAuth2Config::generate(&mut rng).await?,
-            branding: BrandingConfig::generate(&mut rng).await?,
-            experimental: ExperimentalConfig::generate(&mut rng).await?,
-        })
-    }
-
-    fn validate(&self, figment: &figment::Figment) -> Result<(), figment::error::Error> {
+    fn validate(&self, figment: &figment::Figment) -> Result<(), figment::Error> {
         self.clients.validate(figment)?;
         self.http.validate(figment)?;
         self.database.validate(figment)?;
@@ -153,29 +130,59 @@ impl ConfigurationSection for RootConfig {
 
         Ok(())
     }
+}
 
-    fn test() -> Self {
+impl RootConfig {
+    /// Generate a new configuration with random secrets
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the secrets could not be generated
+    pub async fn generate<R>(mut rng: R) -> anyhow::Result<Self>
+    where
+        R: Rng + Send,
+    {
+        Ok(Self {
+            clients: ClientsConfig::default(),
+            http: HttpConfig::default(),
+            database: DatabaseConfig::default(),
+            telemetry: TelemetryConfig::default(),
+            templates: TemplatesConfig::default(),
+            email: EmailConfig::default(),
+            passwords: PasswordsConfig::default(),
+            secrets: SecretsConfig::generate(&mut rng).await?,
+            matrix: MatrixConfig::generate(&mut rng),
+            policy: PolicyConfig::default(),
+            upstream_oauth2: UpstreamOAuth2Config::default(),
+            branding: BrandingConfig::default(),
+            experimental: ExperimentalConfig::default(),
+        })
+    }
+
+    /// Configuration used in tests
+    #[must_use]
+    pub fn test() -> Self {
         Self {
-            clients: ClientsConfig::test(),
-            http: HttpConfig::test(),
-            database: DatabaseConfig::test(),
-            telemetry: TelemetryConfig::test(),
-            templates: TemplatesConfig::test(),
-            passwords: PasswordsConfig::test(),
-            email: EmailConfig::test(),
+            clients: ClientsConfig::default(),
+            http: HttpConfig::default(),
+            database: DatabaseConfig::default(),
+            telemetry: TelemetryConfig::default(),
+            templates: TemplatesConfig::default(),
+            passwords: PasswordsConfig::default(),
+            email: EmailConfig::default(),
             secrets: SecretsConfig::test(),
             matrix: MatrixConfig::test(),
-            policy: PolicyConfig::test(),
-            upstream_oauth2: UpstreamOAuth2Config::test(),
-            branding: BrandingConfig::test(),
-            experimental: ExperimentalConfig::test(),
+            policy: PolicyConfig::default(),
+            upstream_oauth2: UpstreamOAuth2Config::default(),
+            branding: BrandingConfig::default(),
+            experimental: ExperimentalConfig::default(),
         }
     }
 }
 
 /// Partial configuration actually used by the server
 #[allow(missing_docs)]
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize)]
 pub struct AppConfig {
     #[serde(default)]
     pub http: HttpConfig,
@@ -206,27 +213,8 @@ pub struct AppConfig {
     pub experimental: ExperimentalConfig,
 }
 
-#[async_trait]
 impl ConfigurationSection for AppConfig {
-    async fn generate<R>(mut rng: R) -> anyhow::Result<Self>
-    where
-        R: Rng + Send,
-    {
-        Ok(Self {
-            http: HttpConfig::generate(&mut rng).await?,
-            database: DatabaseConfig::generate(&mut rng).await?,
-            templates: TemplatesConfig::generate(&mut rng).await?,
-            email: EmailConfig::generate(&mut rng).await?,
-            passwords: PasswordsConfig::generate(&mut rng).await?,
-            secrets: SecretsConfig::generate(&mut rng).await?,
-            matrix: MatrixConfig::generate(&mut rng).await?,
-            policy: PolicyConfig::generate(&mut rng).await?,
-            branding: BrandingConfig::generate(&mut rng).await?,
-            experimental: ExperimentalConfig::generate(&mut rng).await?,
-        })
-    }
-
-    fn validate(&self, figment: &figment::Figment) -> Result<(), figment::error::Error> {
+    fn validate(&self, figment: &figment::Figment) -> Result<(), figment::Error> {
         self.http.validate(figment)?;
         self.database.validate(figment)?;
         self.templates.validate(figment)?;
@@ -240,26 +228,11 @@ impl ConfigurationSection for AppConfig {
 
         Ok(())
     }
-
-    fn test() -> Self {
-        Self {
-            http: HttpConfig::test(),
-            database: DatabaseConfig::test(),
-            templates: TemplatesConfig::test(),
-            passwords: PasswordsConfig::test(),
-            email: EmailConfig::test(),
-            secrets: SecretsConfig::test(),
-            matrix: MatrixConfig::test(),
-            policy: PolicyConfig::test(),
-            branding: BrandingConfig::test(),
-            experimental: ExperimentalConfig::test(),
-        }
-    }
 }
 
 /// Partial config used by the `mas-cli config sync` command
 #[allow(missing_docs)]
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize)]
 pub struct SyncConfig {
     #[serde(default)]
     pub database: DatabaseConfig,
@@ -273,26 +246,13 @@ pub struct SyncConfig {
     pub upstream_oauth2: UpstreamOAuth2Config,
 }
 
-#[async_trait]
 impl ConfigurationSection for SyncConfig {
-    async fn generate<R>(mut rng: R) -> anyhow::Result<Self>
-    where
-        R: Rng + Send,
-    {
-        Ok(Self {
-            database: DatabaseConfig::generate(&mut rng).await?,
-            secrets: SecretsConfig::generate(&mut rng).await?,
-            clients: ClientsConfig::generate(&mut rng).await?,
-            upstream_oauth2: UpstreamOAuth2Config::generate(&mut rng).await?,
-        })
-    }
+    fn validate(&self, figment: &figment::Figment) -> Result<(), figment::Error> {
+        self.database.validate(figment)?;
+        self.secrets.validate(figment)?;
+        self.clients.validate(figment)?;
+        self.upstream_oauth2.validate(figment)?;
 
-    fn test() -> Self {
-        Self {
-            database: DatabaseConfig::test(),
-            secrets: SecretsConfig::test(),
-            clients: ClientsConfig::test(),
-            upstream_oauth2: UpstreamOAuth2Config::test(),
-        }
+        Ok(())
     }
 }

@@ -15,7 +15,6 @@
 use std::borrow::Cow;
 
 use anyhow::{bail, Context};
-use async_trait::async_trait;
 use camino::Utf8PathBuf;
 use mas_jose::jwk::{JsonWebKey, JsonWebKeySet};
 use mas_keystore::{Encrypter, Keystore, PrivateKey};
@@ -132,12 +131,50 @@ impl SecretsConfig {
     }
 }
 
-#[async_trait]
 impl ConfigurationSection for SecretsConfig {
     const PATH: Option<&'static str> = Some("secrets");
 
+    fn validate(&self, figment: &figment::Figment) -> Result<(), figment::Error> {
+        for (index, key) in self.keys.iter().enumerate() {
+            let annotate = |mut error: figment::Error| {
+                error.metadata = figment
+                    .find_metadata(&format!("{root}.keys", root = Self::PATH.unwrap()))
+                    .cloned();
+                error.profile = Some(figment::Profile::Default);
+                error.path = vec![
+                    Self::PATH.unwrap().to_owned(),
+                    "keys".to_owned(),
+                    index.to_string(),
+                ];
+                Err(error)
+            };
+
+            if key.key.is_none() && key.key_file.is_none() {
+                return annotate(figment::Error::from(
+                    "Missing `key` or `key_file`".to_owned(),
+                ));
+            }
+
+            if key.key.is_some() && key.key_file.is_some() {
+                return annotate(figment::Error::from(
+                    "Cannot specify both `key` and `key_file`".to_owned(),
+                ));
+            }
+
+            if key.password.is_some() && key.password_file.is_some() {
+                return annotate(figment::Error::from(
+                    "Cannot specify both `password` and `password_file`".to_owned(),
+                ));
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl SecretsConfig {
     #[tracing::instrument(skip_all)]
-    async fn generate<R>(mut rng: R) -> anyhow::Result<Self>
+    pub(crate) async fn generate<R>(mut rng: R) -> anyhow::Result<Self>
     where
         R: Rng + Send,
     {
@@ -221,44 +258,7 @@ impl ConfigurationSection for SecretsConfig {
         })
     }
 
-    fn validate(&self, figment: &figment::Figment) -> Result<(), figment::Error> {
-        for (index, key) in self.keys.iter().enumerate() {
-            let annotate = |mut error: figment::Error| {
-                error.metadata = figment
-                    .find_metadata(&format!("{root}.keys", root = Self::PATH.unwrap()))
-                    .cloned();
-                error.profile = Some(figment::Profile::Default);
-                error.path = vec![
-                    Self::PATH.unwrap().to_owned(),
-                    "keys".to_owned(),
-                    index.to_string(),
-                ];
-                Err(error)
-            };
-
-            if key.key.is_none() && key.key_file.is_none() {
-                return annotate(figment::Error::from(
-                    "Missing `key` or `key_file`".to_owned(),
-                ));
-            }
-
-            if key.key.is_some() && key.key_file.is_some() {
-                return annotate(figment::Error::from(
-                    "Cannot specify both `key` and `key_file`".to_owned(),
-                ));
-            }
-
-            if key.password.is_some() && key.password_file.is_some() {
-                return annotate(figment::Error::from(
-                    "Cannot specify both `password` and `password_file`".to_owned(),
-                ));
-            }
-        }
-
-        Ok(())
-    }
-
-    fn test() -> Self {
+    pub(crate) fn test() -> Self {
         let rsa_key = KeyConfig {
             kid: "abcdef".to_owned(),
             password: None,

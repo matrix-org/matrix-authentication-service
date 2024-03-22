@@ -17,11 +17,9 @@
 use std::{borrow::Cow, io::Cursor};
 
 use anyhow::bail;
-use async_trait::async_trait;
 use camino::Utf8PathBuf;
 use ipnetwork::IpNetwork;
 use mas_keystore::PrivateKey;
-use rand::Rng;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -59,6 +57,10 @@ fn http_listener_assets_path_default() -> Utf8PathBuf {
 #[cfg(feature = "dist")]
 fn http_listener_assets_path_default() -> Utf8PathBuf {
     "./share/assets/".into()
+}
+
+fn is_default_http_listener_assets_path(value: &Utf8PathBuf) -> bool {
+    *value == http_listener_assets_path_default()
 }
 
 fn default_trusted_proxies() -> Vec<IpNetwork> {
@@ -302,7 +304,10 @@ pub enum Resource {
     /// Static files
     Assets {
         /// Path to the directory to serve.
-        #[serde(default = "http_listener_assets_path_default")]
+        #[serde(
+            default = "http_listener_assets_path_default",
+            skip_serializing_if = "is_default_http_listener_assets_path"
+        )]
         #[schemars(with = "String")]
         path: Utf8PathBuf,
     },
@@ -356,6 +361,7 @@ pub struct HttpConfig {
     pub public_base: Url,
 
     /// OIDC issuer URL. Defaults to `public_base` if not set.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub issuer: Option<Url>,
 }
 
@@ -401,16 +407,8 @@ impl Default for HttpConfig {
     }
 }
 
-#[async_trait]
 impl ConfigurationSection for HttpConfig {
     const PATH: Option<&'static str> = Some("http");
-
-    async fn generate<R>(_rng: R) -> anyhow::Result<Self>
-    where
-        R: Rng + Send,
-    {
-        Ok(Self::default())
-    }
 
     fn validate(&self, figment: &figment::Figment) -> Result<(), figment::Error> {
         for (index, listener) in self.listeners.iter().enumerate() {
@@ -472,9 +470,5 @@ impl ConfigurationSection for HttpConfig {
         }
 
         Ok(())
-    }
-
-    fn test() -> Self {
-        Self::default()
     }
 }

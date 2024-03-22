@@ -14,7 +14,6 @@ workspace = true
 [dependencies]
 tokio = { version = "1.36.0", features = ["fs", "rt"] }
 tracing.workspace = true
-async-trait.workspace = true
 
 thiserror.workspace = true
 anyhow.workspace = true

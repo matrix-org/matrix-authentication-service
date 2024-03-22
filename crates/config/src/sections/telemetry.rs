@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use async_trait::async_trait;
-use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
@@ -72,6 +70,15 @@ pub struct TracingConfig {
     pub propagators: Vec<Propagator>,
 }
 
+impl TracingConfig {
+    /// Returns true if all fields are at their default values
+    fn is_default(&self) -> bool {
+        matches!(self.exporter, TracingExporterKind::None)
+            && self.endpoint.is_none()
+            && self.propagators.is_empty()
+    }
+}
+
 /// Exporter to use when exporting metrics
 #[skip_serializing_none]
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, JsonSchema, Default)]
@@ -105,6 +112,13 @@ pub struct MetricsConfig {
     pub endpoint: Option<Url>,
 }
 
+impl MetricsConfig {
+    /// Returns true if all fields are at their default values
+    fn is_default(&self) -> bool {
+        matches!(self.exporter, MetricsExporterKind::None) && self.endpoint.is_none()
+    }
+}
+
 fn sentry_dsn_example() -> &'static str {
     "https://public@host:port/1"
 }
@@ -118,34 +132,36 @@ pub struct SentryConfig {
     pub dsn: Option<String>,
 }
 
+impl SentryConfig {
+    /// Returns true if all fields are at their default values
+    fn is_default(&self) -> bool {
+        self.dsn.is_none()
+    }
+}
+
 /// Configuration related to sending monitoring data
 #[derive(Clone, Debug, Default, Serialize, Deserialize, JsonSchema)]
 pub struct TelemetryConfig {
     /// Configuration related to exporting traces
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "TracingConfig::is_default")]
     pub tracing: TracingConfig,
 
     /// Configuration related to exporting metrics
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "MetricsConfig::is_default")]
     pub metrics: MetricsConfig,
 
     /// Configuration related to the Sentry integration
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "SentryConfig::is_default")]
     pub sentry: SentryConfig,
 }
 
-#[async_trait]
+impl TelemetryConfig {
+    /// Returns true if all fields are at their default values
+    pub(crate) fn is_default(&self) -> bool {
+        self.tracing.is_default() && self.metrics.is_default() && self.sentry.is_default()
+    }
+}
+
 impl ConfigurationSection for TelemetryConfig {
     const PATH: Option<&'static str> = Some("telemetry");
-
-    async fn generate<R>(_rng: R) -> anyhow::Result<Self>
-    where
-        R: Rng + Send,
-    {
-        Ok(Self::default())
-    }
-
-    fn test() -> Self {
-        Self::default()
-    }
 }

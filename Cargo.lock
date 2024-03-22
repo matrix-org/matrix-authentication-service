@@ -3084,7 +3084,6 @@ name = "mas-config"
 version = "0.8.0"
 dependencies = [
  "anyhow",
- "async-trait",
  "camino",
  "chrono",
  "figment",

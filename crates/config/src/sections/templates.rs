@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use async_trait::async_trait;
 use camino::Utf8PathBuf;
-use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -35,6 +33,10 @@ fn default_path() -> Utf8PathBuf {
     "./share/templates/".into()
 }
 
+fn is_default_path(value: &Utf8PathBuf) -> bool {
+    *value == default_path()
+}
+
 #[cfg(not(any(feature = "docker", feature = "dist")))]
 fn default_assets_path() -> Utf8PathBuf {
     "./frontend/dist/manifest.json".into()
@@ -48,6 +50,10 @@ fn default_assets_path() -> Utf8PathBuf {
 #[cfg(feature = "dist")]
 fn default_assets_path() -> Utf8PathBuf {
     "./share/manifest.json".into()
+}
+
+fn is_default_assets_path(value: &Utf8PathBuf) -> bool {
+    *value == default_assets_path()
 }
 
 #[cfg(not(any(feature = "docker", feature = "dist")))]
@@ -65,21 +71,31 @@ fn default_translations_path() -> Utf8PathBuf {
     "./share/translations/".into()
 }
 
+fn is_default_translations_path(value: &Utf8PathBuf) -> bool {
+    *value == default_translations_path()
+}
+
 /// Configuration related to templates
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
 pub struct TemplatesConfig {
     /// Path to the folder which holds the templates
-    #[serde(default = "default_path")]
+    #[serde(default = "default_path", skip_serializing_if = "is_default_path")]
     #[schemars(with = "Option<String>")]
     pub path: Utf8PathBuf,
 
     /// Path to the assets manifest
-    #[serde(default = "default_assets_path")]
+    #[serde(
+        default = "default_assets_path",
+        skip_serializing_if = "is_default_assets_path"
+    )]
     #[schemars(with = "Option<String>")]
     pub assets_manifest: Utf8PathBuf,
 
     /// Path to the translations
-    #[serde(default = "default_translations_path")]
+    #[serde(
+        default = "default_translations_path",
+        skip_serializing_if = "is_default_translations_path"
+    )]
     #[schemars(with = "Option<String>")]
     pub translations_path: Utf8PathBuf,
 }
@@ -94,18 +110,15 @@ impl Default for TemplatesConfig {
     }
 }
 
-#[async_trait]
+impl TemplatesConfig {
+    /// Returns true if all fields are at their default values
+    pub(crate) fn is_default(&self) -> bool {
+        is_default_path(&self.path)
+            && is_default_assets_path(&self.assets_manifest)
+            && is_default_translations_path(&self.translations_path)
+    }
+}
+
 impl ConfigurationSection for TemplatesConfig {
     const PATH: Option<&'static str> = Some("templates");
-
-    async fn generate<R>(_rng: R) -> anyhow::Result<Self>
-    where
-        R: Rng + Send,
-    {
-        Ok(Self::default())
-    }
-
-    fn test() -> Self {
-        Self::default()
-    }
 }
