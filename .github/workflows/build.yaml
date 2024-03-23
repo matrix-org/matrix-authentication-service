@@ -31,7 +31,8 @@ env:
 jobs:
   build-binaries:
     name: Build binaries
-    runs-on: ubuntu-22.04
+    runs-on: gvarc
+    container: docker.io/library/buildpack-deps:bookworm
 
     env:
       SDKROOT: /opt/MacOSX11.3.sdk
@@ -255,7 +256,8 @@ jobs:
 
   syn2mas:
     name: Release syn2mas on NPM
-    runs-on: ubuntu-latest
+    runs-on: memory-m
+    container: node:18-bullseye
     permissions:
       contents: read
       id-token: write
@@ -285,7 +287,8 @@ jobs:
   release:
     name: Release
     if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
+    runs-on: memory-s
+    container: ubuntu:latest
     needs:
       - build-binaries
       - build-image
