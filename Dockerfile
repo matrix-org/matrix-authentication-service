@@ -93,8 +93,8 @@ RUN --network=default \
 RUN --network=default \
   rustup target add  \
   --toolchain "${RUSTC_VERSION}" \
-  x86_64-unknown-linux-musl \
-  aarch64-unknown-linux-musl
+  x86_64-unknown-linux-gnu \
+  aarch64-unknown-linux-gnu
 
 # Set the working directory
 WORKDIR /app
@@ -124,8 +124,8 @@ RUN --network=default \
   --recipe-path recipe.json \
   --no-default-features \
   --features docker \
-  --target x86_64-unknown-linux-musl \
-  --target aarch64-unknown-linux-musl \
+  --target x86_64-unknown-linux-gnu \
+  --target aarch64-unknown-linux-gnu \
   --package mas-cli
 
 # Build the rest
@@ -140,14 +140,14 @@ RUN --network=default \
   --bin mas-cli \
   --no-default-features \
   --features docker \
-  --target x86_64-unknown-linux-musl \
-  --target aarch64-unknown-linux-musl
+  --target x86_64-unknown-linux-gnu \
+  --target aarch64-unknown-linux-gnu
 
 # Move the binary to avoid having to guess its name in the next stage
 RUN --network=none \
-  mv "target/x86_64-unknown-linux-musl/release/mas-cli" /usr/local/bin/mas-cli-amd64
+  mv "target/x86_64-unknown-linux-gnu/release/mas-cli" /usr/local/bin/mas-cli-amd64
 RUN --network=none \
-  mv "target/aarch64-unknown-linux-musl/release/mas-cli" /usr/local/bin/mas-cli-arm64
+  mv "target/aarch64-unknown-linux-gnu/release/mas-cli" /usr/local/bin/mas-cli-arm64
 
 #######################################
 ## Prepare /usr/local/share/mas-cli/ ##
@@ -162,7 +162,7 @@ COPY ./translations/ /share/translations
 ##################################
 ## Runtime stage, debug variant ##
 ##################################
-FROM --platform=${TARGETPLATFORM} gcr.io/distroless/static-debian${DEBIAN_VERSION}:debug-nonroot AS debug
+FROM --platform=${TARGETPLATFORM} gcr.io/distroless/base-nossl-debian${DEBIAN_VERSION}:debug-nonroot AS debug
 
 ARG TARGETARCH
 COPY --from=builder /usr/local/bin/mas-cli-${TARGETARCH} /usr/local/bin/mas-cli
@@ -174,7 +174,7 @@ ENTRYPOINT ["/usr/local/bin/mas-cli"]
 ###################
 ## Runtime stage ##
 ###################
-FROM --platform=${TARGETPLATFORM} gcr.io/distroless/static-debian${DEBIAN_VERSION}:nonroot
+FROM --platform=${TARGETPLATFORM} gcr.io/distroless/base-nossl-debian${DEBIAN_VERSION}:nonroot
 
 ARG TARGETARCH
 COPY --from=builder /usr/local/bin/mas-cli-${TARGETARCH} /usr/local/bin/mas-cli
