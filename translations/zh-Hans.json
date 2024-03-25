@@ -96,7 +96,7 @@
         "description": "请创建一个账户以开始使用：",
         "heading": "创建账户"
       },
-      "sign_in_instead": "改为登录",
+      "sign_in_instead": "去登录",
       "terms_of_service": "我同意<a href=\"%s\" data-kind=\"primary\" class=\"cpd-link\">条款与条件 </a>"
     },
     "scope": {

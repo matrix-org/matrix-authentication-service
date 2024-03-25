@@ -2,8 +2,10 @@
   "action": {
     "back": "Zurück",
     "cancel": "Abbrechen",
-    "close": "Close",
+    "clear": "Löschen",
+    "close": "Schließen",
     "continue": "Fortfahren",
+    "edit": "Bearbeiten",
     "save": "Speichern"
   },
   "branding": {
@@ -24,6 +26,15 @@
     "previous": "Zurück"
   },
   "frontend": {
+    "account": {
+      "edit_profile": {
+        "display_name_help": "Dies ist der öffentliche Nutzername.",
+        "display_name_label": "Anzeigename",
+        "title": "Profil bearbeiten",
+        "username_label": "Benutzername"
+      },
+      "title": "Dein Konto"
+    },
     "add_email_form": {
       "email_denied_alert": {
         "text": "Die eingegebene E-Mail-Adresse wird von der Serverrichtlinie nicht zugelassen.",
@@ -33,7 +44,7 @@
         "text": "Die eingegebene E-Mail-Adresse ist diesem Konto bereits zugeordnet",
         "title": "Diese E-Mailadresse existiert bereits"
       },
-      "email_field_help": "Add an alternative email you can use to access this account.",
+      "email_field_help": "Fügen Sie eine alternative E-Mail-Adresse hinzu, mit der Sie auf dieses Konto zugreifen können.",
       "email_field_label": "E-Mail-Adresse hinzufügen",
       "email_invalid_alert": {
         "text": "Die eingegebene E-Mail-Adresse ist ungültig",
@@ -55,24 +66,26 @@
       "view_all_button": "Alle anzeigen"
     },
     "compat_session_detail": {
-      "client_details_title": "Client",
+      "client_details_title": "Geräte Information",
       "name": "Name",
       "session_details_title": "Sitzung"
     },
     "device_type_icon_label": {
       "desktop": "Desktop",
       "mobile": "Mobil",
+      "pc": "Computer",
+      "tablet": "Tablet",
       "unknown": "Unbekannter Gerätetyp",
       "web": "Web"
     },
     "end_session_button": {
       "confirmation_modal_title": "Sind Sie sicher, dass Sie diese Sitzung abmelden möchten?",
-      "text": "Sitzung beenden"
+      "text": "Ausloggen"
     },
     "error": {
-      "hideDetails": "Hide details",
-      "showDetails": "Show details",
-      "subtitle": "An unexpected error occurred. Please try again.",
+      "hideDetails": "Details ausblenden",
+      "showDetails": "Details anzeigen",
+      "subtitle": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut",
       "title": "Etwas ist schief gelaufen"
     },
     "error_boundary_title": "Etwas ist schief gelaufen",
@@ -82,13 +95,15 @@
       "inactive_90_days": "Seit über 90 Tagen inaktiv"
     },
     "nav": {
+      "devices": "Geräte",
       "profile": "Profil",
-      "sessions": "Sitzungen"
+      "sessions": "Sitzungen",
+      "settings": "Einstellungen"
     },
     "not_found_alert_title": "Nicht gefunden.",
     "not_logged_in_alert": "Sie sind nicht angemeldet.",
     "oauth2_client_detail": {
-      "details_title": "Client",
+      "details_title": "Geräte Informationen",
       "id": "Client-ID",
       "name": "Name",
       "policy": "Richtlinie",
@@ -96,7 +111,7 @@
     },
     "oauth2_session_detail": {
       "client_details_name": "Name",
-      "client_title": "Client",
+      "client_title": "Geräte Informationen",
       "session_details_title": "Sitzung"
     },
     "pagination_controls": {
@@ -119,6 +134,8 @@
       "label": "Sitzung auswählen"
     },
     "session": {
+      "client_id_label": "Geräte ID",
+      "current": "Aktuell",
       "current_badge": "Aktuell",
       "device_id_label": "Geräte-ID",
       "finished_date": "Beendet <datetime/>",
@@ -127,9 +144,13 @@
       "ip_label": "IP-Adresse",
       "last_active_label": "Zuletzt aktiv",
       "last_auth_label": "Letzte Anmeldung",
+      "name_for_platform": "{{name}} für {{platform}}",
       "scopes_label": "Berechtigungsumfang",
       "signed_in_date": "Angemeldet <datetime/>",
       "signed_in_label": "Angemeldet",
+      "title": "Geräte Details",
+      "unknown_browser": "Unbekannter Browser",
+      "unknown_device": "Unbekanntes Gerät",
       "uri_label": "URI",
       "user_id_label": "Benutzer-ID",
       "username_label": "Benutzername"
@@ -149,17 +170,17 @@
       "title": "Nicht verifizierte E-Mail-Adresse"
     },
     "user_email": {
-      "cant_delete_primary": "Choose a different primary email to delete this one.",
+      "cant_delete_primary": "Wählen Sie eine andere primäre E-Mail-Adresse, um diese zu löschen.",
       "delete_button_confirmation_modal": {
-        "action": "Delete email",
-        "body": "Möchten Sie diese E-Mail-Adresse wirklich entfernen?"
+        "action": "E-Mail löschen",
+        "body": "Diese E-Mail löschen?"
       },
       "delete_button_title": "E-Mail-Adresse entfernen",
       "email": "E-Mail",
       "make_primary_button": "Als primäre Adresse festlegen",
-      "not_verified": "Not verified",
+      "not_verified": "Nicht verifiziert",
       "primary_email": "Primäre E-Mail-Adresse",
-      "retry_button": "Verifizierung wiederholen",
+      "retry_button": "Code erneut senden",
       "unverified": "Nicht verifiziert"
     },
     "user_email_list": {
@@ -173,6 +194,8 @@
       "display_name_field_label": "Anzeigename"
     },
     "user_sessions_overview": {
+      "active_sessions:one": "{{count}} aktive Sitzung",
+      "active_sessions:other": "{{count}} aktive Sitzungen",
       "heading": "Wo Sie angemeldet sind"
     },
     "verify_email": {
@@ -193,6 +216,17 @@
       "resend_email": "E-Mail erneut senden",
       "sent": "Gesendet!",
       "unknown_email": "Unbekannte E-Mail-Adresse"
+    }
+  },
+  "mas": {
+    "scope": {
+      "edit_profile": "Profil und Kontaktdaten bearbeiten",
+      "manage_sessions": "Verwalte deine Geräte und Sitzungen",
+      "mas_admin": "Verwalte jeden Benutzer auf dem Matrix-Authentication-Service",
+      "send_messages": "Sende neue Nachrichten in Deinem Namen",
+      "synapse_admin": "Verwalte den Synapse-Homeserver",
+      "view_messages": "Zeige vorhandene Nachrichten und Daten an",
+      "view_profile": "Profil und Ihre Kontaktdaten anzeigen"
     }
   }
 }

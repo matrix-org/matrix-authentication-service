@@ -2,8 +2,10 @@
   "action": {
     "back": "Retour",
     "cancel": "Annuler",
+    "clear": "Effacer",
     "close": "Fermer",
     "continue": "Continuer",
+    "edit": "Éditer",
     "save": "Enregistrer"
   },
   "branding": {
@@ -24,6 +26,15 @@
     "previous": "Précédent"
   },
   "frontend": {
+    "account": {
+      "edit_profile": {
+        "display_name_help": "C'est ce que les autres personnes verront là où vous êtes connecté.",
+        "display_name_label": "Pseudonyme",
+        "title": "Editer le profil",
+        "username_label": "Nom d’utilisateur"
+      },
+      "title": "Votre compte"
+    },
     "add_email_form": {
       "email_denied_alert": {
         "text": "L’adresse e-mail saisie n’est pas autorisée par la politique du serveur.",
@@ -62,12 +73,14 @@
     "device_type_icon_label": {
       "desktop": "Ordinateur",
       "mobile": "Mobile",
+      "pc": "Ordinateur",
+      "tablet": "Tablette",
       "unknown": "Type d’appareil inconnu",
       "web": "Web"
     },
     "end_session_button": {
       "confirmation_modal_title": "Êtes-vous sûr de vouloir terminer cette session ?",
-      "text": "Terminer la session"
+      "text": "Se déconnecter"
     },
     "error": {
       "hideDetails": "Masquer les détails",
@@ -82,8 +95,10 @@
       "inactive_90_days": "Inactif depuis plus de 90 jours"
     },
     "nav": {
+      "devices": "Appareil",
       "profile": "Profil",
-      "sessions": "Sessions"
+      "sessions": "Sessions",
+      "settings": "Paramètres"
     },
     "not_found_alert_title": "Introuvable.",
     "not_logged_in_alert": "Vous n’êtes pas connecté.",
@@ -119,6 +134,8 @@
       "label": "Sélectionner une session"
     },
     "session": {
+      "client_id_label": "Identifiant de l'application",
+      "current": "Actuel",
       "current_badge": "Cet appareil",
       "device_id_label": "ID de l’appareil",
       "finished_date": "Terminé <datetime/>",
@@ -127,11 +144,15 @@
       "ip_label": "Adresse IP",
       "last_active_label": "Dernière activité",
       "last_auth_label": "Dernière authentification",
+      "name_for_platform": "{{name}} pour {{platform}}",
       "scopes_label": "Scopes",
       "signed_in_date": "Connecté <datetime/>",
       "signed_in_label": "Connecté",
+      "title": "Détails de la session",
+      "unknown_browser": "Navigateur inconnu",
+      "unknown_device": "Appareil inconnu",
       "uri_label": "Uri",
-      "user_id_label": "User ID",
+      "user_id_label": "Identifiant",
       "username_label": "Nom d'utilisateur"
     },
     "session_detail": {
@@ -173,6 +194,8 @@
       "display_name_field_label": "Pseudonyme"
     },
     "user_sessions_overview": {
+      "active_sessions:one": "{{count}}session active",
+      "active_sessions:other": "{{count}}sessions actives",
       "heading": "Où vous êtes connecté"
     },
     "verify_email": {
@@ -193,6 +216,17 @@
       "resend_email": "Renvoyer l’e-mail",
       "sent": "Envoyé !",
       "unknown_email": "Adresse e-mail inconnue"
+    }
+  },
+  "mas": {
+    "scope": {
+      "edit_profile": "Modifier votre profil et vos coordonnées",
+      "manage_sessions": "Gérer vos appareils et vos sessions",
+      "mas_admin": "Administrer n'importe quel utilisateur dans matrix-authentication-service",
+      "send_messages": "Envoyer de nouveaux messages en votre nom",
+      "synapse_admin": "Administrer le serveur d’accueil Synapse",
+      "view_messages": "Afficher vos messages et données existants",
+      "view_profile": "Voir les informations de votre profil et vos coordonnées"
     }
   }
 }

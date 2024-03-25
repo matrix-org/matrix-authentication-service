@@ -2,8 +2,10 @@
   "action": {
     "back": "返回",
     "cancel": "取消",
+    "clear": "Clear",
     "close": "关闭",
     "continue": "继续",
+    "edit": "Edit",
     "save": "保存"
   },
   "branding": {
@@ -24,6 +26,15 @@
     "previous": "上一步"
   },
   "frontend": {
+    "account": {
+      "edit_profile": {
+        "display_name_help": "This is what others will see wherever you’re signed in.",
+        "display_name_label": "Display name",
+        "title": "Edit profile",
+        "username_label": "Username"
+      },
+      "title": "Your account"
+    },
     "add_email_form": {
       "email_denied_alert": {
         "text": "服务器策略不允许输入的电子邮件地址。",
@@ -61,6 +72,8 @@
     "device_type_icon_label": {
       "desktop": "桌面",
       "mobile": "手机",
+      "pc": "Computer",
+      "tablet": "Tablet",
       "unknown": "未知设备类型",
       "web": "网页"
     },
@@ -77,12 +90,14 @@
     "error_boundary_title": "出了点问题",
     "last_active": {
       "active_date": "活跃 {{relativeDate}}",
-      "active_now": "现在激活",
+      "active_now": "活跃",
       "inactive_90_days": "已停用90天以上"
     },
     "nav": {
+      "devices": "Devices",
       "profile": "个人资料",
-      "sessions": "会话"
+      "sessions": "会话",
+      "settings": "Settings"
     },
     "not_found_alert_title": "未找到。",
     "not_logged_in_alert": "尚未登录。",
@@ -118,6 +133,8 @@
       "label": "选择会话"
     },
     "session": {
+      "client_id_label": "Client ID",
+      "current": "Current",
       "current_badge": "当前",
       "device_id_label": "设备 ID",
       "finished_date": "已完成 <datetime/>",
@@ -126,9 +143,13 @@
       "ip_label": "IP 地址",
       "last_active_label": "最后活动",
       "last_auth_label": "最后认证",
+      "name_for_platform": "{{name}} for {{platform}}",
       "scopes_label": "范围",
-      "signed_in_date": "已登录 <datetime/>",
+      "signed_in_date": "<datetime/>已登录",
       "signed_in_label": "已登录",
+      "title": "Device details",
+      "unknown_browser": "Unknown browser",
+      "unknown_device": "Unknown device",
       "uri_label": "Uri",
       "user_id_label": "用户 ID",
       "username_label": "用户名"
@@ -171,6 +192,8 @@
       "display_name_field_label": "显示名称"
     },
     "user_sessions_overview": {
+      "active_sessions:one": "{{count}} active session",
+      "active_sessions:other": "{{count}} active sessions",
       "heading": "您登录的位置"
     },
     "verify_email": {
@@ -191,6 +214,17 @@
       "resend_email": "重新发送电子邮件",
       "sent": "已发送！",
       "unknown_email": "未知的电子邮件地址"
+    }
+  },
+  "mas": {
+    "scope": {
+      "edit_profile": "编辑个人资料和联系方式",
+      "manage_sessions": "管理设备和会话",
+      "mas_admin": "管理 matrix-authentication-service 上的用户",
+      "send_messages": "代您发送新消息",
+      "synapse_admin": "管理 Synapse 服务器",
+      "view_messages": "查看现有信息和数据",
+      "view_profile": "查看个人资料信息和联系方式"
     }
   }
 }
