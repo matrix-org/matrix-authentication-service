@@ -132,7 +132,7 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      metadata: ${{ steps.bake.outputs.metadata }}
+      metadata: ${{ steps.output.outputs.metadata }}
 
     permissions:
       contents: read
@@ -240,6 +240,16 @@ jobs:
             base.cache-from=type=registry,ref=${{ env.BUILDCACHE }}:buildcache
             base.cache-to=type=registry,ref=${{ env.BUILDCACHE }}:buildcache,mode=max
 
+      - name: Transform bake output
+        # This transforms the ouput to an object which lookes like this:
+        # { reguar: { digest: "…", tags: ["…", "…"] }, debug: { digest: "…", tags: ["…"] }, … }
+        id: output
+        if: github.event_name != 'pull_request'
+        run: |
+          echo 'metadata<<EOF' >> $GITHUB_OUTPUT
+          echo '${{ steps.bake.outputs.metadata }}' | jq -c 'map_values({ digest: .["containerimage.digest"], tags: (.["image.name"] | split(",")) })' >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+
       - name: Sign the images with GitHub Actions provided token
         # Only sign on tags and on commits on main branch
         if: |
@@ -248,9 +258,9 @@ jobs:
 
         run: |-
           cosign sign --yes \
-            "${{ env.IMAGE }}@${{ fromJSON(steps.bake.outputs.metadata).regular['containerimage.digest'] }}" \
-            "${{ env.IMAGE }}@${{ fromJSON(steps.bake.outputs.metadata).debug['containerimage.digest'] }}" \
-            "${{ env.IMAGE_SYN2MAS }}@${{ fromJSON(steps.bake.outputs.metadata).syn2mas['containerimage.digest'] }}"
+            "${{ env.IMAGE }}@${{ fromJSON(steps.output.outputs.metadata).regular.digest }}" \
+            "${{ env.IMAGE }}@${{ fromJSON(steps.output.outputs.metadata).debug.digest }}" \
+            "${{ env.IMAGE_SYN2MAS }}@${{ fromJSON(steps.output.outputs.metadata).syn2mas.digest }}"
           
 
   syn2mas:
@@ -330,33 +340,36 @@ jobs:
             
               - Digest: 
                 ```
-                ${{ env.IMAGE }}@${{ fromJSON(needs.build-image.outputs.metadata).regular['containerimage.digest'] }}
+                ${{ env.IMAGE }}@${{ fromJSON(needs.build-image.outputs.metadata).regular.digest }}
                 ```
               - Tags:
                 ```
-                ${{ fromJSON(needs.build-image.outputs.metadata).regular['image.name'] }}
+                ${{ join(fromJSON(needs.build-image.outputs.metadata).regular.tags, '
+                ') }}
                 ```
             
             Debug variant: 
             
               - Digest: 
                 ```
-                ${{ env.IMAGE }}@${{ fromJSON(needs.build-image.outputs.metadata).debug['containerimage.digest'] }}
+                ${{ env.IMAGE }}@${{ fromJSON(needs.build-image.outputs.metadata).debug.digest }}
                 ```
               - Tags:
                 ```
-                ${{ fromJSON(needs.build-image.outputs.metadata).debug['image.name'] }}
+                ${{ join(fromJSON(needs.build-image.outputs.metadata).debug.tags, '
+                ') }}
                 ```
             
             `syn2mas` migration tool: 
             
               - Digest: 
                 ```
-                ${{ env.IMAGE_SYN2MAS }}@${{ fromJSON(needs.build-image.outputs.metadata).syn2mas['containerimage.digest'] }}
+                ${{ env.IMAGE_SYN2MAS }}@${{ fromJSON(needs.build-image.outputs.metadata).syn2mas.digest }}
                 ```
               - Tags:
                 ```
-                ${{ fromJSON(needs.build-image.outputs.metadata).syn2mas['image.name'] }}
+                ${{ join(fromJSON(needs.build-image.outputs.metadata).syn2mas.tags, '
+                ') }}
                 ```
 
           files: |
