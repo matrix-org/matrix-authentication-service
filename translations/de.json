@@ -97,7 +97,7 @@
         "heading": "Konto erstellen"
       },
       "sign_in_instead": "Stattdessen anmelden",
-      "terms_of_service": "I agree to the <a href=\"%s\" data-kind=\"primary\" class=\"cpd-link\">Terms and Conditions</a>"
+      "terms_of_service": "Ich stimme den <a href=\"%s\" data-kind=\"primary\" class=\"cpd-link\">Allgemeinen Geschäftsbedingungen</a> zu."
     },
     "scope": {
       "edit_profile": "Ihr Profil und Ihre Kontaktdaten bearbeiten",

@@ -100,9 +100,9 @@
       "terms_of_service": "J'accepte les <a href=\"%s\" data-kind=\"primary\" class=\"cpd-link\">Conditions d'utilisation</a>"
     },
     "scope": {
-      "edit_profile": "Modifiez votre profil et vos coordonnées",
-      "manage_sessions": "Gérez vos appareils et vos sessions",
-      "mas_admin": "Administrez n'importe quel utilisateur dans matrix-authentication-service",
+      "edit_profile": "Modifier votre profil et vos coordonnées",
+      "manage_sessions": "Gérer vos appareils et vos sessions",
+      "mas_admin": "Administrer n'importe quel utilisateur dans matrix-authentication-service",
       "send_messages": "Envoyez de nouveaux messages en votre nom",
       "synapse_admin": "Administrer le serveur d’accueil Synapse",
       "view_messages": "Afficher vos messages et données existants",
