@@ -321,7 +321,7 @@ jobs:
       - name: Create the archives
         run: |
           for arch in x86_64 aarch64; do
-            mv artifacts/target/${arch}-unknown-linux-musl/release/mas-cli dist/mas-cli
+            mv artifacts/target/${arch}-unknown-linux-gnu/release/mas-cli dist/mas-cli
             chmod u=rwx,go=rx dist/mas-cli
             tar -czvf mas-cli-${arch}-linux.tar.gz --owner=0 --group=0 -C dist/ .
           
