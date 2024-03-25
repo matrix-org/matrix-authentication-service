@@ -17,7 +17,10 @@ ignore = [
 
     # RSA key extraction "Marvin Attack". This is only relevant when using
     # PKCS#1 v1.5 encryption, which we don't
-    "RUSTSEC-2023-0071"
+    "RUSTSEC-2023-0071",
+
+    # yaml-rust is unmaintained, and used by insta, which isn't a production dependency
+    "RUSTSEC-2024-0320",
 ]
 
 [licenses]
