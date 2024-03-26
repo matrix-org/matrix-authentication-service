@@ -33,7 +33,7 @@ use serde::Deserialize;
 use zeroize::Zeroizing;
 
 use super::shared::OptionalPostAuthAction;
-use crate::{passwords::PasswordManager, BoundActivityTracker, PreferredLanguage};
+use crate::{passwords::PasswordManager, BoundActivityTracker, PreferredLanguage, SiteConfig};
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct ReauthForm {
@@ -45,15 +45,15 @@ pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     PreferredLanguage(locale): PreferredLanguage,
-    State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
+    State(site_config): State<SiteConfig>,
     activity_tracker: BoundActivityTracker,
     mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: CookieJar,
 ) -> Result<Response, FancyError> {
-    if !password_manager.is_enabled() {
+    if !site_config.password_login_enabled {
         // XXX: do something better here
         return Ok(url_builder
             .redirect(&mas_router::Account::default())
@@ -99,12 +99,13 @@ pub(crate) async fn post(
     clock: BoxClock,
     State(password_manager): State<PasswordManager>,
     State(url_builder): State<UrlBuilder>,
+    State(site_config): State<SiteConfig>,
     mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: CookieJar,
     Form(form): Form<ProtectedForm<ReauthForm>>,
 ) -> Result<Response, FancyError> {
-    if !password_manager.is_enabled() {
+    if !site_config.password_login_enabled {
         // XXX: do something better here
         return Ok(StatusCode::METHOD_NOT_ALLOWED.into_response());
     }

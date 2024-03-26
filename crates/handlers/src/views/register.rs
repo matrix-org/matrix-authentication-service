@@ -66,8 +66,8 @@ pub(crate) async fn get(
     clock: BoxClock,
     PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
-    State(password_manager): State<PasswordManager>,
     State(url_builder): State<UrlBuilder>,
+    State(site_config): State<SiteConfig>,
     mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: CookieJar,
@@ -82,8 +82,8 @@ pub(crate) async fn get(
         return Ok((cookie_jar, reply).into_response());
     }
 
-    if !password_manager.is_enabled() {
-        // If password-based login is disabled, redirect to the login page here
+    if !site_config.password_registration_enabled {
+        // If password-based registration is disabled, redirect to the login page here
         return Ok(url_builder
             .redirect(&mas_router::Login::from(query.post_auth_action))
             .into_response());
@@ -122,7 +122,7 @@ pub(crate) async fn post(
     Form(form): Form<ProtectedForm<RegisterForm>>,
 ) -> Result<Response, FancyError> {
     let user_agent = user_agent.map(|ua| UserAgent::parse(ua.as_str().to_owned()));
-    if !password_manager.is_enabled() {
+    if !site_config.password_registration_enabled {
         return Ok(StatusCode::METHOD_NOT_ALLOWED.into_response());
     }
 
@@ -301,18 +301,25 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        passwords::PasswordManager,
-        test_utils::{init_tracing, CookieHelper, RequestBuilderExt, ResponseExt, TestState},
+        test_utils::{
+            init_tracing, test_site_config, CookieHelper, RequestBuilderExt, ResponseExt, TestState,
+        },
+        SiteConfig,
     };
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_password_disabled(pool: PgPool) {
         init_tracing();
-        let state = {
-            let mut state = TestState::from_pool(pool).await.unwrap();
-            state.password_manager = PasswordManager::disabled();
-            state
-        };
+        let state = TestState::from_pool_with_site_config(
+            pool,
+            SiteConfig {
+                password_login_enabled: false,
+                password_registration_enabled: false,
+                ..test_site_config()
+            },
+        )
+        .await
+        .unwrap();
 
         let request = Request::get(&*mas_router::Register::default().path_and_query()).empty();
         let response = state.request(request).await;

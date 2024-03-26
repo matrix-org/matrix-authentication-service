@@ -1,3 +1,17 @@
+// Copyright 2024 The Matrix.org Foundation C.I.C.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 use std::sync::Arc;
 
 use minijinja::{value::StructObject, Value};
@@ -6,11 +20,9 @@ use minijinja::{value::StructObject, Value};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SiteBranding {
     server_name: Arc<str>,
-    service_name: Option<Arc<str>>,
     policy_uri: Option<Arc<str>>,
     tos_uri: Option<Arc<str>>,
     imprint: Option<Arc<str>>,
-    logo_uri: Option<Arc<str>>,
 }
 
 impl SiteBranding {
@@ -19,19 +31,10 @@ impl SiteBranding {
     pub fn new(server_name: impl Into<Arc<str>>) -> Self {
         Self {
             server_name: server_name.into(),
-            service_name: None,
             policy_uri: None,
             tos_uri: None,
             imprint: None,
-            logo_uri: None,
         }
-    }
-
-    /// Set the service name.
-    #[must_use]
-    pub fn with_service_name(mut self, service_name: impl Into<Arc<str>>) -> Self {
-        self.service_name = Some(service_name.into());
-        self
     }
 
     /// Set the policy URI.
@@ -54,36 +57,20 @@ impl SiteBranding {
         self.imprint = Some(imprint.into());
         self
     }
-
-    /// Set the logo URI.
-    #[must_use]
-    pub fn with_logo_uri(mut self, logo_uri: impl Into<Arc<str>>) -> Self {
-        self.logo_uri = Some(logo_uri.into());
-        self
-    }
 }
 
 impl StructObject for SiteBranding {
     fn get_field(&self, name: &str) -> Option<Value> {
         match name {
             "server_name" => Some(self.server_name.clone().into()),
-            "service_name" => self.service_name.clone().map(Value::from),
             "policy_uri" => self.policy_uri.clone().map(Value::from),
             "tos_uri" => self.tos_uri.clone().map(Value::from),
             "imprint" => self.imprint.clone().map(Value::from),
-            "logo_uri" => self.logo_uri.clone().map(Value::from),
             _ => None,
         }
     }
 
     fn static_fields(&self) -> Option<&'static [&'static str]> {
-        Some(&[
-            "server_name",
-            "service_name",
-            "policy_uri",
-            "tos_uri",
-            "imprint",
-            "logo_uri",
-        ])
+        Some(&["server_name", "policy_uri", "tos_uri", "imprint"])
     }
 }
