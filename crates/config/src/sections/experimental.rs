@@ -27,6 +27,15 @@ fn is_default_token_ttl(value: &Duration) -> bool {
     *value == default_token_ttl()
 }
 
+const fn default_true() -> bool {
+    true
+}
+
+#[allow(clippy::trivially_copy_pass_by_ref)]
+const fn is_default_true(value: &bool) -> bool {
+    *value == default_true()
+}
+
 /// Configuration sections for experimental options
 ///
 /// Do not change these options unless you know what you are doing.
@@ -51,6 +60,11 @@ pub struct ExperimentalConfig {
     )]
     #[serde_as(as = "serde_with::DurationSeconds<i64>")]
     pub compat_token_ttl: Duration,
+
+    /// Whether to enable self-service password registration. Defaults to `true`
+    /// if password authentication is enabled.
+    #[serde(default = "default_true", skip_serializing_if = "is_default_true")]
+    pub password_registration_enabled: bool,
 }
 
 impl Default for ExperimentalConfig {
@@ -58,13 +72,16 @@ impl Default for ExperimentalConfig {
         Self {
             access_token_ttl: default_token_ttl(),
             compat_token_ttl: default_token_ttl(),
+            password_registration_enabled: default_true(),
         }
     }
 }
 
 impl ExperimentalConfig {
     pub(crate) fn is_default(&self) -> bool {
-        is_default_token_ttl(&self.access_token_ttl) && is_default_token_ttl(&self.compat_token_ttl)
+        is_default_token_ttl(&self.access_token_ttl)
+            && is_default_token_ttl(&self.compat_token_ttl)
+            && is_default_true(&self.password_registration_enabled)
     }
 }
 

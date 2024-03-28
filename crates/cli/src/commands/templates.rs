@@ -14,12 +14,15 @@
 
 use clap::Parser;
 use figment::Figment;
-use mas_config::{BrandingConfig, ConfigurationSection, MatrixConfig, TemplatesConfig};
+use mas_config::{
+    BrandingConfig, ConfigurationSection, ExperimentalConfig, MatrixConfig, PasswordsConfig,
+    TemplatesConfig,
+};
 use mas_storage::{Clock, SystemClock};
 use rand::SeedableRng;
 use tracing::info_span;
 
-use crate::util::templates_from_config;
+use crate::util::{site_config_from_config, templates_from_config};
 
 #[derive(Parser, Debug)]
 pub(super) struct Options {
@@ -43,19 +46,22 @@ impl Options {
                 let template_config = TemplatesConfig::extract(figment)?;
                 let branding_config = BrandingConfig::extract(figment)?;
                 let matrix_config = MatrixConfig::extract(figment)?;
+                let experimental_config = ExperimentalConfig::extract(figment)?;
+                let password_config = PasswordsConfig::extract(figment)?;
 
                 let clock = SystemClock::default();
                 // XXX: we should disallow SeedableRng::from_entropy
                 let mut rng = rand_chacha::ChaChaRng::from_entropy();
                 let url_builder =
                     mas_router::UrlBuilder::new("https://example.com/".parse()?, None, None);
-                let templates = templates_from_config(
-                    &template_config,
+                let site_config = site_config_from_config(
                     &branding_config,
-                    &url_builder,
-                    &matrix_config.homeserver,
-                )
-                .await?;
+                    &matrix_config,
+                    &experimental_config,
+                    &password_config,
+                );
+                let templates =
+                    templates_from_config(&template_config, &site_config, &url_builder).await?;
                 templates.check_render(clock.now(), &mut rng)?;
 
                 Ok(())

@@ -47,7 +47,7 @@ pub use self::{
         EmailVerificationPageContext, EmptyContext, ErrorContext, FormPostContext, IndexContext,
         LoginContext, LoginFormField, NotFoundContext, PolicyViolationContext, PostAuthContext,
         PostAuthContextInner, ReauthContext, ReauthFormField, RegisterContext, RegisterFormField,
-        SiteBranding, TemplateContext, UpstreamExistingLinkContext, UpstreamRegister,
+        SiteBranding, SiteFeatures, TemplateContext, UpstreamExistingLinkContext, UpstreamRegister,
         UpstreamRegisterFormField, UpstreamSuggestLink, WithCsrf, WithLanguage,
         WithOptionalSession, WithSession,
     },
@@ -70,6 +70,7 @@ pub struct Templates {
     translator: Arc<ArcSwap<Translator>>,
     url_builder: UrlBuilder,
     branding: SiteBranding,
+    features: SiteFeatures,
     vite_manifest_path: Utf8PathBuf,
     translations_path: Utf8PathBuf,
     path: Utf8PathBuf,
@@ -149,6 +150,7 @@ impl Templates {
         vite_manifest_path: Utf8PathBuf,
         translations_path: Utf8PathBuf,
         branding: SiteBranding,
+        features: SiteFeatures,
     ) -> Result<Self, TemplateLoadingError> {
         let (translator, environment) = Self::load_(
             &path,
@@ -156,6 +158,7 @@ impl Templates {
             &vite_manifest_path,
             &translations_path,
             branding.clone(),
+            features,
         )
         .await?;
         Ok(Self {
@@ -166,6 +169,7 @@ impl Templates {
             vite_manifest_path,
             translations_path,
             branding,
+            features,
         })
     }
 
@@ -175,6 +179,7 @@ impl Templates {
         vite_manifest_path: &Utf8Path,
         translations_path: &Utf8Path,
         branding: SiteBranding,
+        features: SiteFeatures,
     ) -> Result<(Arc<Translator>, Arc<minijinja::Environment<'static>>), TemplateLoadingError> {
         let path = path.to_owned();
         let span = tracing::Span::current();
@@ -230,6 +235,7 @@ impl Templates {
         .await??;
 
         env.add_global("branding", Value::from_struct_object(branding));
+        env.add_global("features", Value::from_struct_object(features));
 
         self::functions::register(
             &mut env,
@@ -265,6 +271,7 @@ impl Templates {
             &self.vite_manifest_path,
             &self.translations_path,
             self.branding.clone(),
+            self.features,
         )
         .await?;
 
@@ -425,7 +432,11 @@ mod tests {
 
         let path = Utf8Path::new(env!("CARGO_MANIFEST_DIR")).join("../../templates/");
         let url_builder = UrlBuilder::new("https://example.com/".parse().unwrap(), None, None);
-        let branding = SiteBranding::new("example.com").with_service_name("Example");
+        let branding = SiteBranding::new("example.com");
+        let features = SiteFeatures {
+            password_login: true,
+            password_registration: true,
+        };
         let vite_manifest_path =
             Utf8Path::new(env!("CARGO_MANIFEST_DIR")).join("../../frontend/dist/manifest.json");
         let translations_path =
@@ -436,6 +447,7 @@ mod tests {
             vite_manifest_path,
             translations_path,
             branding,
+            features,
         )
         .await
         .unwrap();

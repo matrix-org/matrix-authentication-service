@@ -17,13 +17,13 @@ use std::time::Duration;
 use anyhow::Context;
 use mas_config::{
     BrandingConfig, DatabaseConfig, EmailConfig, EmailSmtpMode, EmailTransportKind,
-    PasswordsConfig, PolicyConfig, TemplatesConfig,
+    ExperimentalConfig, MatrixConfig, PasswordsConfig, PolicyConfig, TemplatesConfig,
 };
 use mas_email::{MailTransport, Mailer};
-use mas_handlers::{passwords::PasswordManager, ActivityTracker};
+use mas_handlers::{passwords::PasswordManager, ActivityTracker, SiteConfig};
 use mas_policy::PolicyFactory;
 use mas_router::UrlBuilder;
-use mas_templates::{SiteBranding, TemplateLoadingError, Templates};
+use mas_templates::{TemplateLoadingError, Templates};
 use sqlx::{
     postgres::{PgConnectOptions, PgPoolOptions},
     ConnectOptions, PgConnection, PgPool,
@@ -119,36 +119,37 @@ pub async fn policy_factory_from_config(
         .context("failed to load the policy")
 }
 
+pub fn site_config_from_config(
+    branding_config: &BrandingConfig,
+    matrix_config: &MatrixConfig,
+    experimental_config: &ExperimentalConfig,
+    password_config: &PasswordsConfig,
+) -> SiteConfig {
+    SiteConfig {
+        access_token_ttl: experimental_config.access_token_ttl,
+        compat_token_ttl: experimental_config.compat_token_ttl,
+        server_name: matrix_config.homeserver.clone(),
+        policy_uri: branding_config.policy_uri.clone(),
+        tos_uri: branding_config.tos_uri.clone(),
+        imprint: branding_config.imprint.clone(),
+        password_login_enabled: password_config.enabled(),
+        password_registration_enabled: password_config.enabled()
+            && experimental_config.password_registration_enabled,
+    }
+}
+
 pub async fn templates_from_config(
     config: &TemplatesConfig,
-    branding: &BrandingConfig,
+    site_config: &SiteConfig,
     url_builder: &UrlBuilder,
-    server_name: &str,
 ) -> Result<Templates, TemplateLoadingError> {
-    let mut site_branding = SiteBranding::new(server_name);
-
-    if let Some(service_name) = branding.service_name.as_deref() {
-        site_branding = site_branding.with_service_name(service_name);
-    }
-
-    if let Some(policy_uri) = &branding.policy_uri {
-        site_branding = site_branding.with_policy_uri(policy_uri.as_str());
-    }
-
-    if let Some(tos_uri) = &branding.tos_uri {
-        site_branding = site_branding.with_tos_uri(tos_uri.as_str());
-    }
-
-    if let Some(imprint) = branding.imprint.as_deref() {
-        site_branding = site_branding.with_imprint(imprint);
-    }
-
     Templates::load(
         config.path.clone(),
         url_builder.clone(),
         config.assets_manifest.clone(),
         config.translations_path.clone(),
-        site_branding,
+        site_config.templates_branding(),
+        site_config.templates_features(),
     )
     .await
 }

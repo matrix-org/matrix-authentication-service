@@ -27,6 +27,8 @@ use oauth2_types::{
 };
 use serde::Serialize;
 
+use crate::SiteConfig;
+
 #[derive(Debug, Serialize)]
 struct DiscoveryResponse {
     #[serde(flatten)]
@@ -45,6 +47,7 @@ struct DiscoveryResponse {
 pub(crate) async fn get(
     State(key_store): State<Keystore>,
     State(url_builder): State<UrlBuilder>,
+    State(site_config): State<SiteConfig>,
 ) -> impl IntoResponse {
     // This is how clients can authenticate
     let client_auth_methods_supported = Some(vec![
@@ -136,7 +139,16 @@ pub(crate) async fn get(
     let request_parameter_supported = Some(false);
     let request_uri_parameter_supported = Some(false);
 
-    let prompt_values_supported = Some(vec![Prompt::None, Prompt::Login, Prompt::Create]);
+    let prompt_values_supported = Some({
+        let mut v = vec![Prompt::None, Prompt::Login];
+        // Advertise for prompt=create if password registration is enabled
+        // TODO: we may want to be able to forward that to upstream providers if they
+        // support it
+        if site_config.password_registration_enabled {
+            v.push(Prompt::Create);
+        }
+        v
+    });
 
     let standard = ProviderMetadata {
         issuer,

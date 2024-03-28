@@ -15,6 +15,7 @@
 //! Contexts used in templates
 
 mod branding;
+mod features;
 
 use std::{
     fmt::Formatter,
@@ -39,7 +40,7 @@ use serde::{ser::SerializeStruct, Deserialize, Serialize};
 use ulid::Ulid;
 use url::Url;
 
-pub use self::branding::SiteBranding;
+pub use self::{branding::SiteBranding, features::SiteFeatures};
 use crate::{FieldError, FormField, FormState};
 
 /// Helper trait to construct context wrappers
@@ -399,7 +400,6 @@ pub struct PostAuthContext {
 pub struct LoginContext {
     form: FormState<LoginFormField>,
     next: Option<PostAuthContext>,
-    password_disabled: bool,
     providers: Vec<UpstreamOAuthProvider>,
 }
 
@@ -413,13 +413,11 @@ impl TemplateContext for LoginContext {
             LoginContext {
                 form: FormState::default(),
                 next: None,
-                password_disabled: true,
                 providers: Vec::new(),
             },
             LoginContext {
                 form: FormState::default(),
                 next: None,
-                password_disabled: false,
                 providers: Vec::new(),
             },
             LoginContext {
@@ -432,14 +430,12 @@ impl TemplateContext for LoginContext {
                         },
                     ),
                 next: None,
-                password_disabled: false,
                 providers: Vec::new(),
             },
             LoginContext {
                 form: FormState::default()
                     .with_error_on_field(LoginFormField::Username, FieldError::Exists),
                 next: None,
-                password_disabled: false,
                 providers: Vec::new(),
             },
         ]
@@ -447,15 +443,6 @@ impl TemplateContext for LoginContext {
 }
 
 impl LoginContext {
-    /// Set whether password login is enabled or not
-    #[must_use]
-    pub fn with_password_login(self, enabled: bool) -> Self {
-        Self {
-            password_disabled: !enabled,
-            ..self
-        }
-    }
-
     /// Set the form state
     #[must_use]
     pub fn with_form_state(self, form: FormState<LoginFormField>) -> Self {

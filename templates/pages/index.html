@@ -36,7 +36,10 @@ limitations under the License.
       {{ logout.button(text=_("action.sign_out"), csrf_token=csrf_token) }}
     {% else %}
       {{ button.link(text=_("action.sign_in"), href="/login") }}
-      {{ button.link_outline(text=_("mas.navbar.register"), href="/register") }}
+
+      {% if features.password_registration %}
+        {{ button.link_outline(text=_("mas.navbar.register"), href="/register") }}
+      {% endif %}
     {% endif %}
   </main>
 {% endblock content %}

@@ -39,7 +39,7 @@ use serde::{Deserialize, Serialize};
 use zeroize::Zeroizing;
 
 use super::shared::OptionalPostAuthAction;
-use crate::{passwords::PasswordManager, BoundActivityTracker, PreferredLanguage};
+use crate::{passwords::PasswordManager, BoundActivityTracker, PreferredLanguage, SiteConfig};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct LoginForm {
@@ -56,9 +56,9 @@ pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     PreferredLanguage(locale): PreferredLanguage,
-    State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
+    State(site_config): State<SiteConfig>,
     mut repo: BoxRepository,
     activity_tracker: BoundActivityTracker,
     Query(query): Query<OptionalPostAuthAction>,
@@ -82,7 +82,7 @@ pub(crate) async fn get(
 
     // If password-based login is disabled, and there is only one upstream provider,
     // we can directly start an authorization flow
-    if !password_manager.is_enabled() && providers.len() == 1 {
+    if !site_config.password_login_enabled && providers.len() == 1 {
         let provider = providers.into_iter().next().unwrap();
 
         let mut destination = UpstreamOAuth2Authorize::new(provider.id);
@@ -96,10 +96,7 @@ pub(crate) async fn get(
 
     let content = render(
         locale,
-        LoginContext::default()
-            // XXX: we might want to have a site-wide config in the templates context instead?
-            .with_password_login(password_manager.is_enabled())
-            .with_upstream_providers(providers),
+        LoginContext::default().with_upstream_providers(providers),
         query,
         csrf_token,
         &mut repo,
@@ -116,6 +113,7 @@ pub(crate) async fn post(
     clock: BoxClock,
     PreferredLanguage(locale): PreferredLanguage,
     State(password_manager): State<PasswordManager>,
+    State(site_config): State<SiteConfig>,
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
     mut repo: BoxRepository,
@@ -126,7 +124,7 @@ pub(crate) async fn post(
     Form(form): Form<ProtectedForm<LoginForm>>,
 ) -> Result<Response, FancyError> {
     let user_agent = user_agent.map(|ua| UserAgent::parse(ua.as_str().to_owned()));
-    if !password_manager.is_enabled() {
+    if !site_config.password_login_enabled {
         // XXX: is it necessary to have better errors here?
         return Ok(StatusCode::METHOD_NOT_ALLOWED.into_response());
     }
@@ -320,18 +318,25 @@ mod test {
     use zeroize::Zeroizing;
 
     use crate::{
-        passwords::PasswordManager,
-        test_utils::{init_tracing, CookieHelper, RequestBuilderExt, ResponseExt, TestState},
+        test_utils::{
+            init_tracing, test_site_config, CookieHelper, RequestBuilderExt, ResponseExt, TestState,
+        },
+        SiteConfig,
     };
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_password_disabled(pool: PgPool) {
         init_tracing();
-        let state = {
-            let mut state = TestState::from_pool(pool).await.unwrap();
-            state.password_manager = PasswordManager::disabled();
-            state
-        };
+        let state = TestState::from_pool_with_site_config(
+            pool,
+            SiteConfig {
+                password_login_enabled: false,
+                ..test_site_config()
+            },
+        )
+        .await
+        .unwrap();
+
         let mut rng = state.rng();
 
         // Without password login and no upstream providers, we should get an error
@@ -339,7 +344,11 @@ mod test {
         let response = state.request(Request::get("/login").empty()).await;
         response.assert_status(StatusCode::OK);
         response.assert_header_value(CONTENT_TYPE, "text/html; charset=utf-8");
-        assert!(response.body().contains("No login methods available"));
+        assert!(
+            response.body().contains("No login methods available"),
+            "Response body: {}",
+            response.body()
+        );
 
         // Adding an upstream provider should redirect to it
         let mut repo = state.repository().await.unwrap();

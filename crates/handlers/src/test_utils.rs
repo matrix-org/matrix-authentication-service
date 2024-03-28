@@ -24,6 +24,7 @@ use axum::{
     extract::{FromRef, FromRequestParts},
     response::{IntoResponse, IntoResponseParts},
 };
+use chrono::Duration;
 use cookie_store::{CookieStore, RawCookie};
 use futures_util::future::BoxFuture;
 use headers::{Authorization, ContentType, HeaderMapExt, HeaderName, HeaderValue};
@@ -43,7 +44,7 @@ use mas_policy::{InstantiateError, Policy, PolicyFactory};
 use mas_router::{SimpleRoute, UrlBuilder};
 use mas_storage::{clock::MockClock, BoxClock, BoxRepository, BoxRng, Repository};
 use mas_storage_pg::{DatabaseError, PgRepository};
-use mas_templates::{SiteBranding, Templates};
+use mas_templates::Templates;
 use rand::SeedableRng;
 use rand_chacha::ChaChaRng;
 use serde::{de::DeserializeOwned, Serialize};
@@ -110,25 +111,49 @@ pub(crate) struct TestState {
     pub rng: Arc<Mutex<ChaChaRng>>,
 }
 
+fn workspace_root() -> camino::Utf8PathBuf {
+    camino::Utf8Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .canonicalize_utf8()
+        .unwrap()
+}
+
+pub fn test_site_config() -> SiteConfig {
+    SiteConfig {
+        access_token_ttl: Duration::try_minutes(5).unwrap(),
+        compat_token_ttl: Duration::try_minutes(5).unwrap(),
+        server_name: "example.com".to_owned(),
+        policy_uri: Some("https://example.com/policy".parse().unwrap()),
+        tos_uri: Some("https://example.com/tos".parse().unwrap()),
+        imprint: None,
+        password_login_enabled: true,
+        password_registration_enabled: true,
+    }
+}
+
 impl TestState {
     /// Create a new test state from the given database pool
     pub async fn from_pool(pool: PgPool) -> Result<Self, anyhow::Error> {
-        let workspace_root = camino::Utf8Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("..")
-            .join("..");
+        Self::from_pool_with_site_config(pool, test_site_config()).await
+    }
+
+    /// Create a new test state from the given database pool and site config
+    pub async fn from_pool_with_site_config(
+        pool: PgPool,
+        site_config: SiteConfig,
+    ) -> Result<Self, anyhow::Error> {
+        let workspace_root = workspace_root();
 
         let url_builder = UrlBuilder::new("https://example.com/".parse()?, None, None);
-
-        let site_branding = SiteBranding::new("example.com")
-            .with_service_name("Example")
-            .with_tos_uri("https://example.com/tos");
 
         let templates = Templates::load(
             workspace_root.join("templates"),
             url_builder.clone(),
             workspace_root.join("frontend/dist/manifest.json"),
             workspace_root.join("translations"),
-            site_branding,
+            site_config.templates_branding(),
+            site_config.templates_features(),
         )
         .await?;
 
@@ -141,23 +166,22 @@ impl TestState {
         let key_store = Keystore::new(jwks);
 
         let encrypter = Encrypter::new(&[0x42; 32]);
-        let cookie_manager =
-            CookieManager::derive_from("https://example.com".parse()?, &[0x42; 32]);
+        let cookie_manager = CookieManager::derive_from(url_builder.http_base(), &[0x42; 32]);
 
         let metadata_cache = MetadataCache::new();
 
-        let password_manager = PasswordManager::new([(1, Hasher::argon2id(None))])?;
+        let password_manager = if site_config.password_login_enabled {
+            PasswordManager::new([(1, Hasher::argon2id(None))])?
+        } else {
+            PasswordManager::disabled()
+        };
 
         let policy_factory = policy_factory(serde_json::json!({})).await?;
 
-        let homeserver_connection = Arc::new(MockHomeserverConnection::new("example.com"));
+        let homeserver_connection =
+            Arc::new(MockHomeserverConnection::new(&site_config.server_name));
 
         let http_client_factory = HttpClientFactory::new();
-
-        let site_config = SiteConfig {
-            tos_uri: Some("https://example.com/tos".parse().unwrap()),
-            ..SiteConfig::default()
-        };
 
         let clock = Arc::new(MockClock::default());
         let rng = Arc::new(Mutex::new(ChaChaRng::seed_from_u64(42)));

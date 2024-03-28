@@ -19,7 +19,7 @@ use clap::Parser;
 use figment::Figment;
 use itertools::Itertools;
 use mas_config::{AppConfig, ClientsConfig, ConfigurationSection, UpstreamOAuth2Config};
-use mas_handlers::{ActivityTracker, CookieManager, HttpClientFactory, MetadataCache, SiteConfig};
+use mas_handlers::{ActivityTracker, CookieManager, HttpClientFactory, MetadataCache};
 use mas_listener::{server::Server, shutdown::ShutdownStream};
 use mas_matrix_synapse::SynapseConnection;
 use mas_router::UrlBuilder;
@@ -37,7 +37,8 @@ use crate::{
     app_state::AppState,
     util::{
         database_pool_from_config, mailer_from_config, password_manager_from_config,
-        policy_factory_from_config, register_sighup, templates_from_config,
+        policy_factory_from_config, register_sighup, site_config_from_config,
+        templates_from_config,
     },
 };
 
@@ -138,14 +139,17 @@ impl Options {
             None,
         );
 
-        // Load and compile the templates
-        let templates = templates_from_config(
-            &config.templates,
+        // Load the site configuration
+        let site_config = site_config_from_config(
             &config.branding,
-            &url_builder,
-            &config.matrix.homeserver,
-        )
-        .await?;
+            &config.matrix,
+            &config.experimental,
+            &config.passwords,
+        );
+
+        // Load and compile the templates
+        let templates =
+            templates_from_config(&config.templates, &site_config, &url_builder).await?;
 
         let http_client_factory = HttpClientFactory::new();
 
@@ -178,12 +182,6 @@ impl Options {
 
         // The upstream OIDC metadata cache
         let metadata_cache = MetadataCache::new();
-
-        let site_config = SiteConfig {
-            tos_uri: config.branding.tos_uri.clone(),
-            access_token_ttl: config.experimental.access_token_ttl,
-            compat_token_ttl: config.experimental.compat_token_ttl,
-        };
 
         // Initialize the activity tracker
         // Activity is flushed every minute

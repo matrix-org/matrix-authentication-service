@@ -20,7 +20,7 @@ limitations under the License.
 
 {% block content %}
   <main class="flex flex-col gap-6">
-    {% if not password_disabled %}
+    {% if features.password_login %}
       <header class="page-heading">
         <div class="icon">
           {{ icon.user_profile_solid() }}
@@ -62,7 +62,7 @@ limitations under the License.
         {{ button.button(text=_("action.continue")) }}
       </form>
 
-      {% if not next or next.kind != "link_upstream" %}
+      {% if (not next or next.kind != "link_upstream") and features.password_registration %}
         <div class="flex gap-1 justify-center items-center cpd-text-body-md-regular">
           <p class="cpd-text-secondary">
             {{ _("mas.login.call_to_register") }}
@@ -75,7 +75,7 @@ limitations under the License.
     {% endif %}
 
     {% if providers %}
-      {% if not password_disabled %}
+      {% if features.password_login %}
         {{ field.separator() }}
       {% endif %}
 
@@ -89,7 +89,7 @@ limitations under the License.
       {% endfor %}
     {% endif %}
 
-    {% if not providers and password_disabled %}
+    {% if not providers and not features.password_login %}
       <div class="text-center">
         {{ _("mas.login.no_login_methods") }}
       </div>

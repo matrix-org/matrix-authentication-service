@@ -24,7 +24,9 @@ use rand::{
 };
 use tracing::{info, info_span};
 
-use crate::util::{database_pool_from_config, mailer_from_config, templates_from_config};
+use crate::util::{
+    database_pool_from_config, mailer_from_config, site_config_from_config, templates_from_config,
+};
 
 #[derive(Parser, Debug, Default)]
 pub(super) struct Options {}
@@ -44,14 +46,17 @@ impl Options {
             None,
         );
 
-        // Load and compile the templates
-        let templates = templates_from_config(
-            &config.templates,
+        // Load the site configuration
+        let site_config = site_config_from_config(
             &config.branding,
-            &url_builder,
-            &config.matrix.homeserver,
-        )
-        .await?;
+            &config.matrix,
+            &config.experimental,
+            &config.passwords,
+        );
+
+        // Load and compile the templates
+        let templates =
+            templates_from_config(&config.templates, &site_config, &url_builder).await?;
 
         let mailer = mailer_from_config(&config.email, &templates)?;
         mailer.test_connection().await?;

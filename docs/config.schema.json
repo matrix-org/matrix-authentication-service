@@ -1962,6 +1962,10 @@
           "format": "uint64",
           "maximum": 86400.0,
           "minimum": 60.0
+        },
+        "password_registration_enabled": {
+          "description": "Whether to enable self-service password registration. Defaults to `true` if password authentication is enabled.",
+          "type": "boolean"
         }
       }
     }
