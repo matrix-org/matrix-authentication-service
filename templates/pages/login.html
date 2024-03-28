@@ -62,7 +62,7 @@ limitations under the License.
         {{ button.button(text=_("action.continue")) }}
       </form>
 
-      {% if not next or next.kind != "link_upstream" %}
+      {% if (not next or next.kind != "link_upstream") and features.password_registration %}
         <div class="flex gap-1 justify-center items-center cpd-text-body-md-regular">
           <p class="cpd-text-secondary">
             {{ _("mas.login.call_to_register") }}
