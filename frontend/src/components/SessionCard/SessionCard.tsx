@@ -26,21 +26,24 @@ export const Root: React.FC<React.PropsWithChildren> = ({ children }) => (
   <section className={styles.sessionCardRoot}>{children}</section>
 );
 
-type BodyProps = React.PropsWithChildren<{
-  disabled?: boolean;
-  compact?: boolean;
-  className?: string;
-}>;
+type BodyProps = React.PropsWithChildren<
+  {
+    disabled?: boolean;
+    compact?: boolean;
+    className?: string;
+  } & React.AnchorHTMLAttributes<HTMLAnchorElement>
+>;
 export const LinkBody = createLink(
   forwardRef<HTMLAnchorElement, BodyProps>(
-    ({ children, disabled, compact, className, ...props }, ref) => {
+    ({ children, compact, className, ...props }, ref) => {
+      const isDisabled = !!props.disabled || !!props["aria-disabled"] || false;
       return (
         <a
           className={cx(
             className,
             styles.sessionCard,
             compact && styles.compact,
-            disabled && styles.disabled,
+            isDisabled && styles.disabled,
           )}
           {...props}
           ref={ref}
