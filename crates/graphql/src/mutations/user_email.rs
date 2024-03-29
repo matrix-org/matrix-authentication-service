@@ -1,4 +1,4 @@
-// Copyright 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2023, 2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -389,6 +389,11 @@ impl UserEmailMutations {
             return Err(async_graphql::Error::new("Unauthorized"));
         }
 
+        // Allow non-admins to change their email address if the site config allows it
+        if !requester.is_admin() && !state.site_config().email_change_allowed {
+            return Err(async_graphql::Error::new("Unauthorized"));
+        }
+
         // Only admins can skip validation
         if (input.skip_verification.is_some() || input.skip_policy_check.is_some())
             && !requester.is_admin()
@@ -600,6 +605,11 @@ impl UserEmailMutations {
             return Ok(RemoveEmailPayload::NotFound);
         }
 
+        // Allow non-admins to remove their email address if the site config allows it
+        if !requester.is_admin() && !state.site_config().email_change_allowed {
+            return Err(async_graphql::Error::new("Unauthorized"));
+        }
+
         let user = repo
             .user()
             .lookup(user_email.user_id)
@@ -641,6 +651,12 @@ impl UserEmailMutations {
         };
 
         if !requester.is_owner_or_admin(&user_email) {
+            return Err(async_graphql::Error::new("Unauthorized"));
+        }
+
+        // Allow non-admins to change their primary email address if the site config
+        // allows it
+        if !requester.is_admin() && !state.site_config().email_change_allowed {
             return Err(async_graphql::Error::new("Unauthorized"));
         }
 
