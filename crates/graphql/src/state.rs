@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use mas_data_model::SiteConfig;
 use mas_matrix::HomeserverConnection;
 use mas_policy::Policy;
 use mas_storage::{BoxClock, BoxRepository, BoxRng, RepositoryError};
@@ -25,6 +26,7 @@ pub trait State {
     fn homeserver_connection(&self) -> &dyn HomeserverConnection<Error = anyhow::Error>;
     fn clock(&self) -> BoxClock;
     fn rng(&self) -> BoxRng;
+    fn site_config(&self) -> &SiteConfig;
 }
 
 pub type BoxState = Box<dyn State + Send + Sync + 'static>;
