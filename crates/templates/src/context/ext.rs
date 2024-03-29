@@ -1,4 +1,4 @@
-// Copyright 2023, 2024 The Matrix.org Foundation C.I.C.
+// Copyright 2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,12 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub use mas_data_model::SiteConfig;
-use mas_templates::{SiteBranding, SiteFeatures};
+use mas_data_model::SiteConfig;
 
-#[allow(clippy::module_name_repetitions)]
-pub trait SiteConfigExt {
+use super::{SiteBranding, SiteFeatures};
+
+mod private {
+    pub trait Sealed {}
+    impl Sealed for mas_data_model::SiteConfig {}
+}
+
+/// Extension trait for [`SiteConfig`] to construct [`SiteBranding`] and
+/// [`SiteFeatures`] from it.
+pub trait SiteConfigExt: private::Sealed {
+    /// Construct a [`SiteBranding`] from the [`SiteConfig`].
     fn templates_branding(&self) -> SiteBranding;
+
+    /// Construct a [`SiteFeatures`] from the [`SiteConfig`].
     fn templates_features(&self) -> SiteFeatures;
 }
 

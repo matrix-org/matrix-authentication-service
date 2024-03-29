@@ -15,6 +15,7 @@
 //! Contexts used in templates
 
 mod branding;
+mod ext;
 mod features;
 
 use std::{
@@ -40,7 +41,7 @@ use serde::{ser::SerializeStruct, Deserialize, Serialize};
 use ulid::Ulid;
 use url::Url;
 
-pub use self::{branding::SiteBranding, features::SiteFeatures};
+pub use self::{branding::SiteBranding, ext::SiteConfigExt, features::SiteFeatures};
 use crate::{FieldError, FormField, FormState};
 
 /// Helper trait to construct context wrappers
