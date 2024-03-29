@@ -23,7 +23,7 @@ use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
 };
-use mas_data_model::BrowserSession;
+use mas_data_model::{BrowserSession, SiteConfig};
 use mas_i18n::DataLocale;
 use mas_policy::Policy;
 use mas_router::UrlBuilder;
@@ -51,14 +51,14 @@ pub(crate) async fn get(
     clock: BoxClock,
     PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
-    State(password_manager): State<PasswordManager>,
+    State(site_config): State<SiteConfig>,
     activity_tracker: BoundActivityTracker,
     State(url_builder): State<UrlBuilder>,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
 ) -> Result<Response, FancyError> {
     // If the password manager is disabled, we can go back to the account page.
-    if !password_manager.is_enabled() {
+    if !site_config.password_change_allowed {
         return Ok(url_builder
             .redirect(&mas_router::Account::default())
             .into_response());
@@ -106,6 +106,7 @@ pub(crate) async fn post(
     clock: BoxClock,
     PreferredLanguage(locale): PreferredLanguage,
     State(password_manager): State<PasswordManager>,
+    State(site_config): State<SiteConfig>,
     State(templates): State<Templates>,
     activity_tracker: BoundActivityTracker,
     State(url_builder): State<UrlBuilder>,
@@ -114,7 +115,7 @@ pub(crate) async fn post(
     cookie_jar: CookieJar,
     Form(form): Form<ProtectedForm<ChangeForm>>,
 ) -> Result<Response, FancyError> {
-    if !password_manager.is_enabled() {
+    if !site_config.password_change_allowed {
         // XXX: do something better here
         return Ok(StatusCode::METHOD_NOT_ALLOWED.into_response());
     }
