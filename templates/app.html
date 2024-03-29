@@ -25,11 +25,6 @@ limitations under the License.
     <title>{{ _("app.name") }}</title>
     <script>
       {% set config = {
-        'branding': {
-          'imprint': branding.imprint,
-          'tosUri': branding.tos_uri,
-          'policyUri': branding.policy_uri,
-        },
         'graphqlEndpoint': app_config.graphqlEndpoint,
         'root': app_config.root,
       } -%}
