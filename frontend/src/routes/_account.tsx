@@ -41,6 +41,11 @@ const QUERY = graphql(/* GraphQL */ `
         }
       }
     }
+
+    siteConfig {
+      id
+      ...UserGreeting_siteConfig
+    }
   }
 `);
 
@@ -66,6 +71,8 @@ function Account(): React.ReactElement {
   if (result.error) throw result.error;
   const session = result.data?.viewerSession;
   if (session?.__typename !== "BrowserSession") throw notFound();
+  const siteConfig = result.data?.siteConfig;
+  if (!siteConfig) throw Error(); // This should never happen
   const onSessionEnd = useEndBrowserSession(session.id, true);
 
   return (
@@ -79,7 +86,7 @@ function Account(): React.ReactElement {
           <EndSessionButton endSession={onSessionEnd} />
         </header>
 
-        <UserGreeting user={session.user} />
+        <UserGreeting user={session.user} siteConfig={siteConfig} />
 
         <UnverifiedEmailAlert user={session.user} />
 
