@@ -43,6 +43,13 @@ export const FRAGMENT = graphql(/* GraphQL */ `
   }
 `);
 
+export const CONFIG_FRAGMENT = graphql(/* GraphQL */ `
+  fragment UserGreeting_siteConfig on SiteConfig {
+    id
+    displayNameChangeAllowed
+  }
+`);
+
 const SET_DISPLAYNAME_MUTATION = graphql(/* GraphQL */ `
   mutation SetDisplayName($userId: ID!, $displayName: String) {
     setDisplayName(input: { userId: $userId, displayName: $displayName }) {
@@ -77,11 +84,13 @@ const EditButton = forwardRef<
 
 type Props = {
   user: FragmentType<typeof FRAGMENT>;
+  siteConfig: FragmentType<typeof CONFIG_FRAGMENT>;
 };
 
-const UserGreeting: React.FC<Props> = ({ user }) => {
+const UserGreeting: React.FC<Props> = ({ user, siteConfig }) => {
   const fieldRef = useRef<HTMLInputElement>(null);
   const data = useFragment(FRAGMENT, user);
+  const { displayNameChangeAllowed } = useFragment(CONFIG_FRAGMENT, siteConfig);
 
   const [setDisplayNameResult, setDisplayName] = useMutation(
     SET_DISPLAYNAME_MUTATION,
@@ -131,75 +140,79 @@ const UserGreeting: React.FC<Props> = ({ user }) => {
         )}
       </div>
 
-      <Dialog.Dialog
-        trigger={<EditButton label={t("action.edit")} />}
-        open={open}
-        onOpenChange={(open) => {
-          // Reset the form when the dialog is opened or closed
-          fieldRef.current?.form?.reset();
-          setOpen(open);
-        }}
-      >
-        <Dialog.Title>{t("frontend.account.edit_profile.title")}</Dialog.Title>
+      {displayNameChangeAllowed && (
+        <Dialog.Dialog
+          trigger={<EditButton label={t("action.edit")} />}
+          open={open}
+          onOpenChange={(open) => {
+            // Reset the form when the dialog is opened or closed
+            fieldRef.current?.form?.reset();
+            setOpen(open);
+          }}
+        >
+          <Dialog.Title>
+            {t("frontend.account.edit_profile.title")}
+          </Dialog.Title>
 
-        <Avatar
-          size="88px"
-          className="self-center"
-          id={data.matrix.mxid}
-          name={data.matrix.displayName || data.matrix.mxid}
-        />
+          <Avatar
+            size="88px"
+            className="self-center"
+            id={data.matrix.mxid}
+            name={data.matrix.displayName || data.matrix.mxid}
+          />
 
-        <Form.Root onSubmit={onSubmit}>
-          <div className={styles.dialogForm}>
-            <Form.Field
-              name="displayname"
-              serverInvalid={
-                setDisplayNameResult.data?.setDisplayName.status ===
-                SetDisplayNameStatus.Invalid
-              }
-            >
-              <Form.Label>
-                {t("frontend.account.edit_profile.display_name_label")}
-              </Form.Label>
+          <Form.Root onSubmit={onSubmit}>
+            <div className={styles.dialogForm}>
+              <Form.Field
+                name="displayname"
+                serverInvalid={
+                  setDisplayNameResult.data?.setDisplayName.status ===
+                  SetDisplayNameStatus.Invalid
+                }
+              >
+                <Form.Label>
+                  {t("frontend.account.edit_profile.display_name_label")}
+                </Form.Label>
 
-              <Form.ActionControl
-                type="text"
-                Icon={IconClose}
-                autoComplete="name"
-                defaultValue={data.matrix.displayName || undefined}
-                actionLabel={t("action.clear")}
-                ref={fieldRef}
-                onActionClick={() => {
-                  if (fieldRef.current) {
-                    fieldRef.current.value = "";
-                    fieldRef.current.focus();
-                  }
-                }}
-              />
+                <Form.ActionControl
+                  type="text"
+                  Icon={IconClose}
+                  autoComplete="name"
+                  defaultValue={data.matrix.displayName || undefined}
+                  actionLabel={t("action.clear")}
+                  ref={fieldRef}
+                  onActionClick={() => {
+                    if (fieldRef.current) {
+                      fieldRef.current.value = "";
+                      fieldRef.current.focus();
+                    }
+                  }}
+                />
 
-              <Form.HelpMessage>
-                {t("frontend.account.edit_profile.display_name_help")}
-              </Form.HelpMessage>
-            </Form.Field>
+                <Form.HelpMessage>
+                  {t("frontend.account.edit_profile.display_name_help")}
+                </Form.HelpMessage>
+              </Form.Field>
 
-            <Form.Field name="mxid">
-              <Form.Label>
-                {t("frontend.account.edit_profile.username_label")}
-              </Form.Label>
-              <Form.TextControl value={data.matrix.mxid} readOnly />
-            </Form.Field>
-          </div>
+              <Form.Field name="mxid">
+                <Form.Label>
+                  {t("frontend.account.edit_profile.username_label")}
+                </Form.Label>
+                <Form.TextControl value={data.matrix.mxid} readOnly />
+              </Form.Field>
+            </div>
 
-          <Form.Submit disabled={setDisplayNameResult.fetching}>
-            {setDisplayNameResult.fetching && <LoadingSpinner inline />}
-            {t("action.save")}
-          </Form.Submit>
-        </Form.Root>
+            <Form.Submit disabled={setDisplayNameResult.fetching}>
+              {setDisplayNameResult.fetching && <LoadingSpinner inline />}
+              {t("action.save")}
+            </Form.Submit>
+          </Form.Root>
 
-        <Dialog.Close asChild>
-          <Button kind="tertiary">{t("action.cancel")}</Button>
-        </Dialog.Close>
-      </Dialog.Dialog>
+          <Dialog.Close asChild>
+            <Button kind="tertiary">{t("action.cancel")}</Button>
+          </Dialog.Close>
+        </Dialog.Dialog>
+      )}
     </div>
   );
 };

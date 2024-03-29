@@ -36,6 +36,9 @@ pub struct SiteConfig {
 
     /// Whether user can change their email.
     email_change_allowed: bool,
+
+    /// Whether user can change their display name.
+    display_name_change_allowed: bool,
 }
 
 #[ComplexObject]
@@ -56,6 +59,7 @@ impl SiteConfig {
             tos_uri: data_model.tos_uri.clone(),
             imprint: data_model.imprint.clone(),
             email_change_allowed: data_model.email_change_allowed,
+            display_name_change_allowed: data_model.displayname_change_allowed,
         }
     }
 }

@@ -22,12 +22,13 @@ import {
   SetDisplayNameStatus,
 } from "../../gql/graphql";
 
-import UserGreeting, { FRAGMENT } from "./UserGreeting";
+import UserGreeting, { CONFIG_FRAGMENT, FRAGMENT } from "./UserGreeting";
 
 const Template: React.FC<{
   displayName?: string;
   mxid: string;
-}> = ({ displayName, mxid }) => {
+  displayNameChangeAllowed: boolean;
+}> = ({ displayName, mxid, displayNameChangeAllowed }) => {
   const userId = "user id";
 
   const mockClient = {
@@ -57,9 +58,17 @@ const Template: React.FC<{
     FRAGMENT,
   );
 
+  const config = makeFragmentData(
+    {
+      id: "site config id",
+      displayNameChangeAllowed,
+    },
+    CONFIG_FRAGMENT,
+  );
+
   return (
     <Provider value={mockClient}>
-      <UserGreeting user={user} />
+      <UserGreeting user={user} siteConfig={config} />
     </Provider>
   );
 };
@@ -68,10 +77,14 @@ const meta = {
   title: "UI/User Greeting",
   component: Template,
   args: {
+    displayNameChangeAllowed: true,
     displayName: "Kilgore Trout",
     mxid: "@kilgore:matrix.org",
   },
   argTypes: {
+    displayNameChangeAllowed: {
+      control: "boolean",
+    },
     displayName: {
       control: "text",
     },
@@ -89,5 +102,11 @@ export const Basic: Story = {};
 export const NoDisplayName: Story = {
   args: {
     displayName: undefined,
+  },
+};
+
+export const DisplayNameChangeNotAllowed: Story = {
+  args: {
+    displayNameChangeAllowed: false,
   },
 };

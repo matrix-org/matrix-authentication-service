@@ -2418,6 +2418,17 @@ export default {
         "name": "SiteConfig",
         "fields": [
           {
+            "name": "displayNameChangeAllowed",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Any"
+              }
+            },
+            "args": []
+          },
+          {
             "name": "emailChangeAllowed",
             "type": {
               "kind": "NON_NULL",

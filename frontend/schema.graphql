@@ -1266,6 +1266,10 @@ type SiteConfig implements Node {
   """
   emailChangeAllowed: Boolean!
   """
+  Whether user can change their display name.
+  """
+  displayNameChangeAllowed: Boolean!
+  """
   The ID of the site configuration.
   """
   id: ID!
