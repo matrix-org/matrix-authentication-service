@@ -12,13 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { createLink, useLinkProps } from "@tanstack/react-router";
+import { createLink } from "@tanstack/react-router";
 import { Link as CompoundLink } from "@vector-im/compound-web";
 
-export const Link: ReturnType<typeof createLink<typeof CompoundLink>> = ({
-  children,
-  ...props
-}: Parameters<typeof useLinkProps>[0]) => {
-  const linkProps = useLinkProps(props);
-  return <CompoundLink {...linkProps}>{children}</CompoundLink>;
-};
+export const Link = createLink(CompoundLink);

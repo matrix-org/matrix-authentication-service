@@ -12,13 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {
-  UseLinkPropsOptions,
-  createLink,
-  useLinkProps,
-} from "@tanstack/react-router";
+import { createLink } from "@tanstack/react-router";
 import cx from "classnames";
-import { AnchorHTMLAttributes, forwardRef } from "react";
+import { forwardRef } from "react";
 
 import { DeviceType } from "../../gql/graphql";
 import ClientAvatar from "../Session/ClientAvatar";
@@ -30,35 +26,31 @@ export const Root: React.FC<React.PropsWithChildren> = ({ children }) => (
   <section className={styles.sessionCardRoot}>{children}</section>
 );
 
-// XXX: createLink is broken, so we work around it by using useLinkProps directly
 type BodyProps = React.PropsWithChildren<{
   disabled?: boolean;
   compact?: boolean;
+  className?: string;
 }>;
-export const LinkBody = forwardRef<
-  HTMLAnchorElement,
-  BodyProps & UseLinkPropsOptions
->(({ children, disabled, compact, ...props }, ref) => {
-  const { className, ...linkProps } = useLinkProps({ disabled, ...props });
-  return (
-    <a
-      className={cx(
-        className,
-        styles.sessionCard,
-        compact && styles.compact,
-        disabled && styles.disabled,
-      )}
-      {...linkProps}
-      ref={ref}
-    >
-      {children}
-    </a>
-  );
-}) as ReturnType<
-  typeof createLink<
-    React.FC<BodyProps & AnchorHTMLAttributes<HTMLAnchorElement>>
-  >
->;
+export const LinkBody = createLink(
+  forwardRef<HTMLAnchorElement, BodyProps>(
+    ({ children, disabled, compact, className, ...props }, ref) => {
+      return (
+        <a
+          className={cx(
+            className,
+            styles.sessionCard,
+            compact && styles.compact,
+            disabled && styles.disabled,
+          )}
+          {...props}
+          ref={ref}
+        >
+          {children}
+        </a>
+      );
+    },
+  ),
+);
 
 export const Body: React.FC<BodyProps> = ({ children, compact, disabled }) => (
   <div
