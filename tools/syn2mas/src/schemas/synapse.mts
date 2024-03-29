@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { z } from "zod";
+import * as z from "zod";
 
 const sqlite3DatabaseConfig = z.object({
   name: z.literal("sqlite3"),
