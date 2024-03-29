@@ -194,8 +194,12 @@ impl Options {
         // Listen for SIGHUP
         register_sighup(&templates, &activity_tracker)?;
 
-        let graphql_schema =
-            mas_handlers::graphql_schema(&pool, &policy_factory, homeserver_connection.clone());
+        let graphql_schema = mas_handlers::graphql_schema(
+            &pool,
+            &policy_factory,
+            homeserver_connection.clone(),
+            site_config.clone(),
+        );
 
         let state = {
             let mut s = AppState {

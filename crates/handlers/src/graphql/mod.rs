@@ -31,7 +31,7 @@ use hyper::header::CACHE_CONTROL;
 use mas_axum_utils::{
     cookies::CookieJar, sentry::SentryEventID, FancyError, SessionInfo, SessionInfoExt,
 };
-use mas_data_model::User;
+use mas_data_model::{SiteConfig, User};
 use mas_graphql::{Requester, Schema};
 use mas_matrix::HomeserverConnection;
 use mas_policy::{InstantiateError, Policy, PolicyFactory};
@@ -54,6 +54,7 @@ struct GraphQLState {
     pool: PgPool,
     homeserver_connection: Arc<dyn HomeserverConnection<Error = anyhow::Error>>,
     policy_factory: Arc<PolicyFactory>,
+    site_config: SiteConfig,
 }
 
 #[async_trait]
@@ -68,6 +69,10 @@ impl mas_graphql::State for GraphQLState {
 
     async fn policy(&self) -> Result<Policy, InstantiateError> {
         self.policy_factory.instantiate().await
+    }
+
+    fn site_config(&self) -> &SiteConfig {
+        &self.site_config
     }
 
     fn homeserver_connection(&self) -> &dyn HomeserverConnection<Error = anyhow::Error> {
@@ -93,11 +98,13 @@ pub fn schema(
     pool: &PgPool,
     policy_factory: &Arc<PolicyFactory>,
     homeserver_connection: impl HomeserverConnection<Error = anyhow::Error> + 'static,
+    site_config: SiteConfig,
 ) -> Schema {
     let state = GraphQLState {
         pool: pool.clone(),
         policy_factory: Arc::clone(policy_factory),
         homeserver_connection: Arc::new(homeserver_connection),
+        site_config,
     };
     let state: mas_graphql::BoxState = Box::new(state);
 

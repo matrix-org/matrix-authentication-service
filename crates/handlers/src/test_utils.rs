@@ -193,6 +193,7 @@ impl TestState {
             pool: pool.clone(),
             policy_factory: Arc::clone(&policy_factory),
             homeserver_connection: Arc::clone(&homeserver_connection),
+            site_config: site_config.clone(),
             rng: Arc::clone(&rng),
             clock: Arc::clone(&clock),
         };
@@ -307,6 +308,7 @@ impl TestState {
 struct TestGraphQLState {
     pool: PgPool,
     homeserver_connection: Arc<MockHomeserverConnection>,
+    site_config: SiteConfig,
     policy_factory: Arc<PolicyFactory>,
     clock: Arc<MockClock>,
     rng: Arc<Mutex<ChaChaRng>>,
@@ -334,6 +336,10 @@ impl mas_graphql::State for TestGraphQLState {
 
     fn clock(&self) -> BoxClock {
         Box::new(self.clock.clone())
+    }
+
+    fn site_config(&self) -> &SiteConfig {
+        &self.site_config
     }
 
     fn rng(&self) -> BoxRng {
