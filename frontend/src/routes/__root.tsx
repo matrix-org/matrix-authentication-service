@@ -19,7 +19,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import { Client } from "urql";
-import { z } from "zod";
+import * as z from "zod";
 
 import Layout from "../components/Layout";
 import NotFound from "../components/NotFound";

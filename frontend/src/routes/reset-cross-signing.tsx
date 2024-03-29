@@ -18,7 +18,7 @@ import IconKey from "@vector-im/compound-design-tokens/icons/key.svg?react";
 import { Alert, Button, Text } from "@vector-im/compound-web";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery } from "urql";
-import { z } from "zod";
+import * as z from "zod";
 
 import BlockList from "../components/BlockList";
 import { ButtonLink } from "../components/ButtonLink";

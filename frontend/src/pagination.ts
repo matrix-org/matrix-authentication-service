@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { useState } from "react";
-import { z } from "zod";
+import * as z from "zod";
 
 import { PageInfo } from "./gql/graphql";
 
