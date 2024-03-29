@@ -1,4 +1,4 @@
-// Copyright 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2023, 2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ const fn is_default_true(value: &bool) -> bool {
 ///
 /// Do not change these options unless you know what you are doing.
 #[serde_as]
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 pub struct ExperimentalConfig {
     /// Time-to-live of access tokens in seconds. Defaults to 5 minutes.
@@ -65,6 +66,20 @@ pub struct ExperimentalConfig {
     /// if password authentication is enabled.
     #[serde(default = "default_true", skip_serializing_if = "is_default_true")]
     pub password_registration_enabled: bool,
+
+    /// Whether users are allowed to change their email addresses. Defaults to
+    /// `true`.
+    #[serde(default = "default_true", skip_serializing_if = "is_default_true")]
+    pub email_change_allowed: bool,
+
+    /// Whether users are allowed to change their display names. Defaults to
+    /// `true`.
+    #[serde(default = "default_true", skip_serializing_if = "is_default_true")]
+    pub displayname_change_allowed: bool,
+
+    /// Whether users are allowed to change their passwords. Defaults to `true`.
+    #[serde(default = "default_true", skip_serializing_if = "is_default_true")]
+    pub password_change_allowed: bool,
 }
 
 impl Default for ExperimentalConfig {
@@ -73,6 +88,9 @@ impl Default for ExperimentalConfig {
             access_token_ttl: default_token_ttl(),
             compat_token_ttl: default_token_ttl(),
             password_registration_enabled: default_true(),
+            email_change_allowed: default_true(),
+            displayname_change_allowed: default_true(),
+            password_change_allowed: default_true(),
         }
     }
 }
@@ -82,6 +100,9 @@ impl ExperimentalConfig {
         is_default_token_ttl(&self.access_token_ttl)
             && is_default_token_ttl(&self.compat_token_ttl)
             && is_default_true(&self.password_registration_enabled)
+            && is_default_true(&self.email_change_allowed)
+            && is_default_true(&self.displayname_change_allowed)
+            && is_default_true(&self.password_change_allowed)
     }
 }
 

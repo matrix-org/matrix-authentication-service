@@ -1970,6 +1970,18 @@
         "password_registration_enabled": {
           "description": "Whether to enable self-service password registration. Defaults to `true` if password authentication is enabled.",
           "type": "boolean"
+        },
+        "email_change_allowed": {
+          "description": "Whether users are allowed to change their email addresses. Defaults to `true`.",
+          "type": "boolean"
+        },
+        "displayname_change_allowed": {
+          "description": "Whether users are allowed to change their display names. Defaults to `true`.",
+          "type": "boolean"
+        },
+        "password_change_allowed": {
+          "description": "Whether users are allowed to change their passwords. Defaults to `true`.",
+          "type": "boolean"
         }
       }
     }
