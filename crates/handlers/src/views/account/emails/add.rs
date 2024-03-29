@@ -21,6 +21,7 @@ use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
 };
+use mas_data_model::SiteConfig;
 use mas_policy::Policy;
 use mas_router::UrlBuilder;
 use mas_storage::{
@@ -45,6 +46,7 @@ pub(crate) async fn get(
     PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
+    State(site_config): State<SiteConfig>,
     activity_tracker: BoundActivityTracker,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
@@ -58,6 +60,15 @@ pub(crate) async fn get(
         let login = mas_router::Login::default();
         return Ok((cookie_jar, url_builder.redirect(&login)).into_response());
     };
+
+    if !site_config.email_change_allowed {
+        // XXX: this may not be the best error message, it's not translatable
+        return Err(FancyError::new(
+            ErrorContext::new()
+                .with_description("Email change is not allowed".to_owned())
+                .with_details("The site configuration does not allow email changes".to_owned()),
+        ));
+    }
 
     activity_tracker
         .record_browser_session(&clock, &session)
@@ -82,6 +93,7 @@ pub(crate) async fn post(
     mut policy: Policy,
     cookie_jar: CookieJar,
     State(url_builder): State<UrlBuilder>,
+    State(site_config): State<SiteConfig>,
     activity_tracker: BoundActivityTracker,
     Query(query): Query<OptionalPostAuthAction>,
     Form(form): Form<ProtectedForm<EmailForm>>,
@@ -97,6 +109,13 @@ pub(crate) async fn post(
     };
 
     // XXX: we really should show human readable errors on the form here
+    if !site_config.email_change_allowed {
+        return Err(FancyError::new(
+            ErrorContext::new()
+                .with_description("Email change is not allowed".to_owned())
+                .with_details("The site configuration does not allow email changes".to_owned()),
+        ));
+    }
 
     // Validate the email address
     if form.email.parse::<lettre::Address>().is_err() {
