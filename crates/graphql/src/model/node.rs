@@ -19,7 +19,7 @@ use ulid::Ulid;
 
 use super::{
     Anonymous, Authentication, BrowserSession, CompatSession, CompatSsoLogin, OAuth2Client,
-    OAuth2Session, UpstreamOAuth2Link, UpstreamOAuth2Provider, User, UserEmail,
+    OAuth2Session, SiteConfig, UpstreamOAuth2Link, UpstreamOAuth2Provider, User, UserEmail,
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -123,6 +123,7 @@ pub enum Node {
     CompatSsoLogin(Box<CompatSsoLogin>),
     OAuth2Client(Box<OAuth2Client>),
     OAuth2Session(Box<OAuth2Session>),
+    SiteConfig(Box<SiteConfig>),
     UpstreamOAuth2Provider(Box<UpstreamOAuth2Provider>),
     UpstreamOAuth2Link(Box<UpstreamOAuth2Link>),
     User(Box<User>),
