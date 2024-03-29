@@ -34,6 +34,11 @@ const QUERY = graphql(/* GraphQL */ `
         ...UserEmailList_user
       }
     }
+
+    siteConfig {
+      id
+      ...UserEmailList_siteConfig
+    }
   }
 `);
 
@@ -56,6 +61,8 @@ function Index(): React.ReactElement {
   if (result.error) throw result.error;
   const user = result.data?.viewer;
   if (user?.__typename !== "User") throw notFound();
+  const siteConfig = result.data?.siteConfig;
+  if (!siteConfig) throw Error(); // This should never happen
 
   return (
     <>
@@ -63,7 +70,7 @@ function Index(): React.ReactElement {
         {/* This wrapper is only needed for the anchor link */}
         <div className="flex flex-col gap-4" id="emails">
           <Suspense fallback={<LoadingSpinner className="self-center m-4" />}>
-            <UserEmailList user={user} />
+            <UserEmailList siteConfig={siteConfig} user={user} />
           </Suspense>
         </div>
 

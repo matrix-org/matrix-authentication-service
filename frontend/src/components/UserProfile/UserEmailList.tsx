@@ -70,10 +70,20 @@ const FRAGMENT = graphql(/* GraphQL */ `
   }
 `);
 
+const CONFIG_FRAGMENT = graphql(/* GraphQL */ `
+  fragment UserEmailList_siteConfig on SiteConfig {
+    id
+    emailChangeAllowed
+    ...UserEmail_siteConfig
+  }
+`);
+
 const UserEmailList: React.FC<{
   user: FragmentType<typeof FRAGMENT>;
-}> = ({ user }) => {
+  siteConfig: FragmentType<typeof CONFIG_FRAGMENT>;
+}> = ({ user, siteConfig }) => {
   const data = useFragment(FRAGMENT, user);
+  const config = useFragment(CONFIG_FRAGMENT, siteConfig);
   const { t } = useTranslation();
   const [pending, startTransition] = useTransition();
 
@@ -125,6 +135,7 @@ const UserEmailList: React.FC<{
           email={edge.node}
           key={edge.cursor}
           isPrimary={primaryEmailId === edge.node.id}
+          siteConfig={config}
           onRemove={onRemove}
         />
       ))}
@@ -136,7 +147,9 @@ const UserEmailList: React.FC<{
         onNext={nextPage ? (): void => paginate(nextPage) : null}
         disabled={pending}
       />
-      <AddEmailForm userId={data.id} onAdd={onAdd} />
+      {config.emailChangeAllowed && (
+        <AddEmailForm userId={data.id} onAdd={onAdd} />
+      )}
     </>
   );
 };
