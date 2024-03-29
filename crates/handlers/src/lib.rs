@@ -91,7 +91,7 @@ pub use self::{
     activity_tracker::{ActivityTracker, Bound as BoundActivityTracker},
     graphql::schema as graphql_schema,
     preferred_language::PreferredLanguage,
-    site_config::SiteConfig,
+    site_config::{SiteConfig, SiteConfigExt},
     upstream_oauth2::cache::MetadataCache,
 };
 

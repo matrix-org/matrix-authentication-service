@@ -12,30 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use chrono::Duration;
+pub use mas_data_model::SiteConfig;
 use mas_templates::{SiteBranding, SiteFeatures};
-use url::Url;
 
-/// Random site configuration we don't now where to put yet.
-#[allow(clippy::struct_excessive_bools)]
-#[derive(Debug, Clone)]
-pub struct SiteConfig {
-    pub access_token_ttl: Duration,
-    pub compat_token_ttl: Duration,
-    pub server_name: String,
-    pub policy_uri: Option<Url>,
-    pub tos_uri: Option<Url>,
-    pub imprint: Option<String>,
-    pub password_login_enabled: bool,
-    pub password_registration_enabled: bool,
-    pub email_change_allowed: bool,
-    pub displayname_change_allowed: bool,
-    pub password_change_allowed: bool,
+#[allow(clippy::module_name_repetitions)]
+pub trait SiteConfigExt {
+    fn templates_branding(&self) -> SiteBranding;
+    fn templates_features(&self) -> SiteFeatures;
 }
 
-impl SiteConfig {
-    #[must_use]
-    pub fn templates_branding(&self) -> SiteBranding {
+impl SiteConfigExt for SiteConfig {
+    fn templates_branding(&self) -> SiteBranding {
         let mut branding = SiteBranding::new(self.server_name.clone());
 
         if let Some(policy_uri) = &self.policy_uri {
@@ -53,8 +40,7 @@ impl SiteConfig {
         branding
     }
 
-    #[must_use]
-    pub fn templates_features(&self) -> SiteFeatures {
+    fn templates_features(&self) -> SiteFeatures {
         SiteFeatures {
             password_registration: self.password_registration_enabled,
             password_login: self.password_login_enabled,
