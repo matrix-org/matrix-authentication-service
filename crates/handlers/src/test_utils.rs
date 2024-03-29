@@ -56,7 +56,7 @@ use crate::{
     passwords::{Hasher, PasswordManager},
     site_config::SiteConfig,
     upstream_oauth2::cache::MetadataCache,
-    ActivityTracker, BoundActivityTracker,
+    ActivityTracker, BoundActivityTracker, SiteConfigExt,
 };
 
 // This might fail if it's not the first time it's being called, which is fine,

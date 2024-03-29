@@ -20,7 +20,7 @@ use mas_config::{
     ExperimentalConfig, MatrixConfig, PasswordsConfig, PolicyConfig, TemplatesConfig,
 };
 use mas_email::{MailTransport, Mailer};
-use mas_handlers::{passwords::PasswordManager, ActivityTracker, SiteConfig};
+use mas_handlers::{passwords::PasswordManager, ActivityTracker, SiteConfig, SiteConfigExt};
 use mas_policy::PolicyFactory;
 use mas_router::UrlBuilder;
 use mas_templates::{TemplateLoadingError, Templates};
