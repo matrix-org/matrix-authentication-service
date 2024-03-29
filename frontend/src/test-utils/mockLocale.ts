@@ -23,7 +23,7 @@ export const mockLocale = (defaultLocale = "en-GB"): void => {
   const { DateTimeFormat } = Intl;
   vi.spyOn(Intl, "DateTimeFormat").mockImplementation(
     (
-      locales?: string | string[] | undefined,
+      locales?: Intl.LocalesArgument,
       options?: Intl.DateTimeFormatOptions | undefined,
     ) => new DateTimeFormat(locales || defaultLocale, options),
   );

@@ -22,7 +22,6 @@ import i18n from "../src/i18n";
 import localazyMetadata from "./locales";
 
 export const parameters: Parameters = {
-  actions: { argTypesRegex: "^on[A-Z].*" },
   controls: {
     matchers: {
       color: /(background|color)$/i,
