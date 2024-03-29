@@ -54,7 +54,7 @@ export default class ErrorBoundary extends PureComponent<Props, IState> {
     if (this.state.error) {
       // We ask the child components not to suspend, as this error boundary won't be in a Suspense boundary.
       return (
-        <Layout dontSuspend>
+        <Layout>
           <GenericError dontSuspend error={this.state.error} />
         </Layout>
       );

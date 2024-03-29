@@ -13,26 +13,52 @@
 // limitations under the License.
 
 import cx from "classnames";
+import { Suspense } from "react";
+import { useQuery } from "urql";
 
-import appConfig from "../../config";
+import { graphql } from "../../gql";
 import Footer from "../Footer";
 
 import styles from "./Layout.module.css";
 
+const QUERY = graphql(/* GraphQL */ `
+  query FooterQuery {
+    siteConfig {
+      id
+      ...Footer_siteConfig
+    }
+  }
+`);
+
+const AsyncFooter: React.FC = () => {
+  const [result] = useQuery({
+    query: QUERY,
+  });
+
+  if (result.error) {
+    // We probably prefer to render an empty footer in case of an error
+    return null;
+  }
+
+  const siteConfig = result.data?.siteConfig;
+  if (!siteConfig) {
+    // We checked for errors, this should never happen
+    throw new Error();
+  }
+
+  return <Footer siteConfig={siteConfig} />;
+};
+
 const Layout: React.FC<{
   children?: React.ReactNode;
-  dontSuspend?: boolean;
   wide?: boolean;
-}> = ({ children, dontSuspend, wide }) => (
+}> = ({ children, wide }) => (
   <div className={cx(styles.layoutContainer, wide && styles.wide)}>
     {children}
 
-    <Footer
-      dontSuspend={dontSuspend}
-      imprint={appConfig.branding?.imprint}
-      tosUri={appConfig.branding?.tosUri}
-      policyUri={appConfig.branding?.policyUri}
-    />
+    <Suspense fallback={null}>
+      <AsyncFooter />
+    </Suspense>
   </div>
 );
 

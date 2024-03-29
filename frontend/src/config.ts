@@ -15,11 +15,6 @@
 export type AppConfig = {
   root: string;
   graphqlEndpoint: string;
-  branding?: {
-    tosUri?: string;
-    policyUri?: string;
-    imprint?: string;
-  };
 };
 
 interface IWindow {
@@ -30,7 +25,6 @@ const config: AppConfig = (typeof window !== "undefined" &&
   (window as IWindow).APP_CONFIG) || {
   root: "/",
   graphqlEndpoint: "/graphql",
-  branding: {},
 };
 
 export default config;

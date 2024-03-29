@@ -14,16 +14,42 @@
 
 import type { Meta, StoryObj } from "@storybook/react";
 
-import Footer from "./Footer";
+import { makeFragmentData } from "../../gql";
+
+import Footer, { FRAGMENT } from "./Footer";
+
+const Template: React.FC<{
+  tosUri?: string;
+  policyUri?: string;
+  imprint?: string;
+}> = ({ tosUri, policyUri, imprint }) => (
+  <Footer
+    siteConfig={makeFragmentData(
+      { id: "1234", tosUri, policyUri, imprint },
+      FRAGMENT,
+    )}
+  />
+);
 
 const meta = {
   title: "UI/Footer",
-  component: Footer,
+  component: Template,
+  argTypes: {
+    tosUri: {
+      control: "text",
+    },
+    policyUri: {
+      control: "text",
+    },
+    imprint: {
+      control: "text",
+    },
+  },
   tags: ["autodocs"],
-} satisfies Meta<typeof Footer>;
+} satisfies Meta<typeof Template>;
 
 export default meta;
-type Story = StoryObj<typeof Footer>;
+type Story = StoryObj<typeof Template>;
 
 export const Basic: Story = {
   args: {

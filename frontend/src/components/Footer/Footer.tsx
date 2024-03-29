@@ -13,66 +13,69 @@
 // limitations under the License.
 
 import { Link } from "@vector-im/compound-web";
-import { Translation } from "react-i18next";
+import { useTranslation } from "react-i18next";
+
+import { FragmentType, graphql, useFragment } from "../../gql";
 
 import styles from "./Footer.module.css";
 
+export const FRAGMENT = graphql(/* GraphQL */ `
+  fragment Footer_siteConfig on SiteConfig {
+    id
+    imprint
+    tosUri
+    policyUri
+  }
+`);
+
 type Props = {
-  policyUri?: string;
-  tosUri?: string;
-  imprint?: string;
-  dontSuspend?: boolean;
+  siteConfig: FragmentType<typeof FRAGMENT>;
 };
 
-const Footer: React.FC<Props> = ({
-  policyUri,
-  tosUri,
-  imprint,
-  dontSuspend,
-}) => (
-  <Translation useSuspense={!dontSuspend}>
-    {(t) => (
-      <footer className={styles.legalFooter}>
-        {(policyUri || tosUri) && (
-          <nav>
-            {policyUri && (
-              <Link
-                href={policyUri}
-                title={t("branding.privacy_policy.alt", {
-                  defaultValue: "Link to the service privacy policy",
-                })}
-              >
-                {t("branding.privacy_policy.link", {
-                  defaultValue: "Privacy policy",
-                })}
-              </Link>
-            )}
+const Footer: React.FC<Props> = ({ siteConfig }) => {
+  const data = useFragment(FRAGMENT, siteConfig);
+  const { t } = useTranslation();
+  return (
+    <footer className={styles.legalFooter}>
+      {(data.policyUri || data.tosUri) && (
+        <nav>
+          {data.policyUri && (
+            <Link
+              href={data.policyUri}
+              title={t("branding.privacy_policy.alt", {
+                defaultValue: "Link to the service privacy policy",
+              })}
+            >
+              {t("branding.privacy_policy.link", {
+                defaultValue: "Privacy policy",
+              })}
+            </Link>
+          )}
 
-            {policyUri && tosUri && (
-              <div className={styles.separator} aria-hidden="true">
-                •
-              </div>
-            )}
+          {data.policyUri && data.tosUri && (
+            <div className={styles.separator} aria-hidden="true">
+              •
+            </div>
+          )}
 
-            {tosUri && (
-              <Link
-                href={tosUri}
-                title={t("branding.terms_and_conditions.alt", {
-                  defaultValue: "Link to the service terms and conditions",
-                })}
-              >
-                {t("branding.terms_and_conditions.link", {
-                  defaultValue: "Terms and conditions",
-                })}
-              </Link>
-            )}
-          </nav>
-        )}
+          {data.tosUri && (
+            <Link
+              href={data.tosUri}
+              title={t("branding.terms_and_conditions.alt", {
+                defaultValue: "Link to the service terms and conditions",
+              })}
+            >
+              {t("branding.terms_and_conditions.link", {
+                defaultValue: "Terms and conditions",
+              })}
+            </Link>
+          )}
+        </nav>
+      )}
 
-        {imprint && <p className={styles.imprint}>{imprint}</p>}
-      </footer>
-    )}
-  </Translation>
-);
+      {data.imprint && <p className={styles.imprint}>{data.imprint}</p>}
+    </footer>
+  );
+};
 
 export default Footer;

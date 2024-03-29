@@ -46,16 +46,16 @@ declare module "@tanstack/react-router" {
 
 createRoot(document.getElementById("root") as HTMLElement).render(
   <StrictMode>
-    <ErrorBoundary>
-      <Suspense fallback={<LoadingScreen />}>
-        <UrqlProvider value={client}>
+    <UrqlProvider value={client}>
+      <ErrorBoundary>
+        <Suspense fallback={<LoadingScreen />}>
           <I18nextProvider i18n={i18n}>
             <TooltipProvider>
               <RouterProvider router={router} context={{ client }} />
             </TooltipProvider>
           </I18nextProvider>
-        </UrqlProvider>
-      </Suspense>
-    </ErrorBoundary>
+        </Suspense>
+      </ErrorBoundary>
+    </UrqlProvider>
   </StrictMode>,
 );
