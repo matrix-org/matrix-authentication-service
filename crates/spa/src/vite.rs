@@ -21,6 +21,9 @@ use thiserror::Error;
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ManifestEntry {
     #[allow(dead_code)]
+    name: Option<String>,
+
+    #[allow(dead_code)]
     src: Option<Utf8PathBuf>,
 
     file: Utf8PathBuf,
