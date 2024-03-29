@@ -135,6 +135,10 @@ pub fn site_config_from_config(
         password_login_enabled: password_config.enabled(),
         password_registration_enabled: password_config.enabled()
             && experimental_config.password_registration_enabled,
+        email_change_allowed: experimental_config.email_change_allowed,
+        displayname_change_allowed: experimental_config.displayname_change_allowed,
+        password_change_allowed: password_config.enabled()
+            && experimental_config.password_change_allowed,
     }
 }
 

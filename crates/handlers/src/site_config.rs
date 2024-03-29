@@ -17,6 +17,7 @@ use mas_templates::{SiteBranding, SiteFeatures};
 use url::Url;
 
 /// Random site configuration we don't now where to put yet.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone)]
 pub struct SiteConfig {
     pub access_token_ttl: Duration,
@@ -27,6 +28,9 @@ pub struct SiteConfig {
     pub imprint: Option<String>,
     pub password_login_enabled: bool,
     pub password_registration_enabled: bool,
+    pub email_change_allowed: bool,
+    pub displayname_change_allowed: bool,
+    pub password_change_allowed: bool,
 }
 
 impl SiteConfig {
