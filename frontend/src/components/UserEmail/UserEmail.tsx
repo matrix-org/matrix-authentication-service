@@ -36,6 +36,13 @@ const FRAGMENT = graphql(/* GraphQL */ `
   }
 `);
 
+const CONFIG_FRAGMENT = graphql(/* GraphQL */ `
+  fragment UserEmail_siteConfig on SiteConfig {
+    id
+    emailChangeAllowed
+  }
+`);
+
 const REMOVE_EMAIL_MUTATION = graphql(/* GraphQL */ `
   mutation RemoveEmail($id: ID!) {
     removeEmail(input: { userEmailId: $id }) {
@@ -126,11 +133,13 @@ const DeleteButtonWithConfirmation: React.FC<
 
 const UserEmail: React.FC<{
   email: FragmentType<typeof FRAGMENT>;
+  siteConfig: FragmentType<typeof CONFIG_FRAGMENT>;
   onRemove?: () => void;
   isPrimary?: boolean;
-}> = ({ email, isPrimary, onRemove }) => {
+}> = ({ email, siteConfig, isPrimary, onRemove }) => {
   const { t } = useTranslation();
   const data = useFragment(FRAGMENT, email);
+  const { emailChangeAllowed } = useFragment(CONFIG_FRAGMENT, siteConfig);
 
   const [setPrimaryResult, setPrimary] = useMutation(
     SET_PRIMARY_EMAIL_MUTATION,
@@ -167,7 +176,7 @@ const UserEmail: React.FC<{
             value={data.email}
             className={styles.userEmailField}
           />
-          {!isPrimary && (
+          {!isPrimary && emailChangeAllowed && (
             <DeleteButtonWithConfirmation
               email={data.email}
               disabled={removeResult.fetching}
@@ -176,13 +185,13 @@ const UserEmail: React.FC<{
           )}
         </div>
 
-        {isPrimary && (
+        {isPrimary && emailChangeAllowed && (
           <Form.HelpMessage>
             {t("frontend.user_email.cant_delete_primary")}
           </Form.HelpMessage>
         )}
 
-        {data.confirmedAt && !isPrimary && (
+        {data.confirmedAt && !isPrimary && emailChangeAllowed && (
           <Form.HelpMessage>
             <button
               type="button"
