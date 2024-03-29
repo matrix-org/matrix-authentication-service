@@ -18,7 +18,7 @@ use mas_storage::user::UserRepository;
 use crate::{
     model::{
         Anonymous, BrowserSession, CompatSession, Node, NodeType, OAuth2Client, OAuth2Session,
-        User, UserEmail,
+        SiteConfig, User, UserEmail,
     },
     state::ContextExt,
     UserId,
@@ -234,6 +234,12 @@ impl BaseQuery {
             return Ok(Some(Node::Anonymous(Box::new(Anonymous))));
         }
 
+        if id.as_str() == crate::model::SITE_CONFIG_ID {
+            return Ok(Some(Node::SiteConfig(Box::new(SiteConfig::new(
+                ctx.state().site_config(),
+            )))));
+        }
+
         let (node_type, _id) = NodeType::from_id(&id)?;
 
         let ret = match node_type {
@@ -279,5 +285,10 @@ impl BaseQuery {
         };
 
         Ok(ret)
+    }
+
+    /// Get the current site configuration
+    async fn site_config(&self, ctx: &Context<'_>) -> SiteConfig {
+        SiteConfig::new(ctx.state().site_config())
     }
 }

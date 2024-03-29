@@ -1519,6 +1519,10 @@ export default {
           },
           {
             "kind": "OBJECT",
+            "name": "SiteConfig"
+          },
+          {
+            "kind": "OBJECT",
             "name": "UpstreamOAuth2Link"
           },
           {
@@ -2068,6 +2072,18 @@ export default {
             ]
           },
           {
+            "name": "siteConfig",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "SiteConfig",
+                "ofType": null
+              }
+            },
+            "args": []
+          },
+          {
             "name": "upstreamOauth2Link",
             "type": {
               "kind": "OBJECT",
@@ -2396,6 +2412,75 @@ export default {
           }
         ],
         "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "SiteConfig",
+        "fields": [
+          {
+            "name": "emailChangeAllowed",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Any"
+              }
+            },
+            "args": []
+          },
+          {
+            "name": "id",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Any"
+              }
+            },
+            "args": []
+          },
+          {
+            "name": "imprint",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Any"
+            },
+            "args": []
+          },
+          {
+            "name": "policyUri",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Any"
+            },
+            "args": []
+          },
+          {
+            "name": "serverName",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Any"
+              }
+            },
+            "args": []
+          },
+          {
+            "name": "tosUri",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Any"
+            },
+            "args": []
+          }
+        ],
+        "interfaces": [
+          {
+            "kind": "INTERFACE",
+            "name": "Node"
+          }
+        ]
       },
       {
         "kind": "OBJECT",

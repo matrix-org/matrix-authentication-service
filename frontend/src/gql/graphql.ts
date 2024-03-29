@@ -704,6 +704,8 @@ export type Query = {
   oauth2Session?: Maybe<Oauth2Session>;
   /** Lookup a compat or OAuth 2.0 session */
   session?: Maybe<Session>;
+  /** Get the current site configuration */
+  siteConfig: SiteConfig;
   /** Fetch an upstream OAuth 2.0 link by its ID. */
   upstreamOauth2Link?: Maybe<UpstreamOAuth2Link>;
   /** Fetch an upstream OAuth 2.0 provider by its ID. */
@@ -924,6 +926,22 @@ export enum SetPrimaryEmailStatus {
   /** Can't make an unverified email address primary */
   Unverified = 'UNVERIFIED'
 }
+
+export type SiteConfig = Node & {
+  __typename?: 'SiteConfig';
+  /** Whether user can change their email. */
+  emailChangeAllowed: Scalars['Boolean']['output'];
+  /** The ID of the site configuration. */
+  id: Scalars['ID']['output'];
+  /** Imprint to show in the footer. */
+  imprint?: Maybe<Scalars['String']['output']>;
+  /** The URL to the privacy policy. */
+  policyUri?: Maybe<Scalars['Url']['output']>;
+  /** The server name of the homeserver. */
+  serverName: Scalars['String']['output'];
+  /** The URL to the terms of service. */
+  tosUri?: Maybe<Scalars['Url']['output']>;
+};
 
 export type UpstreamOAuth2Link = CreationEvent & Node & {
   __typename?: 'UpstreamOAuth2Link';
@@ -1343,7 +1361,7 @@ export type SessionDetailQueryQuery = { __typename?: 'Query', viewerSession: { _
   ) | { __typename: 'CompatSsoLogin', id: string } | { __typename: 'Oauth2Client', id: string } | (
     { __typename: 'Oauth2Session', id: string }
     & { ' $fragmentRefs'?: { 'OAuth2Session_DetailFragment': OAuth2Session_DetailFragment } }
-  ) | { __typename: 'UpstreamOAuth2Link', id: string } | { __typename: 'UpstreamOAuth2Provider', id: string } | { __typename: 'User', id: string } | { __typename: 'UserEmail', id: string } | null };
+  ) | { __typename: 'SiteConfig', id: string } | { __typename: 'UpstreamOAuth2Link', id: string } | { __typename: 'UpstreamOAuth2Provider', id: string } | { __typename: 'User', id: string } | { __typename: 'UserEmail', id: string } | null };
 
 export type BrowserSessionListQueryVariables = Exact<{
   first?: InputMaybe<Scalars['Int']['input']>;

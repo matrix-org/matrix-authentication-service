@@ -986,6 +986,10 @@ type Query {
   """
   node(id: ID!): Node
   """
+  Get the current site configuration
+  """
+  siteConfig: SiteConfig!
+  """
   Fetch an upstream OAuth 2.0 link by its ID.
   """
   upstreamOauth2Link(id: ID!): UpstreamOAuth2Link
@@ -1238,6 +1242,33 @@ enum SetPrimaryEmailStatus {
   Can't make an unverified email address primary
   """
   UNVERIFIED
+}
+
+type SiteConfig implements Node {
+  """
+  The server name of the homeserver.
+  """
+  serverName: String!
+  """
+  The URL to the privacy policy.
+  """
+  policyUri: Url
+  """
+  The URL to the terms of service.
+  """
+  tosUri: Url
+  """
+  Imprint to show in the footer.
+  """
+  imprint: String
+  """
+  Whether user can change their email.
+  """
+  emailChangeAllowed: Boolean!
+  """
+  The ID of the site configuration.
+  """
+  id: ID!
 }
 
 type UpstreamOAuth2Link implements Node & CreationEvent {
