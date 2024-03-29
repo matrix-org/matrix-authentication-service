@@ -22,7 +22,7 @@ use mas_axum_utils::{
     sentry::SentryEventID,
 };
 use mas_data_model::{
-    AuthorizationGrantStage, Client, Device, DeviceCodeGrantState, TokenType, UserAgent,
+    AuthorizationGrantStage, Client, Device, DeviceCodeGrantState, SiteConfig, TokenType, UserAgent,
 };
 use mas_keystore::{Encrypter, Keystore};
 use mas_oidc_client::types::scope::ScopeToken;
@@ -54,7 +54,7 @@ use ulid::Ulid;
 use url::Url;
 
 use super::{generate_id_token, generate_token_pair};
-use crate::{impl_from_error_for_route, site_config::SiteConfig, BoundActivityTracker};
+use crate::{impl_from_error_for_route, BoundActivityTracker};
 
 #[serde_as]
 #[skip_serializing_none]

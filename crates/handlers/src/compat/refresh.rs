@@ -16,7 +16,7 @@ use axum::{extract::State, response::IntoResponse, Json};
 use chrono::Duration;
 use hyper::StatusCode;
 use mas_axum_utils::sentry::SentryEventID;
-use mas_data_model::{TokenFormatError, TokenType};
+use mas_data_model::{SiteConfig, TokenFormatError, TokenType};
 use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository},
     BoxClock, BoxRepository, BoxRng, Clock,
@@ -26,7 +26,7 @@ use serde_with::{serde_as, DurationMilliSeconds};
 use thiserror::Error;
 
 use super::MatrixError;
-use crate::{impl_from_error_for_route, site_config::SiteConfig, BoundActivityTracker};
+use crate::{impl_from_error_for_route, BoundActivityTracker};
 
 #[derive(Debug, Deserialize)]
 pub struct RequestBody {

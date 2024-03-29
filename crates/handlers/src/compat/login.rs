@@ -16,7 +16,9 @@ use axum::{extract::State, response::IntoResponse, Json, TypedHeader};
 use chrono::Duration;
 use hyper::StatusCode;
 use mas_axum_utils::sentry::SentryEventID;
-use mas_data_model::{CompatSession, CompatSsoLoginState, Device, TokenType, User, UserAgent};
+use mas_data_model::{
+    CompatSession, CompatSsoLoginState, Device, SiteConfig, TokenType, User, UserAgent,
+};
 use mas_matrix::BoxHomeserverConnection;
 use mas_storage::{
     compat::{
@@ -34,10 +36,7 @@ use thiserror::Error;
 use zeroize::Zeroizing;
 
 use super::MatrixError;
-use crate::{
-    impl_from_error_for_route, passwords::PasswordManager, site_config::SiteConfig,
-    BoundActivityTracker,
-};
+use crate::{impl_from_error_for_route, passwords::PasswordManager, BoundActivityTracker};
 
 #[derive(Debug, Serialize)]
 #[serde(tag = "type")]

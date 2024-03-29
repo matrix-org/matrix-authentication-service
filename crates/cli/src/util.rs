@@ -19,11 +19,12 @@ use mas_config::{
     BrandingConfig, DatabaseConfig, EmailConfig, EmailSmtpMode, EmailTransportKind,
     ExperimentalConfig, MatrixConfig, PasswordsConfig, PolicyConfig, TemplatesConfig,
 };
+use mas_data_model::SiteConfig;
 use mas_email::{MailTransport, Mailer};
-use mas_handlers::{passwords::PasswordManager, ActivityTracker, SiteConfig, SiteConfigExt};
+use mas_handlers::{passwords::PasswordManager, ActivityTracker};
 use mas_policy::PolicyFactory;
 use mas_router::UrlBuilder;
-use mas_templates::{TemplateLoadingError, Templates};
+use mas_templates::{SiteConfigExt, TemplateLoadingError, Templates};
 use sqlx::{
     postgres::{PgConnectOptions, PgPoolOptions},
     ConnectOptions, PgConnection, PgPool,

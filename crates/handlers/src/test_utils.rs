@@ -37,6 +37,7 @@ use mas_axum_utils::{
     http_client_factory::HttpClientFactory,
     ErrorWrapper,
 };
+use mas_data_model::SiteConfig;
 use mas_i18n::Translator;
 use mas_keystore::{Encrypter, JsonWebKey, JsonWebKeySet, Keystore, PrivateKey};
 use mas_matrix::{BoxHomeserverConnection, HomeserverConnection, MockHomeserverConnection};
@@ -44,7 +45,7 @@ use mas_policy::{InstantiateError, Policy, PolicyFactory};
 use mas_router::{SimpleRoute, UrlBuilder};
 use mas_storage::{clock::MockClock, BoxClock, BoxRepository, BoxRng, Repository};
 use mas_storage_pg::{DatabaseError, PgRepository};
-use mas_templates::Templates;
+use mas_templates::{SiteConfigExt, Templates};
 use rand::SeedableRng;
 use rand_chacha::ChaChaRng;
 use serde::{de::DeserializeOwned, Serialize};
@@ -54,9 +55,8 @@ use url::Url;
 
 use crate::{
     passwords::{Hasher, PasswordManager},
-    site_config::SiteConfig,
     upstream_oauth2::cache::MetadataCache,
-    ActivityTracker, BoundActivityTracker, SiteConfigExt,
+    ActivityTracker, BoundActivityTracker,
 };
 
 // This might fail if it's not the first time it's being called, which is fine,

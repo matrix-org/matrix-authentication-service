@@ -19,9 +19,10 @@ use axum::{
     extract::{FromRef, FromRequestParts},
 };
 use ipnetwork::IpNetwork;
+use mas_data_model::SiteConfig;
 use mas_handlers::{
     passwords::PasswordManager, ActivityTracker, BoundActivityTracker, CookieManager, ErrorWrapper,
-    HttpClientFactory, MetadataCache, SiteConfig,
+    HttpClientFactory, MetadataCache,
 };
 use mas_i18n::Translator;
 use mas_keystore::{Encrypter, Keystore};

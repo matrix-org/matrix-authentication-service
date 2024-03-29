@@ -41,6 +41,7 @@ use hyper::{
     StatusCode, Version,
 };
 use mas_axum_utils::{cookies::CookieJar, FancyError};
+use mas_data_model::SiteConfig;
 use mas_http::CorsLayerExt;
 use mas_keystore::{Encrypter, Keystore};
 use mas_matrix::BoxHomeserverConnection;
@@ -63,7 +64,6 @@ mod views;
 
 mod activity_tracker;
 mod preferred_language;
-mod site_config;
 #[cfg(test)]
 mod test_utils;
 
@@ -91,7 +91,6 @@ pub use self::{
     activity_tracker::{ActivityTracker, Bound as BoundActivityTracker},
     graphql::schema as graphql_schema,
     preferred_language::PreferredLanguage,
-    site_config::{SiteConfig, SiteConfigExt},
     upstream_oauth2::cache::MetadataCache,
 };
 
