@@ -64,6 +64,9 @@ pub enum Error {
 
     /// An error occurred introspecting a token.
     Introspection(#[from] IntrospectionError),
+
+    /// An error occurred building the account management URL.
+    AccountManagement(#[from] AccountManagementError),
 }
 
 /// All possible errors when fetching provider metadata.
@@ -702,4 +705,12 @@ pub enum CredentialsError {
     /// An error occurred with a custom signing method.
     #[error(transparent)]
     Custom(BoxError),
+}
+
+/// All errors that can occur when building the account management URL.
+#[derive(Debug, Error)]
+pub enum AccountManagementError {
+    /// An error occurred serializing the parameters.
+    #[error(transparent)]
+    UrlEncoded(#[from] serde_urlencoded::ser::Error),
 }

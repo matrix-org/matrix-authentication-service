@@ -20,6 +20,8 @@ use serde::Serialize;
 use serde_with::skip_serializing_none;
 use url::Url;
 
+use crate::error::AccountManagementError;
+
 /// An account management action that a user can take, including a device ID for
 /// the actions that support it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -101,7 +103,7 @@ pub fn build_account_management_url(
     mut account_management_uri: Url,
     action: Option<AccountManagementActionFull>,
     id_token_hint: Option<String>,
-) -> Result<Url, serde_urlencoded::ser::Error> {
+) -> Result<Url, AccountManagementError> {
     let data = AccountManagementData {
         action,
         id_token_hint,
