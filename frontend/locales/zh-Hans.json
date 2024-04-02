@@ -192,8 +192,7 @@
       "display_name_field_label": "显示名称"
     },
     "user_sessions_overview": {
-      "active_sessions:one": "{{count}} active session",
-      "active_sessions:other": "{{count}} active sessions",
+      "active_sessions:other": "{{count}}个活跃会话",
       "heading": "您登录的位置"
     },
     "verify_email": {

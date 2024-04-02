@@ -1,0 +1,147 @@
+{
+  "action": {
+    "cancel": "Annuleren",
+    "continue": "Doorgaan",
+    "create_account": "Registreren",
+    "sign_in": "Inloggen",
+    "sign_out": "Uitloggen",
+    "submit": "Bevestigen"
+  },
+  "app": {
+    "human_name": "Matrix Authentication Service",
+    "name": "matrix-authentication-service",
+    "technical_description": "OpenID Connect discovery document: <a class=\"cpd-link\" data-kind=\"primary\" href=\"%(discovery_url)s\">%(discovery_url)s</a>"
+  },
+  "branding": {
+    "privacy_policy": {
+      "alt": "Link to the service privacy policy",
+      "link": "Privacy Policy"
+    },
+    "terms_and_conditions": {
+      "alt": "Link to the service terms and conditions",
+      "link": "Terms & Conditions"
+    }
+  },
+  "common": {
+    "display_name": "Weergavenaam",
+    "email_address": "E-mailadres",
+    "mxid": "Matrix ID",
+    "password": "Wachtwoord",
+    "password_confirm": "Bevestig wachtwoord",
+    "username": "Gebruikersnaam"
+  },
+  "error": {
+    "unexpected": "Unexpected error"
+  },
+  "mas": {
+    "add_email": {
+      "description": "Enter an email address to recover your account in case you lose access to it.",
+      "heading": "Add an email address"
+    },
+    "back_to_homepage": "Go back to the homepage",
+    "change_password": {
+      "change": "Wachtwoord wijzigen",
+      "confirm": "Bevestig wachtwoord",
+      "current": "Huidig wachtwoord",
+      "description": "This will change the password on your account.",
+      "heading": "Change my password",
+      "new": "New password"
+    },
+    "emails": {
+      "greeting": "Hello %(username)s,",
+      "verify": {
+        "body_html": "Your verification code to confirm this email address is: <strong>%(code)s</strong>",
+        "body_text": "Your verification code to confirm this email address is: %(code)s",
+        "subject": "Your email verification code is: %(code)s"
+      }
+    },
+    "errors": {
+      "denied_policy": "Denied by policy: %(policy)s",
+      "field_required": "This field is required",
+      "invalid_credentials": "Ongeldige gegevens",
+      "password_mismatch": "Password fields don't match",
+      "username_taken": "This username is already taken"
+    },
+    "login": {
+      "call_to_register": "Don't have an account yet?",
+      "continue_with_provider": "Doorgaan met %(provider)s",
+      "description": "Please sign in to continue:",
+      "headline": "Inloggen",
+      "link": {
+        "description": "Linking your <span class=\"break-keep text-links\">%(provider)s</span> account",
+        "headline": "Sign in to link"
+      },
+      "no_login_methods": "No login methods available.",
+      "separator": "Of"
+    },
+    "navbar": {
+      "my_account": "Mijn account",
+      "register": "Create an account",
+      "signed_in_as": "Signed in as <span class=\"font-semibold\">%(username)s</span>."
+    },
+    "not_found": {
+      "description": "The page you were looking for doesn't exist or has been moved",
+      "heading": "Page not found"
+    },
+    "not_you": "Not %(username)s?",
+    "or_separator": "Of",
+    "policy_violation": {
+      "description": "This might be because of the client which authored the request, the currently logged in user, or the request itself.",
+      "heading": "The authorization request was denied the policy enforced by this service",
+      "logged_as": "Logged as <span class=\"font-semibold\">%(username)s</span>"
+    },
+    "register": {
+      "call_to_login": "Already have an account?",
+      "create_account": {
+        "description": "Please create an account to get started:",
+        "heading": "Create an account"
+      },
+      "sign_in_instead": "Sign in instead",
+      "terms_of_service": "I agree to the <a href=\"%s\" data-kind=\"primary\" class=\"cpd-link\">Terms and Conditions</a>"
+    },
+    "scope": {
+      "edit_profile": "Edit your profile and contact details",
+      "manage_sessions": "Manage your devices and sessions",
+      "mas_admin": "Administer any user on the matrix-authentication-service",
+      "send_messages": "Send new messages on your behalf",
+      "synapse_admin": "Administer the Synapse homeserver",
+      "view_messages": "View your existing messages and data",
+      "view_profile": "See your profile info and contact details"
+    },
+    "upstream_oauth2": {
+      "link_mismatch": {
+        "heading": "This upstream account is already linked to another account."
+      },
+      "register": {
+        "choose_username": {
+          "description": "This cannot be changed later.",
+          "heading": "Kies uw gebruikersnaam"
+        },
+        "create_account": "Nieuw account aanmaken",
+        "enforced_by_policy": "Enforced by server policy",
+        "forced_display_name": "Will use the following display name",
+        "forced_email": "De volgende e-mailadres zal worden gebruikt",
+        "forced_localpart": "De volgende gebruikersnaam zal worden gebruikt",
+        "import_data": {
+          "description": "Confirm the information that will be linked to your new %(server_name)s account.",
+          "heading": "Importeer uw data"
+        },
+        "imported_from_upstream": "Imported from your upstream account",
+        "link_existing": "Link to an existing account",
+        "suggested_display_name": "Weergavenaam importeren",
+        "suggested_email": "E-mailadres importeren",
+        "use": "Gebruiken"
+      },
+      "suggest_link": {
+        "action": "Link",
+        "heading": "Link to your existing account"
+      }
+    },
+    "verify_email": {
+      "6_digit_code": "6-cijferige code",
+      "code": "Code",
+      "description": "Voer de 6-cijferige code in die is verzonden naar: <em>%(email)s</em>",
+      "headline": "Verifieer uw e-mailadres"
+    }
+  }
+}
