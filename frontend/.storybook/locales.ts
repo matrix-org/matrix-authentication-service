@@ -56,6 +56,15 @@ const localazyMetadata: LocalazyMetadata = {
       pluralType: (n) => { return (n===0 || n===1) ? "one" : "other"; }
     },
     {
+      language: "nl",
+      region: "",
+      script: "",
+      isRtl: false,
+      name: "Dutch",
+      localizedName: "Nederlands",
+      pluralType: (n) => { return (n===1) ? "one" : "other"; }
+    },
+    {
       language: "zh",
       region: "",
       script: "Hans",
@@ -78,6 +87,7 @@ const localazyMetadata: LocalazyMetadata = {
         "de#": "https://delivery.localazy.com/_a7686032324574572744739e0707/_e0/7c203a8ac8bd48c3c4609a8effcd0fbac430f9b2/de/frontend.json",
         "en#": "https://delivery.localazy.com/_a7686032324574572744739e0707/_e0/7c203a8ac8bd48c3c4609a8effcd0fbac430f9b2/en/frontend.json",
         "fr#": "https://delivery.localazy.com/_a7686032324574572744739e0707/_e0/7c203a8ac8bd48c3c4609a8effcd0fbac430f9b2/fr/frontend.json",
+        "nl#": "https://delivery.localazy.com/_a7686032324574572744739e0707/_e0/7c203a8ac8bd48c3c4609a8effcd0fbac430f9b2/nl/frontend.json",
         "zh#Hans": "https://delivery.localazy.com/_a7686032324574572744739e0707/_e0/7c203a8ac8bd48c3c4609a8effcd0fbac430f9b2/zh-Hans/frontend.json"
       }
     },
@@ -93,6 +103,7 @@ const localazyMetadata: LocalazyMetadata = {
         "de#": "https://delivery.localazy.com/_a7686032324574572744739e0707/_e0/5b69b0350dccfd47c245a5d41c1b9fdf6912cc6e/de/file.json",
         "en#": "https://delivery.localazy.com/_a7686032324574572744739e0707/_e0/5b69b0350dccfd47c245a5d41c1b9fdf6912cc6e/en/file.json",
         "fr#": "https://delivery.localazy.com/_a7686032324574572744739e0707/_e0/5b69b0350dccfd47c245a5d41c1b9fdf6912cc6e/fr/file.json",
+        "nl#": "https://delivery.localazy.com/_a7686032324574572744739e0707/_e0/5b69b0350dccfd47c245a5d41c1b9fdf6912cc6e/nl/file.json",
         "zh#Hans": "https://delivery.localazy.com/_a7686032324574572744739e0707/_e0/5b69b0350dccfd47c245a5d41c1b9fdf6912cc6e/zh-Hans/file.json"
       }
     }
