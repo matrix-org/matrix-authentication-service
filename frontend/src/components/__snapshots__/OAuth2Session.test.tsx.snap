@@ -13,7 +13,6 @@ exports[`<OAuth2Session /> > renders a finished session 1`] = `
     onMouseLeave={[Function]}
     onTouchStart={[Function]}
     role="link"
-    style={{}}
   >
     <header
       className="_cardHeader_e2909e"
@@ -94,7 +93,6 @@ exports[`<OAuth2Session /> > renders an active session 1`] = `
     onMouseEnter={[Function]}
     onMouseLeave={[Function]}
     onTouchStart={[Function]}
-    style={{}}
   >
     <header
       className="_cardHeader_e2909e"
@@ -207,7 +205,6 @@ exports[`<OAuth2Session /> > renders correct icon for a native session 1`] = `
     onMouseLeave={[Function]}
     onTouchStart={[Function]}
     role="link"
-    style={{}}
   >
     <header
       className="_cardHeader_e2909e"

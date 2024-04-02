@@ -13,7 +13,6 @@ exports[`<CompatSession /> > renders a finished session 1`] = `
     onMouseLeave={[Function]}
     onTouchStart={[Function]}
     role="link"
-    style={{}}
   >
     <header
       className="_cardHeader_e2909e"
@@ -97,7 +96,6 @@ exports[`<CompatSession /> > renders an active session 1`] = `
     onMouseEnter={[Function]}
     onMouseLeave={[Function]}
     onTouchStart={[Function]}
-    style={{}}
   >
     <header
       className="_cardHeader_e2909e"
