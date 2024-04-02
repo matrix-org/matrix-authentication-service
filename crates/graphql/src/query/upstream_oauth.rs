@@ -73,6 +73,11 @@ impl UpstreamOAuthQuery {
             return Ok(None);
         };
 
+        // We only allow enabled providers to be fetched
+        if !provider.enabled() {
+            return Ok(None);
+        }
+
         Ok(Some(UpstreamOAuth2Provider::new(provider)))
     }
 
@@ -110,7 +115,9 @@ impl UpstreamOAuthQuery {
                     .transpose()?;
                 let pagination = Pagination::try_new(before_id, after_id, first, last)?;
 
-                let filter = UpstreamOAuthProviderFilter::new();
+                // We only want enabled providers
+                // XXX: we may want to let admins see disabled providers
+                let filter = UpstreamOAuthProviderFilter::new().enabled_only();
 
                 let page = repo
                     .upstream_oauth_provider()

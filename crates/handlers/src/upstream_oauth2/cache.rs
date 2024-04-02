@@ -167,7 +167,7 @@ impl MetadataCache {
         interval: std::time::Duration,
         repository: &mut R,
     ) -> Result<tokio::task::JoinHandle<()>, R::Error> {
-        let providers = repository.upstream_oauth_provider().all().await?;
+        let providers = repository.upstream_oauth_provider().all_enabled().await?;
 
         for provider in providers {
             let verify = match provider.discovery_mode {
@@ -504,6 +504,7 @@ mod tests {
             token_endpoint_signing_alg: None,
             token_endpoint_auth_method: OAuthClientAuthenticationMethod::None,
             created_at: clock.now(),
+            disabled_at: None,
             claims_imports: UpstreamOAuthProviderClaimsImports::default(),
             additional_authorization_parameters: Vec::new(),
         };

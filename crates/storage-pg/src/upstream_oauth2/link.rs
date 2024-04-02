@@ -27,7 +27,10 @@ use ulid::Ulid;
 use uuid::Uuid;
 
 use crate::{
-    iden::UpstreamOAuthLinks, pagination::QueryBuilderExt, tracing::ExecuteExt, DatabaseError,
+    iden::{UpstreamOAuthLinks, UpstreamOAuthProviders},
+    pagination::QueryBuilderExt,
+    tracing::ExecuteExt,
+    DatabaseError,
 };
 
 /// An implementation of [`UpstreamOAuthLinkRepository`] for a PostgreSQL
@@ -280,6 +283,29 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
                 ))
                 .eq(Uuid::from(provider.id))
             }))
+            .and_where_option(filter.provider_enabled().map(|enabled| {
+                Expr::col((
+                    UpstreamOAuthLinks::Table,
+                    UpstreamOAuthLinks::UpstreamOAuthProviderId,
+                ))
+                .eq(Expr::any(
+                    Query::select()
+                        .expr(Expr::col((
+                            UpstreamOAuthProviders::Table,
+                            UpstreamOAuthProviders::UpstreamOAuthProviderId,
+                        )))
+                        .from(UpstreamOAuthProviders::Table)
+                        .and_where(
+                            Expr::col((
+                                UpstreamOAuthProviders::Table,
+                                UpstreamOAuthProviders::DisabledAt,
+                            ))
+                            .is_null()
+                            .eq(enabled),
+                        )
+                        .take(),
+                ))
+            }))
             .generate_pagination(
                 (
                     UpstreamOAuthLinks::Table,
@@ -327,6 +353,29 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
                     UpstreamOAuthLinks::UpstreamOAuthProviderId,
                 ))
                 .eq(Uuid::from(provider.id))
+            }))
+            .and_where_option(filter.provider_enabled().map(|enabled| {
+                Expr::col((
+                    UpstreamOAuthLinks::Table,
+                    UpstreamOAuthLinks::UpstreamOAuthProviderId,
+                ))
+                .eq(Expr::any(
+                    Query::select()
+                        .expr(Expr::col((
+                            UpstreamOAuthProviders::Table,
+                            UpstreamOAuthProviders::UpstreamOAuthProviderId,
+                        )))
+                        .from(UpstreamOAuthProviders::Table)
+                        .and_where(
+                            Expr::col((
+                                UpstreamOAuthProviders::Table,
+                                UpstreamOAuthProviders::DisabledAt,
+                            ))
+                            .is_null()
+                            .eq(enabled),
+                        )
+                        .take(),
+                ))
             }))
             .build_sqlx(PostgresQueryBuilder);
 

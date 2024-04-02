@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                UPDATE upstream_oauth_providers\n                SET disabled_at = $2\n                WHERE upstream_oauth_provider_id = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "048eec775f4af3ffd805e830e8286c6a5745e523b76e1083d6bfced0035c2f76"
+}

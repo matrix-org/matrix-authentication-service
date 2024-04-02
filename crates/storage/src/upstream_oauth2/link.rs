@@ -25,6 +25,7 @@ pub struct UpstreamOAuthLinkFilter<'a> {
     // XXX: we might also want to filter for links without a user linked to them
     user: Option<&'a User>,
     provider: Option<&'a UpstreamOAuthProvider>,
+    provider_enabled: Option<bool>,
 }
 
 impl<'a> UpstreamOAuthLinkFilter<'a> {
@@ -62,6 +63,26 @@ impl<'a> UpstreamOAuthLinkFilter<'a> {
     #[must_use]
     pub fn provider(&self) -> Option<&UpstreamOAuthProvider> {
         self.provider
+    }
+
+    /// Set whether to filter for enabled providers
+    #[must_use]
+    pub const fn enabled_providers_only(mut self) -> Self {
+        self.provider_enabled = Some(true);
+        self
+    }
+
+    /// Set whether to filter for disabled providers
+    #[must_use]
+    pub const fn disabled_providers_only(mut self) -> Self {
+        self.provider_enabled = Some(false);
+        self
+    }
+
+    /// Get the provider enabled filter
+    #[must_use]
+    pub const fn provider_enabled(&self) -> Option<bool> {
+        self.provider_enabled
     }
 }
 

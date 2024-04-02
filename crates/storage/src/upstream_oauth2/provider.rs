@@ -1,4 +1,4 @@
-// Copyright 2022, 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2022-2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -82,6 +82,11 @@ pub struct UpstreamOAuthProviderParams {
 /// Filter parameters for listing upstream OAuth 2.0 providers
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub struct UpstreamOAuthProviderFilter<'a> {
+    /// Filter by whether the provider is enabled
+    ///
+    /// If `None`, all providers are returned
+    enabled: Option<bool>,
+
     _lifetime: PhantomData<&'a ()>,
 }
 
@@ -90,6 +95,28 @@ impl<'a> UpstreamOAuthProviderFilter<'a> {
     #[must_use]
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Return only enabled providers
+    #[must_use]
+    pub const fn enabled_only(mut self) -> Self {
+        self.enabled = Some(true);
+        self
+    }
+
+    /// Return only disabled providers
+    #[must_use]
+    pub const fn disabled_only(mut self) -> Self {
+        self.enabled = Some(false);
+        self
+    }
+
+    /// Get the enabled filter
+    ///
+    /// Returns `None` if the filter is not set
+    #[must_use]
+    pub const fn enabled(&self) -> Option<bool> {
+        self.enabled
     }
 }
 
@@ -175,6 +202,22 @@ pub trait UpstreamOAuthProviderRepository: Send + Sync {
         params: UpstreamOAuthProviderParams,
     ) -> Result<UpstreamOAuthProvider, Self::Error>;
 
+    /// Disable an upstream OAuth provider
+    ///
+    /// # Parameters
+    ///
+    /// * `clock`: The clock used to generate timestamps
+    /// * `provider`: The provider to disable
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn disable(
+        &mut self,
+        clock: &dyn Clock,
+        provider: UpstreamOAuthProvider,
+    ) -> Result<(), Self::Error>;
+
     /// List [`UpstreamOAuthProvider`] with the given filter and pagination
     ///
     /// # Parameters
@@ -205,12 +248,12 @@ pub trait UpstreamOAuthProviderRepository: Send + Sync {
         filter: UpstreamOAuthProviderFilter<'_>,
     ) -> Result<usize, Self::Error>;
 
-    /// Get all upstream OAuth providers
+    /// Get all enabled upstream OAuth providers
     ///
     /// # Errors
     ///
     /// Returns [`Self::Error`] if the underlying repository fails
-    async fn all(&mut self) -> Result<Vec<UpstreamOAuthProvider>, Self::Error>;
+    async fn all_enabled(&mut self) -> Result<Vec<UpstreamOAuthProvider>, Self::Error>;
 }
 
 repository_impl!(UpstreamOAuthProviderRepository:
@@ -234,6 +277,12 @@ repository_impl!(UpstreamOAuthProviderRepository:
 
     async fn delete_by_id(&mut self, id: Ulid) -> Result<(), Self::Error>;
 
+    async fn disable(
+        &mut self,
+        clock: &dyn Clock,
+        provider: UpstreamOAuthProvider
+    ) -> Result<(), Self::Error>;
+
     async fn list(
         &mut self,
         filter: UpstreamOAuthProviderFilter<'_>,
@@ -245,5 +294,5 @@ repository_impl!(UpstreamOAuthProviderRepository:
         filter: UpstreamOAuthProviderFilter<'_>
     ) -> Result<usize, Self::Error>;
 
-    async fn all(&mut self) -> Result<Vec<UpstreamOAuthProvider>, Self::Error>;
+    async fn all_enabled(&mut self) -> Result<Vec<UpstreamOAuthProvider>, Self::Error>;
 );

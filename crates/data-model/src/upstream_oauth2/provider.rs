@@ -141,8 +141,17 @@ pub struct UpstreamOAuthProvider {
     pub token_endpoint_signing_alg: Option<JsonWebSignatureAlg>,
     pub token_endpoint_auth_method: OAuthClientAuthenticationMethod,
     pub created_at: DateTime<Utc>,
+    pub disabled_at: Option<DateTime<Utc>>,
     pub claims_imports: ClaimsImports,
     pub additional_authorization_parameters: Vec<(String, String)>,
+}
+
+impl UpstreamOAuthProvider {
+    /// Returns `true` if the provider is enabled
+    #[must_use]
+    pub const fn enabled(&self) -> bool {
+        self.disabled_at.is_none()
+    }
 }
 
 /// Whether to set the email as verified when importing it from the upstream

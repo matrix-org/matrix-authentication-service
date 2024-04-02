@@ -20,6 +20,7 @@ use hyper::StatusCode;
 use mas_axum_utils::{
     cookies::CookieJar, http_client_factory::HttpClientFactory, sentry::SentryEventID,
 };
+use mas_data_model::UpstreamOAuthProvider;
 use mas_oidc_client::requests::authorization_code::AuthorizationRequestData;
 use mas_router::UrlBuilder;
 use mas_storage::{
@@ -81,6 +82,7 @@ pub(crate) async fn get(
         .upstream_oauth_provider()
         .lookup(provider_id)
         .await?
+        .filter(UpstreamOAuthProvider::enabled)
         .ok_or(RouteError::ProviderNotFound)?;
 
     let http_service = http_client_factory.http_service("upstream_oauth2.authorize");

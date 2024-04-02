@@ -62,6 +62,7 @@ struct ProviderLookup {
     token_endpoint_signing_alg: Option<String>,
     token_endpoint_auth_method: String,
     created_at: DateTime<Utc>,
+    disabled_at: Option<DateTime<Utc>>,
     claims_imports: Json<UpstreamOAuthProviderClaimsImports>,
     jwks_uri_override: Option<String>,
     authorization_endpoint_override: Option<String>,
@@ -161,6 +162,7 @@ impl TryFrom<ProviderLookup> for UpstreamOAuthProvider {
             token_endpoint_auth_method,
             token_endpoint_signing_alg,
             created_at: value.created_at,
+            disabled_at: value.disabled_at,
             claims_imports: value.claims_imports.0,
             authorization_endpoint_override,
             token_endpoint_override,
@@ -200,6 +202,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                     token_endpoint_signing_alg,
                     token_endpoint_auth_method,
                     created_at,
+                    disabled_at,
                     claims_imports as "claims_imports: Json<UpstreamOAuthProviderClaimsImports>",
                     jwks_uri_override,
                     authorization_endpoint_override,
@@ -308,6 +311,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
             token_endpoint_signing_alg: params.token_endpoint_signing_alg,
             token_endpoint_auth_method: params.token_endpoint_auth_method,
             created_at,
+            disabled_at: None,
             claims_imports: params.claims_imports,
             authorization_endpoint_override: params.authorization_endpoint_override,
             token_endpoint_override: params.token_endpoint_override,
@@ -434,6 +438,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                         scope = EXCLUDED.scope,
                         token_endpoint_auth_method = EXCLUDED.token_endpoint_auth_method,
                         token_endpoint_signing_alg = EXCLUDED.token_endpoint_signing_alg,
+                        disabled_at = NULL,
                         client_id = EXCLUDED.client_id,
                         encrypted_client_secret = EXCLUDED.encrypted_client_secret,
                         claims_imports = EXCLUDED.claims_imports,
@@ -487,6 +492,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
             token_endpoint_signing_alg: params.token_endpoint_signing_alg,
             token_endpoint_auth_method: params.token_endpoint_auth_method,
             created_at,
+            disabled_at: None,
             claims_imports: params.claims_imports,
             authorization_endpoint_override: params.authorization_endpoint_override,
             token_endpoint_override: params.token_endpoint_override,
@@ -495,6 +501,37 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
             pkce_mode: params.pkce_mode,
             additional_authorization_parameters: params.additional_authorization_parameters,
         })
+    }
+
+    #[tracing::instrument(
+        name = "db.upstream_oauth_provider.disable",
+        skip_all,
+        fields(
+            db.statement,
+            %upstream_oauth_provider.id,
+        ),
+        err,
+    )]
+    async fn disable(
+        &mut self,
+        clock: &dyn Clock,
+        upstream_oauth_provider: UpstreamOAuthProvider,
+    ) -> Result<(), Self::Error> {
+        let disabled_at = clock.now();
+        let res = sqlx::query!(
+            r#"
+                UPDATE upstream_oauth_providers
+                SET disabled_at = $2
+                WHERE upstream_oauth_provider_id = $1
+            "#,
+            Uuid::from(upstream_oauth_provider.id),
+            disabled_at,
+        )
+        .traced()
+        .execute(&mut *self.conn)
+        .await?;
+
+        DatabaseError::ensure_affected_rows(&res, 1)
     }
 
     #[tracing::instrument(
@@ -507,10 +544,9 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
     )]
     async fn list(
         &mut self,
-        _filter: UpstreamOAuthProviderFilter<'_>,
+        filter: UpstreamOAuthProviderFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<UpstreamOAuthProvider>, Self::Error> {
-        // XXX: the filter is currently ignored, as it does not have any fields
         let (sql, arguments) = Query::select()
             .expr_as(
                 Expr::col((
@@ -582,6 +618,13 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
             .expr_as(
                 Expr::col((
                     UpstreamOAuthProviders::Table,
+                    UpstreamOAuthProviders::DisabledAt,
+                )),
+                ProviderLookupIden::DisabledAt,
+            )
+            .expr_as(
+                Expr::col((
+                    UpstreamOAuthProviders::Table,
                     UpstreamOAuthProviders::ClaimsImports,
                 )),
                 ProviderLookupIden::ClaimsImports,
@@ -629,6 +672,14 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                 ProviderLookupIden::AdditionalParameters,
             )
             .from(UpstreamOAuthProviders::Table)
+            .and_where_option(filter.enabled().map(|enabled| {
+                Expr::col((
+                    UpstreamOAuthProviders::Table,
+                    UpstreamOAuthProviders::DisabledAt,
+                ))
+                .is_null()
+                .eq(enabled)
+            }))
             .generate_pagination(
                 (
                     UpstreamOAuthProviders::Table,
@@ -660,9 +711,8 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
     )]
     async fn count(
         &mut self,
-        _filter: UpstreamOAuthProviderFilter<'_>,
+        filter: UpstreamOAuthProviderFilter<'_>,
     ) -> Result<usize, Self::Error> {
-        // XXX: the filter is currently ignored, as it does not have any fields
         let (sql, arguments) = Query::select()
             .expr(
                 Expr::col((
@@ -672,6 +722,14 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                 .count(),
             )
             .from(UpstreamOAuthProviders::Table)
+            .and_where_option(filter.enabled().map(|enabled| {
+                Expr::col((
+                    UpstreamOAuthProviders::Table,
+                    UpstreamOAuthProviders::DisabledAt,
+                ))
+                .is_null()
+                .eq(enabled)
+            }))
             .build_sqlx(PostgresQueryBuilder);
 
         let count: i64 = sqlx::query_scalar_with(&sql, arguments)
@@ -685,14 +743,14 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
     }
 
     #[tracing::instrument(
-        name = "db.upstream_oauth_provider.all",
+        name = "db.upstream_oauth_provider.all_enabled",
         skip_all,
         fields(
             db.statement,
         ),
         err,
     )]
-    async fn all(&mut self) -> Result<Vec<UpstreamOAuthProvider>, Self::Error> {
+    async fn all_enabled(&mut self) -> Result<Vec<UpstreamOAuthProvider>, Self::Error> {
         let res = sqlx::query_as!(
             ProviderLookup,
             r#"
@@ -707,6 +765,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                     token_endpoint_signing_alg,
                     token_endpoint_auth_method,
                     created_at,
+                    disabled_at,
                     claims_imports as "claims_imports: Json<UpstreamOAuthProviderClaimsImports>",
                     jwks_uri_override,
                     authorization_endpoint_override,
@@ -715,6 +774,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                     pkce_mode,
                     additional_parameters as "additional_parameters: Json<Vec<(String, String)>>"
                 FROM upstream_oauth_providers
+                WHERE disabled_at IS NULL
             "#,
         )
         .traced()

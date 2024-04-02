@@ -501,7 +501,9 @@ impl User {
                     .transpose()?;
                 let pagination = Pagination::try_new(before_id, after_id, first, last)?;
 
-                let filter = UpstreamOAuthLinkFilter::new().for_user(&self.0);
+                let filter = UpstreamOAuthLinkFilter::new()
+                    .for_user(&self.0)
+                    .enabled_providers_only();
 
                 let page = repo.upstream_oauth_link().list(filter, pagination).await?;
 
