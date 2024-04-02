@@ -51,7 +51,7 @@ mod tests {
         let mut repo = PgRepository::from_pool(&pool).await.unwrap();
 
         // The provider list should be empty at the start
-        let all_providers = repo.upstream_oauth_provider().all().await.unwrap();
+        let all_providers = repo.upstream_oauth_provider().all_enabled().await.unwrap();
         assert!(all_providers.is_empty());
 
         // Let's add a provider
@@ -93,7 +93,7 @@ mod tests {
         assert_eq!(provider.client_id, "client-id");
 
         // It should be in the list of all providers
-        let providers = repo.upstream_oauth_provider().all().await.unwrap();
+        let providers = repo.upstream_oauth_provider().all_enabled().await.unwrap();
         assert_eq!(providers.len(), 1);
         assert_eq!(providers[0].issuer, "https://example.com/");
         assert_eq!(providers[0].client_id, "client-id");
@@ -192,7 +192,8 @@ mod tests {
         // XXX: we should also try other combinations of the filter
         let filter = UpstreamOAuthLinkFilter::new()
             .for_user(&user)
-            .for_provider(&provider);
+            .for_provider(&provider)
+            .enabled_providers_only();
 
         let links = repo
             .upstream_oauth_link()
@@ -207,13 +208,70 @@ mod tests {
 
         assert_eq!(repo.upstream_oauth_link().count(filter).await.unwrap(), 1);
 
+        // There should be exactly one enabled provider
+        assert_eq!(
+            repo.upstream_oauth_provider()
+                .count(UpstreamOAuthProviderFilter::new())
+                .await
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            repo.upstream_oauth_provider()
+                .count(UpstreamOAuthProviderFilter::new().enabled_only())
+                .await
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            repo.upstream_oauth_provider()
+                .count(UpstreamOAuthProviderFilter::new().disabled_only())
+                .await
+                .unwrap(),
+            0
+        );
+
+        // Disable the provider
+        repo.upstream_oauth_provider()
+            .disable(&clock, provider.clone())
+            .await
+            .unwrap();
+
+        // There should be exactly one disabled provider
+        assert_eq!(
+            repo.upstream_oauth_provider()
+                .count(UpstreamOAuthProviderFilter::new())
+                .await
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            repo.upstream_oauth_provider()
+                .count(UpstreamOAuthProviderFilter::new().enabled_only())
+                .await
+                .unwrap(),
+            0
+        );
+        assert_eq!(
+            repo.upstream_oauth_provider()
+                .count(UpstreamOAuthProviderFilter::new().disabled_only())
+                .await
+                .unwrap(),
+            1
+        );
+
         // Try deleting the provider
         repo.upstream_oauth_provider()
             .delete(provider)
             .await
             .unwrap();
-        let providers = repo.upstream_oauth_provider().all().await.unwrap();
-        assert!(providers.is_empty());
+        assert_eq!(
+            repo.upstream_oauth_provider()
+                .count(UpstreamOAuthProviderFilter::new())
+                .await
+                .unwrap(),
+            0
+        );
     }
 
     /// Test that the pagination works as expected in the upstream OAuth
@@ -287,6 +345,16 @@ mod tests {
         let edge_ids: Vec<_> = page.edges.iter().map(|p| p.id).collect();
         assert_eq!(&edge_ids, &ids[..10]);
 
+        // Getting the same page with the "enabled only" filter should return the same
+        // results
+        let other_page = repo
+            .upstream_oauth_provider()
+            .list(filter.enabled_only(), Pagination::first(10))
+            .await
+            .unwrap();
+
+        assert_eq!(page, other_page);
+
         // Lookup the next 10 items
         let page = repo
             .upstream_oauth_provider()
@@ -334,5 +402,17 @@ mod tests {
         assert!(!page.has_next_page);
         let edge_ids: Vec<_> = page.edges.iter().map(|p| p.id).collect();
         assert_eq!(&edge_ids, &ids[6..8]);
+
+        // There should not be any disabled providers
+        assert!(repo
+            .upstream_oauth_provider()
+            .list(
+                UpstreamOAuthProviderFilter::new().disabled_only(),
+                Pagination::first(1)
+            )
+            .await
+            .unwrap()
+            .edges
+            .is_empty());
     }
 }

@@ -107,6 +107,7 @@ pub enum UpstreamOAuthProviders {
     TokenEndpointSigningAlg,
     TokenEndpointAuthMethod,
     CreatedAt,
+    DisabledAt,
     ClaimsImports,
     DiscoveryMode,
     PkceMode,

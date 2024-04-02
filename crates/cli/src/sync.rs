@@ -110,7 +110,7 @@ pub async fn config_sync(
             .map(|p| p.id)
             .collect::<HashSet<_>>();
 
-        let existing = repo.upstream_oauth_provider().all().await?;
+        let existing = repo.upstream_oauth_provider().all_enabled().await?;
         let existing_ids = existing.iter().map(|p| p.id).collect::<HashSet<_>>();
         let to_delete = existing.into_iter().filter(|p| !config_ids.contains(&p.id));
         if prune {

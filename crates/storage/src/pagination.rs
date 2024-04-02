@@ -137,6 +137,7 @@ impl Pagination {
 }
 
 /// A page of results returned by a paginated query
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Page<T> {
     /// When paginating forwards, this is true if there are more items after
     pub has_next_page: bool,
