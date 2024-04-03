@@ -162,7 +162,7 @@ version = "0.3.18"
 version = "0.22.0"
 features = ["trace", "metrics"]
 [workspace.dependencies.opentelemetry-http]
-version = "0.11.0"
+version = "0.11.1"
 features = ["hyper", "tokio"]
 [workspace.dependencies.opentelemetry-semantic-conventions]
 version = "0.14.0"
