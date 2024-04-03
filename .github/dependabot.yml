@@ -56,6 +56,9 @@ updates:
          - "storybook"
          - "storybook-*"
          - "@storybook/*"
+      fontsource:
+        patterns:
+         - "@fontsource/*"
       vitest:
         patterns:
          - "vitest"
@@ -86,6 +89,7 @@ updates:
           - "eslint-*"
       urql:
         patterns:
+          - "urql"
           - "@urql/*"
       graphql-codegen:
         patterns:
@@ -97,6 +101,9 @@ updates:
       types:
         patterns:
           - "@types/*"
+      browser-logos:
+        patterns:
+          - "@browser-logos/*"
 
   - package-ecosystem: "npm"
     directory: "/tools/syn2mas/"
