@@ -88,7 +88,8 @@
 }
 
 @media (hover) {
-  .cpd-checkbox-input:not([disabled], [readonly], :checked):hover + .cpd-checkbox-ui {
+  .cpd-checkbox-input:not([disabled], [readonly], :checked):hover
+    + .cpd-checkbox-ui {
     color: var(--cpd-color-icon-quaternary);
     border-color: var(--cpd-color-border-interactive-hovered);
 
@@ -96,22 +97,26 @@
     box-shadow: 0 1.2px 2.4px 0 rgb(0 0 0 / 15%);
   }
 
-  .cpd-checkbox-input:not([disabled], [readonly]):checked:hover + .cpd-checkbox-ui {
+  .cpd-checkbox-input:not([disabled], [readonly]):checked:hover
+    + .cpd-checkbox-ui {
     border-color: var(--cpd-color-bg-action-primary-hovered);
     background: var(--cpd-color-bg-action-primary-hovered);
   }
 
-  .cpd-checkbox-input[data-invalid]:not([disabled], [readonly]):checked:hover + .cpd-checkbox-ui {
+  .cpd-checkbox-input[data-invalid]:not([disabled], [readonly]):checked:hover
+    + .cpd-checkbox-ui {
     border-color: var(--cpd-color-bg-critical-hovered);
     background: var(--cpd-color-bg-critical-hovered);
   }
 }
 
-.cpd-checkbox-input[data-invalid]:not([disabled], :checked, [readonly]) + .cpd-checkbox-ui {
+.cpd-checkbox-input[data-invalid]:not([disabled], :checked, [readonly])
+  + .cpd-checkbox-ui {
   border-color: var(--cpd-color-border-critical-primary);
 }
 
-.cpd-checkbox-input[data-invalid]:not([disabled], [readonly]):checked + .cpd-checkbox-ui {
+.cpd-checkbox-input[data-invalid]:not([disabled], [readonly]):checked
+  + .cpd-checkbox-ui {
   background-color: var(--cpd-color-bg-critical-primary);
   border-color: var(--cpd-color-bg-critical-primary);
 }

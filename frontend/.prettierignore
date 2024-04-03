@@ -1,0 +1,4 @@
+.storybook/locales.ts
+locales/*.json
+src/routeTree.gen.ts
+src/gql/*

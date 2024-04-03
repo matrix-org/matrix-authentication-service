@@ -14,43 +14,43 @@
  */
 
 .user {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: var(--cpd-space-4x);
-    outline: 1px solid var(--cpd-color-gray-400);
-    outline-offset: -1px;
-    border-radius: var(--cpd-space-3x);
-    padding: var(--cpd-space-4x)
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--cpd-space-4x);
+  outline: 1px solid var(--cpd-color-gray-400);
+  outline-offset: -1px;
+  border-radius: var(--cpd-space-3x);
+  padding: var(--cpd-space-4x);
 }
 
 .meta {
-    flex: 1 1;
+  flex: 1 1;
 
-    /* Make sure the text properly truncates */
-    min-width: 0;
+  /* Make sure the text properly truncates */
+  min-width: 0;
 
-    & p {
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-    }
+  & p {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
 }
 
 .edit-button {
-    align-self: flex-start;
+  align-self: flex-start;
 }
 
 .mxid {
-    color: var(--cpd-color-text-secondary);
+  color: var(--cpd-color-text-secondary);
 }
 
 .dialog-form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--cpd-space-4x);
-    align-self: center;
-    max-width: 378px;
-    width: 100%;
-    margin-block-end: var(--cpd-space-9x);
+  display: flex;
+  flex-direction: column;
+  gap: var(--cpd-space-4x);
+  align-self: center;
+  max-width: 378px;
+  width: 100%;
+  margin-block-end: var(--cpd-space-9x);
 }

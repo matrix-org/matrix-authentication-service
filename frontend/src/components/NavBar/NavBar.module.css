@@ -14,13 +14,13 @@
  */
 
 .nav-bar {
-    border-bottom: var(--cpd-border-width-1) solid var(--cpd-color-gray-400);
+  border-bottom: var(--cpd-border-width-1) solid var(--cpd-color-gray-400);
 }
 
 .nav-bar-items {
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-start;
-    align-items: center;
-    gap: var(--cpd-space-3x);
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  gap: var(--cpd-space-3x);
 }

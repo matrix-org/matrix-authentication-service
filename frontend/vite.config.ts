@@ -31,7 +31,7 @@ function i18nHotReload(): PluginOption {
     handleHotUpdate({ file, server }): void {
       if (file.includes("locales") && file.endsWith(".json")) {
         console.log("Locale file updated");
-        server.ws.send({
+        server.hot.send({
           type: "custom",
           event: "locales-update",
         });

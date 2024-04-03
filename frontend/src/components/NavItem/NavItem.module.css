@@ -14,57 +14,56 @@
  */
 
 .nav-tab {
-    padding: var(--cpd-space-4x) 0;
-    position: relative;
+  padding: var(--cpd-space-4x) 0;
+  position: relative;
 }
 
 /* Underline effect */
 .nav-tab::before {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 0;
-    border-radius: var(--cpd-radius-pill-effect) var(--cpd-radius-pill-effect) 0 0;
-    background-color: var(--cpd-color-bg-action-primary-rest);
-    transition: height 0.1s ease-in-out;
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-radius: var(--cpd-radius-pill-effect) var(--cpd-radius-pill-effect) 0 0;
+  background-color: var(--cpd-color-bg-action-primary-rest);
+  transition: height 0.1s ease-in-out;
 }
 
 .nav-tab:has(.nav-item[aria-current="page"])::before {
-    /* This is not exactly right: designs says 3px, but there are no variables for that */
-    height: var(--cpd-border-width-4);
+  /* This is not exactly right: designs says 3px, but there are no variables for that */
+  height: var(--cpd-border-width-4);
 }
 
-
 .nav-item {
-    padding: var(--cpd-space-1x) var(--cpd-space-2x);
-    color: var(--cpd-color-text-secondary);
-    line-height: var(--cpd-space-6x);
-    border-radius: var(--cpd-radius-pill-effect);
-    border: transparent var(--cpd-border-width-2) solid;
+  padding: var(--cpd-space-1x) var(--cpd-space-2x);
+  color: var(--cpd-color-text-secondary);
+  line-height: var(--cpd-space-6x);
+  border-radius: var(--cpd-radius-pill-effect);
+  border: transparent var(--cpd-border-width-2) solid;
 }
 
 .nav-item.external-link {
-    text-decoration: underline;
-    color: var(--cpd-color-text-primary);
+  text-decoration: underline;
+  color: var(--cpd-color-text-primary);
 }
 
 .nav-item:hover {
-    color: var(--cpd-color-text-primary);
-    background-color: var(--cpd-color-bg-subtle-secondary);
+  color: var(--cpd-color-text-primary);
+  background-color: var(--cpd-color-bg-subtle-secondary);
 }
 
 .nav-item:active {
-    color: var(--cpd-color-text-primary);
-    background-color: var(--cpd-color-bg-subtle-primary);
+  color: var(--cpd-color-text-primary);
+  background-color: var(--cpd-color-bg-subtle-primary);
 }
 
 .nav-item:focus {
-    outline: none;
-    border-color: var(--cpd-color-border-focused);
+  outline: none;
+  border-color: var(--cpd-color-border-focused);
 }
 
 .nav-item[aria-current="page"] {
-    color: var(--cpd-color-text-primary);
+  color: var(--cpd-color-text-primary);
 }

@@ -14,9 +14,9 @@
  */
 
 .details {
-    font: var(--cpd-font-body-sm-regular);
-    background: var(--cpd-color-bg-critical-subtle);
-    border: 1px solid var(--cpd-color-border-critical-subtle);
-    padding: var(--cpd-space-4x);
-    text-align: initial;
+  font: var(--cpd-font-body-sm-regular);
+  background: var(--cpd-color-bg-critical-subtle);
+  border: 1px solid var(--cpd-color-border-critical-subtle);
+  padding: var(--cpd-space-4x);
+  text-align: initial;
 }

@@ -14,10 +14,10 @@
  */
 
 .avatar {
-    object-fit: cover;
-    overflow: hidden;
-    aspect-ratio: 1 / 1;
-    width: var(--mas-avatar-size);
-    border-radius: 50%;
-    display: inline-block;
+  object-fit: cover;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  width: var(--mas-avatar-size);
+  border-radius: 50%;
+  display: inline-block;
 }

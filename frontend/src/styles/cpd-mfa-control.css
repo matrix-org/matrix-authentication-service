@@ -68,7 +68,7 @@
 }
 
 @media (hover) {
-  .cpd-mfa-control:hover~.cpd-mfa-digit {
+  .cpd-mfa-control:hover ~ .cpd-mfa-digit {
     border-color: var(--cpd-color-border-interactive-hovered);
 
     /** TODO: have the shadow in the design tokens */
@@ -81,7 +81,7 @@
   cursor: not-allowed;
 }
 
-.cpd-mfa-control:disabled~.cpd-mfa-digit {
+.cpd-mfa-control:disabled ~ .cpd-mfa-digit {
   box-shadow: none;
   background: var(--cpd-color-bg-canvas-disabled);
   border-color: var(--cpd-color-border-disabled);
@@ -91,17 +91,17 @@
   color: var(--cpd-color-text-secondary);
 }
 
-.cpd-mfa-control[readonly]~.cpd-mfa-digit {
+.cpd-mfa-control[readonly] ~ .cpd-mfa-digit {
   box-shadow: none;
   background: var(--cpd-color-bg-subtle-secondary);
   border-color: var(--cpd-color-bg-subtle-secondary);
 }
 
-.cpd-mfa-control[data-invalid]~.cpd-mfa-digit {
+.cpd-mfa-control[data-invalid] ~ .cpd-mfa-digit {
   border-color: var(--cpd-color-text-critical-primary);
 }
 
-.cpd-mfa-control:focus~.cpd-mfa-digit:not([data-filled]) {
+.cpd-mfa-control:focus ~ .cpd-mfa-digit:not([data-filled]) {
   outline: 2px solid var(--cpd-color-border-focused);
   border-color: transparent;
 }
