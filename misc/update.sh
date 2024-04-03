@@ -15,4 +15,5 @@ cargo run -p mas-i18n-scan -- --update "${BASE_DIR}/templates/" "${BASE_DIR}/tra
 OUT_DIR="${POLICIES_SCHEMA}" cargo run -p mas-policy --features jsonschema
 
 cd "${BASE_DIR}/frontend"
+npm run format
 npm run generate
