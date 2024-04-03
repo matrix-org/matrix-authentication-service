@@ -14,29 +14,29 @@
  */
 
 @keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 :root {
-    --size: var(--cpd-space-16x);
+  --size: var(--cpd-space-16x);
 }
 
 .inline {
-    display: inline;
-    margin-right: var(--cpd-space-4x);
-    
-    .loading-spinner-inner {
-        height: var(--cpd-space-4x);
-        width: var(--cpd-space-4x);
-    }
+  display: inline;
+  margin-right: var(--cpd-space-4x);
+
+  .loading-spinner-inner {
+    height: var(--cpd-space-4x);
+    width: var(--cpd-space-4x);
+  }
 }
 
 .loading-spinner-inner {
-    height: var(--cpd-space-16x);
-    width: var(--cpd-space-16x);
-    display: inline;
-    animation: spin 1s linear infinite;
-    fill: var(--cpd-color-icon-primary);
+  height: var(--cpd-space-16x);
+  width: var(--cpd-space-16x);
+  display: inline;
+  animation: spin 1s linear infinite;
+  fill: var(--cpd-color-icon-primary);
 }

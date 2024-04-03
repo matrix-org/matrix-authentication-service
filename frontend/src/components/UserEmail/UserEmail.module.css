@@ -50,7 +50,7 @@ button[disabled] .user-email-delete-icon {
   padding: var(--cpd-space-3x);
   font: var(--cpd-font-body-md-semibold);
 
-  &>svg {
+  & > svg {
     color: var(--cpd-color-icon-secondary);
     background-color: var(--cpd-color-bg-subtle-secondary);
     padding: var(--cpd-space-2x);

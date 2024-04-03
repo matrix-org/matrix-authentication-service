@@ -14,39 +14,39 @@
  */
 
 .header {
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-start;
-    gap: var(--cpd-space-4x);
-    align-items: center;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: var(--cpd-space-4x);
+  align-items: center;
 }
 
 .back-button {
-    display: block;
-    inline-size: var(--cpd-space-7x);
-    block-size: var(--cpd-space-7x);
+  display: block;
+  inline-size: var(--cpd-space-7x);
+  block-size: var(--cpd-space-7x);
 
-    /* the icon is 0.75 the size of the button, so add padding to put it in the middle */
-    padding: var(--cpd-space-1x);
-    aspect-ratio: 1 / 1;
-    color: var(--cpd-color-icon-tertiary);
-    border: 0;
-    appearance: none;
-    cursor: pointer;
-    border-radius: 50%;
-    position: relative;
-    background-color: var(--cpd-color-bg-subtle-secondary);
-    line-height: 0px;
+  /* the icon is 0.75 the size of the button, so add padding to put it in the middle */
+  padding: var(--cpd-space-1x);
+  aspect-ratio: 1 / 1;
+  color: var(--cpd-color-icon-tertiary);
+  border: 0;
+  appearance: none;
+  cursor: pointer;
+  border-radius: 50%;
+  position: relative;
+  background-color: var(--cpd-color-bg-subtle-secondary);
+  line-height: 0px;
 }
 
 .back-button svg {
-    inline-size: var(--cpd-space-5x);
-    block-size: var(--cpd-space-5x);
+  inline-size: var(--cpd-space-5x);
+  block-size: var(--cpd-space-5x);
 }
 
 .back-button[aria-disabled="true"] {
-    color: var(--cpd-color-icon-disabled);
-    cursor: not-allowed;
+  color: var(--cpd-color-icon-disabled);
+  cursor: not-allowed;
 }
 
 /**
@@ -54,13 +54,13 @@
  */
 
 @media (hover) {
-    .back-button:not([aria-disabled="true"]):hover {
-        color: var(--cpd-color-icon-primary);
-        background: var(--cpd-color-bg-subtle-primary);
-    }
+  .back-button:not([aria-disabled="true"]):hover {
+    color: var(--cpd-color-icon-primary);
+    background: var(--cpd-color-bg-subtle-primary);
+  }
 }
 
 .back-button:not([aria-disabled="true"]):active {
-    color: var(--cpd-color-icon-primary);
-    background: var(--cpd-color-bg-subtle-primary);
+  color: var(--cpd-color-icon-primary);
+  background: var(--cpd-color-bg-subtle-primary);
 }

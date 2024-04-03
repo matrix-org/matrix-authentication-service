@@ -14,14 +14,14 @@
  */
 
 .session-list-block {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: var(--cpd-space-1x);
- }
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--cpd-space-1x);
+}
 
 .session-list-block-info {
-    display: flex;
-    flex-direction: column;
- }
+  display: flex;
+  flex-direction: column;
+}

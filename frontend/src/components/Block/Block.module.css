@@ -14,13 +14,13 @@
  */
 
 .block {
-    width: 100%;
-    color: var(--cpd-color-text-primary);
-    padding-bottom: var(--cpd-space-5x);
+  width: 100%;
+  color: var(--cpd-color-text-primary);
+  padding-bottom: var(--cpd-space-5x);
 
-    &:last-child {
-        border-bottom: none;
-    }
+  &:last-child {
+    border-bottom: none;
+  }
 }
 
 .title {

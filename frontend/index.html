@@ -16,14 +16,16 @@ limitations under the License.
 
 <!-- Must be kept in sync with templates/app.html -->
 
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>matrix-authentication-service</title>
     <script type="application/javascript">
-      window.APP_CONFIG = JSON.parse('{"root": "/account/", "graphqlEndpoint": "/graphql", "branding": {}}');
+      window.APP_CONFIG = JSON.parse(
+        '{"root": "/account/", "graphqlEndpoint": "/graphql", "branding": {}}',
+      );
       (function () {
         const query = window.matchMedia("(prefers-color-scheme: dark)");
         function handleChange(list) {

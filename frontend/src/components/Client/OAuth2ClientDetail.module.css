@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
- .header {
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-start;
-    align-items: center;
-    gap: var(--cpd-space-2x);
+.header {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  gap: var(--cpd-space-2x);
 }

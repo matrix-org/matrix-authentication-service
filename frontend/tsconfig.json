@@ -2,11 +2,7 @@
   "compilerOptions": {
     "target": "ESNext",
     "useDefineForClassFields": true,
-    "lib": [
-      "DOM",
-      "DOM.Iterable",
-      "ESNext"
-    ],
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "types": ["vite/client", "vitest/importMeta"],
     "allowJs": false,
     "skipLibCheck": true,
@@ -21,11 +17,7 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": [
-    "src",
-    "locales",
-    ".storybook/preview.tsx"
-  ],
+  "include": ["src", "locales", ".storybook/preview.tsx"],
   "references": [
     {
       "path": "./tsconfig.node.json"

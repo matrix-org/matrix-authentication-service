@@ -14,8 +14,8 @@
  */
 
 .block-list {
-    display: flex;
-    flex-direction: column;
-    align-content: flex-start;
-    gap: var(--cpd-space-8x);
+  display: flex;
+  flex-direction: column;
+  align-content: flex-start;
+  gap: var(--cpd-space-8x);
 }
