@@ -146,6 +146,18 @@ pub struct UpstreamOAuthProvider {
     pub additional_authorization_parameters: Vec<(String, String)>,
 }
 
+impl PartialOrd for UpstreamOAuthProvider {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.id.cmp(&other.id))
+    }
+}
+
+impl Ord for UpstreamOAuthProvider {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.id.cmp(&other.id)
+    }
+}
+
 impl UpstreamOAuthProvider {
     /// Returns `true` if the provider is enabled
     #[must_use]

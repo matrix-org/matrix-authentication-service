@@ -204,6 +204,8 @@ pub trait UpstreamOAuthProviderRepository: Send + Sync {
 
     /// Disable an upstream OAuth provider
     ///
+    /// Returns the disabled provider
+    ///
     /// # Parameters
     ///
     /// * `clock`: The clock used to generate timestamps
@@ -216,7 +218,7 @@ pub trait UpstreamOAuthProviderRepository: Send + Sync {
         &mut self,
         clock: &dyn Clock,
         provider: UpstreamOAuthProvider,
-    ) -> Result<(), Self::Error>;
+    ) -> Result<UpstreamOAuthProvider, Self::Error>;
 
     /// List [`UpstreamOAuthProvider`] with the given filter and pagination
     ///
@@ -281,7 +283,7 @@ repository_impl!(UpstreamOAuthProviderRepository:
         &mut self,
         clock: &dyn Clock,
         provider: UpstreamOAuthProvider
-    ) -> Result<(), Self::Error>;
+    ) -> Result<UpstreamOAuthProvider, Self::Error>;
 
     async fn list(
         &mut self,
