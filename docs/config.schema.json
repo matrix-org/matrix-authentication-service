@@ -1562,6 +1562,10 @@
         "token_endpoint_auth_method"
       ],
       "properties": {
+        "enabled": {
+          "description": "Whether this provider is enabled.\n\nDefaults to `true`",
+          "type": "boolean"
+        },
         "id": {
           "description": "A ULID as per https://github.com/ulid/spec",
           "type": "string",

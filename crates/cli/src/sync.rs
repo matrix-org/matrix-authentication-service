@@ -14,11 +14,14 @@
 
 //! Utilities to synchronize the configuration file with the database.
 
-use std::collections::HashSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use mas_config::{ClientsConfig, UpstreamOAuth2Config};
 use mas_keystore::Encrypter;
-use mas_storage::{upstream_oauth2::UpstreamOAuthProviderParams, Clock, RepositoryAccess};
+use mas_storage::{
+    upstream_oauth2::{UpstreamOAuthProviderFilter, UpstreamOAuthProviderParams},
+    Clock, Pagination, RepositoryAccess,
+};
 use mas_storage_pg::PgRepository;
 use sqlx::{postgres::PgAdvisoryLock, Connection, PgConnection};
 use tracing::{error, info, info_span, warn};
@@ -107,35 +110,83 @@ pub async fn config_sync(
         let config_ids = upstream_oauth2_config
             .providers
             .iter()
+            .filter(|p| p.enabled)
             .map(|p| p.id)
-            .collect::<HashSet<_>>();
+            .collect::<BTreeSet<_>>();
 
-        let existing = repo.upstream_oauth_provider().all_enabled().await?;
-        let existing_ids = existing.iter().map(|p| p.id).collect::<HashSet<_>>();
-        let to_delete = existing.into_iter().filter(|p| !config_ids.contains(&p.id));
+        // Let's assume we have less than 1000 providers
+        let page = repo
+            .upstream_oauth_provider()
+            .list(
+                UpstreamOAuthProviderFilter::default(),
+                Pagination::first(1000),
+            )
+            .await?;
+
+        // A warning is probably enough
+        if page.has_next_page {
+            warn!(
+                "More than 1000 providers in the database, only the first 1000 will be considered"
+            );
+        }
+
+        let mut existing_enabled_ids = BTreeSet::new();
+        let mut existing_disabled = BTreeMap::new();
+        // Process the existing providers
+        for provider in page.edges {
+            if provider.enabled() {
+                if config_ids.contains(&provider.id) {
+                    existing_enabled_ids.insert(provider.id);
+                } else {
+                    // Provider is enabled in the database but not in the config
+                    info!(%provider.id, "Disabling provider");
+
+                    let provider = if dry_run {
+                        provider
+                    } else {
+                        repo.upstream_oauth_provider()
+                            .disable(clock, provider)
+                            .await?
+                    };
+
+                    existing_disabled.insert(provider.id, provider);
+                }
+            } else {
+                existing_disabled.insert(provider.id, provider);
+            }
+        }
+
         if prune {
-            for provider in to_delete {
-                info!(%provider.id, "Deleting provider");
+            for provider_id in existing_disabled.keys().copied() {
+                info!(provider.id = %provider_id, "Deleting provider");
 
                 if dry_run {
                     continue;
                 }
 
-                repo.upstream_oauth_provider().delete(provider).await?;
+                repo.upstream_oauth_provider()
+                    .delete_by_id(provider_id)
+                    .await?;
             }
         } else {
-            let len = to_delete.count();
+            let len = existing_disabled.len();
             match len {
                 0 => {},
-                1 => warn!("A provider in the database is not in the config. Run `mas-cli config sync --prune` to delete it."),
-                n => warn!("{n} providers in the database are not in the config. Run `mas-cli config sync --prune` to delete them."),
+                1 => warn!("A provider is soft-deleted in the database. Run `mas-cli config sync --prune` to delete it."),
+                n => warn!("{n} providers are soft-deleted in the database. Run `mas-cli config sync --prune` to delete them."),
             }
         }
 
         for provider in upstream_oauth2_config.providers {
+            if !provider.enabled {
+                continue;
+            }
+
             let _span = info_span!("provider", %provider.id).entered();
-            if existing_ids.contains(&provider.id) {
+            if existing_enabled_ids.contains(&provider.id) {
                 info!("Updating provider");
+            } else if existing_disabled.contains_key(&provider.id) {
+                info!("Enabling and updating provider");
             } else {
                 info!("Adding provider");
             }
@@ -224,10 +275,10 @@ pub async fn config_sync(
         let config_ids = clients_config
             .iter()
             .map(|c| c.client_id)
-            .collect::<HashSet<_>>();
+            .collect::<BTreeSet<_>>();
 
         let existing = repo.oauth2_client().all_static().await?;
-        let existing_ids = existing.iter().map(|p| p.id).collect::<HashSet<_>>();
+        let existing_ids = existing.iter().map(|p| p.id).collect::<BTreeSet<_>>();
         let to_delete = existing.into_iter().filter(|p| !config_ids.contains(&p.id));
         if prune {
             for client in to_delete {

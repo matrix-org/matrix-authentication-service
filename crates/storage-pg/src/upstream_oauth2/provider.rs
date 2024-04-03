@@ -515,8 +515,8 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
     async fn disable(
         &mut self,
         clock: &dyn Clock,
-        upstream_oauth_provider: UpstreamOAuthProvider,
-    ) -> Result<(), Self::Error> {
+        mut upstream_oauth_provider: UpstreamOAuthProvider,
+    ) -> Result<UpstreamOAuthProvider, Self::Error> {
         let disabled_at = clock.now();
         let res = sqlx::query!(
             r#"
@@ -531,7 +531,11 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
         .execute(&mut *self.conn)
         .await?;
 
-        DatabaseError::ensure_affected_rows(&res, 1)
+        DatabaseError::ensure_affected_rows(&res, 1)?;
+
+        upstream_oauth_provider.disabled_at = Some(disabled_at);
+
+        Ok(upstream_oauth_provider)
     }
 
     #[tracing::instrument(

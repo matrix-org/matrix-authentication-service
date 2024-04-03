@@ -342,9 +342,24 @@ impl PkceMethod {
     }
 }
 
+fn default_true() -> bool {
+    true
+}
+
+#[allow(clippy::trivially_copy_pass_by_ref)]
+fn is_default_true(value: &bool) -> bool {
+    *value
+}
+
 #[skip_serializing_none]
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Provider {
+    /// Whether this provider is enabled.
+    ///
+    /// Defaults to `true`
+    #[serde(default = "default_true", skip_serializing_if = "is_default_true")]
+    pub enabled: bool,
+
     /// An internal unique identifier for this provider
     #[schemars(
         with = "String",
