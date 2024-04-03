@@ -26,7 +26,7 @@ module.exports = {
     // General rules for JS/TS files
     {
       extends: [
-        "plugin:prettier/recommended",
+        "prettier",
         "plugin:import/recommended",
         "plugin:import/typescript",
         "plugin:matrix-org/typescript",
@@ -80,7 +80,6 @@ module.exports = {
         "plugin:@graphql-eslint/schema-recommended",
         "plugin:@graphql-eslint/relay",
         "prettier",
-        "plugin:prettier/recommended",
       ],
       rules: {
         "@graphql-eslint/input-name": [
