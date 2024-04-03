@@ -226,7 +226,7 @@
       },
       "register": "Create an account",
       "@register": {
-        "context": "pages/index.html:39:34-58"
+        "context": "pages/index.html:41:36-60"
       },
       "signed_in_as": "Signed in as <span class=\"font-semibold\">%(username)s</span>.",
       "@signed_in_as": {

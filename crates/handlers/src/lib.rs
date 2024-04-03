@@ -150,6 +150,7 @@ where
     B: HttpBody + Send + 'static,
     S: Clone + Send + Sync + 'static,
     Keystore: FromRef<S>,
+    SiteConfig: FromRef<S>,
     UrlBuilder: FromRef<S>,
     BoxClock: FromRequestParts<S>,
     BoxRng: FromRequestParts<S>,

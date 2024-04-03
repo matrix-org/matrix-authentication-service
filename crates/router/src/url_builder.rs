@@ -112,6 +112,12 @@ impl UrlBuilder {
         }
     }
 
+    /// HTTP base
+    #[must_use]
+    pub fn http_base(&self) -> Url {
+        self.http_base.clone()
+    }
+
     /// OIDC issuer
     #[must_use]
     pub fn oidc_issuer(&self) -> Url {
