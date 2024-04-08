@@ -20,4 +20,4 @@ tokio = { version = "1.36.0", features = ["time"] }
 opentelemetry.workspace = true
 opentelemetry-http.workspace = true
 opentelemetry-semantic-conventions.workspace = true
-pin-project-lite = "0.2.13"
+pin-project-lite = "0.2.14"
