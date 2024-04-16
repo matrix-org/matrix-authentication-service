@@ -28,6 +28,8 @@ pub(crate) mod users;
 #[error("invalid state transition")]
 pub struct InvalidTransitionError;
 
+pub use ulid::Ulid;
+
 pub use self::{
     compat::{
         CompatAccessToken, CompatRefreshToken, CompatRefreshTokenState, CompatSession,
