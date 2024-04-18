@@ -2,7 +2,7 @@
 
 The service uses a [PostgreSQL](https://www.postgresql.org/) database to store all of its state.
 Although it may be possible to run with earlier versions, it is recommended to use **PostgreSQL 13** or later.
-Connection to the database is configured in the [`database`](../usage/configuration.md#database) section of the configuration file.
+Connection to the database is configured in the [`database`](../reference/configuration.md#database) section of the configuration file.
 
 ## Set up a database
 
@@ -31,7 +31,7 @@ The above will create a user called `mas_user` with a password of your choice, a
 ## Service configuration
 
 Once the database is created, the service needs to be configured to connect to it.
-Edit the [`database`](../usage/configuration.md#database) section of the configuration file to match the database just created:
+Edit the [`database`](../reference/configuration.md#database) section of the configuration file to match the database just created:
 
 ```yaml
 database:
@@ -52,7 +52,7 @@ database:
 
 The service manages the database schema with embedded migrations.
 Those migrations are run automatically when the service starts, but it is also possible to run them manually.
-This is done using the [`database migrate`](../usage/cli/database.md#database-migrate) command:
+This is done using the [`database migrate`](../reference/cli/database.md#database-migrate) command:
 
 ```sh
 mas-cli database migrate
@@ -63,6 +63,6 @@ mas-cli database migrate
 Once the database is up, the remaining steps are to:
 
  - [Set up the connection to the homeserver (recommended)](./homeserver.md)
- - [Setup email sending (optional)](../usage/configuration.md#email)
+ - [Setup email sending (optional)](../reference/configuration.md#email)
  - [Configure a reverse proxy (optional)](./reverse-proxy.md)
  - [Run the service](./running.md)

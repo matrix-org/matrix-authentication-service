@@ -17,17 +17,18 @@
 - [Running the service](./setup/running.md)
 - [Migrating an existing homeserver](./setup/migration.md)
 
-# Usage
+# Reference
 
-- [Configuration file reference](./usage/configuration.md)
-- [Using the service](./usage/usage.md)
-- [Command line tool](./usage/cli/README.md)
-    - [`config`](./usage/cli/config.md)
-    - [`database`](./usage/cli/database.md)
-    - [`manage`](./usage/cli/manage.md)
-    - [`server`](./usage/cli/server.md)
-    - [`templates`](./usage/cli/templates.md)
-    - [`doctor`](./usage/cli/doctor.md)
+- [Configuration file reference](./reference/configuration.md)
+- [GraphQL API](./reference/graphql.md)
+- [OAuth 2.0 scopes](./reference/scopes.md)
+- [Command line tool](./reference/cli/README.md)
+    - [`config`](./reference/cli/config.md)
+    - [`database`](./reference/cli/database.md)
+    - [`manage`](./reference/cli/manage.md)
+    - [`server`](./reference/cli/server.md)
+    - [`templates`](./reference/cli/templates.md)
+    - [`doctor`](./reference/cli/doctor.md)
 
 # Development
 

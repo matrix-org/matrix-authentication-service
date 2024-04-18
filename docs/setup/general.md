@@ -5,11 +5,11 @@
 The service needs a few unique secrets and keys to work.
 It mainly includes:
 
- - the various signing keys referenced in the [`secrets.keys`](../usage/configuration.md#secrets) section
- - the encryption key used to encrypt fields in the database and cookies, set in the [`secrets.encryption`](../usage/configuration.md#secrets) section
- - a shared secret between the service and the homeserver, set in the [`matrix.secret`](../usage/configuration.md#matrix) section
+ - the various signing keys referenced in the [`secrets.keys`](../reference/configuration.md#secrets) section
+ - the encryption key used to encrypt fields in the database and cookies, set in the [`secrets.encryption`](../reference/configuration.md#secrets) section
+ - a shared secret between the service and the homeserver, set in the [`matrix.secret`](../reference/configuration.md#matrix) section
 
-Although it is possible to generate these secrets manually, it is strongly recommended to use the [`config generate`](../usage/cli/config.md#config-generate) command to generate a configuration file with unique secrets and keys.
+Although it is possible to generate these secrets manually, it is strongly recommended to use the [`config generate`](../reference/cli/config.md#config-generate) command to generate a configuration file with unique secrets and keys.
 
 ```sh
 mas-cli config generate > config.yaml
@@ -34,7 +34,7 @@ When using the `mas-cli`, multiple configuration files can be loaded, with the f
 2. If not, load the files specified in the `MAS_CONFIG` environment variable if set, separated by `:`, relative to the current working directory
 3. If not, load the file at `config.yaml` in the current working directory
 
-The validity of the configuration file can be checked using the [`config check`](../usage/cli/config.md#config-check) command:
+The validity of the configuration file can be checked using the [`config check`](../reference/cli/config.md#config-check) command:
 
 ```sh
 # This will read both the `first.yaml` and `second.yaml` files
@@ -47,7 +47,7 @@ MAS_CONFIG=first.yaml:second.yaml mas-cli config check
 mas-cli config check
 ```
 
-To help understand what the resulting configuration looks like after merging all the configuration files, the [`config dump`](../usage/cli/config.md#config-dump) command can be used:
+To help understand what the resulting configuration looks like after merging all the configuration files, the [`config dump`](../reference/cli/config.md#config-dump) command can be used:
 
 ```sh
 mas-cli config dump
@@ -61,8 +61,8 @@ Many [tools in text editors](https://json-schema.org/implementations.html#editor
 ## Syncing the configuration file with the database
 
 Some sections of the configuration file need to be synced every time the configuration file is updated.
-This includes the [`clients`](../usage/configuration.md#clients) and [`upstream_oauth`](../usage/configuration.md#upstream-oauth) sections.
-The configuration is synced by default on startup, and can be manually synced using the [`config sync`](../usage/cli/config.md#config-sync---prune---dry-run) command.
+This includes the [`clients`](../reference/configuration.md#clients) and [`upstream_oauth`](../reference/configuration.md#upstream-oauth) sections.
+The configuration is synced by default on startup, and can be manually synced using the [`config sync`](../reference/cli/config.md#config-sync---prune---dry-run) command.
 
 By default, this will only add new clients and upstream OAuth providers and update existing ones, but will not remove entries that were removed from the configuration file.
 To do so, use the `--prune` option:
