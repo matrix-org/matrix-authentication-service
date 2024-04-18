@@ -17,6 +17,11 @@
 - [Running the service](./setup/running.md)
 - [Migrating an existing homeserver](./setup/migration.md)
 
+# Topics
+
+- [Policy engine](./topics/policy.md)
+- [Authorization and sessions](./topics/authorization.md)
+
 # Reference
 
 - [Configuration file reference](./reference/configuration.md)
