@@ -157,7 +157,7 @@ clients:
     client_auth_method: none
 ```
 
-**Note:** any additions or modification in this list are synced with the database on server startup. Removed entries are only removed with the [`config sync --prune`](../usage/cli/config.md#config-sync---prune---dry-run) command.
+**Note:** any additions or modification in this list are synced with the database on server startup. Removed entries are only removed with the [`config sync --prune`](../reference/cli/config.md#config-sync---prune---dry-run) command.
 
 ## `secrets`
 
@@ -351,7 +351,7 @@ email:
 
 Settings related to upstream OAuth 2.0/OIDC providers.
 Additions and modifications within this section are synced with the database on server startup.
-Removed entries are only removed with the [`config sync --prune`](../usage/cli/config.md#config-sync---prune---dry-run) command.
+Removed entries are only removed with the [`config sync --prune`](./cli/config.md#config-sync---prune---dry-run) command.
 
 #### `upstream_oauth2.providers`
 

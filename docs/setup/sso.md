@@ -12,9 +12,9 @@ A deployment which requires SAML or LDAP-based authentication should use a servi
 
 Configuration of upstream providers is done in the `upstream_oauth2` section of the configuration file, which has a `providers` list.
 Additions and changes to this sections are synced with the database on startup.
-Removals need to be applied using the [`mas-cli config sync --prune`](../usage/cli/config.md#config-sync---prune---dry-run) command.
+Removals need to be applied using the [`mas-cli config sync --prune`](../reference/cli/config.md#config-sync---prune---dry-run) command.
 
-**An exhaustive list of all the parameters is available in the [configuration file reference](../usage/configuration.md#upstream_oauth2).**
+**An exhaustive list of all the parameters is available in the [configuration file reference](../reference/configuration.md#upstream_oauth2).**
 
 The general configuration usually goes as follows:
 
@@ -62,7 +62,7 @@ Multiple authentication methods can be configured at the same time, in which cas
 This is true if both the local password database and an upstream provider are configured, or if multiple upstream providers are configured.
 In such cases, the `human_name` parameter of the provider configuration is used to display a human-readable name for the provider, and the `brand_name` parameter is used to show a logo for well-known providers.
 
-If there is only one upstream provider configured and the local password database is disabled ([`passwords.enabled`](../usage/configuration.md#passwords) is set to `false`), the authentication service will automatically trigger an authorization flow with this provider.
+If there is only one upstream provider configured and the local password database is disabled ([`passwords.enabled`](../reference/configuration.md#passwords) is set to `false`), the authentication service will automatically trigger an authorization flow with this provider.
 
 ## Sample configurations
 

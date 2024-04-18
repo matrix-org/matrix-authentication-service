@@ -6,7 +6,7 @@ The authentication service needs to be able to call the Synapse admin API to pro
 
 ## Provision a client for the Homeserver to use
 
-In the [`clients`](../usage/configuration.md#clients) section of the configuration file, add a new client with the following properties:
+In the [`clients`](../reference/configuration.md#clients) section of the configuration file, add a new client with the following properties:
 
  - `client_id`: a unique identifier for the client. It must be a valid [ULID](https://github.com/ulid/spec), and it happens that `0000000000000000000SYNAPSE` is a valid ULID.
  - `client_auth_method`: set to `client_secret_basic`. Other methods are possible, but this is the easiest to set up.
@@ -19,11 +19,11 @@ clients:
     client_secret: "SomeRandomSecret"
 ```
 
-**Don't forget to sync the configuration file** with the database after adding the client, using the [`config sync`](../usage/cli/config.md#config-sync---prune---dry-run) command.
+**Don't forget to sync the configuration file** with the database after adding the client, using the [`config sync`](../reference/cli/config.md#config-sync---prune---dry-run) command.
 
 ## Configure the connection to the homeserver
 
-In the [`matrix`](../usage/configuration.md#matrix) section of the configuration file, add the following properties:
+In the [`matrix`](../reference/configuration.md#matrix) section of the configuration file, add the following properties:
 
  - `homeserver`: corresponds to the `server_name` in the Synapse configuration file
  - `secret`: a shared secret the service will use to call the homeserver admin API
