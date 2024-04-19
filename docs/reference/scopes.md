@@ -96,12 +96,14 @@ This allows the authenticated entity to perform any operation on the API, regard
 The default policy doesn't allow everyone to request this scope.
 It allows:
 
-- for the "authorization code" and "device authorization" grants:
+- for the "[authorization code]" and "[device authorization]" grants:
   - users with the `can_request_admin` attribute set to `true` in the database
   - users listed in the [`policy.data.admin_users`](../reference/configuration.md#policy) configuration option
 - for the "client credentials" grant:
   - clients that are listed in the [`policy.data.admin_clients`](../reference/configuration.md#policy) configuration option
 
+[authorization code]: ../topics/authorization.md#authorization-code-grant
+[device authorization]: ../topics/authorization.md#device-authorization-grant
 [GraphQL API]: ./graphql.md
 [Synapse admin API]: https://element-hq.github.io/synapse/latest/usage/administration/admin_api/index.html
 [OpenID Connect Core 1.0]: https://openid.net/specs/openid-connect-core-1_0.html
