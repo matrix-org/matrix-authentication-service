@@ -9,7 +9,7 @@ In MAS, the access token is an opaque string for which the service has metadata 
 An access token has:
 
 - a subject, which is the user the token is issued for
-- a list of scopes
+- a list of [scopes](../reference/scopes.md)
 - a client for which the token is issued
 - a timeframe for which the token is valid
 
@@ -30,9 +30,9 @@ Out of this request, Synapse will care about the following:
 - the `sub` field, which tells which user the token is issued for. This is an opaque string, and Synapse saves the mapping between the Matrix user ID and the subject of the token in its own database
 - in case Synapse doesn't know the presented subject, it will look at the `username` field, which it will use as the localpart for the user as fallback
 - the `scope` field, which tells which scopes are granted to the token. More specifically, it will look for the following scopes:
-  - `urn:matrix:org.matrix.msc2967.client:api:*`, which grants broad access to the whole Matrix C-S API
-  - `urn:matrix:org.matrix.msc2967.client:device:AABBCC`, which encodes the Matrix device ID used by the client
-  - `urn:synapse:admin:*`, which grants access to the Synapse admin API
+  - [`urn:matrix:org.matrix.msc2967.client:api:*`], which grants broad access to the whole Matrix C-S API
+  - [`urn:matrix:org.matrix.msc2967.client:device:AABBCC`], which encodes the Matrix device ID used by the client
+  - [`urn:synapse:admin:*`], which grants access to the Synapse admin API
 
 It's important to understand that when Synapse delegates the authentication to MAS, a lot of user attributes are not managed by Synapse anymore.
 This includes the user admin, locked, and deactivated status.
@@ -44,11 +44,11 @@ This exists as a compatibility layer for clients that don't yet support OAuth 2.
 
 When a client presents a compatibility access token to Synapse, MAS will make it look like to Synapse as if the token had the following scopes:
 
-- `urn:matrix:org.matrix.msc2967.client:api:*`
-- `urn:matrix:org.matrix.msc2967.client:device:AABBCC`
+- [`urn:matrix:org.matrix.msc2967.client:api:*`]
+- [`urn:matrix:org.matrix.msc2967.client:device:AABBCC`]
 
 Which corresponds to the broad access to the Matrix C-S API and the device ID of the client, as one would expect from the legacy login API.
-One important missing scope is `urn:synapse:admin:*`, which means that the client won't have access to the Synapse admin API.
+One important missing scope is [`urn:synapse:admin:*`], which means that the client won't have access to the Synapse admin API.
 
 This is the case even if the user has the `can_request_admin` attribute set to `true`, and this is by design:
 the legacy login API doesn't have a way to request specific scopes, and we don't want to grant admin access to all clients that have a compatibility session.
@@ -79,7 +79,7 @@ It is useful for automated machine-to-machine communication, and is often referr
 Synapse doesn't yet support this concept, and as such requesting any Synapse API, even the admin API, requires a user attached to the session.
 
 This isn't the case with MAS' GraphQL API, which can be accessed with a client-only session:
-the API can be requested by a session which has the `urn:mas:graphql:*` and the `urn:mas:admin` scope without being backed by a user.
+the API can be requested by a session which has the [`urn:mas:graphql:*`] and the [`urn:mas:admin`] scope without being backed by a user.
 
 ### Supported authorization grants
 
@@ -135,3 +135,8 @@ The simplest type of client credentials is a client ID and client secret pair, b
 [RFC 7591]: https://datatracker.ietf.org/doc/html/rfc7591
 [RFC 7662]: https://datatracker.ietf.org/doc/html/rfc7662
 [RFC 8628]: https://datatracker.ietf.org/doc/html/rfc8628
+[`urn:matrix:org.matrix.msc2967.client:api:*`]: ../reference/scopes.md#urnmatrixorgmatrixmsc2967clientapi
+[`urn:matrix:org.matrix.msc2967.client:device:AABBCC`]: ../reference/scopes.md#urnmatrixorgmatrixmsc2967clientdevicedevice-id
+[`urn:synapse:admin:*`]: ../reference/scopes.md#urnsynapseadmin
+[`urn:mas:graphql:*`]: ../reference/scopes.md#urnmasgraphql
+[`urn:mas:admin`]: ../reference/scopes.md#urnmasadmin
