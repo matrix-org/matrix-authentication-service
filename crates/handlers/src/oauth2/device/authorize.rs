@@ -124,6 +124,8 @@ pub(crate) async fn post(
         // XXX: Is this really how we do empty scopes?
         .unwrap_or(std::iter::empty::<ScopeToken>().collect());
 
+    // TODO: we never validate the scope
+
     let expires_in = Duration::microseconds(20 * 60 * 1000 * 1000);
 
     let user_agent = user_agent.map(|ua| UserAgent::parse(ua.as_str().to_owned()));

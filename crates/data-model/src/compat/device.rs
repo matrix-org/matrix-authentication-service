@@ -76,7 +76,7 @@ impl TryFrom<String> for Device {
     /// Create a [`Device`] out of an ID, validating the ID has the right shape
     fn try_from(id: String) -> Result<Self, Self::Error> {
         // This matches the regex in the policy
-        if !id.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '=' || c == '/' || c == '+') {
+        if !id.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '=' || c == '/' || c == '+' || c == ':') {
             return Err(InvalidDeviceID::InvalidCharacters);
         }
 
@@ -114,6 +114,10 @@ mod test {
         assert_eq!(
             Device::try_from("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_==".to_owned()).is_ok(), true
         );
+        // Curve25519 public part as unpadded base64 with identifying prefix
+        assert_eq!(
+            Device::try_from("curve25519:g1Ex/QaCR6PMSTlZbbAOin9b6BlwHiTU5W1DVp4otGo".to_owned()).is_ok(), true
+        );
     }
 
     #[test]
@@ -127,4 +131,17 @@ mod test {
         assert_eq!(Device::from_scope_token(&scope_token), Some(device));
         assert_eq!(Device::from_scope_token(&OPENID), None);
     }
+
+    #[test]
+    fn test_device_id_to_from_scope_token_curve25519() {
+        let device = Device::try_from("curve25519:g1Ex/QaCR6PMSTlZbbAOin9b6BlwHiTU5W1DVp4otGo".to_owned()).unwrap();
+        let scope_token = device.to_scope_token();
+        assert_eq!(
+            scope_token.as_str(),
+            "urn:matrix:org.matrix.msc2967.client:device:curve25519:g1Ex/QaCR6PMSTlZbbAOin9b6BlwHiTU5W1DVp4otGo"
+        );
+        assert_eq!(Device::from_scope_token(&scope_token), Some(device));
+        assert_eq!(Device::from_scope_token(&OPENID), None);
+    }
+
 }

@@ -60,12 +60,19 @@ test_device_scopes {
 		with input.grant_type as "authorization_code"
 		with input.scope as "urn:matrix:org.matrix.msc2967.client:device:AAbbCCdd01-asdasdsa1-2313"
 
-	# Invalid characters
-	not allow with input.user as user
+	# base64 Curve25519 public key format
+	allow with input.user as user
 		with input.client as client
 		with input.grant_type as "authorization_code"
-		with input.scope as "urn:matrix:org.matrix.msc2967.client:device:AABB:CCDDEE"
+		with input.scope as "urn:matrix:org.matrix.msc2967.client:device:curve25519:g1Ex/QaCR6PMSTlZbbAOin9b6BlwHiTU5W1DVp4otGo"
 
+	# URL safe base64 Curve25519 public key format
+	allow with input.user as user
+		with input.client as client
+		with input.grant_type as "authorization_code"
+		with input.scope as "urn:matrix:org.matrix.msc2967.client:device:curve25519:g1Ex_QaCR6PMSTlZbbAOin9b6BlwHiTU5W1DVp4otGo"
+
+	# Invalid characters
 	not allow with input.user as user
 		with input.client as client
 		with input.grant_type as "authorization_code"

@@ -62,7 +62,7 @@ allowed_scope("urn:mas:admin") {
 allowed_scope(scope) {
 	# Grant access to the C-S API only if there is a user
 	interactive_grant_type(input.grant_type)
-	regex.match("urn:matrix:org.matrix.msc2967.client:device:[A-Za-z0-9-]{10,}", scope)
+	regex.match("urn:matrix:org.matrix.msc2967.client:device:[A-Za-z0-9-_=+/:]{10,}", scope)
 }
 
 allowed_scope("urn:matrix:org.matrix.msc2967.client:api:*") {
