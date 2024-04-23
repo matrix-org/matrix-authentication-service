@@ -76,7 +76,7 @@ impl TryFrom<String> for Device {
     /// Create a [`Device`] out of an ID, validating the ID has the right shape
     fn try_from(id: String) -> Result<Self, Self::Error> {
         // This matches the regex in the policy
-        if !id.chars().all(|c| c.is_ascii_alphanumeric() || c == '-') {
+        if !id.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '=' || c == '/' || c == '+') {
             return Err(InvalidDeviceID::InvalidCharacters);
         }
 
@@ -95,6 +95,26 @@ mod test {
     use oauth2_types::scope::OPENID;
 
     use crate::Device;
+
+    #[test]
+    fn test_device_id_formats() {
+        // alphanumeric
+        assert_eq!(
+            Device::try_from("AABBCCDDEE0123".to_owned()).is_ok(), true
+        );
+        // uuid style
+        assert_eq!(
+            Device::try_from("0123-4567-8901-2345".to_owned()).is_ok(), true
+        );
+        // base64 style
+        assert_eq!(
+            Device::try_from("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/==".to_owned()).is_ok(), true
+        );
+        // base64 url safe
+        assert_eq!(
+            Device::try_from("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_==".to_owned()).is_ok(), true
+        );
+    }
 
     #[test]
     fn test_device_id_to_from_scope_token() {
