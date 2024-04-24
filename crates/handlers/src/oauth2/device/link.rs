@@ -45,8 +45,10 @@ pub struct Params {
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
+    mut repo: BoxRepository,
     PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
+    State(url_builder): State<UrlBuilder>,
     cookie_jar: CookieJar,
     query: Option<Query<Params>>,
 ) -> Result<impl IntoResponse, FancyError> {
@@ -60,6 +62,31 @@ pub(crate) async fn get(
         // Validate that it's a full code
         if params.code.len() == 6 && params.code.chars().all(|c| c.is_ascii_alphanumeric()) {
             form_state = FormState::from_form(&params);
+            let code = params.code.to_uppercase();
+            let grant = repo
+                .oauth2_device_code_grant()
+                .find_by_user_code(&code)
+                .await?
+                // XXX: We should have different error messages for already exchanged and expired
+                .filter(|grant| grant.is_pending())
+                .filter(|grant| grant.expires_at > clock.now());
+        
+            let Some(grant) = grant else {
+                let ctx = DeviceLinkContext::new()
+                    .with_form_state(form_state)
+                    .with_csrf(csrf_token.form_value())
+                    .with_language(locale);
+        
+                let content = templates.render_device_link(&ctx)?;
+        
+                return Ok((cookie_jar, Html(content)).into_response());
+            };
+        
+            // Redirect to the consent page
+            // This will in turn redirect to the login page if the user is not logged in
+            let destination = url_builder.redirect(&mas_router::DeviceCodeConsent::new(grant.id));
+        
+            return Ok((cookie_jar, destination).into_response());
         }
     };
 
@@ -70,7 +97,7 @@ pub(crate) async fn get(
 
     let content = templates.render_device_link(&ctx)?;
 
-    Ok((cookie_jar, Html(content)))
+    Ok((cookie_jar, Html(content)).into_response())
 }
 
 #[tracing::instrument(name = "handlers.oauth2.device.link.post", skip_all, err)]
