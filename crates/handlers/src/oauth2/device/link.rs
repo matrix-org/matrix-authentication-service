@@ -23,6 +23,7 @@ use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     FancyError,
 };
+use mas_i18n::DataLocale;
 use mas_router::UrlBuilder;
 use mas_storage::{BoxClock, BoxRepository, BoxRng};
 use mas_templates::{
@@ -45,49 +46,61 @@ pub struct Params {
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
+    repo: BoxRepository,
     PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
+    State(url_builder): State<UrlBuilder>,
     cookie_jar: CookieJar,
     query: Option<Query<Params>>,
 ) -> Result<impl IntoResponse, FancyError> {
-    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
-
-    let mut form_state = FormState::default();
-
-    // XXX: right now we just get the code from the query to pre-fill the form. We
-    // may want to make the form readonly instead at some point? tbd
+    // if the code has been given in the query parameter then treat as if it were a post request
     if let Some(Query(params)) = query {
         // Validate that it's a full code
         if params.code.len() == 6 && params.code.chars().all(|c| c.is_ascii_alphanumeric()) {
-            form_state = FormState::from_form(&params);
+            return handle_request_with_code(rng, clock, repo, locale, templates, url_builder, cookie_jar, params).await
         }
-    };
+    }
 
+    // otherwise render form for user to input the code
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let ctx = DeviceLinkContext::new()
-        .with_form_state(form_state)
         .with_csrf(csrf_token.form_value())
         .with_language(locale);
 
     let content = templates.render_device_link(&ctx)?;
 
-    Ok((cookie_jar, Html(content)))
+    Ok((cookie_jar, Html(content)).into_response())
 }
 
 #[tracing::instrument(name = "handlers.oauth2.device.link.post", skip_all, err)]
 pub(crate) async fn post(
-    mut rng: BoxRng,
+    rng: BoxRng,
     clock: BoxClock,
-    mut repo: BoxRepository,
+    repo: BoxRepository,
     PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
     cookie_jar: CookieJar,
     Form(form): Form<ProtectedForm<Params>>,
-) -> Result<Response, FancyError> {
+) -> Result<impl IntoResponse, FancyError> {
     let form = cookie_jar.verify_form(&clock, form)?;
+    handle_request_with_code(rng, clock, repo, locale, templates, url_builder, cookie_jar, form).await
+}
+
+async fn handle_request_with_code(
+    mut rng: BoxRng,
+    clock: BoxClock,
+    mut repo: BoxRepository,
+    locale: DataLocale,
+    templates: Templates,
+    url_builder: UrlBuilder,
+    cookie_jar: CookieJar,
+    params: Params,
+) -> Result<Response, FancyError> {
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
 
-    let code = form.code.to_uppercase();
+    // look up the grant by the code
+    let code = params.code.to_uppercase();
     let grant = repo
         .oauth2_device_code_grant()
         .find_by_user_code(&code)
@@ -95,7 +108,8 @@ pub(crate) async fn post(
         // XXX: We should have different error messages for already exchanged and expired
         .filter(|grant| grant.is_pending())
         .filter(|grant| grant.expires_at > clock.now());
-
+    
+    // if not found then render the form to enter a code, but with an error shown
     let Some(grant) = grant else {
         let form_state = FormState::from_form(&form)
             .with_error_on_field(DeviceLinkFormField::Code, FieldError::Invalid);
