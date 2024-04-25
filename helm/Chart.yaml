@@ -1,0 +1,6 @@
+apiVersion: v2
+name: mas
+description: A Helm chart for matrix-authentication-service
+type: application
+version: 0.1.0
+appVersion: "1.16.0"

@@ -1,0 +1,298 @@
+http:
+  # Public URL base used when building absolute public URLs
+  public_base: {{ .Values.config.http.base | quote }}
+
+  # OIDC issuer advertised by the service. Defaults to `public_base`
+  issuer: {{ .Values.config.http.issuer | quote }}
+
+  # Each listener can serve multiple resources, and listen on multiple TCP ports or UNIX sockets.
+  # List of HTTP listeners, see below
+  listeners:
+    # The name of the listener, used in logs and metrics
+    - name: web
+
+      # List of resources to serve
+      resources: {{- range .Values.config.listeners.resources }}
+      - name: {{ .name }}
+      {{- if .path }}
+        path: {{ .path -}}
+      {{- end }}
+      {{- if .playground }}
+        playground: {{ .playground }}
+      {{- end }}
+      {{- end }}
+      # List of addresses and ports to listen to
+      binds:
+      {{- if .Values.config.listeners.binds.type.address.enabled }}
+        # First option: listen to the given address
+        - address: {{ .Values.config.listeners.binds.address | quote }}
+      {{- end }}
+      {{- if .Values.config.listeners.binds.type.hp.enabled }}
+        # Second option: listen on the given host and port combination
+        - host: {{ .Values.config.listeners.binds.host.name }}
+          port: {{ .Values.config.listeners.binds.host.port }}
+      {{- end }}
+      {{- if .Values.config.listeners.binds.type.socket.enabled }}
+        # Third option: listen on the given UNIX socket
+        - socket: {{ .Values.config.listeners.binds.socket }}
+      {{- end }}
+
+      # Whether to enable the PROXY protocol on the listener
+      proxy_protocol: {{ .Values.config.listeners.proxy_protocol }}
+  trusted_proxies: {{ range .Values.config.trusted_proxies }}
+    - {{ . }}
+    {{- end }}
+
+  # Configure how to connect to the PostgreSQL database.
+database:
+  # Full connection string as per
+  # https://www.postgresql.org/docs/13/libpq-connect.html#id-1.7.3.8.3.6
+  #uri: postgresql://user:password@hostname:5432/database?sslmode=require
+
+  # -- OR --
+  # Separate parameters
+  host: {{ .Values.db.host }}
+  port: {{ .Values.db.port }}
+  #socket:
+  username: {{ .Values.db.user }}
+  password: {{ .Values.db.pass }}
+  database: {{ .Values.db.dbName }}
+
+  # Additional parameters for the connection pool
+  min_connections: {{ .Values.db.min_connections }}
+  max_connections: {{ .Values.db.max_connections }}
+  connect_timeout: {{ .Values.db.connect_timeout }}
+  idle_timeout: {{ .Values.db.idle_timeout }}
+  max_lifetime: {{ .Values.db.max_lifetime }}
+
+  # Settings related to the connection to the Matrix homeserver
+matrix:
+  # The homeserver name, as per the `server_name` in the Synapse configuration file
+  homeserver: {{ .Values.matrix.hs }}
+
+  # Shared secret used to authenticate the service to the homeserver
+  # This must be of high entropy, because leaking this secret would allow anyone to perform admin actions on the homeserver
+  secret: {{ .Values.matrix.secret | quote }}
+
+  # URL to which the homeserver is accessible from the service
+  endpoint: {{ .Values.matrix.hs_url | quote }}
+
+  # Allows loading custom templates
+{{- if .Values.templates.enabled }}
+templates:
+  path: {{ .Values.templates.path }}
+  assets_manifest: {{ .Values.templates.assets }}
+{{- end }}
+
+  # List of OAuth 2.0/OIDC clients and their keys/secrets. Each client_id must be a ULID.
+clients:
+  # Confidential client
+  - client_id: {{ .Values.clients.sec_id }}
+    client_auth_method: {{ .Values.clients.secAuthMethod }}
+    client_secret: {{ .Values.clients.client_secret }}
+    # List of authorized redirect URIs
+    redirect_uris: {{ .Values.clients.redirect_uris}}
+  # Public client
+  - client_id: {{ .Values.clients.pub_id }}
+    client_auth_method: {{ .Values.clients.pubAuthMethod }}
+
+  # Signing and encryption secrets
+secrets:
+  # Encryption secret (used for encrypting cookies and database fields)
+  # This must be a 32-byte long hex-encoded key
+  encryption: {{ .Values.secrets.encrypt }}
+
+  # Signing keys
+  keys: {{- range .Values.secrets.keys }}
+    - kid: {{ .kid }}
+      key: |{{ .key | nindent 10}}
+{{- end }}
+
+passwords:
+  # Whether to enable the password database.
+  # If disabled, users will only be able to log in using upstream OIDC providers
+  enabled: {{ .Values.passwords.enabled }}
+
+  # List of password hashing schemes being used
+  # /!\ Only change this if you know what you're doing
+  schemes: {{- range .Values.passwords.schemes }}
+    - version: {{ .version }}
+      algorithm: {{ .algorithm }}
+{{- end}}
+policy:
+  data:
+    admin_users: {{ .Values.policy.data.admins }}
+
+    # Dynamic Client Registration
+    client_registration:
+      # don't require URIs to be on the same host. default: false
+      allow_host_mismatch: {{ .Values.policy.data.clientHostMismatch }}
+      # allow non-SSL and localhost URIs. default: false
+      allow_insecure_uris: {{ .Values.policy.data.clientNoSsl }}
+
+    # Registration using passwords
+    passwords:
+      # minimum length of a password. default: ?
+      min_length: {{ .Values.policy.data.pass.minLength }}
+      # require at least one lowercase character in a password. default: false
+      require_lowercase: {{ .Values.policy.data.pass.reqLowCase }}
+      # require at least one uppercase character in a password. default: false
+      require_uppercase: {{ .Values.policy.data.pass.reqUpCase }}
+      # require at least one number in a password. default: false
+      require_number: {{ .Values.policy.data.pass.reqNum }}
+{{- if .Values.telemetry.enabled }}
+telemetry:
+  tracing:
+    # List of propagators to use for extracting and injecting trace contexts
+    propagators: {{ .Values.telemetry.propagators }}
+
+    # The default: don't export traces
+    exporter: {{ .Values.telemetry.exporter }}
+    {{- if .Values.telemetry.useOTLP.enabled }}
+    endpoint: {{ .Values.telemetry.useOTLP.endpoint }}
+    {{- end }}
+    {{- if .Values.telemetry.useJaeger.enabled }}
+    protocol: {{ .Values.telemetry.useJaeger.protocol }}
+    endpoint: {{ .Values.telemetry.useJaeger.endpoint }}
+    username: {{ .Values.telemetry.useJaeger.username }}
+    password: {{ .Values.telemetry.useJaeger.password }}
+    agent_host: {{ .Values.telemetry.useJaeger.agent_host }}
+    agent_port: {{ .Values.telemetry.useJaeger.agent_port }}
+    {{- end }}
+    {{- if .Values.telemetry.useZipkin.enabled }}
+    collector_endpoint: {{ .Values.telemetry.useZipkin.collector_endpoint }}
+    {{- end }}
+  {{- if .Values.telemetry.metrics.enabled}}
+  metrics:
+    exporter: {{ .Values.telemetry.metrics.exporter }}
+    endpoint: {{ .Values.telemetry.metrics.enpoint }}
+  {{- end }}
+  {{- if .Values.telemetry.sentry.enabled}}
+  sentry:
+    dsn: {{ .Values.telemetry.sentry.dsn }}
+  {{- end }}
+{{- end }}
+
+email:
+  from: {{ .Values.email.from | squote }}
+  reply_to: {{ .Values.email.reply2 | squote }}
+  transport: {{ .Values.email.transport }}
+{{- if .Values.email.enabled }}
+  hostanme: {{ .Values.email.hostname }}
+  {{- if .Values.email.sendmail.enabled}}
+  command: {{ .Values.email.command }}
+  {{- end }}
+  mode: {{ .Values.email.mode }}
+  port: {{ .Values.email.port }}
+  username: {{ .Values.email.username }}
+  password: {{ .Values.email.password }}
+{{- end }}
+
+  # Settings related to upstream OAuth 2.0/OIDC providers. This section must be synced to the database using the config sync command.
+  # https://matrix-org.github.io/matrix-authentication-service/usage/cli/config.html#config-sync---prune---dry-run
+
+  # Sample configurations for popular providers can be found in the upstream provider setup guide.
+  # https://matrix-org.github.io/matrix-authentication-service/setup/sso.html#sample-configurations
+upstream_oauth2:
+  providers: []
+  {{- if .Values.upstream_oauth2.enabled }}
+    - id: {{ .Values.upstream_oauth2.providerId }}
+
+      # The issuer URL, which will be used to discover the provider's configuration.
+      # If discovery is enabled, this *must* exactly match the `issuer` field
+      # advertised in `<issuer>/.well-known/openid-configuration`.
+      issuer: {{ .Values.upstream_oauth2.issuerUrl }}
+
+      human_name: {{ .Values.upstream_oauth2.humanName }}
+
+      # A brand identifier for the provider, which will be used to display a logo
+      # on the login page. Values supported by the default template are:
+      #  - `apple`
+      #  - `google`
+      #  - `facebook`
+      #  - `github`
+      #  - `gitlab`
+      #  - `twitter`
+      brand_name: {{ .Values.upstream_oauth2.brand }}
+
+      # The client ID to use to authenticate to the provider
+      client_id: {{ .Values.upstream_oauth2.clientId }}
+
+      # The client secret to use to authenticate to the provider
+      # This is only used by the `client_secret_post`, `client_secret_basic`
+      # and `client_secret_jwk` authentication methods
+      client_secret: {{ .Values.upstream_oauth2.client_secret }}
+
+      # Which authentication method to use to authenticate to the provider
+      # Supported methods are:
+      #   - `none`
+      #   - `client_secret_basic`
+      #   - `client_secret_post`
+      #   - `client_secret_jwt`
+      #   - `private_key_jwt` (using the keys defined in the `secrets.keys` section)
+      token_endpoint_auth_method: {{ .Values.upstream_oauth2.endpointAuth }}
+      {{- if .Values.upstream_oauth2.endpoint.useJwt }}
+      token_endpoint_auth_signing_alg: {{ .Values.upstream_oauth2.endpointAuthSignAlg }}
+      {{- end }}
+      # The scopes to request from the provider
+      # In most cases, it should always include `openid` scope
+      scope: {{ .Values.upstream_oauth2.scope }}
+
+      # How the provider configuration and endpoints should be discovered
+      # Possible values are:
+      #  - `oidc`: discover the provider through OIDC discovery,
+      #     with strict metadata validation (default)
+      #  - `insecure`: discover through OIDC discovery, but skip metadata validation
+      #  - `disabled`: don't discover the provider and use the endpoints below
+      discovery_mode: {{ .Values.upstream_oauth2.discovery_mode }}
+
+      # Whether PKCE should be used during the authorization code flow.
+      # Possible values are:
+      #  - `auto`: use PKCE if the provider supports it (default)
+      #    Determined through discovery, and disabled if discovery is disabled
+      #  - `always`: always use PKCE (with the S256 method)
+      #  - `never`: never use PKCE
+      pkce_method: {{ .Values.upstream_oauth2.pkce }}
+
+      # The provider authorization endpoint
+      # This takes precedence over the discovery mechanism
+      authorization_endpoint: {{ .Values.upstream_oauth2.authorization_endpoint }}
+
+      # The provider token endpoint
+      # This takes precedence over the discovery mechanism
+      token_endpoint: {{ .Values.upstream_oauth2.token_endpoint }}
+
+      # The provider JWKS URI
+      # This takes precedence over the discovery mechanism
+      jwks_uri: {{ .Values.upstream_oauth2.jwks_uri }}
+
+      claims_imports:
+        subject:
+          {{- with .Values.upstream_oauth2.claims_imports.subject.template }}
+          template: {{ . | quote }}
+          {{- end }}
+        localpart:
+          {{- with .Values.upstream_oauth2.claims_imports.localpart.action }}
+          action: {{ . }}
+          {{- end }}
+          {{- with .Values.upstream_oauth2.claims_imports.localpart.template }}
+          template: {{ . | quote }}
+          {{- end }}
+        displayname:
+          {{- with .Values.upstream_oauth2.claims_imports.displayname.action }}
+          action: {{ . }}
+          {{- end }}
+          {{- with .Values.upstream_oauth2.claims_imports.displayname.template }}
+          template: {{ . | quote }}
+          {{- end }}
+        email:
+          {{- with .Values.upstream_oauth2.claims_imports.email.action }}
+          action: {{ . }}
+          {{- end }}
+          {{- with .Values.upstream_oauth2.claims_imports.email.template }}
+          template: {{ . | quote }}
+          {{- end }}
+          {{- with .Values.upstream_oauth2.claims_imports.email.set_email_verification }}
+          set_email_verification: {{ . }}
+          {{- end }}
+  {{- end }}

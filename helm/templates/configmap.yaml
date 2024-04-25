@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-main
+  labels:
+data: 
+{{ tpl (.Files.Glob "configs/config.yaml").AsConfig . | nindent 2 }}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: well-known
+  labels:
+data:
+  Caddyfile: |-
+    :8448 {
+    header Host {http.request.host}
+    header /.well-known/openid-configuration Content-Type application/json
+    header /.well-known/openid-configuration Access-Control-Allow-Origin *
+    respond /.well-known/openid-configuration `{ 
+        "issuer": {{ .Values.wellKnown.issuer | quote}},
+        "authorization_endpoint": {{ .Values.wellKnown.authEnd | quote}},
+        "token_endpoint": {{ .Values.wellKnown.tokenEnd | quote}},
+        "jwks_uri": {{ .Values.wellKnown.jwks | quote}},
+        "registration_endpoint": {{ .Values.wellKnown.registerEnd | quote}},
+        "introspection_endpoint": {{ .Values.wellKnown.introEnd | quote}},
+        "response_types_supported": ["code"],
+        "code_challenge_methods_supported": ["S256"],
+        "grant_types_supported": ["authorization_code"],
+        "revocation_endpoint": {{ .Values.wellKnown.revokeEnd | quote}}
+        }`
+    } 
