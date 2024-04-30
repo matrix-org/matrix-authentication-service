@@ -29,7 +29,7 @@ rand.workspace = true
 rand_chacha = "0.3.1"
 rustls.workspace = true
 serde_json.workspace = true
-serde_yaml = "0.9.33"
+serde_yaml = "0.9.34"
 sqlx.workspace = true
 tokio = { version = "1.36.0", features = ["full"] }
 tower.workspace = true
