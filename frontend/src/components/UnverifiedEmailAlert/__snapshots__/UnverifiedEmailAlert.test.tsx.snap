@@ -36,6 +36,7 @@ exports[`<UnverifiedEmailAlert /> > renders a warning when there are unverified 
           You have 2 unverified email addresses.
            
           <a
+            aria-current="page"
             class="_link_1mzip_17 active"
             data-kind="primary"
             data-status="active"

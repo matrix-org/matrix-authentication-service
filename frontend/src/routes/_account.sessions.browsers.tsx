@@ -21,12 +21,7 @@ import BlockList from "../components/BlockList";
 import BrowserSession from "../components/BrowserSession";
 import { ButtonLink } from "../components/ButtonLink";
 import { graphql } from "../gql";
-import {
-  Pagination,
-  isForwardPagination,
-  paginationSchema,
-  usePages,
-} from "../pagination";
+import { Pagination, paginationSchema, usePages } from "../pagination";
 
 const PAGE_SIZE = 6;
 
@@ -77,12 +72,11 @@ const QUERY = graphql(/* GraphQL */ `
 
 export const Route = createFileRoute("/_account/sessions/browsers")({
   // We paginate backwards, so we need to validate the `last` parameter by default
-  validateSearch: paginationSchema.catch({ last: PAGE_SIZE }),
+  validateSearch: paginationSchema.catch({
+    last: PAGE_SIZE,
+  }),
 
-  loaderDeps: ({ search }): Pagination =>
-    isForwardPagination(search)
-      ? { first: search.first, after: search.after }
-      : { last: search.last, before: search.before },
+  loaderDeps: ({ search }): Pagination => paginationSchema.parse(search),
 
   async loader({ context, deps: pagination, abortController: { signal } }) {
     const result = await context.client.query(QUERY, pagination, {
