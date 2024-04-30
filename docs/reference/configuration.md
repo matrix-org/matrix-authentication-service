@@ -255,9 +255,17 @@ Policy settings
 ```yaml
 policy:
   data:
+    # Users which are allowed to ask for admin access. If possible, use the
+    # can_request_admin flag on users instead.
     admin_users:
       - person1
       - person2
+
+    # Client IDs which are allowed to ask for admin access with a
+    # client_credentials grant
+    admin_clients:
+      - 01H8PKNWKKRPCBW4YGH1RWV279
+      - 01HWQCPA5KF10FNCETY9402WGF
 
     # Dynamic Client Registration
     client_registration:
@@ -268,7 +276,7 @@ policy:
 
     # Registration using passwords
     passwords:
-      # minimum length of a password. default: ?
+      # minimum length of a password. default: 0
       min_length: 8
       # require at least one lowercase character in a password. default: false
       require_lowercase: true
@@ -402,7 +410,7 @@ upstream_oauth2:
       #   - `private_key_jwt` (using the keys defined in the `secrets.keys` section)
       token_endpoint_auth_method: client_secret_post
 
-      # What signing algorithm to use to sign the authentication request when using 
+      # What signing algorithm to use to sign the authentication request when using
       # the `private_key_jwt` or the `client_secret_jwt` authentication methods
       #token_endpoint_auth_signing_alg: RS256
 
@@ -447,7 +455,7 @@ upstream_oauth2:
       #      - `force`: always import the attribute, and don't fail if it's missing
       #      - `require`: always import the attribute, and fail if it's missing
       #   - `template`: a Jinja2 template used to generate the value. In this template,
-      #      the `user` variable is available, which contains the user's attributes 
+      #      the `user` variable is available, which contains the user's attributes
       #      retrieved from the `id_token` given by the upstream provider.
       #
       # Each attribute has a default template which follows the well-known OIDC claims.
@@ -485,4 +493,30 @@ upstream_oauth2:
           #   - `always`: mark the email address as verified
           #   - `never`: mark the email address as not verified
           #set_email_verification: import
+```
+
+## `experimental`
+
+Settings that may change or be removed in future versions.
+Some of those settings are in this section just because they don't have a stable place in the configuration yet.
+
+```yaml
+experimental:
+  # Time-to-live of OAuth 2.0 access tokens in seconds. Defaults to 300, 5 minutes.
+  #access_token_ttl: 300
+
+  # Time-to-live of compatibility access tokens in seconds, when refresh tokens are supported. Defaults to 300, 5 minutes.
+  #compat_token_ttl: 300
+
+  # Whether to enable self-service password registration. Defaults to `true` if password authentication is enabled.
+  #password_registration_enabled: false
+
+  # Whether users are allowed to change their email addresses. Defaults to `true`.
+  #email_change_allowed: false
+
+  # Whether users are allowed to change their display names. Defaults to `true`.
+  #displayname_change_allowed: false
+
+  # Whether users are allowed to change their passwords. Defaults to `true`.
+  #password_change_allowed: false
 ```
