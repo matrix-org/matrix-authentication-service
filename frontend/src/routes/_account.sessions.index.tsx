@@ -23,12 +23,7 @@ import CompatSession from "../components/CompatSession";
 import OAuth2Session from "../components/OAuth2Session";
 import BrowserSessionsOverview from "../components/UserSessionsOverview/BrowserSessionsOverview";
 import { graphql } from "../gql";
-import {
-  Pagination,
-  isForwardPagination,
-  paginationSchema,
-  usePages,
-} from "../pagination";
+import { Pagination, paginationSchema, usePages } from "../pagination";
 
 const PAGE_SIZE = 6;
 
@@ -95,10 +90,7 @@ export const Route = createFileRoute("/_account/sessions/")({
   // We paginate backwards, so we need to validate the `last` parameter by default
   validateSearch: paginationSchema.catch({ last: PAGE_SIZE }),
 
-  loaderDeps: ({ search }): Pagination =>
-    isForwardPagination(search)
-      ? { first: search.first, after: search.after }
-      : { last: search.last, before: search.before },
+  loaderDeps: ({ search }): Pagination => paginationSchema.parse(search),
 
   async loader({ context, deps: pagination, abortController: { signal } }) {
     const [overview, list] = await Promise.all([

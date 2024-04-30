@@ -36,4 +36,7 @@ beforeAll(async () => await routerReady);
 
 export const DummyRouter: React.FC<React.PropsWithChildren> = ({
   children,
-}) => <RouterProvider router={router} defaultComponent={() => children} />;
+}) => (
+  /** @ts-expect-error: The router we pass doesn't match the "real" router, which is fine for tests */
+  <RouterProvider router={router} defaultComponent={() => children} />
+);

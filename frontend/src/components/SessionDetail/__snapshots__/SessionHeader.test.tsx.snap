@@ -6,6 +6,7 @@ exports[`<SessionHeader /> > renders a session header 1`] = `
     class="_header_92353c"
   >
     <a
+      aria-current="page"
       class="_backButton_92353c active"
       data-status="active"
       href="/"
