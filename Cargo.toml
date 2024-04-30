@@ -61,7 +61,7 @@ version = "0.1.80"
 
 # High-level error handling
 [workspace.dependencies.anyhow]
-version = "1.0.81"
+version = "1.0.82"
 
 # UTF-8 paths
 [workspace.dependencies.camino]
