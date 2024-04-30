@@ -18,7 +18,7 @@ serde.workspace = true
 serde_json.workspace = true
 schemars = { workspace = true, optional = true }
 thiserror.workspace = true
-tokio = { version = "1.36.0", features = ["io-util", "rt"] }
+tokio = { version = "1.37.0", features = ["io-util", "rt"] }
 tracing.workspace = true
 wasmtime = { version = "18.0.3", default-features = false, features = ["async", "cranelift"] }
 
@@ -26,7 +26,7 @@ mas-data-model.workspace = true
 oauth2-types.workspace = true
 
 [dev-dependencies]
-tokio = { version = "1.36.0", features = ["fs", "rt", "macros"] }
+tokio = { version = "1.37.0", features = ["fs", "rt", "macros"] }
 
 [features]
 cache = ["wasmtime/cache"]

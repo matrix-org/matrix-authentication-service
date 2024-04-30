@@ -14,7 +14,7 @@ workspace = true
 [dependencies]
 arc-swap = "1.7.1"
 tracing.workspace = true
-tokio = { version = "1.36.0", features = ["macros", "rt", "fs"] }
+tokio = { version = "1.37.0", features = ["macros", "rt", "fs"] }
 walkdir = "2.5.0"
 
 anyhow.workspace = true
