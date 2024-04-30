@@ -29,7 +29,7 @@ tracing.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
-rustls-pemfile = "2.1.1"
+rustls-pemfile = "2.1.2"
 tokio = { version = "1.37.0", features = ["net", "rt", "macros", "signal", "time", "rt-multi-thread"] }
 tokio-test = "0.4.4"
 tracing-subscriber.workspace = true
