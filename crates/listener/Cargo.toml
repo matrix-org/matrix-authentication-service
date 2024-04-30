@@ -19,7 +19,7 @@ http-body.workspace = true
 hyper = { workspace = true, features = ["server"] }
 libc = "0.2.154"
 pin-project-lite = "0.2.14"
-socket2 = "0.5.6"
+socket2 = "0.5.7"
 thiserror.workspace = true
 tokio = { version = "1.36.0", features = ["net", "rt", "macros", "signal", "time"] }
 tokio-rustls = "0.25.0"
