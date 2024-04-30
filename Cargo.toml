@@ -80,7 +80,7 @@ features = ["derive"]
 
 # Configuration loading
 [workspace.dependencies.figment]
-version = "0.10.15"
+version = "0.10.18"
 features = ["env", "yaml", "test"]
 
 # HTTP headers
