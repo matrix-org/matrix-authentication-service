@@ -2321,7 +2321,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.5.7",
+ "socket2 0.4.10",
  "tokio",
  "tower-service",
  "tracing",
@@ -3959,7 +3959,7 @@ checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
 [[package]]
 name = "opa-wasm"
 version = "0.1.0"
-source = "git+https://github.com/matrix-org/rust-opa-wasm.git#9ff3ebcfefed1724107823a5bb5f5a5950318945"
+source = "git+https://github.com/matrix-org/rust-opa-wasm.git#96829c22c54f269ba2e99873ad9b02e1baf357d8"
 dependencies = [
  "anyhow",
  "base64 0.22.0",
@@ -3972,7 +3972,7 @@ dependencies = [
  "form_urlencoded",
  "hex",
  "hmac",
- "indexmap 2.2.5",
+ "indexmap 1.9.3",
  "json-patch",
  "md-5",
  "parse-size",
