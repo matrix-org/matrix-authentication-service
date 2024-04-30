@@ -83,7 +83,7 @@ MAS also has a few scopes that are specific to the MAS implementation.
 
 This scope grants access to the whole MAS [GraphQL API].
 What permission the session has on the API is determined by the entity that the session is authorized as.
-If authorized as a user, this will usually allow querying and mutating the user's data.
+When [authorized as a user](../topics/authorization.md#authorized-as-a-user-or-authorized-as-a-client) (and without the `mas:urn:admin` scope), this will usually allow querying and mutating the user's own data.
 
 The default policy allows any client and any user to request this scope.
 
