@@ -38,5 +38,5 @@ url.workspace = true
 mas-iana.workspace = true
 
 [dev-dependencies]
-insta = { version = "1.36.1" }
+insta = { version = "1.38.0" }
 rand_chacha = "0.3.1"
