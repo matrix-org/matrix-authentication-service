@@ -15,7 +15,6 @@
 // @vitest-environment happy-dom
 
 import { render, cleanup } from "@testing-library/react";
-import { TooltipProvider } from "@vector-im/compound-web";
 import { Provider } from "urql";
 import { describe, expect, it, afterEach, beforeAll } from "vitest";
 import { never } from "wonka";
@@ -52,13 +51,11 @@ describe("<CompatSessionDetail>", () => {
     const data = makeFragmentData({ ...baseSession }, FRAGMENT);
 
     const { container, getByText, queryByText } = render(
-      <TooltipProvider>
-        <Provider value={mockClient}>
-          <DummyRouter>
-            <CompatSessionDetail session={data} />
-          </DummyRouter>
-        </Provider>
-      </TooltipProvider>,
+      <Provider value={mockClient}>
+        <DummyRouter>
+          <CompatSessionDetail session={data} />
+        </DummyRouter>
+      </Provider>,
     );
 
     expect(container).toMatchSnapshot();

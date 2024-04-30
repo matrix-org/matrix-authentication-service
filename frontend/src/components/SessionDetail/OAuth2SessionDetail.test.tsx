@@ -15,7 +15,6 @@
 // @vitest-environment happy-dom
 
 import { render, cleanup } from "@testing-library/react";
-import { TooltipProvider } from "@vector-im/compound-web";
 import { Provider } from "urql";
 import { describe, expect, it, afterEach, beforeAll } from "vitest";
 import { never } from "wonka";
@@ -56,13 +55,11 @@ describe("<OAuth2SessionDetail>", () => {
     const data = makeFragmentData(baseSession, FRAGMENT);
 
     const { asFragment, getByText, queryByText } = render(
-      <TooltipProvider>
-        <Provider value={mockClient}>
-          <DummyRouter>
-            <OAuth2SessionDetail session={data} />
-          </DummyRouter>
-        </Provider>
-      </TooltipProvider>,
+      <Provider value={mockClient}>
+        <DummyRouter>
+          <OAuth2SessionDetail session={data} />
+        </DummyRouter>
+      </Provider>,
     );
 
     expect(asFragment()).toMatchSnapshot();
@@ -80,13 +77,11 @@ describe("<OAuth2SessionDetail>", () => {
     );
 
     const { asFragment, getByText, queryByText } = render(
-      <TooltipProvider>
-        <Provider value={mockClient}>
-          <DummyRouter>
-            <OAuth2SessionDetail session={data} />
-          </DummyRouter>
-        </Provider>
-      </TooltipProvider>,
+      <Provider value={mockClient}>
+        <DummyRouter>
+          <OAuth2SessionDetail session={data} />
+        </DummyRouter>
+      </Provider>,
     );
 
     expect(asFragment()).toMatchSnapshot();

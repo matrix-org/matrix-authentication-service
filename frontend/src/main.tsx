@@ -13,7 +13,6 @@
 // limitations under the License.
 
 import { RouterProvider, createRouter } from "@tanstack/react-router";
-import { TooltipProvider } from "@vector-im/compound-web";
 import { Suspense, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { I18nextProvider } from "react-i18next";
@@ -50,9 +49,7 @@ createRoot(document.getElementById("root") as HTMLElement).render(
       <ErrorBoundary>
         <Suspense fallback={<LoadingScreen />}>
           <I18nextProvider i18n={i18n}>
-            <TooltipProvider>
-              <RouterProvider router={router} context={{ client }} />
-            </TooltipProvider>
+            <RouterProvider router={router} context={{ client }} />
           </I18nextProvider>
         </Suspense>
       </ErrorBoundary>

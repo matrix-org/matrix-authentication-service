@@ -13,7 +13,6 @@
 // limitations under the License.
 
 import { ArgTypes, Decorator, Parameters, Preview } from "@storybook/react";
-import { TooltipProvider } from "@vector-im/compound-web";
 import { useLayoutEffect } from "react";
 
 import "../src/main.css";
@@ -71,9 +70,7 @@ const withThemeProvider: Decorator = (Story, context) => {
   return (
     <>
       <ThemeSwitcher theme={context.globals.theme} />
-      <TooltipProvider>
-        <Story />
-      </TooltipProvider>
+      <Story />
     </>
   );
 };
