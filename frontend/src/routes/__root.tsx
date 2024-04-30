@@ -72,7 +72,7 @@ export const Route = createRootRouteWithContext<{
         if (search.device_id)
           throw redirect({
             to: "/devices/$id",
-            params: { id: search.device_id },
+            params: { id: encodeURIComponent(search.device_id) },
           });
         throw redirect({ to: "/sessions/", search: { last: PAGE_SIZE } });
 
@@ -81,7 +81,7 @@ export const Route = createRootRouteWithContext<{
         if (search.device_id)
           throw redirect({
             to: "/devices/$id",
-            params: { id: search.device_id },
+            params: { id: encodeURIComponent(search.device_id) },
           });
         throw redirect({ to: "/sessions/", search: { last: PAGE_SIZE } });
 
