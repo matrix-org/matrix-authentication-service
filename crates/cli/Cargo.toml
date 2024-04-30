@@ -31,7 +31,7 @@ rustls.workspace = true
 serde_json.workspace = true
 serde_yaml = "0.9.34"
 sqlx.workspace = true
-tokio = { version = "1.36.0", features = ["full"] }
+tokio = { version = "1.37.0", features = ["full"] }
 tower.workspace = true
 tower-http = { version = "0.4.4", features = ["fs"] }
 url.workspace = true
