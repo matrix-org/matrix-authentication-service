@@ -81,7 +81,7 @@
     "storybook": "^8.0.9",
     "storybook-react-i18next": "^3.0.1",
     "tailwindcss": "^3.4.3",
-    "typescript": "5.4.4",
+    "typescript": "5.4.5",
     "vite": "5.2.10",
     "vite-plugin-compression": "^0.5.1",
     "vite-plugin-graphql-codegen": "^3.3.6",
