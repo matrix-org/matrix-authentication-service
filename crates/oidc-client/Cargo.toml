@@ -68,4 +68,4 @@ bitflags = "2.5.0"
 mas-keystore.workspace = true
 rand_chacha = "0.3.1"
 tokio = { version = "1.36.0", features = ["rt", "macros", "rt-multi-thread"] }
-wiremock = "0.5.22"
+wiremock = "0.6.0"
