@@ -61,10 +61,15 @@ deny = [
 multiple-versions = "deny"
 
 skip = [
+    { name = "base64", version = "0.13.1" }, # async-graphql depends on this old version
+    { name = "base64", version = "0.21.7" }, # many dependencies depends on this old version
     { name = "spin", version = "0.5.2" }, # lazy_static and ring depends on the old version
+    { name = "syn", version = "1.0.109" }, # sea-query, sqlx, schemars depend on the old version
     { name = "event-listener", version = "2.5.3" }, # async-channel (wiremock) and sqlx-core depend on the old version
     { name = "regex-syntax", version = "0.6.29" }, # tracing-subscriber[env-filter] -> matchers depends on the old version
     { name = "regex-automata", version = "0.1.10" }, # ^
+    { name = "regex-automata", version = "0.2.0" }, # icu_list depends on this old version
+    { name = "indexmap", version = "1.9.3" }, # schemars depends on this old version
     { name = "itertools", version = "0.10.5" }, # wasmtime & others depends on the old version
     { name = "itertools", version = "0.11.0" },
     { name = "bitflags", version = "1.3.2" }, # axum depends on an old version
@@ -76,11 +81,11 @@ skip = [
     { name = "webpki-roots", version = "0.25.3" },
     # axum-macros, sqlx-macros and sea-query-attr use an old version
     { name = "heck", version = "0.4.1" },
+    # we depend on old http/http-body/hyper versions, but some dependencies already upgraded
+    { name = "http", version = "0.2.12" },
 ]
 
 skip-tree = [
-    # Let's ignore wiremock for now, we want to get rid of it
-    { name = "wiremock", depth = 3 },
     { name = "darling", version = "0.14.4", depth = 2 }, # sea-query-attr depends on an old version
 ]
 
