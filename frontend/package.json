@@ -23,7 +23,7 @@
     "@radix-ui/react-dialog": "^1.0.5",
     "@radix-ui/react-form": "^0.0.3",
     "@tanstack/react-router": "^1.31.3",
-    "@urql/core": "^5.0.2",
+    "@urql/core": "^5.0.3",
     "@urql/devtools": "^2.0.3",
     "@urql/exchange-graphcache": "^7.0.2",
     "@urql/exchange-refocus": "^1.0.2",
