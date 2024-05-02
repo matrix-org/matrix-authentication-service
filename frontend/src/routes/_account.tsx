@@ -91,12 +91,8 @@ function Account(): React.ReactElement {
         <UnverifiedEmailAlert user={session.user} />
 
         <NavBar>
-          <NavItem from={Route.fullPath} to=".">
-            {t("frontend.nav.settings")}
-          </NavItem>
-          <NavItem from={Route.fullPath} to="./sessions">
-            {t("frontend.nav.devices")}
-          </NavItem>
+          <NavItem to="/">{t("frontend.nav.settings")}</NavItem>
+          <NavItem to="/sessions">{t("frontend.nav.devices")}</NavItem>
         </NavBar>
       </div>
 
