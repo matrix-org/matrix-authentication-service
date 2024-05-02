@@ -125,12 +125,7 @@ function ResetCrossSigning(): React.ReactNode {
         )}
 
         {!deepLink && (
-          <ButtonLink
-            to=".."
-            from={Route.fullPath}
-            kind="tertiary"
-            Icon={IconArrowLeft}
-          >
+          <ButtonLink to="/" kind="tertiary" Icon={IconArrowLeft}>
             {t("action.back")}
           </ButtonLink>
         )}
