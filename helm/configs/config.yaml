@@ -151,17 +151,6 @@ telemetry:
     {{- if .Values.telemetry.useOTLP.enabled }}
     endpoint: {{ .Values.telemetry.useOTLP.endpoint }}
     {{- end }}
-    {{- if .Values.telemetry.useJaeger.enabled }}
-    protocol: {{ .Values.telemetry.useJaeger.protocol }}
-    endpoint: {{ .Values.telemetry.useJaeger.endpoint }}
-    username: {{ .Values.telemetry.useJaeger.username }}
-    password: {{ .Values.telemetry.useJaeger.password }}
-    agent_host: {{ .Values.telemetry.useJaeger.agent_host }}
-    agent_port: {{ .Values.telemetry.useJaeger.agent_port }}
-    {{- end }}
-    {{- if .Values.telemetry.useZipkin.enabled }}
-    collector_endpoint: {{ .Values.telemetry.useZipkin.collector_endpoint }}
-    {{- end }}
   {{- if .Values.telemetry.metrics.enabled}}
   metrics:
     exporter: {{ .Values.telemetry.metrics.exporter }}

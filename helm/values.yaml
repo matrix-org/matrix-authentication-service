@@ -268,26 +268,14 @@ telemetry:
   propagators:
       #- tracecontext #Propagate according to the W3C Trace Context specification
       #- baggage #Propagate according to the W3C Baggage specification
-      #- jaeger #Propagate trace context with Jaeger compatible headers
       #- b3 #Propagate trace context with Zipkin compatible headers (single `b3` header variant)
       #- b3multi #Propagate trace context with Zipkin compatible headers (multiple `x-b3-*` headers variant)
 
-  # telementry exporter can be none, otlp, jaeger, zipkin
+  # telementry exporter can be none, otlp
   exporter: none
   useOTLP:
     enabled: false
     endpoint: https://localhost:4317
-  useJaeger:
-    enabled: false
-    protocol: "http/thrift.binary | udp/thrift.compact"
-    endpoint: http://localhost:14268/api/traces # for http/thrift.binary
-    username: username # for http/thrift.binary
-    password: password # for http/thrift.binary
-    agent_host: localhost # for udp/thrift.compact
-    agent_port: 6831 # for udp/thrift.compact
-  useZipkin:
-    enabled: false
-    collector_endpoint: http://localhost:9411/api/v2/spans
   
   metrics:
     # disables only metrics export/collection
