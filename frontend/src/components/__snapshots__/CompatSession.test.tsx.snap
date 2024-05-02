@@ -7,6 +7,7 @@ exports[`<CompatSession /> > renders a finished session 1`] = `
   <a
     aria-disabled={true}
     className="_sessionCard_e2909e _disabled_e2909e"
+    disabled={true}
     onClick={[Function]}
     onFocus={[Function]}
     onMouseEnter={[Function]}
@@ -90,6 +91,7 @@ exports[`<CompatSession /> > renders an active session 1`] = `
 >
   <a
     className="_sessionCard_e2909e"
+    disabled={false}
     href="/sessions/session-id"
     onClick={[Function]}
     onFocus={[Function]}

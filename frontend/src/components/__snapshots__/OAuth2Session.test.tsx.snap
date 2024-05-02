@@ -7,6 +7,7 @@ exports[`<OAuth2Session /> > renders a finished session 1`] = `
   <a
     aria-disabled={true}
     className="_sessionCard_e2909e _disabled_e2909e"
+    disabled={true}
     onClick={[Function]}
     onFocus={[Function]}
     onMouseEnter={[Function]}
@@ -87,6 +88,7 @@ exports[`<OAuth2Session /> > renders an active session 1`] = `
 >
   <a
     className="_sessionCard_e2909e"
+    disabled={false}
     href="/sessions/session-id"
     onClick={[Function]}
     onFocus={[Function]}
@@ -199,6 +201,7 @@ exports[`<OAuth2Session /> > renders correct icon for a native session 1`] = `
   <a
     aria-disabled={true}
     className="_sessionCard_e2909e _disabled_e2909e"
+    disabled={true}
     onClick={[Function]}
     onFocus={[Function]}
     onMouseEnter={[Function]}
