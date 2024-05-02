@@ -31,7 +31,7 @@ use mas_spa::ViteManifest;
 use minijinja::{
     escape_formatter,
     machinery::make_string_output,
-    value::{from_args, Kwargs, Object, SeqObject, ViaDeserialize},
+    value::{from_args, Kwargs, Object, ViaDeserialize},
     Error, ErrorKind, State, Value,
 };
 use url::Url;
@@ -76,8 +76,8 @@ pub fn register(
     });
 }
 
-fn tester_empty(seq: &dyn SeqObject) -> bool {
-    seq.item_count() == 0
+fn tester_empty(seq: Value) -> bool {
+    seq.len() == Some(0)
 }
 
 fn tester_starting_with(value: &str, prefix: &str) -> bool {
@@ -236,7 +236,7 @@ impl std::fmt::Display for TranslatorFunc {
 }
 
 impl Object for TranslatorFunc {
-    fn call(&self, _state: &State, args: &[Value]) -> Result<Value, Error> {
+    fn call(self: &Arc<Self>, _state: &State, args: &[Value]) -> Result<Value, Error> {
         let (lang,): (&str,) = from_args(args)?;
 
         let lang: DataLocale = lang.parse().map_err(|e| {
@@ -271,7 +271,7 @@ impl std::fmt::Display for TranslateFunc {
 }
 
 impl Object for TranslateFunc {
-    fn call(&self, state: &State, args: &[Value]) -> Result<Value, Error> {
+    fn call(self: &Arc<Self>, state: &State, args: &[Value]) -> Result<Value, Error> {
         let (key, kwargs): (&str, Kwargs) = from_args(args)?;
 
         let (message, _locale) = if let Some(count) = kwargs.get("count")? {
@@ -326,7 +326,12 @@ impl Object for TranslateFunc {
         Ok(Value::from_safe_string(buf))
     }
 
-    fn call_method(&self, _state: &State, name: &str, args: &[Value]) -> Result<Value, Error> {
+    fn call_method(
+        self: &Arc<Self>,
+        _state: &State,
+        name: &str,
+        args: &[Value],
+    ) -> Result<Value, Error> {
         match name {
             "relative_date" => {
                 let (date,): (String,) = from_args(args)?;
@@ -435,7 +440,7 @@ impl std::fmt::Display for IncludeAsset {
 }
 
 impl Object for IncludeAsset {
-    fn call(&self, _state: &State, args: &[Value]) -> Result<Value, Error> {
+    fn call(self: &Arc<Self>, _state: &State, args: &[Value]) -> Result<Value, Error> {
         let (path, kwargs): (&str, Kwargs) = from_args(args)?;
 
         let preload = kwargs.get("preload").unwrap_or(false);
@@ -493,7 +498,12 @@ impl std::fmt::Display for Counter {
 }
 
 impl Object for Counter {
-    fn call_method(&self, _state: &State, name: &str, args: &[Value]) -> Result<Value, Error> {
+    fn call_method(
+        self: &Arc<Self>,
+        _state: &State,
+        name: &str,
+        args: &[Value],
+    ) -> Result<Value, Error> {
         // None of the methods take any arguments
         from_args::<()>(args)?;
 

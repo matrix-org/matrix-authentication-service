@@ -234,8 +234,8 @@ impl Templates {
         })
         .await??;
 
-        env.add_global("branding", Value::from_struct_object(branding));
-        env.add_global("features", Value::from_struct_object(features));
+        env.add_global("branding", Value::from_object(branding));
+        env.add_global("features", Value::from_object(features));
 
         self::functions::register(
             &mut env,

@@ -14,7 +14,10 @@
 
 use std::sync::Arc;
 
-use minijinja::{value::StructObject, Value};
+use minijinja::{
+    value::{Enumerator, Object},
+    Value,
+};
 
 /// Site branding information.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -59,9 +62,9 @@ impl SiteBranding {
     }
 }
 
-impl StructObject for SiteBranding {
-    fn get_field(&self, name: &str) -> Option<Value> {
-        match name {
+impl Object for SiteBranding {
+    fn get_value(self: &Arc<Self>, name: &Value) -> Option<Value> {
+        match name.as_str()? {
             "server_name" => Some(self.server_name.clone().into()),
             "policy_uri" => self.policy_uri.clone().map(Value::from),
             "tos_uri" => self.tos_uri.clone().map(Value::from),
@@ -70,7 +73,7 @@ impl StructObject for SiteBranding {
         }
     }
 
-    fn static_fields(&self) -> Option<&'static [&'static str]> {
-        Some(&["server_name", "policy_uri", "tos_uri", "imprint"])
+    fn enumerate(self: &Arc<Self>) -> Enumerator {
+        Enumerator::Str(&["server_name", "policy_uri", "tos_uri", "imprint"])
     }
 }
