@@ -13,13 +13,9 @@ workspace = true
 
 [dependencies]
 async-trait.workspace = true
-tracing.workspace = true
-thiserror.workspace = true
 headers.workspace = true
+lettre.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
 
 mas-templates.workspace = true
-
-[dependencies.lettre]
-version = "0.11.4"
-default-features = false
-features = ["tokio1-rustls-tls", "hostname", "builder", "tracing", "pool", "smtp-transport", "sendmail-transport"]
