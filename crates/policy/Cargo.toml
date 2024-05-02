@@ -20,7 +20,7 @@ schemars = { workspace = true, optional = true }
 thiserror.workspace = true
 tokio = { version = "1.37.0", features = ["io-util", "rt"] }
 tracing.workspace = true
-wasmtime = { version = "20.0.0", default-features = false, features = ["async", "cranelift"] }
+wasmtime = { version = "20.0.0", default-features = false, features = ["async", "cranelift", "parallel-compilation"] }
 
 mas-data-model.workspace = true
 oauth2-types.workspace = true
@@ -29,7 +29,6 @@ oauth2-types.workspace = true
 tokio = { version = "1.37.0", features = ["fs", "rt", "macros"] }
 
 [features]
-cache = ["wasmtime/cache"]
 jsonschema = ["dep:schemars"]
 
 [[bin]]
