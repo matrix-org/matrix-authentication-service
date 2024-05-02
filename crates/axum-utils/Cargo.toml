@@ -16,7 +16,7 @@ async-trait.workspace = true
 axum = { version = "0.6.20", features = ["headers"] }
 axum-extra = { version = "0.8.0", features = ["cookie-private", "cookie-key-expansion"] }
 chrono.workspace = true
-data-encoding = "2.5.0"
+data-encoding = "2.6.0"
 futures-util = "0.3.30"
 headers.workspace = true
 http.workspace = true
