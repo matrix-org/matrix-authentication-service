@@ -42,7 +42,7 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-export const Route = createFileRoute("/devices/$id")({
+export const Route = createFileRoute("/devices/$")({
   async loader({ context, params, abortController: { signal } }) {
     const viewer = await context.client.query(
       CURRENT_VIEWER_QUERY,
@@ -57,7 +57,7 @@ export const Route = createFileRoute("/devices/$id")({
     const result = await context.client.query(
       QUERY,
       {
-        deviceId: params.id,
+        deviceId: params._splat,
         userId: viewer.data.viewer.id,
       },
       { fetchOptions: { signal } },
@@ -78,7 +78,7 @@ export const Route = createFileRoute("/devices/$id")({
 
 function NotFound(): React.ReactElement {
   const { t } = useTranslation();
-  const { id: deviceId } = Route.useParams();
+  const { _splat: deviceId } = Route.useParams();
   return (
     <Layout>
       <Alert
