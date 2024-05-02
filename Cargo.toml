@@ -106,6 +106,12 @@ version = "0.25.0"
 features = ["http1", "http2"]
 default-features = false
 
+# Email sending
+[workspace.dependencies.lettre]
+version = "=0.11.4"
+default-features = false
+features = ["tokio1-rustls-tls", "hostname", "builder", "tracing", "pool", "smtp-transport", "sendmail-transport"]
+
 # Templates
 [workspace.dependencies.minijinja]
 version = "2.0.1"
