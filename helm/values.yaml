@@ -211,31 +211,6 @@ clients:
   pub_id: 0000000000000000000SYNAPSX
   pubAuthMethod: none
 
-secrets:
-  # Encryption secret (used for encrypting cookies and database fields)
-  # This must be a 32-byte long hex-encoded key
-  encrypt: 
-  # It needs at least an RSA key to work properly
-  # Following keys are supported
-  # RSA
-  # ECDSA with the P-256 (prime256v1) curve
-  # ECDSA with the P-384 (secp384r1) curve
-  # ECDSA with the K-256 (secp256k1) curve
-
-  # you should use the mas-cli with the command `mas-cli config generate` to get a new set of secrets
-  keys:
-    - kid: keyid#1
-      key: |-
-
-    - kid: keyid#2
-      key: |-
-
-    - kid: keyid#3
-      key: |
-
-    - kid: keyid#4
-      key: |
-
 
 passwords:
   # Whether to enable the password database.

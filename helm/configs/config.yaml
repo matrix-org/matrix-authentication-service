@@ -99,14 +99,23 @@ clients:
   # Signing and encryption secrets
 secrets:
   # Encryption secret (used for encrypting cookies and database fields)
-  # This must be a 32-byte long hex-encoded key
-  encryption: {{ .Values.secrets.encrypt }}
+  encryption: {{ printf "%x" (randAlphaNum 32) | b64enc | trunc 32 | quote }}
 
   # Signing keys
-  keys: {{- range .Values.secrets.keys }}
-    - kid: {{ .kid }}
-      key: |{{ .key | nindent 10}}
-{{- end }}
+  keys:
+    - kid: {{ randAlphaNum 10 | quote }}
+      key: |
+        {{- genPrivateKey "rsa" | nindent 10 }}
+    - kid: {{ randAlphaNum 10 | quote }}
+      key: |
+        {{- genPrivateKey "ecdsa" | nindent 10 }}
+    - kid: {{ randAlphaNum 10 | quote }}
+      key: |
+        {{- genPrivateKey "ecdsa" | nindent 10 }}
+    - kid: {{ randAlphaNum 10 | quote }}
+      key: |
+        {{- genPrivateKey "ecdsa" | nindent 10 }}
+
 
 passwords:
   # Whether to enable the password database.
