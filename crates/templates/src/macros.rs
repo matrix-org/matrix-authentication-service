@@ -62,7 +62,7 @@ macro_rules! register_templates {
                     $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
                     (&self, context: &$param)
                 -> Result<String, TemplateError> {
-                    let ctx = ::minijinja::value::Value::from_serializable(context);
+                    let ctx = ::minijinja::value::Value::from_serialize(context);
 
                     let env = self.environment.load();
                     let tmpl = env.get_template($template)

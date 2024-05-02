@@ -242,7 +242,7 @@ pub(crate) async fn get(
 
     let env = {
         let mut env = minijinja::Environment::new();
-        env.add_global("user", minijinja::Value::from_serializable(&id_token));
+        env.add_global("user", minijinja::Value::from_serialize(&id_token));
         env
     };
 

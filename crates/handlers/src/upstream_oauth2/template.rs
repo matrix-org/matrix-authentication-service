@@ -43,7 +43,7 @@ fn b64encode(bytes: &[u8]) -> String {
 }
 
 /// Decode a Tag-Length-Value encoded byte array into a map of tag to value.
-fn tlvdecode(bytes: &[u8]) -> Result<HashMap<u8, Value>, Error> {
+fn tlvdecode(bytes: &[u8]) -> Result<HashMap<Value, Value>, Error> {
     let mut iter = bytes.iter().copied();
     let mut ret = HashMap::new();
     loop {
@@ -67,7 +67,7 @@ fn tlvdecode(bytes: &[u8]) -> Result<HashMap<u8, Value>, Error> {
             );
         }
 
-        ret.insert(tag, Value::from(Arc::new(bytes)));
+        ret.insert(tag.into(), Value::from(Arc::new(bytes)));
     }
 
     Ok(ret)

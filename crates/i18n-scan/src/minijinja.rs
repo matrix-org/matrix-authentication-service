@@ -247,6 +247,8 @@ fn find_in_optional_expr<'a>(
 
 #[cfg(test)]
 mod tests {
+    use minijinja::{machinery::WhitespaceConfig, syntax::SyntaxConfig};
+
     use super::*;
 
     #[test]
@@ -288,7 +290,13 @@ mod tests {
         ];
 
         for (name, content) in templates {
-            let ast = parse(content, name).unwrap();
+            let ast = parse(
+                content,
+                name,
+                SyntaxConfig::default(),
+                WhitespaceConfig::default(),
+            )
+            .unwrap();
             find_in_stmt(&mut context, &ast).unwrap();
         }
 
@@ -323,7 +331,13 @@ mod tests {
     fn test_invalid_key_not_string() {
         // This is invalid because the key is not a string
         let mut context = Context::new("t".to_owned());
-        let ast = parse(r"{{ t(5) }}", "invalid.txt").unwrap();
+        let ast = parse(
+            r"{{ t(5) }}",
+            "invalid.txt",
+            SyntaxConfig::default(),
+            WhitespaceConfig::default(),
+        )
+        .unwrap();
 
         let res = find_in_stmt(&mut context, &ast);
         assert!(res.is_err());
@@ -333,7 +347,13 @@ mod tests {
     fn test_invalid_key_filtered() {
         // This is invalid because the key argument has a filter
         let mut context = Context::new("t".to_owned());
-        let ast = parse(r#"{{ t("foo" | bar) }}"#, "invalid.txt").unwrap();
+        let ast = parse(
+            r#"{{ t("foo" | bar) }}"#,
+            "invalid.txt",
+            SyntaxConfig::default(),
+            WhitespaceConfig::default(),
+        )
+        .unwrap();
 
         let res = find_in_stmt(&mut context, &ast);
         assert!(res.is_err());
@@ -343,7 +363,13 @@ mod tests {
     fn test_invalid_key_missing() {
         // This is invalid because the key argument is missing
         let mut context = Context::new("t".to_owned());
-        let ast = parse(r"{{ t() }}", "invalid.txt").unwrap();
+        let ast = parse(
+            r"{{ t() }}",
+            "invalid.txt",
+            SyntaxConfig::default(),
+            WhitespaceConfig::default(),
+        )
+        .unwrap();
 
         let res = find_in_stmt(&mut context, &ast);
         assert!(res.is_err());
@@ -353,7 +379,13 @@ mod tests {
     fn test_invalid_key_negated() {
         // This is invalid because the key argument is missing
         let mut context = Context::new("t".to_owned());
-        let ast = parse(r#"{{ t(not "foo") }}"#, "invalid.txt").unwrap();
+        let ast = parse(
+            r#"{{ t(not "foo") }}"#,
+            "invalid.txt",
+            SyntaxConfig::default(),
+            WhitespaceConfig::default(),
+        )
+        .unwrap();
 
         let res = find_in_stmt(&mut context, &ast);
         assert!(res.is_err());

@@ -12,7 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use minijinja::{value::StructObject, Value};
+use std::sync::Arc;
+
+use minijinja::{
+    value::{Enumerator, Object},
+    Value,
+};
 
 /// Site features information.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -24,16 +29,16 @@ pub struct SiteFeatures {
     pub password_login: bool,
 }
 
-impl StructObject for SiteFeatures {
-    fn get_field(&self, field: &str) -> Option<Value> {
-        match field {
+impl Object for SiteFeatures {
+    fn get_value(self: &Arc<Self>, field: &Value) -> Option<Value> {
+        match field.as_str()? {
             "password_registration" => Some(Value::from(self.password_registration)),
             "password_login" => Some(Value::from(self.password_login)),
             _ => None,
         }
     }
 
-    fn static_fields(&self) -> Option<&'static [&'static str]> {
-        Some(&["password_registration", "password_login"])
+    fn enumerate(self: &Arc<Self>) -> Enumerator {
+        Enumerator::Str(&["password_registration", "password_login"])
     }
 }

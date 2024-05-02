@@ -12,8 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Without the custom_syntax feature, the `SyntaxConfig` is a unit struct
+// which is annoying with this clippy lint
+#![allow(clippy::default_constructed_unit_structs)]
+
 use std::fs::File;
 
+use ::minijinja::{machinery::WhitespaceConfig, syntax::SyntaxConfig};
 use camino::Utf8PathBuf;
 use clap::Parser;
 use key::Context;
@@ -77,7 +82,12 @@ fn main() {
         if options.extensions.split(',').any(|e| e == extension) {
             tracing::debug!("Parsing {relative}");
             let template = std::fs::read_to_string(&path).expect("Failed to read template");
-            match minijinja::parse(&template, relative.as_str()) {
+            match minijinja::parse(
+                &template,
+                relative.as_str(),
+                SyntaxConfig::default(),
+                WhitespaceConfig::default(),
+            ) {
                 Ok(ast) => {
                     context.set_current_file(relative.as_str());
                     minijinja::find_in_stmt(&mut context, &ast).unwrap();
