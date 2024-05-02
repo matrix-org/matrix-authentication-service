@@ -70,13 +70,35 @@ impl Device {
     }
 }
 
+const fn valid_device_chars(c: char) -> bool {
+    // This matches the regex in the policy
+    c.is_ascii_alphanumeric()
+        || c == '.'
+        || c == '_'
+        || c == '~'
+        || c == '!'
+        || c == '$'
+        || c == '&'
+        || c == '\''
+        || c == '('
+        || c == ')'
+        || c == '*'
+        || c == '+'
+        || c == ','
+        || c == ';'
+        || c == '='
+        || c == ':'
+        || c == '@'
+        || c == '/'
+        || c == '-'
+}
+
 impl TryFrom<String> for Device {
     type Error = InvalidDeviceID;
 
     /// Create a [`Device`] out of an ID, validating the ID has the right shape
     fn try_from(id: String) -> Result<Self, Self::Error> {
-        // This matches the regex in the policy
-        if !id.chars().all(|c| c.is_ascii_alphanumeric() || c == '-') {
+        if !id.chars().all(valid_device_chars) {
             return Err(InvalidDeviceID::InvalidCharacters);
         }
 

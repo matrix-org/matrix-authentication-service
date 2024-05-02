@@ -71,8 +71,8 @@ export const Route = createRootRouteWithContext<{
       case "org.matrix.session_view":
         if (search.device_id)
           throw redirect({
-            to: "/devices/$id",
-            params: { id: search.device_id },
+            to: "/devices/$",
+            params: { _splat: search.device_id },
           });
         throw redirect({ to: "/sessions", search: { last: PAGE_SIZE } });
 
@@ -80,8 +80,8 @@ export const Route = createRootRouteWithContext<{
       case "org.matrix.session_end":
         if (search.device_id)
           throw redirect({
-            to: "/devices/$id",
-            params: { id: search.device_id },
+            to: "/devices/$",
+            params: { _splat: search.device_id },
           });
         throw redirect({ to: "/sessions", search: { last: PAGE_SIZE } });
 
