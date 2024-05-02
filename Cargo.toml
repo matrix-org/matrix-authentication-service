@@ -129,7 +129,7 @@ features = ["url", "chrono", "preserve_order"]
 
 # Serialization and deserialization
 [workspace.dependencies.serde]
-version = "1.0.197"
+version = "1.0.200"
 features = ["derive"] # Most of the time, if we need serde, we need derive
 
 # JSON serialization and deserialization
