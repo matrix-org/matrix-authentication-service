@@ -82,7 +82,13 @@ pub(crate) use sprintf;
 #[error(transparent)]
 enum Error {
     Format(#[from] self::formatter::FormatError),
-    Parse(#[from] self::parser::Error),
+    Parse(Box<self::parser::Error>),
+}
+
+impl From<self::parser::Error> for Error {
+    fn from(err: self::parser::Error) -> Self {
+        Self::Parse(Box::new(err))
+    }
 }
 
 #[cfg(test)]
