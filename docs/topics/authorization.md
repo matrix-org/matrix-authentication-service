@@ -1,7 +1,7 @@
 # Authorization and sessions
 
-The main job of the authentication service is to grant access to resources to clients, and to lets resources know who is accessing them.
-In less abstract terms, this means that the service is responsible for issuing access token and let the homeserver (and other services) introspect those access tokens.
+The main job of the authentication service is to grant access to resources to clients, and to let resources know who is accessing them.
+In less abstract terms, this means that the service is responsible for issuing access tokens and letting the homeserver (and other services) introspect those access tokens.
 
 ## How access tokens work
 
@@ -13,7 +13,7 @@ An access token has:
 - a client for which the token is issued
 - a timeframe for which the token is valid
 
-On a single token, those metadata are immutable: they don't change over time.
+On a single token, metadata is immutable: it doesn't change over time.
 One exception is the validity of the token: the service may revoke a token before its expiration date.
 
 A typical client will get a short-lived access token (valid 5 minutes) along with a refresh token.
@@ -34,7 +34,7 @@ Out of this request, Synapse will care about the following:
   - [`urn:matrix:org.matrix.msc2967.client:device:AABBCC`], which encodes the Matrix device ID used by the client
   - [`urn:synapse:admin:*`], which grants access to the Synapse admin API
 
-It's important to understand that when Synapse delegates the authentication to MAS, a lot of user attributes are not managed by Synapse anymore.
+It's important to understand that when Synapse delegates authentication to MAS, Synapse no longer manages many user attributes.
 This includes the user admin, locked, and deactivated status.
 
 ## Compatibility sessions
@@ -57,7 +57,7 @@ This was the case in the past with Synapse, as the admin status was set on the u
 ## OAuth 2.0 sessions
 
 Modern clients are expected to use OAuth 2.0 to authenticate with the homeserver.
-In OAuth 2.0/OIDC, there are multiple way to start an OAuth 2.0 session called grants.
+In OAuth 2.0/OIDC, there are multiple ways to start an OAuth 2.0 session called grants.
 
 An OAuth 2.0 session has three important properties:
 
