@@ -152,6 +152,7 @@ impl HomeserverConnection for SynapseConnection {
         err(Display),
     )]
     async fn query_user(&self, mxid: &str) -> Result<MatrixUser, Self::Error> {
+        let mxid = urlencoding::encode(mxid);
         let mut client = self
             .http_client_factory
             .client("homeserver.query_user")
@@ -186,6 +187,7 @@ impl HomeserverConnection for SynapseConnection {
         err(Display),
     )]
     async fn is_localpart_available(&self, localpart: &str) -> Result<bool, Self::Error> {
+        let localpart = urlencoding::encode(localpart);
         let mut client = self
             .http_client_factory
             .client("homeserver.is_localpart_available");
@@ -252,11 +254,9 @@ impl HomeserverConnection for SynapseConnection {
             .request_bytes_to_body()
             .json_request();
 
+        let mxid = urlencoding::encode(request.mxid());
         let request = self
-            .put(&format!(
-                "_synapse/admin/v2/users/{mxid}",
-                mxid = request.mxid()
-            ))
+            .put(&format!("_synapse/admin/v2/users/{mxid}"))
             .body(body)?;
 
         let response = client.ready().await?.call(request).await?;
@@ -282,6 +282,7 @@ impl HomeserverConnection for SynapseConnection {
         err(Display),
     )]
     async fn create_device(&self, mxid: &str, device_id: &str) -> Result<(), Self::Error> {
+        let mxid = urlencoding::encode(mxid);
         let mut client = self
             .http_client_factory
             .client("homeserver.create_device")
@@ -312,6 +313,8 @@ impl HomeserverConnection for SynapseConnection {
         err(Display),
     )]
     async fn delete_device(&self, mxid: &str, device_id: &str) -> Result<(), Self::Error> {
+        let mxid = urlencoding::encode(mxid);
+        let device_id = urlencoding::encode(device_id);
         let mut client = self.http_client_factory.client("homeserver.delete_device");
 
         let request = self
@@ -340,6 +343,7 @@ impl HomeserverConnection for SynapseConnection {
         err(Display),
     )]
     async fn delete_user(&self, mxid: &str, erase: bool) -> Result<(), Self::Error> {
+        let mxid = urlencoding::encode(mxid);
         let mut client = self
             .http_client_factory
             .client("homeserver.delete_user")
@@ -370,6 +374,7 @@ impl HomeserverConnection for SynapseConnection {
         err(Display),
     )]
     async fn set_displayname(&self, mxid: &str, displayname: &str) -> Result<(), Self::Error> {
+        let mxid = urlencoding::encode(mxid);
         let mut client = self
             .http_client_factory
             .client("homeserver.set_displayname")
@@ -412,6 +417,7 @@ impl HomeserverConnection for SynapseConnection {
         err(Display),
     )]
     async fn allow_cross_signing_reset(&self, mxid: &str) -> Result<(), Self::Error> {
+        let mxid = urlencoding::encode(mxid);
         let mut client = self
             .http_client_factory
             .client("homeserver.allow_cross_signing_reset")
