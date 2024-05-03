@@ -32,7 +32,7 @@ The policy is evaluated in three different scenarios:
 
 ### Client registration
 
-The policy ([`client_registration.rego`]) is evaluated when a client send their metadata through the OAuth 2.0 dynamic client registration API.
+The policy ([`client_registration.rego`]) is evaluated when a client sends their metadata through the OAuth 2.0 dynamic client registration API.
 By default, it enforces a set of strict rules to make sure clients provide enough information about themselves, with coherent URLs.
 This is useful in production environments, but can be relaxed in development environments.
 

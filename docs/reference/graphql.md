@@ -2,11 +2,11 @@
 
 MAS provides a GraphQL API which serves two purposes:
 
- - it is used by the self-service user interface (usually accessible on `/account/`), for users to manage their own account
- - it can be used with external tools to manage the service
+ - it is used by the self-service user interface (usually accessible on `/account/`), for users to manage their own account.
+ - it can be used with external tools to manage the service.
 
 The endpoint for this API can be discovered through the OpenID Connect discovery document, under the `"org.matrix.matrix-authentication-service.graphql_endpoint` key.
-It is though usually hosted at `https://<mas-host>/graphql`.
+Though it is usually hosted at `https://<mas-host>/graphql`.
 
 GraphQL uses [a self-describing schema](https://github.com/matrix-org/matrix-authentication-service/blob/main/frontend/schema.graphql), which means that the API can be explored in tools like the GraphQL Playground.
 If enabled, MAS hosts an instance of the playground at `https://<mas-host>/graphql/playground`.

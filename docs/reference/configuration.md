@@ -157,7 +157,7 @@ clients:
     client_auth_method: none
 ```
 
-**Note:** any additions or modification in this list are synced with the database on server startup. Removed entries are only removed with the [`config sync --prune`](../reference/cli/config.md#config-sync---prune---dry-run) command.
+**Note:** any additions or modifications in this list are synced with the database on server startup. Removed entries are only removed with the [`config sync --prune`](../reference/cli/config.md#config-sync---prune---dry-run) command.
 
 ## `secrets`
 
@@ -410,7 +410,7 @@ upstream_oauth2:
       #   - `private_key_jwt` (using the keys defined in the `secrets.keys` section)
       token_endpoint_auth_method: client_secret_post
 
-      # What signing algorithm to use to sign the authentication request when using
+      # Which signing algorithm to use to sign the authentication request when using
       # the `private_key_jwt` or the `client_secret_jwt` authentication methods
       #token_endpoint_auth_signing_alg: RS256
 
@@ -498,7 +498,7 @@ upstream_oauth2:
 ## `experimental`
 
 Settings that may change or be removed in future versions.
-Some of those settings are in this section just because they don't have a stable place in the configuration yet.
+Some of which are in this section because they don't have a stable place in the configuration yet.
 
 ```yaml
 experimental:
