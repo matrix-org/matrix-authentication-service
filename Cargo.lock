@@ -3411,6 +3411,7 @@ dependencies = [
  "tower",
  "tracing",
  "url",
+ "urlencoding",
 ]
 
 [[package]]
