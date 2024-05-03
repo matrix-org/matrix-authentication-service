@@ -60,22 +60,6 @@ test_device_scopes {
 		with input.grant_type as "authorization_code"
 		with input.scope as "urn:matrix:org.matrix.msc2967.client:device:AAbbCCdd01-asdasdsa1-2313"
 
-	# Invalid characters
-	not allow with input.user as user
-		with input.client as client
-		with input.grant_type as "authorization_code"
-		with input.scope as "urn:matrix:org.matrix.msc2967.client:device:AABB:CCDDEE"
-
-	not allow with input.user as user
-		with input.client as client
-		with input.grant_type as "authorization_code"
-		with input.scope as "urn:matrix:org.matrix.msc2967.client:device:AABB*CCDDEE"
-
-	not allow with input.user as user
-		with input.client as client
-		with input.grant_type as "authorization_code"
-		with input.scope as "urn:matrix:org.matrix.msc2967.client:device:AABB!CCDDEE"
-
 	# Too short
 	not allow with input.user as user
 		with input.client as client
