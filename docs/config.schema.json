@@ -633,7 +633,7 @@
           }
         },
         "proxy_protocol": {
-          "description": "Accept HAProxy's Proxy Protocol V1",
+          "description": "Accept `HAProxy`'s Proxy Protocol V1",
           "default": false,
           "type": "boolean"
         },
@@ -1279,7 +1279,7 @@
           ]
         },
         "port": {
-          "description": "SMTP transport: Port to connect to. Default is 25 for plain, 465 for TLS and 587 for StartTLS",
+          "description": "SMTP transport: Port to connect to. Default is 25 for plain, 465 for TLS and 587 for `StartTLS`",
           "type": "integer",
           "format": "uint16",
           "maximum": 65535.0,
@@ -1337,7 +1337,7 @@
           ]
         },
         {
-          "description": "StartTLS (starts as plain text then upgrade to TLS)",
+          "description": "`StartTLS` (starts as plain text then upgrade to TLS)",
           "type": "string",
           "enum": [
             "starttls"

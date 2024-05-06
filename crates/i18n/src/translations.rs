@@ -275,10 +275,7 @@ impl Tree {
         path: I,
     ) -> Option<&Node> {
         let mut iterator = path.into_iter();
-        let Some(next) = iterator.next() else {
-            return None;
-        };
-
+        let next = iterator.next()?;
         self.walk_path_inner(next, iterator)
     }
 

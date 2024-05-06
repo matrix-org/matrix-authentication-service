@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![allow(clippy::doc_markdown)]
+
 //! Enums from the "JSON Object Signing and Encryption" IANA registry
 //! See <https://www.iana.org/assignments/oauth-parameters/oauth-parameters.xhtml>
 

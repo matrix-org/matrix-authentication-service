@@ -76,7 +76,7 @@ pub(crate) enum RouteError {
     #[error("Template {template:?} rendered to an empty string")]
     RequiredAttributeEmpty { template: String },
 
-    /// Required claim was missing in id_token
+    /// Required claim was missing in `id_token`
     #[error("Template {template:?} could not be rendered from the upstream provider's response for required claim")]
     RequiredAttributeRender {
         template: String,

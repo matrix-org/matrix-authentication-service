@@ -32,7 +32,7 @@ use thiserror::Error;
 pub enum SmtpMode {
     /// Plain text
     Plain,
-    /// StartTLS (starts as plain text then upgrade to TLS)
+    /// `StartTLS` (starts as plain text then upgrade to TLS)
     StartTls,
     /// TLS
     Tls,

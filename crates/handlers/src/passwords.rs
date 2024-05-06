@@ -100,10 +100,7 @@ impl PasswordManager {
     ///
     /// Returns an error if the password manager is disabled
     fn get_inner(&self) -> Result<Arc<InnerPasswordManager>, PasswordManagerDisabledError> {
-        self.inner
-            .as_ref()
-            .map(Arc::clone)
-            .ok_or(PasswordManagerDisabledError)
+        self.inner.clone().ok_or(PasswordManagerDisabledError)
     }
 
     /// Hash a password with the default hashing scheme.
