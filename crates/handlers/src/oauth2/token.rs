@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use axum::{extract::State, response::IntoResponse, Json, TypedHeader};
-use chrono::{DateTime, Duration, Utc};
+use chrono::Duration;
 use headers::{CacheControl, HeaderMap, HeaderMapExt, Pragma};
 use hyper::StatusCode;
 use mas_axum_utils::{
@@ -46,32 +46,12 @@ use oauth2_types::{
     },
     scope,
 };
-use serde::Serialize;
-use serde_with::{serde_as, skip_serializing_none};
 use thiserror::Error;
 use tracing::debug;
 use ulid::Ulid;
-use url::Url;
 
 use super::{generate_id_token, generate_token_pair};
 use crate::{impl_from_error_for_route, BoundActivityTracker};
-
-#[serde_as]
-#[skip_serializing_none]
-#[derive(Serialize, Debug)]
-struct CustomClaims {
-    #[serde(rename = "iss")]
-    issuer: Url,
-    #[serde(rename = "sub")]
-    subject: String,
-    #[serde(rename = "aud")]
-    audiences: Vec<String>,
-    nonce: Option<String>,
-    #[serde_as(as = "Option<serde_with::TimestampSeconds>")]
-    auth_time: Option<DateTime<Utc>>,
-    at_hash: String,
-    c_hash: String,
-}
 
 #[derive(Debug, Error)]
 pub(crate) enum RouteError {

@@ -43,10 +43,7 @@ impl<J: Job> TracedJob for JobWithSpanContext<J> {
     }
 }
 
-fn make_span_for_job_request<J: TracedJob>(req: &JobRequest<J>) -> tracing::Span
-where
-    J: Job,
-{
+fn make_span_for_job_request<J: TracedJob>(req: &JobRequest<J>) -> tracing::Span {
     let span = info_span!(
         "job.run",
         "otel.kind" = "consumer",

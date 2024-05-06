@@ -694,7 +694,7 @@ impl Options {
                             })
                             .await??;
 
-                            req.upstream_provider_mappings.push((&provider, subject));
+                            req.upstream_provider_mappings.push((provider, subject));
                         }
                     }
                 }

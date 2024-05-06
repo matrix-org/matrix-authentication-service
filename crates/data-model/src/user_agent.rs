@@ -148,13 +148,6 @@ impl UserAgent {
                 result.os_version = VALUE_UNKNOWN.into();
             }
 
-            // Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like
-            // Gecko) Chrome/100.0.4896.133 Safari/537.36
-            ("Mac OSX", "10.15.7") if user_agent.contains("Macintosh; Intel Mac OS X 10_15_7") => {
-                result.os = "macOS";
-                result.os_version = VALUE_UNKNOWN.into();
-            }
-
             // Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko)
             // Chrome/100.0.0.0 Safari/537.36
             ("Linux", _) if user_agent.contains("X11; Linux x86_64") => {
@@ -176,6 +169,8 @@ impl UserAgent {
                 result.os_version = VALUE_UNKNOWN.into();
             }
 
+            // Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like
+            // Gecko) Chrome/100.0.4896.133 Safari/537.36
             // Safari also freezes the OS version
             // Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like
             // Gecko) Version/17.3.1 Safari/605.1.15

@@ -51,7 +51,7 @@ pub enum Requester {
     /// The requester is a browser session, stored in a cookie.
     BrowserSession(Box<BrowserSession>),
 
-    /// The requester is a OAuth2 session, with an access token.
+    /// The requester is a `OAuth2` session, with an access token.
     OAuth2Session(Box<(Session, Option<User>)>),
 }
 

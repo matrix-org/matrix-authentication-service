@@ -49,7 +49,7 @@ pub struct Client {
     /// Array of Redirection URI values used by the Client
     pub redirect_uris: Vec<Url>,
 
-    /// Array containing a list of the OAuth 2.0 response_type values that the
+    /// Array containing a list of the OAuth 2.0 `response_type` values that the
     /// Client is declaring that it will restrict itself to using
     pub response_types: Vec<OAuthAuthorizationEndpointResponseType>,
 
@@ -83,15 +83,15 @@ pub struct Client {
     /// Client
     pub id_token_signed_response_alg: Option<JsonWebSignatureAlg>,
 
-    /// JWS alg algorithm REQUIRED for signing UserInfo Responses.
+    /// JWS alg algorithm REQUIRED for signing `UserInfo` Responses.
     pub userinfo_signed_response_alg: Option<JsonWebSignatureAlg>,
 
     /// Requested authentication method for the token endpoint
     pub token_endpoint_auth_method: Option<OAuthClientAuthenticationMethod>,
 
     /// JWS alg algorithm that MUST be used for signing the JWT used to
-    /// authenticate the Client at the Token Endpoint for the private_key_jwt
-    /// and client_secret_jwt authentication methods
+    /// authenticate the Client at the Token Endpoint for the `private_key_jwt`
+    /// and `client_secret_jwt` authentication methods
     pub token_endpoint_auth_signing_alg: Option<JsonWebSignatureAlg>,
 
     /// URI using the https scheme that a third party can use to initiate a

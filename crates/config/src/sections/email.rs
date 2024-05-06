@@ -37,7 +37,7 @@ pub enum EmailSmtpMode {
     /// Plain text
     Plain,
 
-    /// StartTLS (starts as plain text then upgrade to TLS)
+    /// `StartTLS` (starts as plain text then upgrade to TLS)
     StartTls,
 
     /// TLS
@@ -94,7 +94,7 @@ pub struct EmailConfig {
     hostname: Option<String>,
 
     /// SMTP transport: Port to connect to. Default is 25 for plain, 465 for TLS
-    /// and 587 for StartTLS
+    /// and 587 for `StartTLS`
     #[serde(skip_serializing_if = "Option::is_none")]
     #[schemars(range(min = 1, max = 65535))]
     port: Option<NonZeroU16>,

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![allow(clippy::blocks_in_conditions)]
+
 use http::{header::AUTHORIZATION, request::Builder, Method, Request, StatusCode};
 use mas_axum_utils::http_client_factory::HttpClientFactory;
 use mas_http::{EmptyBody, HttpServiceExt};

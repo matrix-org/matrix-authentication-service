@@ -52,7 +52,7 @@ pub enum ScopeToken {
     /// `offline_access`
     ///
     /// Requests that an OAuth 2.0 refresh token be issued that can be used to
-    /// obtain an access token that grants access to the end-user's UserInfo
+    /// obtain an access token that grants access to the end-user's `UserInfo`
     /// Endpoint even when the end-user is not present (not logged in).
     OfflineAccess,
 

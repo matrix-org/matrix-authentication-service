@@ -165,7 +165,7 @@
 //! [`Uuid`]: uuid::Uuid
 
 #![deny(clippy::future_not_send, missing_docs)]
-#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::module_name_repetitions, clippy::blocks_in_conditions)]
 
 use sqlx::migrate::Migrator;
 
