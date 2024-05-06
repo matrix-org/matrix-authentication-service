@@ -8,7 +8,7 @@
 # The Debian version and version name must be in sync
 ARG DEBIAN_VERSION=12
 ARG DEBIAN_VERSION_NAME=bookworm
-ARG RUSTC_VERSION=1.76.0
+ARG RUSTC_VERSION=1.78.0
 # XXX: Upgrade to 0.10.0 blocked by https://github.com/ziglang/zig/issues/10915#issuecomment-1354548110
 # XXX: Upgrade to 0.11.0 blocked by https://github.com/rust-cross/cargo-zigbuild/issues/162
 ARG ZIG_VERSION=0.9.1
