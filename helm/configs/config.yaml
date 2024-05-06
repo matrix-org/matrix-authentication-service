@@ -1,9 +1,9 @@
 http:
   # Public URL base used when building absolute public URLs
-  public_base: {{ .Values.config.http.base | quote }}
+  public_base: "{{ .Values.config.http.public_base -}}/"
 
   # OIDC issuer advertised by the service. Defaults to `public_base`
-  issuer: {{ .Values.config.http.issuer | quote }}
+  issuer: {{ .Values.config.http.issuer | default .Values.config.http.public_base | quote }}
 
   # Each listener can serve multiple resources, and listen on multiple TCP ports or UNIX sockets.
   # List of HTTP listeners, see below
@@ -21,24 +21,16 @@ http:
         playground: {{ .playground }}
       {{- end }}
       {{- end }}
-      # List of addresses and ports to listen to
-      binds:
-      {{- if .Values.config.listeners.binds.type.address.enabled }}
-        # First option: listen to the given address
-        - address: {{ .Values.config.listeners.binds.address | quote }}
-      {{- end }}
-      {{- if .Values.config.listeners.binds.type.hp.enabled }}
-        # Second option: listen on the given host and port combination
-        - host: {{ .Values.config.listeners.binds.host.name }}
-          port: {{ .Values.config.listeners.binds.host.port }}
-      {{- end }}
-      {{- if .Values.config.listeners.binds.type.socket.enabled }}
-        # Third option: listen on the given UNIX socket
-        - socket: {{ .Values.config.listeners.binds.socket }}
+      - name: health
+        path: /health
+      {{- if .Values.telemetry.metrics.enabled }}
+      - name: prometheus
+        path: /health
       {{- end }}
 
-      # Whether to enable the PROXY protocol on the listener
-      proxy_protocol: {{ .Values.config.listeners.proxy_protocol }}
+      binds:
+        - address: '[::]:8080'
+  proxy_protocol: {{ .Values.config.listeners.proxy_protocol }}
   trusted_proxies: {{ range .Values.config.trusted_proxies }}
     - {{ . }}
     {{- end }}
@@ -51,31 +43,31 @@ database:
 
   # -- OR --
   # Separate parameters
-  host: {{ .Values.db.host }}
-  port: {{ .Values.db.port }}
+  host: {{ .Values.database.host }}
+  port: {{ .Values.database.port }}
   #socket:
-  username: {{ .Values.db.user }}
-  password: {{ .Values.db.pass }}
-  database: {{ .Values.db.dbName }}
+  username: {{ .Values.database.username }}
+  password: {{ .Values.database.password }}
+  database: {{ .Values.database.dbName }}
 
   # Additional parameters for the connection pool
-  min_connections: {{ .Values.db.min_connections }}
-  max_connections: {{ .Values.db.max_connections }}
-  connect_timeout: {{ .Values.db.connect_timeout }}
-  idle_timeout: {{ .Values.db.idle_timeout }}
-  max_lifetime: {{ .Values.db.max_lifetime }}
+  min_connections: {{ .Values.database.min_connections }}
+  max_connections: {{ .Values.database.max_connections }}
+  connect_timeout: {{ .Values.database.connect_timeout }}
+  idle_timeout: {{ .Values.database.idle_timeout }}
+  max_lifetime: {{ .Values.database.max_lifetime }}
 
   # Settings related to the connection to the Matrix homeserver
 matrix:
   # The homeserver name, as per the `server_name` in the Synapse configuration file
-  homeserver: {{ .Values.matrix.hs }}
+  homeserver: {{ .Values.matrix.homeserver }}
 
   # Shared secret used to authenticate the service to the homeserver
   # This must be of high entropy, because leaking this secret would allow anyone to perform admin actions on the homeserver
-  secret: {{ .Values.matrix.secret | quote }}
+  secret: {{ .Values.matrix.sharedSecret | quote }}
 
   # URL to which the homeserver is accessible from the service
-  endpoint: {{ .Values.matrix.hs_url | quote }}
+  endpoint: {{ .Values.matrix.homeserverUrl | quote }}
 
   # Allows loading custom templates
 {{- if .Values.templates.enabled }}
@@ -87,8 +79,8 @@ templates:
   # List of OAuth 2.0/OIDC clients and their keys/secrets. Each client_id must be a ULID.
 clients:
   # Confidential client
-  - client_id: {{ .Values.clients.sec_id }}
-    client_auth_method: {{ .Values.clients.secAuthMethod }}
+  - client_id: {{ .Values.clients.client_id }}
+    client_auth_method: {{ .Values.clients.client_auth_method }}
     client_secret: {{ .Values.clients.client_secret }}
     # List of authorized redirect URIs
     redirect_uris: {{ .Values.clients.redirect_uris}}
@@ -98,21 +90,20 @@ clients:
 
   # Signing and encryption secrets
 secrets:
-  # Encryption secret (used for encrypting cookies and database fields)
-  encryption: {{ printf "%x" (randAlphaNum 32) | b64enc | trunc 32 | quote }}
+  encryption: {{ randAlphaNum 32 | printf "%x" }}
 
   # Signing keys
   keys:
-    - kid: {{ randAlphaNum 10 | quote }}
+    - kid: {{ randAlphaNum 10 }}
       key: |
         {{- genPrivateKey "rsa" | nindent 10 }}
-    - kid: {{ randAlphaNum 10 | quote }}
+    - kid: {{ randAlphaNum 10 }}
       key: |
         {{- genPrivateKey "ecdsa" | nindent 10 }}
-    - kid: {{ randAlphaNum 10 | quote }}
+    - kid: {{ randAlphaNum 10 }}
       key: |
         {{- genPrivateKey "ecdsa" | nindent 10 }}
-    - kid: {{ randAlphaNum 10 | quote }}
+    - kid: {{ randAlphaNum 10 }}
       key: |
         {{- genPrivateKey "ecdsa" | nindent 10 }}
 
@@ -135,9 +126,9 @@ policy:
     # Dynamic Client Registration
     client_registration:
       # don't require URIs to be on the same host. default: false
-      allow_host_mismatch: {{ .Values.policy.data.clientHostMismatch }}
+      allow_host_mismatch: {{ .Values.policy.data.clientHostMismatch | default "false" }}
       # allow non-SSL and localhost URIs. default: false
-      allow_insecure_uris: {{ .Values.policy.data.clientNoSsl }}
+      allow_insecure_uris: {{ .Values.policy.data.clientNoSsl | default "false" }}
 
     # Registration using passwords
     passwords:
@@ -177,17 +168,11 @@ email:
   transport: {{ .Values.email.transport }}
 {{- if .Values.email.enabled }}
   hostanme: {{ .Values.email.hostname }}
-  {{- if .Values.email.sendmail.enabled}}
-  command: {{ .Values.email.command }}
-  {{- end }}
   mode: {{ .Values.email.mode }}
   port: {{ .Values.email.port }}
   username: {{ .Values.email.username }}
   password: {{ .Values.email.password }}
 {{- end }}
-
-  # Settings related to upstream OAuth 2.0/OIDC providers. This section must be synced to the database using the config sync command.
-  # https://matrix-org.github.io/matrix-authentication-service/usage/cli/config.html#config-sync---prune---dry-run
 
   # Sample configurations for popular providers can be found in the upstream provider setup guide.
   # https://matrix-org.github.io/matrix-authentication-service/setup/sso.html#sample-configurations

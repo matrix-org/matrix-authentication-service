@@ -13,19 +13,3 @@ spec:
       name: http
   selector:
     {{- include "mas.selectorLabels" . | nindent 4 }}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: well-known-{{ include "mas.fullname" . }}
-  labels:
-    {{- include "well-known.labels" . | nindent 4 }}
-spec:
-  type: {{ .Values.service.type }}
-  ports:
-    - port: 8448
-      name: well-known
-      targetPort: well-known
-      protocol: TCP
-  selector:
-    {{- include "well-known.selectorLabels" . | nindent 4 }}

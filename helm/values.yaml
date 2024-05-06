@@ -8,7 +8,7 @@ image:
   repository: ghcr.io/matrix-org/matrix-authentication-service
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "0.8.0"
+  tag: "0.9.0"
   # debug images are available with have a shell use $imageTag-debug
   # the debug version has the mas-cli in /usr/local/bin
   # the command `mas-cli doctor` can test some functionality
@@ -54,11 +54,11 @@ ingress:
     # kubernetes.io/tls-acme: "true"
     # nginx.ingress.kubernetes.io/use-regex: "true"
   hosts:
-    - host: chart-example.local
+    - host: auth.example.com
       paths:
         - path: /
-          pathType: Prefix
-    - host: synapse.example.local
+          pathType: ImplementationSpecific
+    - host: synapse.example.com
       paths:
         - path: /_matrix/client/(.*)/(login|logout|refresh)
           pathType: ImplementationSpecific
@@ -81,11 +81,11 @@ resources: {}
 
 livenessProbe:
   httpGet:
-    path: /oauth2/keys.json
+    path: /health
     port: http
 readinessProbe:
   httpGet:
-    path: /oauth2/keys.json
+    path: /health
     port: http
 
 autoscaling:
@@ -109,7 +109,7 @@ volumes:
 #     optional: false
 
 # Additional volumeMounts on the output Deployment definition.
-volumeMounts: 
+volumeMounts:
   - name: config-main
     mountPath: "/config.yaml"
     subPath: config.yaml
@@ -123,24 +123,15 @@ tolerations: []
 
 affinity: {}
 
-wellKnown:
-  issuer: https://auth.example.com/
-  authEnd: https://auth.example.com/authorize
-  tokenEnd: https://auth.example.com/oauth2/token
-  jwks: https://auth.example.com/oauth2/keys.json
-  registerEnd: https://auth.example.com/oauth2/registration
-  introEnd: https://auth.example.com/oauth2/introspect
-  revokeEnd: https://auth.example.com/oauth2/revoke
-
 config:
-  http: 
+  http:
     # MAS URL
-    base: https://auth.example.com/
+    public_base: https://auth.example.com
     # OIDC issuer advertised by the service. Defaults to `public_base`
-    issuer: https://auth.example.com
+    issuer:
   listeners:
     resources:
-      - name: discovery # Serves the .well-known/openid-configuration document    
+      - name: discovery # Serves the .well-known/openid-configuration document
       - name: human # Serves the human-facing pages, such as the login page
       - name: oauth # Serves the OAuth 2.0/OIDC endpoints
       - name: compat # Serves the Matrix C-S API compatibility endpoints
@@ -148,22 +139,8 @@ config:
         playground: false
       - name: assets # Serve the given folder on the /assets/ path
         path: /usr/local/share/mas-cli/assets/
-    binds:
-      # use either address, host/port (hp) or socket
-      type:
-        address: 
-          enabled: false
-        hp:
-          enabled: true
-        socket: 
-          enabled: false 
-      address: '[::]:8080'
-      host:
-        name: "0.0.0.0"
-        port: '8080'
-      #socket: /tmp/mas.sock
-    # currently not configured  
-    proxy_protocol: false
+
+  proxy_protocol: false
   trusted_proxies:
   - 10.0.0.0/10
   - 127.0.0.1/8
@@ -171,11 +148,11 @@ config:
   - ::1/128
 
 # must be PostgreSQL
-db:
+database:
   host: postgres
   port: 5432
-  user: user1
-  pass: password
+  username: user1
+  password: password
   dbName: database
   min_connections: 0
   max_connections: 10
@@ -186,9 +163,9 @@ db:
 # Settings related to the connection to the Matrix homeserver
 matrix:
   # `server_name` in the Synapse configuration file
-  hs: example.com
-  secret: someRandomSecret
-  hs_url: https://synapse.example.com
+  homeserver: example.com
+  sharedSecret: someRandomSecret
+  homeserverUrl: https://synapse.example.com
 
 # Allows loading custom templates
 # From where to load the templates
@@ -202,8 +179,8 @@ templates:
 clients:
   # Confidential client
   # Each client_id must be a ULID https://github.com/ulid/spec
-  sec_id: 0000000000000000000SYNAPSE
-  secAuthMethod: client_secret_post
+  client_id: 0000000000000000000SYNAPSE
+  client_auth_method: client_secret_post
   client_secret: secret
   redirect_uris:
     - http://localhost:1234/callback
@@ -238,7 +215,7 @@ policy:
       reqNum: true
 
 telemetry:
-  # "disables" telemtry, metrics exportm sentry
+  # disables telemetry, metrics export sentry
   enabled: false
   propagators:
       #- tracecontext #Propagate according to the W3C Trace Context specification
@@ -251,14 +228,14 @@ telemetry:
   useOTLP:
     enabled: false
     endpoint: https://localhost:4317
-  
+
   metrics:
     # disables only metrics export/collection
     enabled: false
     # can be otlp, prometheus (requires mounting the `prometheus` resource to an HTTP listener)
     exporter: none
     endpoint: https://localhost:4317
-  
+
   sentry:
     enabled: true
     dsn: https://public@host:port/1
@@ -275,13 +252,6 @@ email:
   port: 587
   username:
   password:
-  # local sendmail binary if installed
-  sendmail:
-    enabled: false
-  command: /usr/sbin/sendmail
-
-  # Settings related to upstream OAuth 2.0/OIDC providers. This section must be synced to the database using the config sync command.
-  # https://matrix-org.github.io/matrix-authentication-service/usage/cli/config.html#config-sync---prune---dry-run
 
   # Sample configurations for popular providers can be found in the upstream provider setup guide.
   # https://matrix-org.github.io/matrix-authentication-service/setup/sso.html#sample-configurations
@@ -289,7 +259,7 @@ upstream_oauth2:
   # remove empty brackets from config.yaml if you're enabling this
   enabled: false
   # Must be a valid ULID
-  providerId: 01HFVBY12TMNTYTBV8W921M5FA
+  providerId:
   # The issuer URL, which will be used to discover the provider's configuration.
   # If discovery is enabled, this *must* exactly match the `issuer` field
   # advertised in `<issuer>/.well-known/openid-configuration`.
@@ -300,11 +270,11 @@ upstream_oauth2:
   # Values supported by the default template: apple, google, facebook, github, gitlabm twitter
   brand:
   # The client ID to use to authenticate to the provider
-  clientId: mas-fb3f0c09c4c23de4
+  clientId:
   # The client secret to use to authenticate to the provider
   # This is only used by the `client_secret_post`, `client_secret_basic`
   # and `client_secret_jwk` authentication methods
-  client_secret: f4f6bb68a0269264877e9cb23b1856ab
+  client_secret:
   # possilble Values: none, client_secret_basic, client_secret_post, client_secret_jwt, `private_key_jwt` (using the keys defined in the `secrets.keys` section)
   endpointAuth: client_secret_post
   # set to true if you use one of the jwt auth methods
@@ -332,12 +302,12 @@ upstream_oauth2:
   #      - `force`: always import the attribute, and don't fail if it's missing
   #      - `require`: always import the attribute, and fail if it's missing
   #   - `template`: a Jinja2 template used to generate the value. In this template,
-  #      the `user` variable is available, which contains the user's attributes 
+  #      the `user` variable is available, which contains the user's attributes
   #      retrieved from the `id_token` given by the upstream provider.
   #
   # Each attribute has a default template which follows the well-known OIDC claims.
   #
-  
+
   claims_imports:
     # The subject is an internal identifier used to link the
     # user's provider identity to local accounts.
