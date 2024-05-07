@@ -57,7 +57,17 @@ pub(crate) async fn get(
     if let Some(Query(params)) = query {
         // Validate that it's a full code
         if params.code.len() == 6 && params.code.chars().all(|c| c.is_ascii_alphanumeric()) {
-            return handle_request_with_code(rng, clock, repo, locale, templates, url_builder, cookie_jar, params).await
+            return handle_request_with_code(
+                rng,
+                clock,
+                repo,
+                locale,
+                templates,
+                url_builder,
+                cookie_jar,
+                params,
+            )
+            .await;
         }
     }
 
@@ -84,7 +94,17 @@ pub(crate) async fn post(
     Form(form): Form<ProtectedForm<Params>>,
 ) -> Result<impl IntoResponse, FancyError> {
     let form = cookie_jar.verify_form(&clock, form)?;
-    handle_request_with_code(rng, clock, repo, locale, templates, url_builder, cookie_jar, form).await
+    handle_request_with_code(
+        rng,
+        clock,
+        repo,
+        locale,
+        templates,
+        url_builder,
+        cookie_jar,
+        form,
+    )
+    .await
 }
 
 async fn handle_request_with_code(
@@ -108,7 +128,7 @@ async fn handle_request_with_code(
         // XXX: We should have different error messages for already exchanged and expired
         .filter(|grant| grant.is_pending())
         .filter(|grant| grant.expires_at > clock.now());
-    
+
     // if not found then render the form to enter a code, but with an error shown
     let Some(grant) = grant else {
         let form_state = FormState::from_form(&form)
