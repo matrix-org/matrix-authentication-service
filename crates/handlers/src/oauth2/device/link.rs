@@ -53,7 +53,8 @@ pub(crate) async fn get(
     cookie_jar: CookieJar,
     query: Option<Query<Params>>,
 ) -> Result<impl IntoResponse, FancyError> {
-    // if the code has been given in the query parameter then treat as if it were a post request
+    // if the code has been given in the query parameter then treat as if it were a
+    // post request
     if let Some(Query(params)) = query {
         // Validate that it's a full code
         if params.code.len() == 6 && params.code.chars().all(|c| c.is_ascii_alphanumeric()) {
