@@ -130,7 +130,7 @@ version = "0.2.0"
 
 # JSON Schema generation
 [workspace.dependencies.schemars]
-version = "0.8.17"
+version = "0.8.19"
 features = ["url", "chrono", "preserve_order"]
 
 # Serialization and deserialization
