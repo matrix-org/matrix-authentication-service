@@ -29,7 +29,7 @@
     "@urql/exchange-refocus": "^1.0.2",
     "@urql/exchange-request-policy": "^1.1.0",
     "@vector-im/compound-design-tokens": "1.2.0",
-    "@vector-im/compound-web": "^4.1.2",
+    "@vector-im/compound-web": "^4.2.0",
     "classnames": "^2.5.1",
     "date-fns": "^3.6.0",
     "graphql": "^16.8.1",
