@@ -412,7 +412,7 @@ where
         )
         .route(
             mas_router::DeviceCodeLink::route(),
-            get(self::oauth2::device::link::get).post(self::oauth2::device::link::post),
+            get(self::oauth2::device::link::get),
         )
         .route(
             mas_router::DeviceCodeConsent::route(),
