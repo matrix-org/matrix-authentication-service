@@ -150,7 +150,7 @@ features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "json", "uu
 
 # Custom error types
 [workspace.dependencies.thiserror]
-version = "1.0.59"
+version = "1.0.60"
 
 # Tower services
 [workspace.dependencies.tower]
