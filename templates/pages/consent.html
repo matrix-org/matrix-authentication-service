@@ -1,5 +1,5 @@
 {#
-Copyright 2022 The Matrix.org Foundation C.I.C.
+Copyright 2022-2024 The Matrix.org Foundation C.I.C.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,8 +28,11 @@ limitations under the License.
     {% endif %}
 
     <div class="header">
-      <h1 class="title">Allow access to your account?</h1>
-      <p class="text"><a target="_blank" href="{{ client.client_uri }}">{{ client_name }}</a> <span class="whitespace-nowrap">at {{ grant.redirect_uri | simplify_url }}</span> wants to access your account. This will allow <span class="whitespace-nowrap">{{ client_name }}</span> to:</p>
+      <h1 class="title">{{ _("mas.consent.heading") }}</h1>
+      <p class="text [&>span]:whitespace-nowrap">
+        {{ _("mas.consent.client_wants_access", client_name=client_name, redirect_uri=(grant.redirect_uri | simplify_url)) }}
+        {{ _("mas.consent.this_will_allow", client_name=client_name) }}
+      </p>
     </div>
   </header>
 
@@ -37,11 +40,11 @@ limitations under the License.
     {{ scope.list(scopes=grant.scope) }}
   </section>
 
-  <section class="text-center cpd-text-secondary cpd-text-body-md-regular">
-    <span class="font-semibold cpd-text-primary">Make sure that you trust <span class="whitespace-nowrap">{{ client_name }}</span>.</span>
-    You may be sharing sensitive information with this site or app.
+  <section class="text-center cpd-text-secondary cpd-text-body-md-regular [&>span]:whitespace-nowrap">
+    <strong class="font-semibold cpd-text-primary [&>span]:whitespace-nowrap">{{ _("mas.consent.make_sure_you_trust", client_name=client_name) }}</strong>
+    {{ _("mas.consent.you_may_be_sharing") }}
     {% if client.policy_uri or client.tos_uri %}
-      Find out how {{ client_name }} will handle your data by reviewing its
+      Find out how <span>{{ client_name }}</span> will handle your data by reviewing its
       {% if client.policy_uri %}
         <a target="_blank" href="{{ client.policy_uri }}" class="cpd-link" data-kind="primary">privacy policy</a>{% if not client.tos_uri %}.{% endif %}
       {% endif %}
