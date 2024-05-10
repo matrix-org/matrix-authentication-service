@@ -17,6 +17,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 mod branding;
+mod captcha;
 mod clients;
 mod database;
 mod email;
@@ -32,6 +33,7 @@ mod upstream_oauth2;
 
 pub use self::{
     branding::BrandingConfig,
+    captcha::{CaptchaConfig, CaptchaServiceKind},
     clients::{ClientAuthMethodConfig, ClientConfig, ClientsConfig},
     database::DatabaseConfig,
     email::{EmailConfig, EmailSmtpMode, EmailTransportKind},
@@ -107,6 +109,10 @@ pub struct RootConfig {
     #[serde(default, skip_serializing_if = "BrandingConfig::is_default")]
     pub branding: BrandingConfig,
 
+    /// Configuration section to setup CAPTCHA protection on a few operations
+    #[serde(default, skip_serializing_if = "CaptchaConfig::is_default")]
+    pub captcha: CaptchaConfig,
+
     /// Experimental configuration options
     #[serde(default, skip_serializing_if = "ExperimentalConfig::is_default")]
     pub experimental: ExperimentalConfig,
@@ -126,6 +132,7 @@ impl ConfigurationSection for RootConfig {
         self.policy.validate(figment)?;
         self.upstream_oauth2.validate(figment)?;
         self.branding.validate(figment)?;
+        self.captcha.validate(figment)?;
         self.experimental.validate(figment)?;
 
         Ok(())
@@ -155,6 +162,7 @@ impl RootConfig {
             policy: PolicyConfig::default(),
             upstream_oauth2: UpstreamOAuth2Config::default(),
             branding: BrandingConfig::default(),
+            captcha: CaptchaConfig::default(),
             experimental: ExperimentalConfig::default(),
         })
     }
@@ -175,6 +183,7 @@ impl RootConfig {
             policy: PolicyConfig::default(),
             upstream_oauth2: UpstreamOAuth2Config::default(),
             branding: BrandingConfig::default(),
+            captcha: CaptchaConfig::default(),
             experimental: ExperimentalConfig::default(),
         }
     }
@@ -210,6 +219,9 @@ pub struct AppConfig {
     pub branding: BrandingConfig,
 
     #[serde(default)]
+    pub captcha: CaptchaConfig,
+
+    #[serde(default)]
     pub experimental: ExperimentalConfig,
 }
 
@@ -224,6 +236,7 @@ impl ConfigurationSection for AppConfig {
         self.matrix.validate(figment)?;
         self.policy.validate(figment)?;
         self.branding.validate(figment)?;
+        self.captcha.validate(figment)?;
         self.experimental.validate(figment)?;
 
         Ok(())

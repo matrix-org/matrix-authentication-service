@@ -15,6 +15,25 @@
 use chrono::Duration;
 use url::Url;
 
+/// Which Captcha service is being used
+#[derive(Debug, Clone)]
+pub enum CaptchaService {
+    RecaptchaV2,
+}
+
+/// Captcha configuration
+#[derive(Debug, Clone)]
+pub struct CaptchaConfig {
+    /// Which Captcha service is being used
+    pub service: CaptchaService,
+
+    /// The site key used by the instance
+    pub site_key: String,
+
+    /// The secret key used by the instance
+    pub secret_key: String,
+}
+
 /// Random site configuration we want accessible in various places.
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone)]
@@ -51,4 +70,7 @@ pub struct SiteConfig {
 
     /// Whether users can change their password.
     pub password_change_allowed: bool,
+
+    /// Captcha configuration
+    pub captcha: Option<CaptchaConfig>,
 }

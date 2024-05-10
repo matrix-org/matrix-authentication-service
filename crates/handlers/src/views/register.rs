@@ -26,7 +26,7 @@ use mas_axum_utils::{
     csrf::{CsrfExt, CsrfToken, ProtectedForm},
     FancyError, SessionInfoExt,
 };
-use mas_data_model::UserAgent;
+use mas_data_model::{CaptchaConfig, UserAgent};
 use mas_i18n::DataLocale;
 use mas_matrix::BoxHomeserverConnection;
 use mas_policy::Policy;
@@ -96,6 +96,7 @@ pub(crate) async fn get(
         csrf_token,
         &mut repo,
         &templates,
+        site_config.captcha.clone(),
     )
     .await?;
 
@@ -216,6 +217,7 @@ pub(crate) async fn post(
             csrf_token,
             &mut repo,
             &templates,
+            site_config.captcha.clone(),
         )
         .await?;
 
@@ -278,6 +280,7 @@ async fn render(
     csrf_token: CsrfToken,
     repo: &mut impl RepositoryAccess,
     templates: &Templates,
+    captcha_config: Option<CaptchaConfig>,
 ) -> Result<String, FancyError> {
     let next = action.load_context(repo).await?;
     let ctx = if let Some(next) = next {
@@ -285,7 +288,10 @@ async fn render(
     } else {
         ctx
     };
-    let ctx = ctx.with_csrf(csrf_token.form_value()).with_language(locale);
+    let ctx = ctx
+        .with_captcha(captcha_config)
+        .with_csrf(csrf_token.form_value())
+        .with_language(locale);
 
     let content = templates.render_register(&ctx)?;
     Ok(content)

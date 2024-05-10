@@ -69,6 +69,8 @@ limitations under the License.
         {% endcall %}
       {% endif %}
 
+      {{ captcha.form() }}
+
       {{ button.button(text=_("action.continue")) }}
     </form>
 

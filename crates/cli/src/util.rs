@@ -16,7 +16,7 @@ use std::time::Duration;
 
 use anyhow::Context;
 use mas_config::{
-    BrandingConfig, DatabaseConfig, EmailConfig, EmailSmtpMode, EmailTransportKind,
+    BrandingConfig, CaptchaConfig, DatabaseConfig, EmailConfig, EmailSmtpMode, EmailTransportKind,
     ExperimentalConfig, MatrixConfig, PasswordsConfig, PolicyConfig, TemplatesConfig,
 };
 use mas_data_model::SiteConfig;
@@ -120,13 +120,39 @@ pub async fn policy_factory_from_config(
         .context("failed to load the policy")
 }
 
+pub fn captcha_config_from_config(
+    captcha_config: &CaptchaConfig,
+) -> Result<Option<mas_data_model::CaptchaConfig>, anyhow::Error> {
+    let Some(service) = captcha_config.service else {
+        return Ok(None);
+    };
+
+    let service = match service {
+        mas_config::CaptchaServiceKind::RecaptchaV2 => mas_data_model::CaptchaService::RecaptchaV2,
+    };
+
+    Ok(Some(mas_data_model::CaptchaConfig {
+        service,
+        site_key: captcha_config
+            .site_key
+            .clone()
+            .context("missing site key")?,
+        secret_key: captcha_config
+            .secret_key
+            .clone()
+            .context("missing secret key")?,
+    }))
+}
+
 pub fn site_config_from_config(
     branding_config: &BrandingConfig,
     matrix_config: &MatrixConfig,
     experimental_config: &ExperimentalConfig,
     password_config: &PasswordsConfig,
-) -> SiteConfig {
-    SiteConfig {
+    captcha_config: &CaptchaConfig,
+) -> Result<SiteConfig, anyhow::Error> {
+    let captcha = captcha_config_from_config(captcha_config)?;
+    Ok(SiteConfig {
         access_token_ttl: experimental_config.access_token_ttl,
         compat_token_ttl: experimental_config.compat_token_ttl,
         server_name: matrix_config.homeserver.clone(),
@@ -140,7 +166,8 @@ pub fn site_config_from_config(
         displayname_change_allowed: experimental_config.displayname_change_allowed,
         password_change_allowed: password_config.enabled()
             && experimental_config.password_change_allowed,
-    }
+        captcha,
+    })
 }
 
 pub async fn templates_from_config(
