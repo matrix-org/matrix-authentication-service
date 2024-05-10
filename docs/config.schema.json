@@ -184,6 +184,14 @@
         }
       ]
     },
+    "captcha": {
+      "description": "Configuration section to setup CAPTCHA protection on a few operations",
+      "allOf": [
+        {
+          "$ref": "#/definitions/CaptchaConfig"
+        }
+      ]
+    },
     "experimental": {
       "description": "Experimental configuration options",
       "allOf": [
@@ -1948,6 +1956,40 @@
           "format": "uri"
         }
       }
+    },
+    "CaptchaConfig": {
+      "description": "Configuration section to setup CAPTCHA protection on a few operations",
+      "type": "object",
+      "properties": {
+        "service": {
+          "description": "Which service should be used for CAPTCHA protection",
+          "allOf": [
+            {
+              "$ref": "#/definitions/CaptchaServiceKind"
+            }
+          ]
+        },
+        "site_key": {
+          "description": "The site key to use",
+          "type": "string"
+        },
+        "secret_key": {
+          "description": "The secret key to use",
+          "type": "string"
+        }
+      }
+    },
+    "CaptchaServiceKind": {
+      "description": "Which service should be used for CAPTCHA protection",
+      "oneOf": [
+        {
+          "description": "Use Google's reCAPTCHA v2 API",
+          "type": "string",
+          "enum": [
+            "recaptcha_v2"
+          ]
+        }
+      ]
     },
     "ExperimentalConfig": {
       "description": "Configuration sections for experimental options\n\nDo not change these options unless you know what you are doing.",

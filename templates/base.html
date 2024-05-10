@@ -23,6 +23,7 @@ limitations under the License.
 {% import "components/errors.html" as errors %}
 {% import "components/icon.html" as icon %}
 {% import "components/scope.html" as scope %}
+{% import "components/captcha.html" as captcha %}
 
 <!DOCTYPE html>
 <html lang="{{ lang }}">
@@ -31,6 +32,7 @@ limitations under the License.
     <title>{% block title %}{{ _("app.name") }}{% endblock title %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {{ include_asset('src/templates.css', preload=true) | indent(4) | safe }}
+    {{ captcha.head() }}
   </head>
   <body>
     <div class="layout-container">

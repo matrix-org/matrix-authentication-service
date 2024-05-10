@@ -145,7 +145,8 @@ impl Options {
             &config.matrix,
             &config.experimental,
             &config.passwords,
-        );
+            &config.captcha,
+        )?;
 
         // Load and compile the templates
         let templates =

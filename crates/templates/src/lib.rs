@@ -22,6 +22,7 @@ use std::{collections::HashSet, sync::Arc};
 use anyhow::Context as _;
 use arc_swap::ArcSwap;
 use camino::{Utf8Path, Utf8PathBuf};
+use context::WithCaptcha;
 use mas_i18n::Translator;
 use mas_router::UrlBuilder;
 use mas_spa::ViteManifest;
@@ -326,7 +327,7 @@ register_templates! {
     pub fn render_login(WithLanguage<WithCsrf<LoginContext>>) { "pages/login.html" }
 
     /// Render the registration page
-    pub fn render_register(WithLanguage<WithCsrf<RegisterContext>>) { "pages/register.html" }
+    pub fn render_register(WithLanguage<WithCsrf<WithCaptcha<RegisterContext>>>) { "pages/register.html" }
 
     /// Render the client consent page
     pub fn render_consent(WithLanguage<WithCsrf<WithSession<ConsentContext>>>) { "pages/consent.html" }

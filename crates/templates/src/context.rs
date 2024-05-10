@@ -15,6 +15,7 @@
 //! Contexts used in templates
 
 mod branding;
+mod captcha;
 mod ext;
 mod features;
 
@@ -41,7 +42,9 @@ use serde::{ser::SerializeStruct, Deserialize, Serialize};
 use ulid::Ulid;
 use url::Url;
 
-pub use self::{branding::SiteBranding, ext::SiteConfigExt, features::SiteFeatures};
+pub use self::{
+    branding::SiteBranding, captcha::WithCaptcha, ext::SiteConfigExt, features::SiteFeatures,
+};
 use crate::{FieldError, FormField, FormState};
 
 /// Helper trait to construct context wrappers
@@ -93,6 +96,14 @@ pub trait TemplateContext: Serialize {
             lang: lang.to_string(),
             inner: self,
         }
+    }
+
+    /// Attach a CAPTCHA configuration to the template context
+    fn with_captcha(self, captcha: Option<mas_data_model::CaptchaConfig>) -> WithCaptcha<Self>
+    where
+        Self: Sized,
+    {
+        WithCaptcha::new(captcha, self)
     }
 
     /// Generate sample values for this context type

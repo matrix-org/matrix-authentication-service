@@ -132,6 +132,7 @@ pub fn test_site_config() -> SiteConfig {
         email_change_allowed: true,
         displayname_change_allowed: true,
         password_change_allowed: true,
+        captcha: None,
     }
 }
 
