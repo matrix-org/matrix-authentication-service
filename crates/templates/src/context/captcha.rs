@@ -30,6 +30,9 @@ impl Object for CaptchaConfig {
         match key.as_str() {
             Some("service") => Some(match &self.0.service {
                 mas_data_model::CaptchaService::RecaptchaV2 => "recaptcha_v2".into(),
+                mas_data_model::CaptchaService::CloudflareTurnstile => {
+                    "cloudflare_turnstile".into()
+                }
             }),
             Some("site_key") => Some(self.0.site_key.clone().into()),
             _ => None,

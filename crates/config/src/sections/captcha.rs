@@ -23,6 +23,10 @@ pub enum CaptchaServiceKind {
     /// Use Google's reCAPTCHA v2 API
     #[serde(rename = "recaptcha_v2")]
     RecaptchaV2,
+
+    /// Use Cloudflare Turnstile
+    #[serde(rename = "cloudflare_turnstile")]
+    CloudflareTurnstile,
 }
 
 /// Configuration section to setup CAPTCHA protection on a few operations
