@@ -27,6 +27,10 @@ pub enum CaptchaServiceKind {
     /// Use Cloudflare Turnstile
     #[serde(rename = "cloudflare_turnstile")]
     CloudflareTurnstile,
+
+    /// Use ``HCaptcha``
+    #[serde(rename = "hcaptcha")]
+    HCaptcha,
 }
 
 /// Configuration section to setup CAPTCHA protection on a few operations

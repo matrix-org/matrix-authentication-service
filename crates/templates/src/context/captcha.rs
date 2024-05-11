@@ -33,6 +33,7 @@ impl Object for CaptchaConfig {
                 mas_data_model::CaptchaService::CloudflareTurnstile => {
                     "cloudflare_turnstile".into()
                 }
+                mas_data_model::CaptchaService::HCaptcha => "hcaptcha".into(),
             }),
             Some("site_key") => Some(self.0.site_key.clone().into()),
             _ => None,

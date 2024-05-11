@@ -132,6 +132,7 @@ pub fn captcha_config_from_config(
         mas_config::CaptchaServiceKind::CloudflareTurnstile => {
             mas_data_model::CaptchaService::CloudflareTurnstile
         }
+        mas_config::CaptchaServiceKind::HCaptcha => mas_data_model::CaptchaService::HCaptcha,
     };
 
     Ok(Some(mas_data_model::CaptchaConfig {

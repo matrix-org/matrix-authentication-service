@@ -20,6 +20,7 @@ use url::Url;
 pub enum CaptchaService {
     RecaptchaV2,
     CloudflareTurnstile,
+    HCaptcha,
 }
 
 /// Captcha configuration

@@ -1995,6 +1995,13 @@
           "enum": [
             "cloudflare_turnstile"
           ]
+        },
+        {
+          "description": "Use ``HCaptcha``",
+          "type": "string",
+          "enum": [
+            "hcaptcha"
+          ]
         }
       ]
     },
