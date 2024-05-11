@@ -19,6 +19,7 @@ use url::Url;
 #[derive(Debug, Clone)]
 pub enum CaptchaService {
     RecaptchaV2,
+    CloudflareTurnstile,
 }
 
 /// Captcha configuration

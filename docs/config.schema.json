@@ -1988,6 +1988,13 @@
           "enum": [
             "recaptcha_v2"
           ]
+        },
+        {
+          "description": "Use Cloudflare Turnstile",
+          "type": "string",
+          "enum": [
+            "cloudflare_turnstile"
+          ]
         }
       ]
     },

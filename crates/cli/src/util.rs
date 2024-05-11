@@ -129,6 +129,9 @@ pub fn captcha_config_from_config(
 
     let service = match service {
         mas_config::CaptchaServiceKind::RecaptchaV2 => mas_data_model::CaptchaService::RecaptchaV2,
+        mas_config::CaptchaServiceKind::CloudflareTurnstile => {
+            mas_data_model::CaptchaService::CloudflareTurnstile
+        }
     };
 
     Ok(Some(mas_data_model::CaptchaConfig {
