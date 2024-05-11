@@ -20,6 +20,8 @@ limitations under the License.
       <div class="g-recaptcha {{ class }}" data-sitekey="{{ captcha.site_key }}"></div>
     {%- elif captcha.service == "cloudflare_turnstile" -%}
       <div class="cf-turnstile {{ class }}" data-sitekey="{{ captcha.site_key }}"></div>
+    {%- elif captcha.service == "hcaptcha" -%}
+      <div class="h-captcha {{ class }}" data-sitekey="{{ captcha.site_key }}"></div>
     {%- else -%}
       {{ throw(message="Invalid captcha service setup") }}
     {%- endif %}
@@ -32,6 +34,8 @@ limitations under the License.
       <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     {%- elif captcha.service == "cloudflare_turnstile" -%}
       <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    {%- elif captcha.service == "hcaptcha" -%}
+      <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
     {%- else -%}
       {{ throw(message="Invalid captcha service setup") }}
     {%- endif %}
