@@ -63,6 +63,7 @@ pub mod upstream_oauth2;
 mod views;
 
 mod activity_tracker;
+mod captcha;
 mod preferred_language;
 #[cfg(test)]
 mod test_utils;

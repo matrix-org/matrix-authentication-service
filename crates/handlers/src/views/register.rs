@@ -24,6 +24,7 @@ use lettre::Address;
 use mas_axum_utils::{
     cookies::CookieJar,
     csrf::{CsrfExt, CsrfToken, ProtectedForm},
+    http_client_factory::HttpClientFactory,
     FancyError, SessionInfoExt,
 };
 use mas_data_model::{CaptchaConfig, UserAgent};
@@ -44,7 +45,10 @@ use serde::{Deserialize, Serialize};
 use zeroize::Zeroizing;
 
 use super::shared::OptionalPostAuthAction;
-use crate::{passwords::PasswordManager, BoundActivityTracker, PreferredLanguage, SiteConfig};
+use crate::{
+    captcha::Form as CaptchaForm, passwords::PasswordManager, BoundActivityTracker,
+    PreferredLanguage, SiteConfig,
+};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct RegisterForm {
@@ -54,6 +58,9 @@ pub(crate) struct RegisterForm {
     password_confirm: String,
     #[serde(default)]
     accept_terms: String,
+
+    #[serde(flatten, skip_serializing)]
+    captcha: CaptchaForm,
 }
 
 impl ToFormState for RegisterForm {
@@ -114,6 +121,7 @@ pub(crate) async fn post(
     State(url_builder): State<UrlBuilder>,
     State(site_config): State<SiteConfig>,
     State(homeserver): State<BoxHomeserverConnection>,
+    State(http_client_factory): State<HttpClientFactory>,
     mut policy: Policy,
     mut repo: BoxRepository,
     activity_tracker: BoundActivityTracker,
@@ -130,6 +138,17 @@ pub(crate) async fn post(
     let form = cookie_jar.verify_form(&clock, form)?;
 
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
+
+    // Validate the captcha
+    // TODO: display a nice error message to the user
+    form.captcha
+        .verify(
+            &activity_tracker,
+            &http_client_factory,
+            url_builder.public_hostname(),
+            site_config.captcha.as_ref(),
+        )
+        .await?;
 
     // Validate the form
     let state = {

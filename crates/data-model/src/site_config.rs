@@ -16,7 +16,7 @@ use chrono::Duration;
 use url::Url;
 
 /// Which Captcha service is being used
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum CaptchaService {
     RecaptchaV2,
     CloudflareTurnstile,
