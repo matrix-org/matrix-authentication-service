@@ -112,6 +112,18 @@ impl UrlBuilder {
         }
     }
 
+    /// Site public hostname
+    ///
+    /// # Panics
+    ///
+    /// Panics if the base URL does not have a host
+    #[must_use]
+    pub fn public_hostname(&self) -> &str {
+        self.http_base
+            .host_str()
+            .expect("base URL must have a host")
+    }
+
     /// HTTP base
     #[must_use]
     pub fn http_base(&self) -> Url {
