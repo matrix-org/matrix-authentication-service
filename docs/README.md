@@ -1,6 +1,9 @@
 # About this documentation
 
-This documentation is intended to give an overview of how the `matrix-authentication-service` works, both from an admin perspective and from a developer perspective.
+This documentation is intended to give an overview of how the `matrix-authentication-service` (MAS) works, both from an admin perspective and from a developer perspective.
+
+MAS is an OAuth 2.0 and OpenID Provider server for Matrix.
+It has been created to support the migration of Matrix to an OpenID Connect (OIDC) based authentication layer as per [MSC3861](https://github.com/matrix-org/matrix-doc/pull/3861).
 
 The documentation itself is built using [mdBook](https://rust-lang.github.io/mdBook/).
 A hosted version is available at <https://matrix-org.github.io/matrix-authentication-service/>.
