@@ -212,9 +212,7 @@ impl Form {
             }
 
             // hCaptcha
-            // XXX: this is also allowing g-recaptcha-response, because apparently hCaptcha thought
-            // it was a good idea to send both
-            (CaptchaService::HCaptcha, _, Some(response), None) => {
+            (CaptchaService::HCaptcha, None, Some(response), None) => {
                 Request::post(HCAPTCHA_VERIFY_URL)
                     .body(VerificationRequest {
                         secret,

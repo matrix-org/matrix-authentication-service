@@ -41,7 +41,7 @@ limitations under the License.
     {%- elif captcha.service == "cloudflare_turnstile" -%}
       <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     {%- elif captcha.service == "hcaptcha" -%}
-      <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+      <script src="https://js.hcaptcha.com/1/api.js?recaptchacompat=off" async defer></script>
     {%- else -%}
       {{ throw(message="Invalid captcha service setup") }}
     {%- endif %}
