@@ -109,6 +109,12 @@
     "@back_to_homepage": {
       "context": "pages/404.html:24:29-54"
     },
+    "captcha": {
+      "noscript": "This form is protected by a CAPTCHA and requires JavaScript to be enabled to submit it. Please enable JavaScript in your browser and reload this page.",
+      "@noscript": {
+        "context": "components/captcha.html:21:11-36"
+      }
+    },
     "change_password": {
       "change": "Change password",
       "@change": {
