@@ -45,7 +45,7 @@ use crate::{
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Parser, Debug, Default)]
 pub(super) struct Options {
-    /// Do not apply pending migrations on start
+    /// Do not apply pending database migrations on start
     #[arg(long)]
     no_migrate: bool,
 
@@ -88,12 +88,12 @@ impl Options {
                 return Err(anyhow::anyhow!("The server is running with `--no-migrate` but there are pending. Please run them first with `mas-cli database migrate`, or omit the `--no-migrate` flag to apply them automatically on startup."));
             }
         } else {
-            info!("Running pending migrations");
+            info!("Running pending database migrations");
             MIGRATOR
                 .run(&pool)
                 .instrument(info_span!("db.migrate"))
                 .await
-                .context("could not run migrations")?;
+                .context("could not run database migrations")?;
         }
 
         let encrypter = config.secrets.encrypter();
