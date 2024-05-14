@@ -247,6 +247,10 @@
       }
     },
     "errors": {
+      "captcha": "CAPTCHA verification failed, please try again",
+      "@captcha": {
+        "context": "components/errors.html:25:7-30"
+      },
       "denied_policy": "Denied by policy: %(policy)s",
       "@denied_policy": {
         "context": "components/errors.html:23:7-58, components/field.html:72:17-68"

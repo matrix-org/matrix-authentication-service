@@ -1,5 +1,5 @@
 {#
-Copyright 2022 The Matrix.org Foundation C.I.C.
+Copyright 2022-2024 The Matrix.org Foundation C.I.C.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ limitations under the License.
     {{ _("mas.errors.password_mismatch") }}
   {% elif error.kind == "policy" %}
     {{ _("mas.errors.denied_policy", policy=error.message) }}
+  {% elif error.kind == "captcha" %}
+    {{ _("mas.errors.captcha") }}
   {% else %}
     {{ error.kind }}
   {% endif %}
