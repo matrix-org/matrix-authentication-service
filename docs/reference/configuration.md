@@ -248,6 +248,32 @@ passwords:
       algorithm: argon2id
 ```
 
+## `captcha`
+
+Settings related to CAPTCHA protection
+
+```yaml
+captcha:
+    # Which service to use for CAPTCHA protection. Set to `null` (or `~`) to disable CAPTCHA protection
+    service: ~
+
+    # Use Google reCAPTCHA v2
+    #service: recaptcha_v2
+    #site_key: "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
+    #secret_key: "6LeIxAcTAAAAAGG"-vFI1TnRWxMZNFuojJ4WifJWe
+
+    # Use Cloudflare Turnstile
+    #service: cloudflare_turnstile
+    #site_key: "1x00000000000000000000AA"
+    #secret_key: "1x0000000000000000000000000000000AA"
+
+    # Use hCaptcha
+    #service: hcaptcha
+    #site_key: "10000000-ffff-ffff-ffff-000000000001"
+    #secret_key: "0x0000000000000000000000000000000000000000"
+```
+
+
 ## `policy`
 
 Policy settings
