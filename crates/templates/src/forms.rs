@@ -64,6 +64,9 @@ pub enum FormError {
         /// Message for this policy violation
         message: String,
     },
+
+    /// Failed to validate CAPTCHA
+    Captcha,
 }
 
 #[derive(Debug, Default, Serialize)]

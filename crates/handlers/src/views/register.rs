@@ -141,18 +141,24 @@ pub(crate) async fn post(
 
     // Validate the captcha
     // TODO: display a nice error message to the user
-    form.captcha
+    let passed_captcha = form
+        .captcha
         .verify(
             &activity_tracker,
             &http_client_factory,
             url_builder.public_hostname(),
             site_config.captcha.as_ref(),
         )
-        .await?;
+        .await
+        .is_ok();
 
     // Validate the form
     let state = {
         let mut state = form.to_form_state();
+
+        if !passed_captcha {
+            state.add_error_on_form(FormError::Captcha);
+        }
 
         if form.username.is_empty() {
             state.add_error_on_field(RegisterFormField::Username, FieldError::Required);
