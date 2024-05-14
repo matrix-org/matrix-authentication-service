@@ -65,7 +65,7 @@ version = "1.0.83"
 
 # UTF-8 paths
 [workspace.dependencies.camino]
-version = "1.1.6"
+version = "1.1.7"
 
 # Time utilities
 [workspace.dependencies.chrono]
