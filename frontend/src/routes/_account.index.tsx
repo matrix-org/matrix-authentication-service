@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
 import IconKey from "@vector-im/compound-design-tokens/icons/key.svg?react";
-import { Separator } from "@vector-im/compound-web";
+import { Alert, Separator } from "@vector-im/compound-web";
 import { Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "urql";
@@ -22,6 +22,8 @@ import { useQuery } from "urql";
 import BlockList from "../components/BlockList/BlockList";
 import { ButtonLink } from "../components/ButtonLink";
 import LoadingSpinner from "../components/LoadingSpinner";
+import UserEmail from "../components/UserEmail";
+import AddEmailForm from "../components/UserProfile/AddEmailForm";
 import UserEmailList from "../components/UserProfile/UserEmailList";
 import { graphql } from "../gql";
 
@@ -31,13 +33,21 @@ const QUERY = graphql(/* GraphQL */ `
       __typename
       ... on User {
         id
+
+        primaryEmail {
+          id
+          ...UserEmail_email
+        }
+
         ...UserEmailList_user
       }
     }
 
     siteConfig {
       id
+      emailChangeAllowed
       ...UserEmailList_siteConfig
+      ...UserEmail_siteConfig
     }
   }
 `);
@@ -56,6 +66,7 @@ export const Route = createFileRoute("/_account/")({
 });
 
 function Index(): React.ReactElement {
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const [result] = useQuery({ query: QUERY });
   if (result.error) throw result.error;
@@ -64,14 +75,36 @@ function Index(): React.ReactElement {
   const siteConfig = result.data?.siteConfig;
   if (!siteConfig) throw Error(); // This should never happen
 
+  // When adding an email, we want to go to the email verification form
+  const onAdd = (id: string): void => {
+    navigate({ to: "/emails/$id/verify", params: { id } });
+  };
+
   return (
     <>
       <BlockList>
         {/* This wrapper is only needed for the anchor link */}
         <div className="flex flex-col gap-4" id="emails">
-          <Suspense fallback={<LoadingSpinner className="self-center m-4" />}>
+          {user.primaryEmail ? (
+            <UserEmail
+              email={user.primaryEmail}
+              isPrimary
+              siteConfig={siteConfig}
+            />
+          ) : (
+            <Alert
+              type="critical"
+              title={t("frontend.user_email_list.no_primary_email_alert")}
+            />
+          )}
+
+          <Suspense fallback={<LoadingSpinner mini className="self-center" />}>
             <UserEmailList siteConfig={siteConfig} user={user} />
           </Suspense>
+
+          {siteConfig.emailChangeAllowed && (
+            <AddEmailForm userId={user.id} onAdd={onAdd} />
+          )}
         </div>
 
         <Separator />

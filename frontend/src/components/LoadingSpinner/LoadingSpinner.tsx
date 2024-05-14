@@ -18,11 +18,15 @@ import { Translation } from "react-i18next";
 
 import styles from "./LoadingSpinner.module.css";
 
-const LoadingSpinner: React.FC<{ inline?: boolean; className?: string }> = ({
-  inline,
-  className,
-}) => (
-  <div role="status" className={cx(className, inline && styles.inline)}>
+const LoadingSpinner: React.FC<{
+  inline?: boolean;
+  mini?: boolean;
+  className?: string;
+}> = ({ inline, mini, className }) => (
+  <div
+    role="status"
+    className={cx(className, inline && styles.inline, mini && styles.mini)}
+  >
     <svg
       className={styles.loadingSpinnerInner}
       viewBox="0 0 100 101"

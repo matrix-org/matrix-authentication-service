@@ -12,10 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useNavigate } from "@tanstack/react-router";
-import { Alert } from "@vector-im/compound-web";
 import { useTransition } from "react";
-import { useTranslation } from "react-i18next";
 import { useQuery } from "urql";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
@@ -27,8 +24,6 @@ import {
 } from "../../pagination";
 import PaginationControls from "../PaginationControls";
 import UserEmail from "../UserEmail";
-
-import AddEmailForm from "./AddEmailForm";
 
 const QUERY = graphql(/* GraphQL */ `
   query UserEmailListQuery(
@@ -73,7 +68,6 @@ const FRAGMENT = graphql(/* GraphQL */ `
 const CONFIG_FRAGMENT = graphql(/* GraphQL */ `
   fragment UserEmailList_siteConfig on SiteConfig {
     id
-    emailChangeAllowed
     ...UserEmail_siteConfig
   }
 `);
@@ -84,7 +78,6 @@ const UserEmailList: React.FC<{
 }> = ({ user, siteConfig }) => {
   const data = useFragment(FRAGMENT, user);
   const config = useFragment(CONFIG_FRAGMENT, siteConfig);
-  const { t } = useTranslation();
   const [pending, startTransition] = useTransition();
 
   const [pagination, setPagination] = usePagination();
@@ -96,7 +89,6 @@ const UserEmailList: React.FC<{
   const emails = result.data?.user?.emails;
   if (!emails) throw new Error(); // Suspense mode is enabled
 
-  const navigate = useNavigate();
   const [prevPage, nextPage] = usePages(pagination, emails.pageInfo);
 
   const primaryEmailId = data.primaryEmail?.id;
@@ -115,30 +107,18 @@ const UserEmailList: React.FC<{
     });
   };
 
-  // When adding an email, we want to go to the email verification form
-  const onAdd = (id: string): void => {
-    navigate({ to: "/emails/$id/verify", params: { id } });
-  };
-
-  const showNoPrimaryEmailAlert = !!result?.data && !primaryEmailId;
-
   return (
     <>
-      {showNoPrimaryEmailAlert && (
-        <Alert
-          type="critical"
-          title={t("frontend.user_email_list.no_primary_email_alert")}
-        />
+      {emails.edges.map((edge) =>
+        primaryEmailId === edge.node.id ? null : (
+          <UserEmail
+            email={edge.node}
+            key={edge.cursor}
+            siteConfig={config}
+            onRemove={onRemove}
+          />
+        ),
       )}
-      {emails.edges.map((edge) => (
-        <UserEmail
-          email={edge.node}
-          key={edge.cursor}
-          isPrimary={primaryEmailId === edge.node.id}
-          siteConfig={config}
-          onRemove={onRemove}
-        />
-      ))}
 
       <PaginationControls
         autoHide
@@ -147,9 +127,6 @@ const UserEmailList: React.FC<{
         onNext={nextPage ? (): void => paginate(nextPage) : null}
         disabled={pending}
       />
-      {config.emailChangeAllowed && (
-        <AddEmailForm userId={data.id} onAdd={onAdd} />
-      )}
     </>
   );
 };
