@@ -30,13 +30,14 @@ limitations under the License.
 
   <section class="flex flex-col gap-6">
     <form method="POST" class="cpd-form-root">
-      {% if form.errors is not empty %}
-        {% for error in form.errors %}
+      {% for error in form.errors %}
+        {# Special case for the captcha error, as we want to put it at the bottom #}
+        {% if error.kind != "captcha" %}
           <div class="text-critical font-medium">
             {{ errors.form_error_message(error=error) }}
           </div>
-        {% endfor %}
-      {% endif %}
+        {% endif %}
+      {% endfor %}
 
       <input type="hidden" name="csrf" value="{{ csrf_token }}" />
 
@@ -70,6 +71,15 @@ limitations under the License.
       {% endif %}
 
       {{ captcha.form(class="mb-4 self-center") }}
+
+      {% for error in form.errors %}
+        {# Special case for the captcha error #}
+        {% if error.kind == "captcha" %}
+          <div class="text-critical font-medium text-center -mt-4 mb-4">
+            {{ errors.form_error_message(error=error) }}
+          </div>
+        {% endif %}
+      {% endfor %}
 
       {{ button.button(text=_("action.continue")) }}
     </form>

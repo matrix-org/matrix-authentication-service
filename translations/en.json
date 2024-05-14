@@ -2,11 +2,11 @@
   "action": {
     "cancel": "Cancel",
     "@cancel": {
-      "context": "pages/consent.html:75:11-29, pages/device_consent.html:132:13-31, pages/login.html:100:13-31, pages/policy_violation.html:52:13-31, pages/register.html:79:13-31"
+      "context": "pages/consent.html:75:11-29, pages/device_consent.html:132:13-31, pages/login.html:100:13-31, pages/policy_violation.html:52:13-31, pages/register.html:89:13-31"
     },
     "continue": "Continue",
     "@continue": {
-      "context": "pages/account/emails/add.html:45:26-46, pages/account/emails/verify.html:60:26-46, pages/consent.html:63:28-48, pages/device_consent.html:129:13-33, pages/device_link.html:48:26-46, pages/login.html:62:30-50, pages/reauth.html:40:28-48, pages/register.html:74:28-48, pages/sso.html:45:28-48"
+      "context": "pages/account/emails/add.html:45:26-46, pages/account/emails/verify.html:60:26-46, pages/consent.html:63:28-48, pages/device_consent.html:129:13-33, pages/device_link.html:48:26-46, pages/login.html:62:30-50, pages/reauth.html:40:28-48, pages/register.html:84:28-48, pages/sso.html:45:28-48"
     },
     "create_account": "Create Account",
     "@create_account": {
@@ -67,7 +67,7 @@
     },
     "email_address": "Email address",
     "@email_address": {
-      "context": "pages/account/emails/add.html:41:33-58, pages/register.html:47:35-60, pages/upstream_oauth2/do_register.html:87:37-62"
+      "context": "pages/account/emails/add.html:41:33-58, pages/register.html:48:35-60, pages/upstream_oauth2/do_register.html:87:37-62"
     },
     "mxid": "Matrix ID",
     "@mxid": {
@@ -75,15 +75,15 @@
     },
     "password": "Password",
     "@password": {
-      "context": "pages/login.html:58:37-57, pages/reauth.html:36:35-55, pages/register.html:51:35-55"
+      "context": "pages/login.html:58:37-57, pages/reauth.html:36:35-55, pages/register.html:52:35-55"
     },
     "password_confirm": "Confirm password",
     "@password_confirm": {
-      "context": "pages/register.html:55:35-63"
+      "context": "pages/register.html:56:35-63"
     },
     "username": "Username",
     "@username": {
-      "context": "pages/login.html:54:37-57, pages/register.html:43:35-55, pages/upstream_oauth2/do_register.html:74:35-55, pages/upstream_oauth2/do_register.html:79:39-59"
+      "context": "pages/login.html:54:37-57, pages/register.html:44:35-55, pages/upstream_oauth2/do_register.html:74:35-55, pages/upstream_oauth2/do_register.html:79:39-59"
     }
   },
   "error": {
@@ -359,7 +359,7 @@
     "register": {
       "call_to_login": "Already have an account?",
       "@call_to_login": {
-        "context": "pages/register.html:89:11-42",
+        "context": "pages/register.html:99:11-42",
         "description": "Displayed on the registration page to suggest to log in instead"
       },
       "create_account": {
@@ -374,11 +374,11 @@
       },
       "sign_in_instead": "Sign in instead",
       "@sign_in_instead": {
-        "context": "pages/register.html:93:31-64"
+        "context": "pages/register.html:103:31-64"
       },
       "terms_of_service": "I agree to the <a href=\"%s\" data-kind=\"primary\" class=\"cpd-link\">Terms and Conditions</a>",
       "@terms_of_service": {
-        "context": "pages/register.html:60:37-97, pages/upstream_oauth2/do_register.html:144:35-95"
+        "context": "pages/register.html:61:37-97, pages/upstream_oauth2/do_register.html:144:35-95"
       }
     },
     "scope": {
