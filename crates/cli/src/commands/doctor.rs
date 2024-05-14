@@ -56,7 +56,7 @@ See {DOCS_BASE}/setup/homeserver.html",
         if !issuer.starts_with("https://") {
             warn!(
                 r#"⚠️ The issuer in the config (`http.issuer`/`http.public_base`) is not an HTTPS URL.
-This means some client will refuse to use it."#
+This means some clients will refuse to use it."#
             );
         }
 
@@ -391,7 +391,7 @@ Error details: {e}
                     } else {
                         warn!(
                             r#"⚠️ The legacy login API at "{compat_login}" is reachable, but it doesn't look to be handled by MAS.
-This means legacy client won't be able to login.
+This means legacy clients won't be able to login.
 Make sure MAS is running.
 Check your reverse proxy settings to make sure that this API is handled by MAS, not by Synapse.
 
@@ -413,7 +413,7 @@ See {DOCS_BASE}/setup/reverse-proxy.html
             }
             Err(e) => warn!(
                 r#"⚠️ Can't reach the legacy login API at "{compat_login}".
-This means legacy client won't be able to login.
+This means legacy clients won't be able to login.
 Make sure MAS is running.
 Check your reverse proxy settings to make sure that this API is handled by MAS, not by Synapse.
 
