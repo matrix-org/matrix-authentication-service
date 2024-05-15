@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2021-2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -184,8 +184,7 @@ pub(crate) async fn post(
     let client = client_authorization
         .credentials
         .fetch(&mut repo)
-        .await
-        .unwrap()
+        .await?
         .ok_or(RouteError::ClientNotFound)?;
 
     let method = match &client.token_endpoint_auth_method {
