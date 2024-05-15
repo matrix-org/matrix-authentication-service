@@ -157,6 +157,11 @@ features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "json", "uu
 [workspace.dependencies.thiserror]
 version = "1.0.60"
 
+# Async runtime
+[workspace.dependencies.tokio]
+version = "1.37.0"
+features = ["full"]
+
 # Tower services
 [workspace.dependencies.tower]
 version = "0.4.13"

@@ -13,7 +13,7 @@ workspace = true
 
 [dependencies]
 # Async runtime
-tokio = { version = "1.37.0", features = ["macros"] }
+tokio.workspace = true
 futures-util = "0.3.30"
 
 # Logging and tracing
