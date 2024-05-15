@@ -15,8 +15,13 @@
 //! A module containing the PostgreSQL implementation of the [`JobRepository`].
 
 use async_trait::async_trait;
-use mas_storage::job::{JobId, JobRepository, JobSubmission};
+use mas_storage::{
+    job::{JobRepository, JobSubmission},
+    Clock,
+};
+use rand::RngCore;
 use sqlx::PgConnection;
+use ulid::Ulid;
 
 use crate::{DatabaseError, ExecuteExt};
 
@@ -49,11 +54,15 @@ impl<'c> JobRepository for PgJobRepository<'c> {
     )]
     async fn schedule_submission(
         &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
         submission: JobSubmission,
-    ) -> Result<JobId, Self::Error> {
-        // XXX: This does not use the clock nor the rng
-        let id = JobId::new();
-        tracing::Span::current().record("job.id", tracing::field::display(&id));
+    ) -> Result<(), Self::Error> {
+        let now = clock.now();
+        let id = Ulid::from_datetime_with_source(now.into(), rng);
+        // XXX: this is what apalis_core::job::JobId does
+        let id = format!("JID-{id}");
+        tracing::Span::current().record("job.id", &id);
 
         let res = sqlx::query!(
             r#"
@@ -70,6 +79,6 @@ impl<'c> JobRepository for PgJobRepository<'c> {
 
         DatabaseError::ensure_affected_rows(&res, 1)?;
 
-        Ok(id)
+        Ok(())
     }
 }

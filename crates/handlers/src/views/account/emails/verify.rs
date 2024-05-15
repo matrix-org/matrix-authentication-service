@@ -101,6 +101,7 @@ pub(crate) async fn get(
     err,
 )]
 pub(crate) async fn post(
+    mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
@@ -150,7 +151,7 @@ pub(crate) async fn post(
         .await?;
 
     repo.job()
-        .schedule_job(ProvisionUserJob::new(&session.user))
+        .schedule_job(&mut rng, &clock, ProvisionUserJob::new(&session.user))
         .await?;
 
     repo.save().await?;

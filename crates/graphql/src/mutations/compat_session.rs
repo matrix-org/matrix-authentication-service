@@ -85,6 +85,7 @@ impl CompatSessionMutations {
 
         let mut repo = state.repository().await?;
         let clock = state.clock();
+        let mut rng = state.rng();
 
         let session = repo.compat_session().lookup(compat_session_id).await?;
         let Some(session) = session else {
@@ -103,7 +104,11 @@ impl CompatSessionMutations {
 
         // Schedule a job to delete the device.
         repo.job()
-            .schedule_job(DeleteDeviceJob::new(&user, &session.device))
+            .schedule_job(
+                &mut rng,
+                &clock,
+                DeleteDeviceJob::new(&user, &session.device),
+            )
             .await?;
 
         let session = repo.compat_session().finish(&clock, session).await?;

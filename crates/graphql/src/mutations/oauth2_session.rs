@@ -171,7 +171,7 @@ impl OAuth2SessionMutations {
         for scope in &*session.scope {
             if let Some(device) = Device::from_scope_token(scope) {
                 repo.job()
-                    .schedule_job(ProvisionDeviceJob::new(&user, &device))
+                    .schedule_job(&mut rng, &clock, ProvisionDeviceJob::new(&user, &device))
                     .await?;
             }
         }
@@ -219,6 +219,7 @@ impl OAuth2SessionMutations {
 
         let mut repo = state.repository().await?;
         let clock = state.clock();
+        let mut rng = state.rng();
 
         let session = repo.oauth2_session().lookup(oauth2_session_id).await?;
         let Some(session) = session else {
@@ -246,7 +247,7 @@ impl OAuth2SessionMutations {
                 if let Some(device) = Device::from_scope_token(scope) {
                     // Schedule a job to delete the device.
                     repo.job()
-                        .schedule_job(DeleteDeviceJob::new(&user, &device))
+                        .schedule_job(&mut rng, &clock, DeleteDeviceJob::new(&user, &device))
                         .await?;
                 }
             }

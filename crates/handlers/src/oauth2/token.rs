@@ -459,7 +459,11 @@ async fn authorization_code_grant(
             // Synapse still provision devices on-the-fly if it doesn't find them in the
             // database.
             repo.job()
-                .schedule_job(ProvisionDeviceJob::new(&browser_session.user, &device))
+                .schedule_job(
+                    rng,
+                    clock,
+                    ProvisionDeviceJob::new(&browser_session.user, &device),
+                )
                 .await?;
         }
     }
@@ -748,7 +752,11 @@ async fn device_code_grant(
             // Synapse still provision devices on-the-fly if it doesn't find them in the
             // database.
             repo.job()
-                .schedule_job(ProvisionDeviceJob::new(&browser_session.user, &device))
+                .schedule_job(
+                    rng,
+                    clock,
+                    ProvisionDeviceJob::new(&browser_session.user, &device),
+                )
                 .await?;
         }
     }

@@ -281,11 +281,15 @@ pub(crate) async fn post(
         .await?;
 
     repo.job()
-        .schedule_job(VerifyEmailJob::new(&user_email).with_language(locale.to_string()))
+        .schedule_job(
+            &mut rng,
+            &clock,
+            VerifyEmailJob::new(&user_email).with_language(locale.to_string()),
+        )
         .await?;
 
     repo.job()
-        .schedule_job(ProvisionUserJob::new(&user))
+        .schedule_job(&mut rng, &clock, ProvisionUserJob::new(&user))
         .await?;
 
     repo.save().await?;

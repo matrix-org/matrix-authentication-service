@@ -203,7 +203,11 @@ pub async fn post(
 
     let device = Device::generate(&mut rng);
     repo.job()
-        .schedule_job(ProvisionDeviceJob::new(&session.user, &device))
+        .schedule_job(
+            &mut rng,
+            &clock,
+            ProvisionDeviceJob::new(&session.user, &device),
+        )
         .await?;
 
     let compat_session = repo

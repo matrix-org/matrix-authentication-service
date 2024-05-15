@@ -275,7 +275,7 @@ impl UserMutations {
         let user = repo.user().add(&mut rng, &clock, input.username).await?;
 
         repo.job()
-            .schedule_job(ProvisionUserJob::new(&user))
+            .schedule_job(&mut rng, &clock, ProvisionUserJob::new(&user))
             .await?;
 
         repo.save().await?;
@@ -297,6 +297,8 @@ impl UserMutations {
         }
 
         let mut repo = state.repository().await?;
+        let clock = state.clock();
+        let mut rng = state.rng();
 
         let user_id = NodeType::User.extract_ulid(&input.user_id)?;
         let user = repo.user().lookup(user_id).await?;
@@ -312,7 +314,7 @@ impl UserMutations {
         if deactivate {
             info!("Scheduling deactivation of user {}", user.id);
             repo.job()
-                .schedule_job(DeactivateUserJob::new(&user, deactivate))
+                .schedule_job(&mut rng, &clock, DeactivateUserJob::new(&user, deactivate))
                 .await?;
         }
 

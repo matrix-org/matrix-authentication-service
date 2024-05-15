@@ -20,7 +20,7 @@ use mas_data_model::TokenType;
 use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatSessionRepository},
     job::{DeleteDeviceJob, JobRepositoryExt},
-    BoxClock, BoxRepository, Clock, RepositoryAccess,
+    BoxClock, BoxRepository, BoxRng, Clock, RepositoryAccess,
 };
 use thiserror::Error;
 
@@ -71,6 +71,7 @@ impl IntoResponse for RouteError {
 
 #[tracing::instrument(name = "handlers.compat.logout.post", skip_all, err)]
 pub(crate) async fn post(
+    mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
     activity_tracker: BoundActivityTracker,
@@ -111,7 +112,11 @@ pub(crate) async fn post(
         .ok_or(RouteError::InvalidAuthorization)?;
 
     repo.job()
-        .schedule_job(DeleteDeviceJob::new(&user, &session.device))
+        .schedule_job(
+            &mut rng,
+            &clock,
+            DeleteDeviceJob::new(&user, &session.device),
+        )
         .await?;
 
     repo.compat_session().finish(&clock, session).await?;
