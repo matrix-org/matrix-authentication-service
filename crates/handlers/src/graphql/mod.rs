@@ -15,7 +15,7 @@
 use std::sync::Arc;
 
 use async_graphql::{
-    extensions::{ApolloTracing, Tracing},
+    extensions::Tracing,
     http::{playground_source, GraphQLPlaygroundConfig, MultipartOptions},
 };
 use axum::{
@@ -110,7 +110,6 @@ pub fn schema(
 
     mas_graphql::schema_builder()
         .extension(Tracing)
-        .extension(ApolloTracing)
         .data(state)
         .finish()
 }
