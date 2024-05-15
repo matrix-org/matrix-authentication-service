@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::future::Future;
+use std::{future::Future, time::Instant};
 
 use opentelemetry::{metrics::Histogram, KeyValue};
 use pin_project_lite::pin_project;
-use tokio::time::Instant;
 use tower::{Layer, Service};
 
 use crate::{utils::FnWrapper, MetricsAttributes};

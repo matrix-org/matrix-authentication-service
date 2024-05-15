@@ -16,7 +16,6 @@ http.workspace = true
 tracing.workspace = true
 tracing-opentelemetry.workspace = true
 tower.workspace = true
-tokio = { version = "1.37.0", features = ["time"] }
 opentelemetry.workspace = true
 opentelemetry-http.workspace = true
 opentelemetry-semantic-conventions.workspace = true

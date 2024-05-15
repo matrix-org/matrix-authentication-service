@@ -12,7 +12,7 @@ publish = false
 workspace = true
 
 [dependencies]
-tokio = { version = "1.37.0", features = ["fs", "rt"] }
+tokio.workspace = true
 tracing.workspace = true
 
 thiserror.workspace = true
