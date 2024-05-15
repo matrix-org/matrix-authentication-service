@@ -13,7 +13,7 @@ workspace = true
 
 [dependencies]
 anyhow.workspace = true
-async-graphql = { version = "6.0.11", features = ["chrono", "url"] }
+async-graphql.workspace = true
 async-trait.workspace = true
 chrono.workspace = true
 lettre.workspace = true
