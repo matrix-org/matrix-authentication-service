@@ -14,7 +14,8 @@
 
 use std::sync::Arc;
 
-use apalis_core::{executor::TokioExecutor, layers::extensions::Extension, monitor::Monitor};
+use apalis::prelude::{Monitor, TokioExecutor};
+use apalis_core::layers::extensions::Extension;
 use mas_email::Mailer;
 use mas_matrix::HomeserverConnection;
 use mas_storage::{BoxClock, BoxRepository, Repository, SystemClock};
@@ -95,7 +96,7 @@ trait JobContextExt {
     fn state(&self) -> State;
 }
 
-impl JobContextExt for apalis_core::context::JobContext {
+impl JobContextExt for apalis::prelude::JobContext {
     fn state(&self) -> State {
         self.data_opt::<State>()
             .expect("state not injected in job context")
@@ -109,21 +110,19 @@ macro_rules! build {
         let storage = $factory.build();
         let worker_name = format!(
             "{job}-{suffix}",
-            job = <$job as ::apalis_core::job::Job>::NAME,
+            job = <$job as ::apalis::prelude::Job>::NAME,
             suffix = $suffix
         );
 
-        let builder = ::apalis_core::builder::WorkerBuilder::new(worker_name)
+        let builder = ::apalis::prelude::WorkerBuilder::new(worker_name)
             .layer($state.inject())
             .layer(crate::utils::trace_layer())
             .layer(crate::utils::metrics_layer());
 
-        let builder = ::apalis_core::storage::builder::WithStorage::with_storage_config(
-            builder,
-            storage,
-            |c| c.fetch_interval(std::time::Duration::from_secs(1)),
-        );
-        ::apalis_core::builder::WorkerFactory::build(builder, ::apalis_core::job_fn::job_fn($fn))
+        let builder = ::apalis::prelude::WithStorage::with_storage_config(builder, storage, |c| {
+            c.fetch_interval(std::time::Duration::from_secs(1))
+        });
+        ::apalis::prelude::WorkerFactory::build(builder, ::apalis::prelude::job_fn($fn))
     }};
 }
 

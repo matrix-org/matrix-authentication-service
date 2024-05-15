@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use anyhow::Context;
-use apalis_core::{context::JobContext, executor::TokioExecutor, monitor::Monitor};
+use apalis::prelude::{JobContext, Monitor, TokioExecutor};
 use chrono::Duration;
 use mas_email::{Address, Mailbox};
 use mas_i18n::locale;

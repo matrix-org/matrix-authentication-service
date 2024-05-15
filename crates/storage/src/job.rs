@@ -16,7 +16,7 @@
 
 use std::{num::ParseIntError, ops::Deref};
 
-pub use apalis_core::job::Job;
+pub use apalis::prelude::Job;
 use async_trait::async_trait;
 use opentelemetry::trace::{SpanContext, SpanId, TraceContextExt, TraceFlags, TraceId, TraceState};
 use rand_core::RngCore;
@@ -250,7 +250,7 @@ where
 
 mod jobs {
     // XXX: Move this somewhere else?
-    use apalis_core::job::Job;
+    use apalis::prelude::Job;
     use mas_data_model::{Device, User, UserEmail};
     use serde::{Deserialize, Serialize};
     use ulid::Ulid;

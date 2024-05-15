@@ -16,15 +16,12 @@
 
 use std::str::FromStr;
 
-use apalis_core::{
-    builder::{WorkerBuilder, WorkerFactoryFn},
-    context::JobContext,
-    executor::TokioExecutor,
-    job::Job,
-    monitor::Monitor,
-    utils::timer::TokioTimer,
+use apalis::{
+    cron::CronStream,
+    prelude::{
+        timer::TokioTimer, Job, JobContext, Monitor, TokioExecutor, WorkerBuilder, WorkerFactoryFn,
+    },
 };
-use apalis_cron::CronStream;
 use chrono::{DateTime, Utc};
 use mas_storage::{oauth2::OAuth2AccessTokenRepository, RepositoryAccess};
 use tracing::{debug, info};
@@ -78,7 +75,7 @@ pub(crate) fn register(
     monitor: Monitor<TokioExecutor>,
     state: &State,
 ) -> Monitor<TokioExecutor> {
-    let schedule = apalis_cron::Schedule::from_str("*/15 * * * * *").unwrap();
+    let schedule = apalis::cron::Schedule::from_str("*/15 * * * * *").unwrap();
     let worker_name = format!("{job}-{suffix}", job = CleanupExpiredTokensJob::NAME);
     let worker = WorkerBuilder::new(worker_name)
         .stream(CronStream::new(schedule).timer(TokioTimer).to_stream())

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use apalis_core::{job::Job, request::JobRequest};
+use apalis::{prelude::Job, prelude::JobRequest};
 use mas_storage::job::JobWithSpanContext;
 use mas_tower::{
     make_span_fn, DurationRecorderLayer, FnWrapper, IdentityLayer, InFlightCounterLayer,
