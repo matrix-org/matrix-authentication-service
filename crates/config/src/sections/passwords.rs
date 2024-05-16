@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::cmp::Reverse;
+
 use anyhow::bail;
 use camino::Utf8PathBuf;
 use schemars::JsonSchema;
@@ -104,9 +106,8 @@ impl PasswordsConfig {
         &self,
     ) -> Result<Vec<(u16, Algorithm, Option<u32>, Option<Vec<u8>>)>, anyhow::Error> {
         let mut schemes: Vec<&HashingScheme> = self.schemes.iter().collect();
-        schemes.sort_unstable_by_key(|a| a.version);
+        schemes.sort_unstable_by_key(|a| Reverse(a.version));
         schemes.dedup_by_key(|a| a.version);
-        schemes.reverse();
 
         if schemes.len() != self.schemes.len() {
             // Some schemes had duplicated versions
