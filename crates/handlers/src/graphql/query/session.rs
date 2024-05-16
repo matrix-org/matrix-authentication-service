@@ -21,7 +21,7 @@ use mas_storage::{
 };
 use oauth2_types::scope::Scope;
 
-use crate::{
+use crate::graphql::{
     model::{CompatSession, NodeType, OAuth2Session},
     state::ContextExt,
     UserId,

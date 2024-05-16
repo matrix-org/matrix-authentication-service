@@ -14,7 +14,7 @@
 
 use async_graphql::{Context, Object};
 
-use crate::{
+use crate::graphql::{
     model::{Viewer, ViewerSession},
     state::ContextExt,
     Requester,

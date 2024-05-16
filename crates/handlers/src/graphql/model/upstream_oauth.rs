@@ -18,7 +18,7 @@ use chrono::{DateTime, Utc};
 use mas_storage::{upstream_oauth2::UpstreamOAuthProviderRepository, user::UserRepository};
 
 use super::{NodeType, User};
-use crate::state::ContextExt;
+use crate::graphql::state::ContextExt;
 
 #[derive(Debug, Clone)]
 pub struct UpstreamOAuth2Provider {

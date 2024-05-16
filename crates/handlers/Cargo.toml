@@ -15,6 +15,7 @@ workspace = true
 # Async runtime
 tokio.workspace = true
 futures-util = "0.3.30"
+async-trait.workspace = true
 
 # Logging and tracing
 tracing.workspace = true
@@ -70,7 +71,6 @@ ulid.workspace = true
 
 mas-axum-utils.workspace = true
 mas-data-model.workspace = true
-mas-graphql.workspace = true
 mas-http.workspace = true
 mas-i18n.workspace = true
 mas-iana.workspace = true

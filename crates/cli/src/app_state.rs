@@ -22,7 +22,7 @@ use ipnetwork::IpNetwork;
 use mas_data_model::SiteConfig;
 use mas_handlers::{
     passwords::PasswordManager, ActivityTracker, BoundActivityTracker, CookieManager, ErrorWrapper,
-    HttpClientFactory, MetadataCache,
+    GraphQLSchema, HttpClientFactory, MetadataCache,
 };
 use mas_i18n::Translator;
 use mas_keystore::{Encrypter, Keystore};
@@ -50,7 +50,7 @@ pub struct AppState {
     pub url_builder: UrlBuilder,
     pub homeserver_connection: SynapseConnection,
     pub policy_factory: Arc<PolicyFactory>,
-    pub graphql_schema: mas_graphql::Schema,
+    pub graphql_schema: GraphQLSchema,
     pub http_client_factory: HttpClientFactory,
     pub password_manager: PasswordManager,
     pub metadata_cache: MetadataCache,
@@ -144,7 +144,7 @@ impl FromRef<AppState> for PgPool {
     }
 }
 
-impl FromRef<AppState> for mas_graphql::Schema {
+impl FromRef<AppState> for GraphQLSchema {
     fn from_ref(input: &AppState) -> Self {
         input.graphql_schema.clone()
     }

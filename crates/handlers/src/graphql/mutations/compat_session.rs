@@ -20,7 +20,7 @@ use mas_storage::{
     RepositoryAccess,
 };
 
-use crate::{
+use crate::graphql::{
     model::{CompatSession, NodeType},
     state::ContextExt,
 };

@@ -90,7 +90,9 @@ pub use mas_axum_utils::{
 
 pub use self::{
     activity_tracker::{ActivityTracker, Bound as BoundActivityTracker},
-    graphql::schema as graphql_schema,
+    graphql::{
+        schema as graphql_schema, schema_builder as graphql_schema_builder, Schema as GraphQLSchema,
+    },
     preferred_language::PreferredLanguage,
     upstream_oauth2::cache::MetadataCache,
 };
@@ -110,7 +112,7 @@ where
     <B as HttpBody>::Data: Into<Bytes>,
     <B as HttpBody>::Error: std::error::Error + Send + Sync,
     S: Clone + Send + Sync + 'static,
-    mas_graphql::Schema: FromRef<S>,
+    graphql::Schema: FromRef<S>,
     BoundActivityTracker: FromRequestParts<S>,
     BoxRepository: FromRequestParts<S>,
     BoxClock: FromRequestParts<S>,

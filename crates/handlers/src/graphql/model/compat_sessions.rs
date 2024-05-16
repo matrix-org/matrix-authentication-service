@@ -19,7 +19,7 @@ use mas_storage::{compat::CompatSessionRepository, user::UserRepository};
 use url::Url;
 
 use super::{BrowserSession, NodeType, SessionState, User, UserAgent};
-use crate::state::ContextExt;
+use crate::graphql::state::ContextExt;
 
 /// Lazy-loaded reverse reference.
 ///

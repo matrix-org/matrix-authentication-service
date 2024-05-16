@@ -34,7 +34,7 @@ use super::{
     BrowserSession, CompatSession, Cursor, NodeCursor, NodeType, OAuth2Session,
     PreloadedTotalCount, SessionState, UpstreamOAuth2Link,
 };
-use crate::state::ContextExt;
+use crate::graphql::state::ContextExt;
 
 #[derive(Description)]
 /// A user is an individual's account.

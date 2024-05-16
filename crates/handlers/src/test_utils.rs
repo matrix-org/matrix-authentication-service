@@ -54,6 +54,7 @@ use tower::{Layer, Service, ServiceExt};
 use url::Url;
 
 use crate::{
+    graphql,
     passwords::{Hasher, PasswordManager},
     upstream_oauth2::cache::MetadataCache,
     ActivityTracker, BoundActivityTracker,
@@ -102,7 +103,7 @@ pub(crate) struct TestState {
     pub url_builder: UrlBuilder,
     pub homeserver_connection: Arc<MockHomeserverConnection>,
     pub policy_factory: Arc<PolicyFactory>,
-    pub graphql_schema: mas_graphql::Schema,
+    pub graphql_schema: graphql::Schema,
     pub http_client_factory: HttpClientFactory,
     pub password_manager: PasswordManager,
     pub site_config: SiteConfig,
@@ -198,9 +199,9 @@ impl TestState {
             rng: Arc::clone(&rng),
             clock: Arc::clone(&clock),
         };
-        let state: mas_graphql::BoxState = Box::new(graphql_state);
+        let state: crate::graphql::BoxState = Box::new(graphql_state);
 
-        let graphql_schema = mas_graphql::schema_builder().data(state).finish();
+        let graphql_schema = graphql::schema_builder().data(state).finish();
 
         let activity_tracker =
             ActivityTracker::new(pool.clone(), std::time::Duration::from_secs(1));
@@ -316,7 +317,7 @@ struct TestGraphQLState {
 }
 
 #[async_trait]
-impl mas_graphql::State for TestGraphQLState {
+impl graphql::State for TestGraphQLState {
     async fn repository(&self) -> Result<BoxRepository, mas_storage::RepositoryError> {
         let repo = PgRepository::from_pool(&self.pool)
             .await
@@ -356,7 +357,7 @@ impl FromRef<TestState> for PgPool {
     }
 }
 
-impl FromRef<TestState> for mas_graphql::Schema {
+impl FromRef<TestState> for graphql::Schema {
     fn from_ref(input: &TestState) -> Self {
         input.graphql_schema.clone()
     }

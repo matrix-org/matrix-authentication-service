@@ -15,7 +15,7 @@
 use async_graphql::{Context, Enum, InputObject, Object, ID};
 use mas_storage::RepositoryAccess;
 
-use crate::{
+use crate::graphql::{
     model::{BrowserSession, NodeType},
     state::ContextExt,
 };

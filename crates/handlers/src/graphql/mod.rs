@@ -19,10 +19,11 @@ use std::sync::Arc;
 use async_graphql::{
     extensions::Tracing,
     http::{playground_source, GraphQLPlaygroundConfig, MultipartOptions},
+    EmptySubscription,
 };
 use axum::{
     async_trait,
-    extract::{BodyStream, RawQuery, State},
+    extract::{BodyStream, RawQuery, State as AxumState},
     http::StatusCode,
     response::{Html, IntoResponse, Response},
     Json, TypedHeader,
@@ -33,8 +34,7 @@ use hyper::header::CACHE_CONTROL;
 use mas_axum_utils::{
     cookies::CookieJar, sentry::SentryEventID, FancyError, SessionInfo, SessionInfoExt,
 };
-use mas_data_model::{SiteConfig, User};
-use mas_graphql::{Requester, Schema};
+use mas_data_model::{BrowserSession, Session, SiteConfig, User};
 use mas_matrix::HomeserverConnection;
 use mas_policy::{InstantiateError, Policy, PolicyFactory};
 use mas_storage::{
@@ -46,8 +46,6 @@ use rand::{thread_rng, SeedableRng};
 use rand_chacha::ChaChaRng;
 use sqlx::PgPool;
 use tracing::{info_span, Instrument};
-use async_graphql::EmptySubscription;
-use mas_data_model::{BrowserSession, Session, User};
 use ulid::Ulid;
 
 mod model;
@@ -55,13 +53,15 @@ mod mutations;
 mod query;
 mod state;
 
-pub use self::{
+#[cfg(test)]
+pub use state::BoxState;
+pub use state::State;
+
+use self::{
     model::{CreationEvent, Node},
     mutations::Mutation,
     query::Query,
-    state::{BoxState, State},
 };
-
 use crate::{impl_from_error_for_route, BoundActivityTracker};
 
 #[cfg(test)]
@@ -75,7 +75,7 @@ struct GraphQLState {
 }
 
 #[async_trait]
-impl mas_graphql::State for GraphQLState {
+impl state::State for GraphQLState {
     async fn repository(&self) -> Result<BoxRepository, RepositoryError> {
         let repo = PgRepository::from_pool(&self.pool)
             .await
@@ -123,9 +123,9 @@ pub fn schema(
         homeserver_connection: Arc::new(homeserver_connection),
         site_config,
     };
-    let state: mas_graphql::BoxState = Box::new(state);
+    let state: crate::graphql::state::BoxState = Box::new(state);
 
-    mas_graphql::schema_builder()
+    crate::graphql::schema_builder()
         .extension(Tracing)
         .data(state)
         .finish()
@@ -278,7 +278,7 @@ async fn get_requester(
 }
 
 pub async fn post(
-    State(schema): State<Schema>,
+    AxumState(schema): AxumState<Schema>,
     clock: BoxClock,
     repo: BoxRepository,
     activity_tracker: BoundActivityTracker,
@@ -319,7 +319,7 @@ pub async fn post(
 }
 
 pub async fn get(
-    State(schema): State<Schema>,
+    AxumState(schema): AxumState<Schema>,
     clock: BoxClock,
     repo: BoxRepository,
     activity_tracker: BoundActivityTracker,
@@ -355,7 +355,6 @@ pub async fn playground() -> impl IntoResponse {
         GraphQLPlaygroundConfig::new("/graphql").with_setting("request.credentials", "include"),
     ))
 }
-
 
 pub type Schema = async_graphql::Schema<Query, Mutation, EmptySubscription>;
 pub type SchemaBuilder = async_graphql::SchemaBuilder<Query, Mutation, EmptySubscription>;
