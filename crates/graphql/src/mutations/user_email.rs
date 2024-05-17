@@ -405,6 +405,8 @@ impl UserEmailMutations {
         let skip_policy_check = input.skip_policy_check.unwrap_or(false);
 
         let mut repo = state.repository().await?;
+        let clock = state.clock();
+        let mut rng = state.rng();
 
         let user = repo
             .user()
@@ -456,7 +458,7 @@ impl UserEmailMutations {
             } else {
                 // TODO: figure out the locale
                 repo.job()
-                    .schedule_job(VerifyEmailJob::new(&user_email))
+                    .schedule_job(&mut rng, &clock, VerifyEmailJob::new(&user_email))
                     .await?;
             }
         }
@@ -482,6 +484,8 @@ impl UserEmailMutations {
         let requester = ctx.requester();
 
         let mut repo = state.repository().await?;
+        let clock = state.clock();
+        let mut rng = state.rng();
 
         let user_email = repo
             .user_email()
@@ -498,7 +502,7 @@ impl UserEmailMutations {
         if needs_verification {
             // TODO: figure out the locale
             repo.job()
-                .schedule_job(VerifyEmailJob::new(&user_email))
+                .schedule_job(&mut rng, &clock, VerifyEmailJob::new(&user_email))
                 .await?;
         }
 
@@ -523,6 +527,7 @@ impl UserEmailMutations {
         let requester = ctx.requester();
 
         let clock = state.clock();
+        let mut rng = state.rng();
         let mut repo = state.repository().await?;
 
         let user_email = repo
@@ -576,7 +581,7 @@ impl UserEmailMutations {
             .await?;
 
         repo.job()
-            .schedule_job(ProvisionUserJob::new(&user))
+            .schedule_job(&mut rng, &clock, ProvisionUserJob::new(&user))
             .await?;
 
         repo.save().await?;
@@ -595,6 +600,8 @@ impl UserEmailMutations {
         let requester = ctx.requester();
 
         let mut repo = state.repository().await?;
+        let clock = state.clock();
+        let mut rng = state.rng();
 
         let user_email = repo.user_email().lookup(user_email_id).await?;
         let Some(user_email) = user_email else {
@@ -625,7 +632,7 @@ impl UserEmailMutations {
 
         // Schedule a job to update the user
         repo.job()
-            .schedule_job(ProvisionUserJob::new(&user))
+            .schedule_job(&mut rng, &clock, ProvisionUserJob::new(&user))
             .await?;
 
         repo.save().await?;

@@ -304,7 +304,7 @@ impl Options {
                     let id = id.into();
                     info!(user.id = %id, "Scheduling provisioning job");
                     let job = ProvisionUserJob::new_for_id(id);
-                    repo.job().schedule_job(job).await?;
+                    repo.job().schedule_job(&mut rng, &clock, job).await?;
                 }
 
                 repo.into_inner().commit().await?;
@@ -350,7 +350,7 @@ impl Options {
                     }
 
                     let job = DeleteDeviceJob::new(&user, &compat_session.device);
-                    repo.job().schedule_job(job).await?;
+                    repo.job().schedule_job(&mut rng, &clock, job).await?;
                     repo.compat_session().finish(&clock, compat_session).await?;
                 }
 
@@ -383,7 +383,11 @@ impl Options {
                         if let Some(device) = Device::from_scope_token(scope) {
                             // Schedule a job to delete the device.
                             repo.job()
-                                .schedule_job(DeleteDeviceJob::new(&user, &device))
+                                .schedule_job(
+                                    &mut rng,
+                                    &clock,
+                                    DeleteDeviceJob::new(&user, &device),
+                                )
                                 .await?;
                         }
                     }
@@ -456,7 +460,7 @@ impl Options {
                 if deactivate {
                     warn!(%user.id, "Scheduling user deactivation");
                     repo.job()
-                        .schedule_job(DeactivateUserJob::new(&user, false))
+                        .schedule_job(&mut rng, &clock, DeactivateUserJob::new(&user, false))
                         .await?;
                 }
 
@@ -950,7 +954,9 @@ impl UserCreationRequest<'_> {
             provision_job = provision_job.set_display_name(display_name);
         }
 
-        repo.job().schedule_job(provision_job).await?;
+        repo.job()
+            .schedule_job(rng, clock, provision_job)
+            .await?;
 
         Ok(user)
     }

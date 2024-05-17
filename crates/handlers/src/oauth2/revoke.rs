@@ -24,7 +24,7 @@ use mas_iana::oauth::OAuthTokenTypeHint;
 use mas_keystore::Encrypter;
 use mas_storage::{
     job::{DeleteDeviceJob, JobRepositoryExt},
-    BoxClock, BoxRepository, RepositoryAccess,
+    BoxClock, BoxRepository, BoxRng, RepositoryAccess,
 };
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
@@ -118,6 +118,7 @@ impl From<mas_data_model::TokenFormatError> for RouteError {
     err,
 )]
 pub(crate) async fn post(
+    mut rng: BoxRng,
     clock: BoxClock,
     State(http_client_factory): State<HttpClientFactory>,
     mut repo: BoxRepository,
@@ -227,7 +228,7 @@ pub(crate) async fn post(
             if let Some(device) = Device::from_scope_token(scope) {
                 // Schedule a job to delete the device.
                 repo.job()
-                    .schedule_job(DeleteDeviceJob::new(&user, &device))
+                    .schedule_job(&mut rng, &clock, DeleteDeviceJob::new(&user, &device))
                     .await?;
             }
         }

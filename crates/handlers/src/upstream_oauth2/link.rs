@@ -790,7 +790,7 @@ pub(crate) async fn post(
                 job = job.set_display_name(name);
             }
 
-            repo.job().schedule_job(job).await?;
+            repo.job().schedule_job(&mut rng, &clock, job).await?;
 
             // If we have an email, add it to the user
             if let Some(email) = email {

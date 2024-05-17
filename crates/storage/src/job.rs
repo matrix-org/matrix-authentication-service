@@ -16,14 +16,15 @@
 
 use std::{num::ParseIntError, ops::Deref};
 
-pub use apalis_core::job::{Job, JobId};
+pub use apalis::prelude::Job;
 use async_trait::async_trait;
 use opentelemetry::trace::{SpanContext, SpanId, TraceContextExt, TraceFlags, TraceId, TraceState};
+use rand_core::RngCore;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-use crate::repository_impl;
+use crate::{repository_impl, Clock};
 
 /// A job submission to be scheduled through the repository.
 pub struct JobSubmission {
@@ -31,7 +32,7 @@ pub struct JobSubmission {
     payload: Value,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 struct SerializableSpanContext {
     trace_id: String,
     span_id: String,
@@ -64,7 +65,7 @@ impl TryFrom<&SerializableSpanContext> for SpanContext {
 }
 
 /// A wrapper for [`Job`] which adds the span context in the payload.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct JobWithSpanContext<T> {
     #[serde(skip_serializing_if = "Option::is_none")]
     span_context: Option<SerializableSpanContext>,
@@ -164,6 +165,8 @@ pub trait JobRepository: Send + Sync {
     ///
     /// # Parameters
     ///
+    /// * `rng`: the random number generator to use
+    /// * `clock`: the clock source
     /// * `submission` - The job to schedule.
     ///
     /// # Errors
@@ -171,12 +174,19 @@ pub trait JobRepository: Send + Sync {
     /// Returns [`Self::Error`] if the underlying repository fails
     async fn schedule_submission(
         &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
         submission: JobSubmission,
-    ) -> Result<JobId, Self::Error>;
+    ) -> Result<(), Self::Error>;
 }
 
 repository_impl!(JobRepository:
-    async fn schedule_submission(&mut self, submission: JobSubmission) -> Result<JobId, Self::Error>;
+    async fn schedule_submission(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        submission: JobSubmission,
+    ) -> Result<(), Self::Error>;
 );
 
 /// An extension trait for [`JobRepository`] to schedule jobs directly.
@@ -189,6 +199,8 @@ pub trait JobRepositoryExt {
     ///
     /// # Parameters
     ///
+    /// * `rng`: the random number generator to use
+    /// * `clock`: the clock source
     /// * `job` - The job to schedule.
     ///
     /// # Errors
@@ -196,8 +208,10 @@ pub trait JobRepositoryExt {
     /// Returns [`Self::Error`] if the underlying repository fails
     async fn schedule_job<J: Job + Serialize + Send>(
         &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
         job: J,
-    ) -> Result<JobId, Self::Error>;
+    ) -> Result<(), Self::Error>;
 }
 
 #[async_trait]
@@ -216,21 +230,27 @@ where
     )]
     async fn schedule_job<J: Job + Serialize + Send>(
         &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
         job: J,
-    ) -> Result<JobId, Self::Error> {
+    ) -> Result<(), Self::Error> {
         let span = tracing::Span::current();
         let ctx = span.context();
         let span = ctx.span();
         let span_context = span.span_context();
 
-        self.schedule_submission(JobSubmission::new_with_span_context(job, span_context))
-            .await
+        self.schedule_submission(
+            rng,
+            clock,
+            JobSubmission::new_with_span_context(job, span_context),
+        )
+        .await
     }
 }
 
 mod jobs {
     // XXX: Move this somewhere else?
-    use apalis_core::job::Job;
+    use apalis::prelude::Job;
     use mas_data_model::{Device, User, UserEmail};
     use serde::{Deserialize, Serialize};
     use ulid::Ulid;

@@ -55,6 +55,11 @@ mas-templates = { path = "./crates/templates/", version = "=0.9.0" }
 mas-tower = { path = "./crates/tower/", version = "=0.9.0" }
 oauth2-types = { path = "./crates/oauth2-types/", version = "=0.9.0" }
 
+# Async job queue
+[workspace.dependencies.apalis]
+version = "0.5.1"
+features = ["cron"]
+
 # GraphQL server
 [workspace.dependencies.async-graphql]
 version = "6.0.11"
