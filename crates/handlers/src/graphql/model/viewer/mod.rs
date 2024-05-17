@@ -14,7 +14,7 @@
 
 use async_graphql::Union;
 
-use crate::model::{BrowserSession, OAuth2Session, User};
+use crate::graphql::model::{BrowserSession, OAuth2Session, User};
 
 mod anonymous;
 pub use self::anonymous::Anonymous;

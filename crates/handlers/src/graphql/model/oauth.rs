@@ -21,7 +21,7 @@ use ulid::Ulid;
 use url::Url;
 
 use super::{BrowserSession, NodeType, SessionState, User, UserAgent};
-use crate::{state::ContextExt, UserId};
+use crate::graphql::{state::ContextExt, UserId};
 
 /// An OAuth 2.0 session represents a client session which used the OAuth APIs
 /// to login.

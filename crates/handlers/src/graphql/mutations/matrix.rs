@@ -15,7 +15,7 @@
 use anyhow::Context as _;
 use async_graphql::{Context, Description, Enum, InputObject, Object, ID};
 
-use crate::{
+use crate::graphql::{
     model::{NodeType, User},
     state::ContextExt,
     UserId,

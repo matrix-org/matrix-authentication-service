@@ -26,7 +26,7 @@ use super::{
     AppSession, CompatSession, Cursor, NodeCursor, NodeType, OAuth2Session, PreloadedTotalCount,
     SessionState, User, UserAgent,
 };
-use crate::state::ContextExt;
+use crate::graphql::state::ContextExt;
 
 /// A browser session represents a logged in user in a browser.
 #[derive(Description)]

@@ -18,7 +18,7 @@ use async_graphql::{
 };
 use mas_storage::{upstream_oauth2::UpstreamOAuthProviderFilter, Pagination, RepositoryAccess};
 
-use crate::{
+use crate::graphql::{
     model::{
         Cursor, NodeCursor, NodeType, PreloadedTotalCount, UpstreamOAuth2Link,
         UpstreamOAuth2Provider,

@@ -17,7 +17,7 @@ use mas_matrix::HomeserverConnection;
 use mas_policy::Policy;
 use mas_storage::{BoxClock, BoxRepository, BoxRng, RepositoryError};
 
-use crate::Requester;
+use crate::graphql::Requester;
 
 #[async_trait::async_trait]
 pub trait State {

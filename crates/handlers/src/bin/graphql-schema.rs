@@ -22,6 +22,6 @@
 #![warn(clippy::pedantic)]
 
 fn main() {
-    let schema = mas_graphql::schema_builder().finish();
+    let schema = mas_handlers::graphql_schema_builder().finish();
     println!("{}", schema.sdl());
 }

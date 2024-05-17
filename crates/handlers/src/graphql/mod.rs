@@ -12,15 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![allow(clippy::module_name_repetitions)]
+
 use std::sync::Arc;
 
 use async_graphql::{
     extensions::Tracing,
     http::{playground_source, GraphQLPlaygroundConfig, MultipartOptions},
+    EmptySubscription,
 };
 use axum::{
     async_trait,
-    extract::{BodyStream, RawQuery, State},
+    extract::{BodyStream, RawQuery, State as AxumState},
     http::StatusCode,
     response::{Html, IntoResponse, Response},
     Json, TypedHeader,
@@ -31,8 +34,7 @@ use hyper::header::CACHE_CONTROL;
 use mas_axum_utils::{
     cookies::CookieJar, sentry::SentryEventID, FancyError, SessionInfo, SessionInfoExt,
 };
-use mas_data_model::{SiteConfig, User};
-use mas_graphql::{Requester, Schema};
+use mas_data_model::{BrowserSession, Session, SiteConfig, User};
 use mas_matrix::HomeserverConnection;
 use mas_policy::{InstantiateError, Policy, PolicyFactory};
 use mas_storage::{
@@ -44,7 +46,19 @@ use rand::{thread_rng, SeedableRng};
 use rand_chacha::ChaChaRng;
 use sqlx::PgPool;
 use tracing::{info_span, Instrument};
+use ulid::Ulid;
 
+mod model;
+mod mutations;
+mod query;
+mod state;
+
+pub use self::state::{BoxState, State};
+use self::{
+    model::{CreationEvent, Node},
+    mutations::Mutation,
+    query::Query,
+};
 use crate::{impl_from_error_for_route, BoundActivityTracker};
 
 #[cfg(test)]
@@ -58,7 +72,7 @@ struct GraphQLState {
 }
 
 #[async_trait]
-impl mas_graphql::State for GraphQLState {
+impl state::State for GraphQLState {
     async fn repository(&self) -> Result<BoxRepository, RepositoryError> {
         let repo = PgRepository::from_pool(&self.pool)
             .await
@@ -106,12 +120,9 @@ pub fn schema(
         homeserver_connection: Arc::new(homeserver_connection),
         site_config,
     };
-    let state: mas_graphql::BoxState = Box::new(state);
+    let state: BoxState = Box::new(state);
 
-    mas_graphql::schema_builder()
-        .extension(Tracing)
-        .data(state)
-        .finish()
+    schema_builder().extension(Tracing).data(state).finish()
 }
 
 fn span_for_graphql_request(request: &async_graphql::Request) -> tracing::Span {
@@ -261,7 +272,7 @@ async fn get_requester(
 }
 
 pub async fn post(
-    State(schema): State<Schema>,
+    AxumState(schema): AxumState<Schema>,
     clock: BoxClock,
     repo: BoxRepository,
     activity_tracker: BoundActivityTracker,
@@ -302,7 +313,7 @@ pub async fn post(
 }
 
 pub async fn get(
-    State(schema): State<Schema>,
+    AxumState(schema): AxumState<Schema>,
     clock: BoxClock,
     repo: BoxRepository,
     activity_tracker: BoundActivityTracker,
@@ -337,4 +348,146 @@ pub async fn playground() -> impl IntoResponse {
     Html(playground_source(
         GraphQLPlaygroundConfig::new("/graphql").with_setting("request.credentials", "include"),
     ))
+}
+
+pub type Schema = async_graphql::Schema<Query, Mutation, EmptySubscription>;
+pub type SchemaBuilder = async_graphql::SchemaBuilder<Query, Mutation, EmptySubscription>;
+
+#[must_use]
+pub fn schema_builder() -> SchemaBuilder {
+    async_graphql::Schema::build(Query::new(), Mutation::new(), EmptySubscription)
+        .register_output_type::<Node>()
+        .register_output_type::<CreationEvent>()
+}
+
+/// The identity of the requester.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub enum Requester {
+    /// The requester presented no authentication information.
+    #[default]
+    Anonymous,
+
+    /// The requester is a browser session, stored in a cookie.
+    BrowserSession(Box<BrowserSession>),
+
+    /// The requester is a `OAuth2` session, with an access token.
+    OAuth2Session(Box<(Session, Option<User>)>),
+}
+
+trait OwnerId {
+    fn owner_id(&self) -> Option<Ulid>;
+}
+
+impl OwnerId for User {
+    fn owner_id(&self) -> Option<Ulid> {
+        Some(self.id)
+    }
+}
+
+impl OwnerId for BrowserSession {
+    fn owner_id(&self) -> Option<Ulid> {
+        Some(self.user.id)
+    }
+}
+
+impl OwnerId for mas_data_model::UserEmail {
+    fn owner_id(&self) -> Option<Ulid> {
+        Some(self.user_id)
+    }
+}
+
+impl OwnerId for Session {
+    fn owner_id(&self) -> Option<Ulid> {
+        self.user_id
+    }
+}
+
+impl OwnerId for mas_data_model::CompatSession {
+    fn owner_id(&self) -> Option<Ulid> {
+        Some(self.user_id)
+    }
+}
+
+impl OwnerId for mas_data_model::UpstreamOAuthLink {
+    fn owner_id(&self) -> Option<Ulid> {
+        self.user_id
+    }
+}
+
+/// A dumb wrapper around a `Ulid` to implement `OwnerId` for it.
+pub struct UserId(Ulid);
+
+impl OwnerId for UserId {
+    fn owner_id(&self) -> Option<Ulid> {
+        Some(self.0)
+    }
+}
+
+impl Requester {
+    fn browser_session(&self) -> Option<&BrowserSession> {
+        match self {
+            Self::BrowserSession(session) => Some(session),
+            Self::OAuth2Session(_) | Self::Anonymous => None,
+        }
+    }
+
+    fn user(&self) -> Option<&User> {
+        match self {
+            Self::BrowserSession(session) => Some(&session.user),
+            Self::OAuth2Session(tuple) => tuple.1.as_ref(),
+            Self::Anonymous => None,
+        }
+    }
+
+    fn oauth2_session(&self) -> Option<&Session> {
+        match self {
+            Self::OAuth2Session(tuple) => Some(&tuple.0),
+            Self::BrowserSession(_) | Self::Anonymous => None,
+        }
+    }
+
+    /// Returns true if the requester can access the resource.
+    fn is_owner_or_admin(&self, resource: &impl OwnerId) -> bool {
+        // If the requester is an admin, they can do anything.
+        if self.is_admin() {
+            return true;
+        }
+
+        // Otherwise, they must be the owner of the resource.
+        let Some(owner_id) = resource.owner_id() else {
+            return false;
+        };
+
+        let Some(user) = self.user() else {
+            return false;
+        };
+
+        user.id == owner_id
+    }
+
+    fn is_admin(&self) -> bool {
+        match self {
+            Self::OAuth2Session(tuple) => {
+                // TODO: is this the right scope?
+                // This has to be in sync with the policy
+                tuple.0.scope.contains("urn:mas:admin")
+            }
+            Self::BrowserSession(_) | Self::Anonymous => false,
+        }
+    }
+}
+
+impl From<BrowserSession> for Requester {
+    fn from(session: BrowserSession) -> Self {
+        Self::BrowserSession(Box::new(session))
+    }
+}
+
+impl<T> From<Option<T>> for Requester
+where
+    T: Into<Requester>,
+{
+    fn from(session: Option<T>) -> Self {
+        session.map(Into::into).unwrap_or_default()
+    }
 }

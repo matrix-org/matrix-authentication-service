@@ -15,7 +15,7 @@
 use async_graphql::{Context, MergedObject, Object, ID};
 use mas_storage::user::UserRepository;
 
-use crate::{
+use crate::graphql::{
     model::{
         Anonymous, BrowserSession, CompatSession, Node, NodeType, OAuth2Client, OAuth2Session,
         SiteConfig, User, UserEmail,
@@ -234,7 +234,7 @@ impl BaseQuery {
             return Ok(Some(Node::Anonymous(Box::new(Anonymous))));
         }
 
-        if id.as_str() == crate::model::SITE_CONFIG_ID {
+        if id.as_str() == crate::graphql::model::SITE_CONFIG_ID {
             return Ok(Some(Node::SiteConfig(Box::new(SiteConfig::new(
                 ctx.state().site_config(),
             )))));

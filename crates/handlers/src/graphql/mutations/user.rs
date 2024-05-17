@@ -20,7 +20,7 @@ use mas_storage::{
 };
 use tracing::{info, warn};
 
-use crate::{
+use crate::graphql::{
     model::{NodeType, User},
     state::ContextExt,
     UserId,

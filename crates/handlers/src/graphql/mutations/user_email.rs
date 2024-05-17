@@ -20,7 +20,7 @@ use mas_storage::{
     RepositoryAccess,
 };
 
-use crate::{
+use crate::graphql::{
     model::{NodeType, User, UserEmail},
     state::ContextExt,
     UserId,

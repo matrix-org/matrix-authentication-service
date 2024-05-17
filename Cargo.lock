@@ -3018,7 +3018,6 @@ dependencies = [
  "mas-config",
  "mas-data-model",
  "mas-email",
- "mas-graphql",
  "mas-handlers",
  "mas-http",
  "mas-i18n",
@@ -3126,35 +3125,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "mas-graphql"
-version = "0.9.0"
-dependencies = [
- "anyhow",
- "async-graphql",
- "async-trait",
- "chrono",
- "lettre",
- "mas-data-model",
- "mas-matrix",
- "mas-policy",
- "mas-storage",
- "oauth2-types",
- "serde",
- "thiserror",
- "tokio",
- "tower",
- "tracing",
- "ulid",
- "url",
-]
-
-[[package]]
 name = "mas-handlers"
 version = "0.9.0"
 dependencies = [
  "anyhow",
  "argon2",
  "async-graphql",
+ "async-trait",
  "axum",
  "axum-extra",
  "axum-macros",
@@ -3170,7 +3147,6 @@ dependencies = [
  "lettre",
  "mas-axum-utils",
  "mas-data-model",
- "mas-graphql",
  "mas-http",
  "mas-i18n",
  "mas-iana",

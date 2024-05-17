@@ -57,7 +57,6 @@ sentry-tower = { version = "0.31.8", features = ["http"] }
 mas-config.workspace = true
 mas-data-model.workspace = true
 mas-email.workspace = true
-mas-graphql.workspace = true
 mas-handlers = { workspace = true }
 mas-http = { workspace = true, features = ["client"] }
 mas-i18n.workspace = true
