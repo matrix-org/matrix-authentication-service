@@ -14,7 +14,8 @@ workspace = true
 [dependencies]
 anyhow.workspace = true
 apalis.workspace = true
-apalis-core = "0.4.9"
+apalis-core = "0.5.1"
+apalis-sql = { version = "0.5.1", features = ["postgres"] }
 async-stream = "0.3.5"
 async-trait.workspace = true
 chrono.workspace = true

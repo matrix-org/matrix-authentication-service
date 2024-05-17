@@ -60,9 +60,7 @@ impl<'c> JobRepository for PgJobRepository<'c> {
     ) -> Result<(), Self::Error> {
         let now = clock.now();
         let id = Ulid::from_datetime_with_source(now.into(), rng);
-        // XXX: this is what apalis_core::job::JobId does
-        let id = format!("JID-{id}");
-        tracing::Span::current().record("job.id", &id);
+        tracing::Span::current().record("job.id", tracing::field::display(id));
 
         let res = sqlx::query!(
             r#"

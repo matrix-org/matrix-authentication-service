@@ -12,29 +12,49 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use anyhow::Context;
-use apalis::prelude::{JobContext, Monitor, TokioExecutor};
+use apalis::prelude::{Monitor, TokioExecutor};
+use apalis_core::layers::extensions::Data;
 use chrono::Duration;
 use mas_email::{Address, Mailbox};
 use mas_i18n::locale;
 use mas_storage::job::{JobWithSpanContext, VerifyEmailJob};
 use mas_templates::{EmailVerificationContext, TemplateContext};
 use rand::{distributions::Uniform, Rng};
+use sqlx::PgPool;
+use thiserror::Error;
 use tracing::info;
+use ulid::Ulid;
 
-use crate::{storage::PostgresStorageFactory, JobContextExt, State};
+use crate::State;
+
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error("User email not found: {0}")]
+    UserEmailNotFound(Ulid),
+
+    #[error("User not found: {0}")]
+    UserNotFound(Ulid),
+
+    #[error("Repository error")]
+    Repositoru(#[from] mas_storage::RepositoryError),
+
+    #[error("Invalid email address")]
+    InvalidEmailAddress(#[from] mas_email::AddressError),
+
+    #[error("Failed to send email")]
+    Mailer(#[from] mas_email::MailerError),
+}
 
 #[tracing::instrument(
     name = "job.verify_email",
     fields(user_email.id = %job.user_email_id()),
     skip_all,
-    err(Debug),
+    err,
 )]
 async fn verify_email(
     job: JobWithSpanContext<VerifyEmailJob>,
-    ctx: JobContext,
-) -> Result<(), anyhow::Error> {
-    let state = ctx.state();
+    state: Data<State>,
+) -> Result<(), Error> {
     let mut repo = state.repository().await?;
     let mut rng = state.rng();
     let mailer = state.mailer();
@@ -50,14 +70,14 @@ async fn verify_email(
         .user_email()
         .lookup(job.user_email_id())
         .await?
-        .context("User email not found")?;
+        .ok_or(Error::UserEmailNotFound(job.user_email_id()))?;
 
     // Lookup the user associated with the email
     let user = repo
         .user()
         .lookup(user_email.user_id)
         .await?
-        .context("User not found")?;
+        .ok_or(Error::UserNotFound(user_email.user_id))?;
 
     // Generate a verification code
     let range = Uniform::<u32>::from(0..1_000_000);
@@ -100,10 +120,9 @@ pub(crate) fn register(
     suffix: &str,
     monitor: Monitor<TokioExecutor>,
     state: &State,
-    storage_factory: &PostgresStorageFactory,
+    pool: &PgPool,
 ) -> Monitor<TokioExecutor> {
-    let verify_email_worker =
-        crate::build!(VerifyEmailJob => verify_email, suffix, state, storage_factory);
+    let verify_email_worker = crate::build!(VerifyEmailJob => verify_email, suffix, state, pool);
 
     monitor.register(verify_email_worker)
 }

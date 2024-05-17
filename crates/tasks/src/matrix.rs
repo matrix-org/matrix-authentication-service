@@ -12,17 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use anyhow::Context;
-use apalis::prelude::{JobContext, Monitor, TokioExecutor};
+use apalis::prelude::{Monitor, TokioExecutor};
+use apalis_core::layers::extensions::Data;
 use mas_matrix::ProvisionRequest;
 use mas_storage::{
     job::{DeleteDeviceJob, JobWithSpanContext, ProvisionDeviceJob, ProvisionUserJob},
     user::{UserEmailRepository, UserRepository},
     RepositoryAccess,
 };
+use sqlx::PgPool;
+use thiserror::Error;
 use tracing::info;
+use ulid::Ulid;
 
-use crate::{storage::PostgresStorageFactory, JobContextExt, State};
+use crate::State;
+
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error("User not found: {0}")]
+    UserNotFound(Ulid),
+
+    #[error("Failed to do homesever operation")]
+    HomeserverConnection(#[source] anyhow::Error),
+
+    #[error("Repository error")]
+    Repository(#[from] mas_storage::RepositoryError),
+}
 
 /// Job to provision a user on the Matrix homeserver.
 /// This works by doing a PUT request to the /_synapse/admin/v2/users/{user_id}
@@ -35,9 +50,8 @@ use crate::{storage::PostgresStorageFactory, JobContextExt, State};
 )]
 async fn provision_user(
     job: JobWithSpanContext<ProvisionUserJob>,
-    ctx: JobContext,
-) -> Result<(), anyhow::Error> {
-    let state = ctx.state();
+    state: Data<State>,
+) -> Result<(), Error> {
     let matrix = state.matrix_connection();
     let mut repo = state.repository().await?;
 
@@ -45,7 +59,7 @@ async fn provision_user(
         .user()
         .lookup(job.user_id())
         .await?
-        .context("User not found")?;
+        .ok_or(Error::UserNotFound(job.user_id()))?;
 
     let mxid = matrix.mxid(&user.username);
     let emails = repo
@@ -65,7 +79,10 @@ async fn provision_user(
         request = request.set_displayname(display_name.to_owned());
     }
 
-    let created = matrix.provision_user(&request).await?;
+    let created = matrix
+        .provision_user(&request)
+        .await
+        .map_err(Error::HomeserverConnection)?;
 
     if created {
         info!(%user.id, %mxid, "User created");
@@ -90,9 +107,8 @@ async fn provision_user(
 )]
 async fn provision_device(
     job: JobWithSpanContext<ProvisionDeviceJob>,
-    ctx: JobContext,
-) -> Result<(), anyhow::Error> {
-    let state = ctx.state();
+    state: Data<State>,
+) -> Result<(), Error> {
     let matrix = state.matrix_connection();
     let mut repo = state.repository().await?;
 
@@ -100,11 +116,14 @@ async fn provision_device(
         .user()
         .lookup(job.user_id())
         .await?
-        .context("User not found")?;
+        .ok_or(Error::UserNotFound(job.user_id()))?;
 
     let mxid = matrix.mxid(&user.username);
 
-    matrix.create_device(&mxid, job.device_id()).await?;
+    matrix
+        .create_device(&mxid, job.device_id())
+        .await
+        .map_err(Error::HomeserverConnection)?;
     info!(%user.id, %mxid, device.id = job.device_id(), "Device created");
 
     Ok(())
@@ -124,9 +143,8 @@ async fn provision_device(
 )]
 async fn delete_device(
     job: JobWithSpanContext<DeleteDeviceJob>,
-    ctx: JobContext,
-) -> Result<(), anyhow::Error> {
-    let state = ctx.state();
+    state: Data<State>,
+) -> Result<(), Error> {
     let matrix = state.matrix_connection();
     let mut repo = state.repository().await?;
 
@@ -134,11 +152,14 @@ async fn delete_device(
         .user()
         .lookup(job.user_id())
         .await?
-        .context("User not found")?;
+        .ok_or(Error::UserNotFound(job.user_id()))?;
 
     let mxid = matrix.mxid(&user.username);
 
-    matrix.delete_device(&mxid, job.device_id()).await?;
+    matrix
+        .delete_device(&mxid, job.device_id())
+        .await
+        .map_err(Error::HomeserverConnection)?;
     info!(%user.id, %mxid, device.id = job.device_id(), "Device deleted");
 
     Ok(())
@@ -148,14 +169,13 @@ pub(crate) fn register(
     suffix: &str,
     monitor: Monitor<TokioExecutor>,
     state: &State,
-    storage_factory: &PostgresStorageFactory,
+    pool: &PgPool,
 ) -> Monitor<TokioExecutor> {
     let provision_user_worker =
-        crate::build!(ProvisionUserJob => provision_user, suffix, state, storage_factory);
+        crate::build!(ProvisionUserJob => provision_user, suffix, state, pool);
     let provision_device_worker =
-        crate::build!(ProvisionDeviceJob => provision_device, suffix, state, storage_factory);
-    let delete_device_worker =
-        crate::build!(DeleteDeviceJob => delete_device, suffix, state, storage_factory);
+        crate::build!(ProvisionDeviceJob => provision_device, suffix, state, pool);
+    let delete_device_worker = crate::build!(DeleteDeviceJob => delete_device, suffix, state, pool);
 
     monitor
         .register(provision_user_worker)

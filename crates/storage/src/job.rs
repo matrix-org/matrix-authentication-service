@@ -32,7 +32,7 @@ pub struct JobSubmission {
     payload: Value,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 struct SerializableSpanContext {
     trace_id: String,
     span_id: String,
@@ -65,7 +65,7 @@ impl TryFrom<&SerializableSpanContext> for SpanContext {
 }
 
 /// A wrapper for [`Job`] which adds the span context in the payload.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct JobWithSpanContext<T> {
     #[serde(skip_serializing_if = "Option::is_none")]
     span_context: Option<SerializableSpanContext>,

@@ -15,21 +15,17 @@
 use std::sync::Arc;
 
 use apalis::prelude::{Monitor, TokioExecutor};
-use apalis_core::layers::extensions::Extension;
+use apalis_core::layers::extensions::Data;
 use mas_email::Mailer;
 use mas_matrix::HomeserverConnection;
-use mas_storage::{BoxClock, BoxRepository, Repository, SystemClock};
-use mas_storage_pg::{DatabaseError, PgRepository};
+use mas_storage::{BoxClock, BoxRepository, Repository, RepositoryError, SystemClock};
+use mas_storage_pg::PgRepository;
 use rand::SeedableRng;
 use sqlx::{Pool, Postgres};
-use tracing::debug;
-
-use crate::storage::PostgresStorageFactory;
 
 mod database;
 mod email;
 mod matrix;
-mod storage;
 mod user;
 mod utils;
 
@@ -56,8 +52,8 @@ impl State {
         }
     }
 
-    pub fn inject(&self) -> Extension<Self> {
-        Extension(self.clone())
+    pub fn inject(&self) -> Data<Self> {
+        Data::new(self.clone())
     }
 
     pub fn pool(&self) -> &Pool<Postgres> {
@@ -78,9 +74,10 @@ impl State {
         rand_chacha::ChaChaRng::from_rng(rand::thread_rng()).expect("failed to seed rng")
     }
 
-    pub async fn repository(&self) -> Result<BoxRepository, DatabaseError> {
+    pub async fn repository(&self) -> Result<BoxRepository, RepositoryError> {
         let repo = PgRepository::from_pool(self.pool())
-            .await?
+            .await
+            .map_err(mas_storage::RepositoryError::from_error)?
             .map_err(mas_storage::RepositoryError::from_error)
             .boxed();
 
@@ -92,22 +89,10 @@ impl State {
     }
 }
 
-trait JobContextExt {
-    fn state(&self) -> State;
-}
-
-impl JobContextExt for apalis::prelude::JobContext {
-    fn state(&self) -> State {
-        self.data_opt::<State>()
-            .expect("state not injected in job context")
-            .clone()
-    }
-}
-
 /// Helper macro to build a storage-backed worker.
 macro_rules! build {
-    ($job:ty => $fn:ident, $suffix:expr, $state:expr, $factory:expr) => {{
-        let storage = $factory.build();
+    ($job:ty => $fn:ident, $suffix:expr, $state:expr, $pool:expr) => {{
+        let storage = ::apalis_sql::postgres::PostgresStorage::new($pool.clone());
         let worker_name = format!(
             "{job}-{suffix}",
             job = <$job as ::apalis::prelude::Job>::NAME,
@@ -117,12 +102,9 @@ macro_rules! build {
         let builder = ::apalis::prelude::WorkerBuilder::new(worker_name)
             .layer($state.inject())
             .layer(crate::utils::trace_layer())
-            .layer(crate::utils::metrics_layer());
-
-        let builder = ::apalis::prelude::WithStorage::with_storage_config(builder, storage, |c| {
-            c.fetch_interval(std::time::Duration::from_secs(1))
-        });
-        ::apalis::prelude::WorkerFactory::build(builder, ::apalis::prelude::job_fn($fn))
+            .layer(crate::utils::metrics_layer())
+            .with_storage(storage);
+        ::apalis::prelude::WorkerFactoryFn::build_fn(builder, $fn)
     }};
 }
 
@@ -133,26 +115,30 @@ pub(crate) use build;
 /// # Errors
 ///
 /// This function can fail if the database connection fails.
-pub async fn init(
+pub fn init(
     name: &str,
     pool: &Pool<Postgres>,
     mailer: &Mailer,
     homeserver: impl HomeserverConnection<Error = anyhow::Error> + 'static,
-) -> Result<Monitor<TokioExecutor>, sqlx::Error> {
+) -> Monitor<TokioExecutor> {
     let state = State::new(
         pool.clone(),
         SystemClock::default(),
         mailer.clone(),
         homeserver,
     );
-    let factory = PostgresStorageFactory::new(pool.clone());
-    let monitor = Monitor::new().executor(TokioExecutor::new());
+    let monitor = Monitor::<TokioExecutor>::new();
     let monitor = self::database::register(name, monitor, &state);
-    let monitor = self::email::register(name, monitor, &state, &factory);
-    let monitor = self::matrix::register(name, monitor, &state, &factory);
-    let monitor = self::user::register(name, monitor, &state, &factory);
-    // TODO: we might want to grab the join handle here
-    factory.listen().await?;
-    debug!(?monitor, "workers registered");
-    Ok(monitor)
+    let monitor = self::email::register(name, monitor, &state, pool);
+    let monitor = self::matrix::register(name, monitor, &state, pool);
+    let monitor = self::user::register(name, monitor, &state, pool);
+
+    monitor.on_event(|e| {
+        let event = e.inner();
+        if let apalis::prelude::Event::Error(error) = e.inner() {
+            tracing::error!(?error, "worker error");
+        } else {
+            tracing::debug!(?event, "worker event");
+        }
+    })
 }

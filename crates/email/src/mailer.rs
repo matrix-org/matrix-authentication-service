@@ -32,11 +32,17 @@ pub struct Mailer {
     reply_to: Mailbox,
 }
 
+/// Errors that can occur when sending emails
 #[derive(Debug, Error)]
 #[error(transparent)]
 pub enum Error {
+    /// Mail failed to send through the transport
     Transport(#[from] crate::transport::Error),
+
+    /// Failed to render email templates
     Templates(#[from] mas_templates::TemplateError),
+
+    /// Email built was invalid
     Content(#[from] lettre::error::Error),
 }
 

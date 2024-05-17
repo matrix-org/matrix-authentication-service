@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use apalis::{prelude::Job, prelude::JobRequest};
+use apalis::prelude::{Job, Request};
 use mas_storage::job::JobWithSpanContext;
 use mas_tower::{
     make_span_fn, DurationRecorderLayer, FnWrapper, IdentityLayer, InFlightCounterLayer,
@@ -43,13 +43,11 @@ impl<J: Job> TracedJob for JobWithSpanContext<J> {
     }
 }
 
-fn make_span_for_job_request<J: TracedJob>(req: &JobRequest<J>) -> tracing::Span {
+fn make_span_for_job_request<J: TracedJob>(req: &Request<J>) -> tracing::Span {
     let span = info_span!(
         "job.run",
         "otel.kind" = "consumer",
         "otel.status_code" = tracing::field::Empty,
-        "job.id" = %req.id(),
-        "job.attempts" = req.attempts(),
         "job.name" = J::NAME,
     );
 
@@ -61,21 +59,21 @@ fn make_span_for_job_request<J: TracedJob>(req: &JobRequest<J>) -> tracing::Span
 }
 
 type TraceLayerForJob<J> =
-    TraceLayer<FnWrapper<fn(&JobRequest<J>) -> tracing::Span>, KV<&'static str>, KV<&'static str>>;
+    TraceLayer<FnWrapper<fn(&Request<J>) -> tracing::Span>, KV<&'static str>, KV<&'static str>>;
 
 pub(crate) fn trace_layer<J>() -> TraceLayerForJob<J>
 where
     J: TracedJob,
 {
     TraceLayer::new(make_span_fn(
-        make_span_for_job_request::<J> as fn(&JobRequest<J>) -> tracing::Span,
+        make_span_for_job_request::<J> as fn(&Request<J>) -> tracing::Span,
     ))
     .on_response(KV("otel.status_code", "OK"))
     .on_error(KV("otel.status_code", "ERROR"))
 }
 
 type MetricsLayerForJob<J> = (
-    IdentityLayer<JobRequest<J>>,
+    IdentityLayer<Request<J>>,
     DurationRecorderLayer<KeyValue, KeyValue, KeyValue>,
     InFlightCounterLayer<KeyValue>,
 );
