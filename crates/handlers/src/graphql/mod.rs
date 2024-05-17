@@ -53,10 +53,7 @@ mod mutations;
 mod query;
 mod state;
 
-#[cfg(test)]
-pub use state::BoxState;
-pub use state::State;
-
+pub use self::state::{BoxState, State};
 use self::{
     model::{CreationEvent, Node},
     mutations::Mutation,
@@ -123,12 +120,9 @@ pub fn schema(
         homeserver_connection: Arc::new(homeserver_connection),
         site_config,
     };
-    let state: crate::graphql::state::BoxState = Box::new(state);
+    let state: BoxState = Box::new(state);
 
-    crate::graphql::schema_builder()
-        .extension(Tracing)
-        .data(state)
-        .finish()
+    schema_builder().extension(Tracing).data(state).finish()
 }
 
 fn span_for_graphql_request(request: &async_graphql::Request) -> tracing::Span {
