@@ -14,7 +14,7 @@
 
 use std::{ops::RangeBounds, sync::OnceLock};
 
-use http::{header::HeaderName, Request, StatusCode};
+use http::{header::HeaderName, Request, Response, StatusCode};
 use tower::Service;
 use tower_http::cors::CorsLayer;
 
@@ -89,17 +89,25 @@ pub trait ServiceExt<Body>: Sized {
         FormUrlencodedRequest::new(self)
     }
 
-    fn catch_http_code<M>(self, status_code: StatusCode, mapper: M) -> CatchHttpCodes<Self, M>
+    /// Catches responses with the given status code and then maps those
+    /// responses to an error type using the provided `mapper` function.
+    fn catch_http_code<M, ResBody, E>(
+        self,
+        status_code: StatusCode,
+        mapper: M,
+    ) -> CatchHttpCodes<Self, M>
     where
-        M: Clone,
+        M: Fn(Response<ResBody>) -> E + Send + Clone + 'static,
     {
         self.catch_http_codes(status_code..=status_code, mapper)
     }
 
-    fn catch_http_codes<B, M>(self, bounds: B, mapper: M) -> CatchHttpCodes<Self, M>
+    /// Catches responses with the given status codes and then maps those
+    /// responses to an error type using the provided `mapper` function.
+    fn catch_http_codes<B, M, ResBody, E>(self, bounds: B, mapper: M) -> CatchHttpCodes<Self, M>
     where
         B: RangeBounds<StatusCode>,
-        M: Clone,
+        M: Fn(Response<ResBody>) -> E + Send + Clone + 'static,
     {
         CatchHttpCodes::new(self, bounds, mapper)
     }
