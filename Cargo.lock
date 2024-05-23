@@ -3384,6 +3384,7 @@ dependencies = [
  "mas-http",
  "mas-matrix",
  "serde",
+ "serde_json",
  "tower",
  "tracing",
  "url",

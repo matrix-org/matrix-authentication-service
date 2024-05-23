@@ -14,15 +14,28 @@
 
 #![allow(clippy::blocks_in_conditions)]
 
+use anyhow::{bail, Context};
 use http::{header::AUTHORIZATION, request::Builder, Method, Request, StatusCode};
 use mas_axum_utils::http_client_factory::HttpClientFactory;
-use mas_http::{EmptyBody, HttpServiceExt};
+use mas_http::{catch_http_codes, json_response, EmptyBody, HttpServiceExt};
 use mas_matrix::{HomeserverConnection, MatrixUser, ProvisionRequest};
 use serde::{Deserialize, Serialize};
 use tower::{Service, ServiceExt};
+use tracing::debug;
 use url::Url;
 
+use self::error::catch_homeserver_error;
+
 static SYNAPSE_AUTH_PROVIDER: &str = "oauth-delegated";
+
+/// Encountered when trying to register a user ID which has been taken.
+/// — <https://spec.matrix.org/v1.10/client-server-api/#other-error-codes>
+const M_USER_IN_USE: &str = "M_USER_IN_USE";
+/// Encountered when trying to register a user ID which is not valid.
+/// — <https://spec.matrix.org/v1.10/client-server-api/#other-error-codes>
+const M_INVALID_USERNAME: &str = "M_INVALID_USERNAME";
+
+mod error;
 
 #[derive(Clone)]
 pub struct SynapseConnection {
@@ -136,6 +149,13 @@ struct SynapseDeactivateUserRequest {
 #[derive(Serialize)]
 struct SynapseAllowCrossSigningResetRequest {}
 
+/// Response body of
+/// `/_synapse/admin/v1/username_available?username={localpart}`
+#[derive(Deserialize)]
+struct UsernameAvailableResponse {
+    available: bool,
+}
+
 #[async_trait::async_trait]
 impl HomeserverConnection for SynapseConnection {
     type Error = anyhow::Error;
@@ -159,13 +179,19 @@ impl HomeserverConnection for SynapseConnection {
             .http_client_factory
             .client("homeserver.query_user")
             .response_body_to_bytes()
+            .catch_http_errors(catch_homeserver_error)
             .json_response();
 
         let request = self
             .get(&format!("_synapse/admin/v2/users/{mxid}"))
             .body(EmptyBody::new())?;
 
-        let response = client.ready().await?.call(request).await?;
+        let response = client
+            .ready()
+            .await?
+            .call(request)
+            .await
+            .context("Failed to query user from Synapse")?;
 
         if response.status() != StatusCode::OK {
             return Err(anyhow::anyhow!("Failed to query user from Synapse"));
@@ -192,7 +218,10 @@ impl HomeserverConnection for SynapseConnection {
         let localpart = urlencoding::encode(localpart);
         let mut client = self
             .http_client_factory
-            .client("homeserver.is_localpart_available");
+            .client("homeserver.is_localpart_available")
+            .response_body_to_bytes()
+            .catch_http_errors(catch_homeserver_error)
+            .json_response::<UsernameAvailableResponse>();
 
         let request = self
             .get(&format!(
@@ -200,14 +229,39 @@ impl HomeserverConnection for SynapseConnection {
             ))
             .body(EmptyBody::new())?;
 
-        let response = client.ready().await?.call(request).await?;
+        let response = client.ready().await?.call(request).await;
 
-        match response.status() {
-            StatusCode::OK => Ok(true),
-            StatusCode::BAD_REQUEST => Ok(false),
-            _ => Err(anyhow::anyhow!(
-                "Failed to query localpart availability from Synapse"
-            )),
+        match response {
+            Ok(resp) => {
+                if !resp.status().is_success() {
+                    // We should have already handled 4xx and 5xx errors by this point
+                    // so anything not 2xx is fairly weird
+                    bail!(
+                        "unexpected response from /username_available: {}",
+                        resp.status()
+                    );
+                }
+                Ok(resp.into_body().available)
+            }
+            Err(err) => match err {
+                // Convoluted as... but we want to handle some of the 400 Bad Request responses
+                // ourselves
+                json_response::Error::Service {
+                    inner:
+                        catch_http_codes::Error::HttpError {
+                            status_code: StatusCode::BAD_REQUEST,
+                            inner: homeserver_error,
+                        },
+                } if homeserver_error.errcode() == Some(M_INVALID_USERNAME)
+                    || homeserver_error.errcode() == Some(M_USER_IN_USE) =>
+                {
+                    debug!("Username not available: {homeserver_error}");
+                    Ok(false)
+                }
+
+                other_err => Err(anyhow::Error::new(other_err)
+                    .context("Failed to query localpart availability from Synapse")),
+            },
         }
     }
 
@@ -254,14 +308,21 @@ impl HomeserverConnection for SynapseConnection {
             .http_client_factory
             .client("homeserver.provision_user")
             .request_bytes_to_body()
-            .json_request();
+            .json_request()
+            .response_body_to_bytes()
+            .catch_http_errors(catch_homeserver_error);
 
         let mxid = urlencoding::encode(request.mxid());
         let request = self
             .put(&format!("_synapse/admin/v2/users/{mxid}"))
             .body(body)?;
 
-        let response = client.ready().await?.call(request).await?;
+        let response = client
+            .ready()
+            .await?
+            .call(request)
+            .await
+            .context("Failed to provision user in Synapse")?;
 
         match response.status() {
             StatusCode::CREATED => Ok(true),
@@ -289,13 +350,20 @@ impl HomeserverConnection for SynapseConnection {
             .http_client_factory
             .client("homeserver.create_device")
             .request_bytes_to_body()
-            .json_request();
+            .json_request()
+            .response_body_to_bytes()
+            .catch_http_errors(catch_homeserver_error);
 
         let request = self
             .post(&format!("_synapse/admin/v2/users/{mxid}/devices"))
             .body(SynapseDevice { device_id })?;
 
-        let response = client.ready().await?.call(request).await?;
+        let response = client
+            .ready()
+            .await?
+            .call(request)
+            .await
+            .context("Failed to create device in Synapse")?;
 
         if response.status() != StatusCode::CREATED {
             return Err(anyhow::anyhow!("Failed to create device in Synapse"));
@@ -317,7 +385,11 @@ impl HomeserverConnection for SynapseConnection {
     async fn delete_device(&self, mxid: &str, device_id: &str) -> Result<(), Self::Error> {
         let mxid = urlencoding::encode(mxid);
         let device_id = urlencoding::encode(device_id);
-        let mut client = self.http_client_factory.client("homeserver.delete_device");
+        let mut client = self
+            .http_client_factory
+            .client("homeserver.delete_device")
+            .response_body_to_bytes()
+            .catch_http_errors(catch_homeserver_error);
 
         let request = self
             .delete(&format!(
@@ -325,7 +397,12 @@ impl HomeserverConnection for SynapseConnection {
             ))
             .body(EmptyBody::new())?;
 
-        let response = client.ready().await?.call(request).await?;
+        let response = client
+            .ready()
+            .await?
+            .call(request)
+            .await
+            .context("Failed to delete device in Synapse")?;
 
         if response.status() != StatusCode::OK {
             return Err(anyhow::anyhow!("Failed to delete device in Synapse"));
@@ -350,13 +427,20 @@ impl HomeserverConnection for SynapseConnection {
             .http_client_factory
             .client("homeserver.delete_user")
             .request_bytes_to_body()
-            .json_request();
+            .json_request()
+            .response_body_to_bytes()
+            .catch_http_errors(catch_homeserver_error);
 
         let request = self
             .post(&format!("_synapse/admin/v1/deactivate/{mxid}"))
             .body(SynapseDeactivateUserRequest { erase })?;
 
-        let response = client.ready().await?.call(request).await?;
+        let response = client
+            .ready()
+            .await?
+            .call(request)
+            .await
+            .context("Failed to delete user in Synapse")?;
 
         if response.status() != StatusCode::OK {
             return Err(anyhow::anyhow!("Failed to delete user in Synapse"));
@@ -381,13 +465,20 @@ impl HomeserverConnection for SynapseConnection {
             .http_client_factory
             .client("homeserver.set_displayname")
             .request_bytes_to_body()
-            .json_request();
+            .json_request()
+            .response_body_to_bytes()
+            .catch_http_errors(catch_homeserver_error);
 
         let request = self
             .put(&format!("_matrix/client/v3/profile/{mxid}/displayname"))
             .body(SetDisplayNameRequest { displayname })?;
 
-        let response = client.ready().await?.call(request).await?;
+        let response = client
+            .ready()
+            .await?
+            .call(request)
+            .await
+            .context("Failed to set displayname in Synapse")?;
 
         if response.status() != StatusCode::OK {
             return Err(anyhow::anyhow!("Failed to set displayname in Synapse"));
@@ -424,7 +515,9 @@ impl HomeserverConnection for SynapseConnection {
             .http_client_factory
             .client("homeserver.allow_cross_signing_reset")
             .request_bytes_to_body()
-            .json_request();
+            .json_request()
+            .response_body_to_bytes()
+            .catch_http_errors(catch_homeserver_error);
 
         let request = self
             .post(&format!(
@@ -432,7 +525,12 @@ impl HomeserverConnection for SynapseConnection {
             ))
             .body(SynapseAllowCrossSigningResetRequest {})?;
 
-        let response = client.ready().await?.call(request).await?;
+        let response = client
+            .ready()
+            .await?
+            .call(request)
+            .await
+            .context("Failed to allow cross-signing reset in Synapse")?;
 
         if response.status() != StatusCode::OK {
             return Err(anyhow::anyhow!(
