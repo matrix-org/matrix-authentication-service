@@ -23,6 +23,7 @@ use tower::{Layer, Service};
 
 #[derive(Debug, Error)]
 pub enum Error<Service> {
+    /// An error from the inner service.
     #[error(transparent)]
     Service { inner: Service },
 

@@ -70,6 +70,9 @@ pub trait ServiceExt<Body>: Sized {
         BytesToBodyRequest::new(self)
     }
 
+    /// Adds a layer which collects all the response body into a contiguous
+    /// byte buffer.
+    /// This makes the response type `Response<Bytes>`.
     fn response_body_to_bytes(self) -> BodyToBytesResponse<Self> {
         BodyToBytesResponse::new(self)
     }
