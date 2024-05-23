@@ -111,6 +111,18 @@ pub trait ServiceExt<Body>: Sized {
     {
         CatchHttpCodes::new(self, bounds, mapper)
     }
+
+    /// Shorthand for [`Self::catch_http_codes`] which catches all client errors
+    /// (4xx) and server errors (5xx).
+    fn catch_http_errors<M, ResBody, E>(self, mapper: M) -> CatchHttpCodes<Self, M>
+    where
+        M: Fn(Response<ResBody>) -> E + Send + Clone + 'static,
+    {
+        self.catch_http_codes(
+            StatusCode::from_u16(400).unwrap()..StatusCode::from_u16(600).unwrap(),
+            mapper,
+        )
+    }
 }
 
 impl<S, B> ServiceExt<B> for S where S: Service<Request<B>> {}
