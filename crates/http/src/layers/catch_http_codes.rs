@@ -24,12 +24,8 @@ pub enum Error<S, E> {
     #[error(transparent)]
     Service { inner: S },
 
-    #[error("request failed with status {status_code}")]
-    HttpError {
-        status_code: StatusCode,
-        #[source]
-        inner: E,
-    },
+    #[error("request failed with status {status_code}: {inner}")]
+    HttpError { status_code: StatusCode, inner: E },
 }
 
 impl<S, E> Error<S, E> {
