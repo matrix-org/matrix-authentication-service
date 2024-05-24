@@ -171,7 +171,7 @@ impl HomeserverConnection for SynapseConnection {
             matrix.homeserver = self.homeserver,
             matrix.mxid = mxid,
         ),
-        err(Display),
+        err(Debug),
     )]
     async fn query_user(&self, mxid: &str) -> Result<MatrixUser, Self::Error> {
         let mxid = urlencoding::encode(mxid);
@@ -212,7 +212,7 @@ impl HomeserverConnection for SynapseConnection {
             matrix.homeserver = self.homeserver,
             matrix.localpart = localpart,
         ),
-        err(Display),
+        err(Debug),
     )]
     async fn is_localpart_available(&self, localpart: &str) -> Result<bool, Self::Error> {
         let localpart = urlencoding::encode(localpart);
@@ -273,7 +273,7 @@ impl HomeserverConnection for SynapseConnection {
             matrix.mxid = request.mxid(),
             user.id = request.sub(),
         ),
-        err(Display),
+        err(Debug),
     )]
     async fn provision_user(&self, request: &ProvisionRequest) -> Result<bool, Self::Error> {
         let mut body = SynapseUser {
@@ -342,7 +342,7 @@ impl HomeserverConnection for SynapseConnection {
             matrix.mxid = mxid,
             matrix.device_id = device_id,
         ),
-        err(Display),
+        err(Debug),
     )]
     async fn create_device(&self, mxid: &str, device_id: &str) -> Result<(), Self::Error> {
         let mxid = urlencoding::encode(mxid);
@@ -380,7 +380,7 @@ impl HomeserverConnection for SynapseConnection {
             matrix.mxid = mxid,
             matrix.device_id = device_id,
         ),
-        err(Display),
+        err(Debug),
     )]
     async fn delete_device(&self, mxid: &str, device_id: &str) -> Result<(), Self::Error> {
         let mxid = urlencoding::encode(mxid);
@@ -419,7 +419,7 @@ impl HomeserverConnection for SynapseConnection {
             matrix.mxid = mxid,
             erase = erase,
         ),
-        err(Display),
+        err(Debug),
     )]
     async fn delete_user(&self, mxid: &str, erase: bool) -> Result<(), Self::Error> {
         let mxid = urlencoding::encode(mxid);
@@ -457,7 +457,7 @@ impl HomeserverConnection for SynapseConnection {
             matrix.mxid = mxid,
             matrix.displayname = displayname,
         ),
-        err(Display),
+        err(Debug),
     )]
     async fn set_displayname(&self, mxid: &str, displayname: &str) -> Result<(), Self::Error> {
         let mxid = urlencoding::encode(mxid);
@@ -507,7 +507,7 @@ impl HomeserverConnection for SynapseConnection {
             matrix.homeserver = self.homeserver,
             matrix.mxid = mxid,
         ),
-        err(Display),
+        err(Debug),
     )]
     async fn allow_cross_signing_reset(&self, mxid: &str) -> Result<(), Self::Error> {
         let mxid = urlencoding::encode(mxid);
@@ -534,7 +534,8 @@ impl HomeserverConnection for SynapseConnection {
 
         if response.status() != StatusCode::OK {
             return Err(anyhow::anyhow!(
-                "Failed to allow cross signing reset in Synapse"
+                "Failed to allow cross signing reset in Synapse: {}",
+                response.status()
             ));
         }
 
