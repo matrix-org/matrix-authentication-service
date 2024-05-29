@@ -23,6 +23,7 @@ use headers::{Authorization, HeaderMapExt, HeaderValue};
 use http::header::{ACCEPT, CONTENT_TYPE};
 use mas_http::CatchHttpCodesLayer;
 use mas_jose::claims;
+use mime::Mime;
 use serde_json::Value;
 use tower::{Layer, Service, ServiceExt};
 use url::Url;
@@ -98,16 +99,17 @@ pub async fn fetch_userinfo(
         .call(userinfo_request)
         .await?;
 
-    let content_type = userinfo_response
+    let content_type: Mime = userinfo_response
         .headers()
         .get(CONTENT_TYPE)
         .ok_or(UserInfoError::MissingResponseContentType)?
-        .to_str()?;
+        .to_str()?
+        .parse()?;
 
-    if content_type != expected_content_type {
-        return Err(UserInfoError::InvalidResponseContentType {
+    if content_type.essence_str() != expected_content_type {
+        return Err(UserInfoError::UnexpectedResponseContentType {
             expected: expected_content_type.to_owned(),
-            got: content_type.to_owned(),
+            got: content_type.to_string(),
         });
     }
 
