@@ -452,8 +452,8 @@ pub enum UserInfoError {
     DecodeResponseContentType(#[from] ToStrError),
 
     /// The content-type is not valid.
-    #[error("invalid response content-type: {0}")]
-    InvalidResponseContentTypeValue(#[from] mime::FromStrError),
+    #[error("invalid response content-type")]
+    InvalidResponseContentTypeValue,
 
     /// The content-type is not the one that was expected.
     #[error("unexpected response content-type {got:?}, expected {expected:?}")]
