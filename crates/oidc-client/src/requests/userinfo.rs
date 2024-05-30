@@ -19,8 +19,8 @@
 use std::collections::HashMap;
 
 use bytes::Bytes;
-use headers::{Authorization, HeaderMapExt, HeaderValue};
-use http::header::{ACCEPT, CONTENT_TYPE};
+use headers::{Authorization, ContentType, HeaderMapExt, HeaderValue};
+use http::header::ACCEPT;
 use mas_http::CatchHttpCodesLayer;
 use mas_jose::claims;
 use mime::Mime;
@@ -101,10 +101,10 @@ pub async fn fetch_userinfo(
 
     let content_type: Mime = userinfo_response
         .headers()
-        .get(CONTENT_TYPE)
+        .typed_try_get::<ContentType>()
+        .map_err(|_| UserInfoError::InvalidResponseContentTypeValue)?
         .ok_or(UserInfoError::MissingResponseContentType)?
-        .to_str()?
-        .parse()?;
+        .into();
 
     if content_type.essence_str() != expected_content_type {
         return Err(UserInfoError::UnexpectedResponseContentType {
