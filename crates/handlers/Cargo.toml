@@ -25,7 +25,7 @@ opentelemetry-semantic-conventions.workspace = true
 # Error management
 thiserror.workspace = true
 anyhow.workspace = true
-sentry = { version = "0.31.8", default-features = false }
+sentry = { version = "0.33.0", default-features = false }
 
 # Web server
 hyper.workspace = true

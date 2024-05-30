@@ -24,7 +24,7 @@ http-body.workspace = true
 icu_locid = "1.4.0"
 mime = "0.3.17"
 rand.workspace = true
-sentry = { version = "0.31.8", default-features = false }
+sentry = { version = "0.33.0", default-features = false }
 serde.workspace = true
 serde_with = "3.8.1"
 serde_urlencoded = "0.7.1"
