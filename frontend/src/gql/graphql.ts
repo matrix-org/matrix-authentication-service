@@ -486,6 +486,15 @@ export type Mutation = {
   setCanRequestAdmin: SetCanRequestAdminPayload;
   /** Set the display name of a user */
   setDisplayName: SetDisplayNamePayload;
+  /**
+   * Set the password for a user.
+   *
+   * This can be used by server administrators to set any user's password,
+   * or, provided the capability hasn't been disabled on this server,
+   * by a user to change their own password as long as they know their
+   * current password.
+   */
+  setPassword: SetPasswordPayload;
   /** Set an email address as primary */
   setPrimaryEmail: SetPrimaryEmailPayload;
   /** Submit a verification code for an email address */
@@ -562,6 +571,12 @@ export type MutationSetCanRequestAdminArgs = {
 /** The mutations root of the GraphQL interface. */
 export type MutationSetDisplayNameArgs = {
   input: SetDisplayNameInput;
+};
+
+
+/** The mutations root of the GraphQL interface. */
+export type MutationSetPasswordArgs = {
+  input: SetPasswordInput;
 };
 
 
@@ -901,6 +916,59 @@ export enum SetDisplayNameStatus {
   Invalid = 'INVALID',
   /** The display name was set */
   Set = 'SET'
+}
+
+/** The input for the `setPassword` mutation. */
+export type SetPasswordInput = {
+  /**
+   * The current password of the user.
+   * Required if you are not a server administrator.
+   */
+  currentPassword?: InputMaybe<Scalars['String']['input']>;
+  /** The new password for the user. */
+  newPassword: Scalars['String']['input'];
+  /**
+   * The ID of the user to set the password for.
+   * If you are not a server administrator then this must be your own user
+   * ID.
+   */
+  userId: Scalars['ID']['input'];
+};
+
+/** The return type for the `setPassword` mutation. */
+export type SetPasswordPayload = {
+  __typename?: 'SetPasswordPayload';
+  /** Status of the operation */
+  status: SetPasswordStatus;
+};
+
+/** The status of the `setPassword` mutation. */
+export enum SetPasswordStatus {
+  /** The password was updated. */
+  Allowed = 'ALLOWED',
+  /**
+   * The new password is invalid. For example, it may not meet configured
+   * security requirements.
+   */
+  InvalidNewPassword = 'INVALID_NEW_PASSWORD',
+  /**
+   * You aren't allowed to set the password for that user.
+   * This happens if you aren't setting your own password and you aren't a
+   * server administrator.
+   */
+  NotAllowed = 'NOT_ALLOWED',
+  /** The user was not found. */
+  NotFound = 'NOT_FOUND',
+  /** The user doesn't have a current password to attempt to match against. */
+  NoCurrentPassword = 'NO_CURRENT_PASSWORD',
+  /**
+   * Password support has been disabled.
+   * This usually means that login is handled by an upstream identity
+   * provider.
+   */
+  PasswordChangesDisabled = 'PASSWORD_CHANGES_DISABLED',
+  /** The supplied current password was wrong. */
+  WrongPassword = 'WRONG_PASSWORD'
 }
 
 /** The input for the `setPrimaryEmail` mutation */
