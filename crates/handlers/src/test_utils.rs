@@ -198,6 +198,7 @@ impl TestState {
             site_config: site_config.clone(),
             rng: Arc::clone(&rng),
             clock: Arc::clone(&clock),
+            password_manager: password_manager.clone(),
         };
         let state: crate::graphql::BoxState = Box::new(graphql_state);
 
@@ -314,6 +315,7 @@ struct TestGraphQLState {
     policy_factory: Arc<PolicyFactory>,
     clock: Arc<MockClock>,
     rng: Arc<Mutex<ChaChaRng>>,
+    password_manager: PasswordManager,
 }
 
 #[async_trait]
@@ -330,6 +332,10 @@ impl graphql::State for TestGraphQLState {
 
     async fn policy(&self) -> Result<Policy, InstantiateError> {
         self.policy_factory.instantiate().await
+    }
+
+    fn password_manager(&self) -> PasswordManager {
+        self.password_manager.clone()
     }
 
     fn homeserver_connection(&self) -> &dyn HomeserverConnection<Error = anyhow::Error> {
