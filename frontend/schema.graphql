@@ -748,6 +748,15 @@ type Mutation {
     input: AllowUserCrossSigningResetInput!
   ): AllowUserCrossSigningResetPayload!
   """
+  Set the password for a user.
+
+  This can be used by server administrators to set any user's password,
+  or, provided the capability hasn't been disabled on this server,
+  by a user to change their own password as long as they know their
+  current password.
+  """
+  setPassword(input: SetPasswordInput!): SetPasswordPayload!
+  """
   Create a new arbitrary OAuth 2.0 Session.
 
   Only available for administrators.
@@ -1203,6 +1212,76 @@ enum SetDisplayNameStatus {
   The display name is invalid
   """
   INVALID
+}
+
+"""
+The input for the `setPassword` mutation.
+"""
+input SetPasswordInput {
+  """
+  The ID of the user to set the password for.
+  If you are not a server administrator then this must be your own user
+  ID.
+  """
+  userId: ID!
+  """
+  The current password of the user.
+  Required if you are not a server administrator.
+  """
+  currentPassword: String
+  """
+  The new password for the user.
+  """
+  newPassword: String!
+}
+
+"""
+The return type for the `setPassword` mutation.
+"""
+type SetPasswordPayload {
+  """
+  Status of the operation
+  """
+  status: SetPasswordStatus!
+}
+
+"""
+The status of the `setPassword` mutation.
+"""
+enum SetPasswordStatus {
+  """
+  The password was updated.
+  """
+  ALLOWED
+  """
+  The user was not found.
+  """
+  NOT_FOUND
+  """
+  The user doesn't have a current password to attempt to match against.
+  """
+  NO_CURRENT_PASSWORD
+  """
+  The supplied current password was wrong.
+  """
+  WRONG_PASSWORD
+  """
+  The new password is invalid. For example, it may not meet configured
+  security requirements.
+  """
+  INVALID_NEW_PASSWORD
+  """
+  You aren't allowed to set the password for that user.
+  This happens if you aren't setting your own password and you aren't a
+  server administrator.
+  """
+  NOT_ALLOWED
+  """
+  Password support has been disabled.
+  This usually means that login is handled by an upstream identity
+  provider.
+  """
+  PASSWORD_CHANGES_DISABLED
 }
 
 """

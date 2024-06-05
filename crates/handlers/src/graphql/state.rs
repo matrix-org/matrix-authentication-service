@@ -17,12 +17,13 @@ use mas_matrix::HomeserverConnection;
 use mas_policy::Policy;
 use mas_storage::{BoxClock, BoxRepository, BoxRng, RepositoryError};
 
-use crate::graphql::Requester;
+use crate::{graphql::Requester, passwords::PasswordManager};
 
 #[async_trait::async_trait]
 pub trait State {
     async fn repository(&self) -> Result<BoxRepository, RepositoryError>;
     async fn policy(&self) -> Result<Policy, mas_policy::InstantiateError>;
+    fn password_manager(&self) -> PasswordManager;
     fn homeserver_connection(&self) -> &dyn HomeserverConnection<Error = anyhow::Error>;
     fn clock(&self) -> BoxClock;
     fn rng(&self) -> BoxRng;

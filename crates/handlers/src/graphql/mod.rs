@@ -59,7 +59,7 @@ use self::{
     mutations::Mutation,
     query::Query,
 };
-use crate::{impl_from_error_for_route, BoundActivityTracker};
+use crate::{impl_from_error_for_route, passwords::PasswordManager, BoundActivityTracker};
 
 #[cfg(test)]
 mod tests;
@@ -69,6 +69,7 @@ struct GraphQLState {
     homeserver_connection: Arc<dyn HomeserverConnection<Error = anyhow::Error>>,
     policy_factory: Arc<PolicyFactory>,
     site_config: SiteConfig,
+    password_manager: PasswordManager,
 }
 
 #[async_trait]
@@ -83,6 +84,10 @@ impl state::State for GraphQLState {
 
     async fn policy(&self) -> Result<Policy, InstantiateError> {
         self.policy_factory.instantiate().await
+    }
+
+    fn password_manager(&self) -> PasswordManager {
+        self.password_manager.clone()
     }
 
     fn site_config(&self) -> &SiteConfig {
@@ -113,12 +118,14 @@ pub fn schema(
     policy_factory: &Arc<PolicyFactory>,
     homeserver_connection: impl HomeserverConnection<Error = anyhow::Error> + 'static,
     site_config: SiteConfig,
+    password_manager: PasswordManager,
 ) -> Schema {
     let state = GraphQLState {
         pool: pool.clone(),
         policy_factory: Arc::clone(policy_factory),
         homeserver_connection: Arc::new(homeserver_connection),
         site_config,
+        password_manager,
     };
     let state: BoxState = Box::new(state);
 

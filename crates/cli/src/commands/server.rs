@@ -200,6 +200,7 @@ impl Options {
             &policy_factory,
             homeserver_connection.clone(),
             site_config.clone(),
+            password_manager.clone(),
         );
 
         let state = {

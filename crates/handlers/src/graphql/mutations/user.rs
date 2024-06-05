@@ -19,6 +19,7 @@ use mas_storage::{
     user::UserRepository,
 };
 use tracing::{info, warn};
+use zeroize::Zeroizing;
 
 use crate::graphql::{
     model::{NodeType, User},
@@ -196,6 +197,66 @@ impl AllowUserCrossSigningResetPayload {
             Self::Allowed(user) => Some(User(user.clone())),
             Self::NotFound => None,
         }
+    }
+}
+
+/// The input for the `setPassword` mutation.
+#[derive(InputObject)]
+struct SetPasswordInput {
+    /// The ID of the user to set the password for.
+    /// If you are not a server administrator then this must be your own user
+    /// ID.
+    user_id: ID,
+
+    /// The current password of the user.
+    /// Required if you are not a server administrator.
+    current_password: Option<String>,
+
+    /// The new password for the user.
+    new_password: String,
+}
+
+/// The return type for the `setPassword` mutation.
+#[derive(Description)]
+struct SetPasswordPayload {
+    status: SetPasswordStatus,
+}
+
+/// The status of the `setPassword` mutation.
+#[derive(Enum, Copy, Clone, Eq, PartialEq)]
+enum SetPasswordStatus {
+    /// The password was updated.
+    Allowed,
+
+    /// The user was not found.
+    NotFound,
+
+    /// The user doesn't have a current password to attempt to match against.
+    NoCurrentPassword,
+
+    /// The supplied current password was wrong.
+    WrongPassword,
+
+    /// The new password is invalid. For example, it may not meet configured
+    /// security requirements.
+    InvalidNewPassword,
+
+    /// You aren't allowed to set the password for that user.
+    /// This happens if you aren't setting your own password and you aren't a
+    /// server administrator.
+    NotAllowed,
+
+    /// Password support has been disabled.
+    /// This usually means that login is handled by an upstream identity
+    /// provider.
+    PasswordChangesDisabled,
+}
+
+#[Object(use_type_description)]
+impl SetPasswordPayload {
+    /// Status of the operation
+    async fn status(&self) -> SetPasswordStatus {
+        self.status
     }
 }
 
@@ -384,5 +445,109 @@ impl UserMutations {
             .context("Failed to allow cross-signing reset")?;
 
         Ok(AllowUserCrossSigningResetPayload::Allowed(user))
+    }
+
+    /// Set the password for a user.
+    ///
+    /// This can be used by server administrators to set any user's password,
+    /// or, provided the capability hasn't been disabled on this server,
+    /// by a user to change their own password as long as they know their
+    /// current password.
+    async fn set_password(
+        &self,
+        ctx: &Context<'_>,
+        input: SetPasswordInput,
+    ) -> Result<SetPasswordPayload, async_graphql::Error> {
+        let state = ctx.state();
+        let user_id = NodeType::User.extract_ulid(&input.user_id)?;
+        let requester = ctx.requester();
+
+        if !requester.is_owner_or_admin(&UserId(user_id)) {
+            return Err(async_graphql::Error::new("Unauthorized"));
+        }
+
+        let mut policy = state.policy().await?;
+
+        let res = policy.evaluate_password(&input.new_password).await?;
+
+        if !res.valid() {
+            // TODO Expose the reason for the policy violation
+            // This involves redesigning the error handling
+            // Idea would be to expose an errors array in the response,
+            // with a list of union of different error kinds.
+            return Ok(SetPasswordPayload {
+                status: SetPasswordStatus::InvalidNewPassword,
+            });
+        }
+
+        let mut repo = state.repository().await?;
+        let Some(user) = repo.user().lookup(user_id).await? else {
+            return Ok(SetPasswordPayload {
+                status: SetPasswordStatus::NotFound,
+            });
+        };
+
+        let password_manager = state.password_manager();
+        if !requester.is_admin() {
+            // If the user isn't an admin, we:
+            // - check that password changes are enabled
+            // - check that they know their current password
+
+            if !state.site_config().password_change_allowed || !password_manager.is_enabled() {
+                return Ok(SetPasswordPayload {
+                    status: SetPasswordStatus::PasswordChangesDisabled,
+                });
+            }
+
+            let Some(active_password) = repo.user_password().active(&user).await? else {
+                // The user has no current password, so can't verify against one.
+                // In the future, it may be desirable to let the user set a password without any
+                // other verification instead.
+
+                return Ok(SetPasswordPayload {
+                    status: SetPasswordStatus::NoCurrentPassword,
+                });
+            };
+
+            let Some(current_password_attempt) = input.current_password else {
+                return Err(async_graphql::Error::new(
+                    "You must supply `currentPassword` to change your own password if you are not an administrator"
+                ));
+            };
+
+            if let Err(_err) = password_manager
+                .verify(
+                    active_password.version,
+                    Zeroizing::new(current_password_attempt.into_bytes()),
+                    active_password.hashed_password,
+                )
+                .await
+            {
+                return Ok(SetPasswordPayload {
+                    status: SetPasswordStatus::WrongPassword,
+                });
+            }
+        }
+
+        let (new_password_version, new_password_hash) = password_manager
+            .hash(state.rng(), Zeroizing::new(input.new_password.into_bytes()))
+            .await?;
+
+        repo.user_password()
+            .add(
+                &mut state.rng(),
+                &state.clock(),
+                &user,
+                new_password_version,
+                new_password_hash,
+                None,
+            )
+            .await?;
+
+        repo.save().await?;
+
+        Ok(SetPasswordPayload {
+            status: SetPasswordStatus::Allowed,
+        })
     }
 }
