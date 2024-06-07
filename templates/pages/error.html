@@ -43,9 +43,8 @@ limitations under the License.
 
     {% if details %}
       <hr />
-      <pre>
-        <code class="font-mono whitespace-pre-wrap break-all">{{ details }}</code>
-      </pre>
+      {# caution: do not introduce whitespace between <pre> and <code> #}
+      <pre><code class="font-mono whitespace-pre-wrap break-all">{{ details }}</code></pre>
     {% endif %}
   </main>
 {% endblock %}

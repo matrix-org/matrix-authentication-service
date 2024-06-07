@@ -109,7 +109,7 @@ impl Header for AcceptLanguage {
                     let quality = std::str::from_utf8(quality).map_err(|_e| Error::invalid())?;
                     let quality = quality.parse::<f64>().map_err(|_e| Error::invalid())?;
                     // Bound the quality between 0 and 1
-                    let quality = quality.min(1_f64).max(0_f64);
+                    let quality = quality.clamp(0_f64, 1_f64);
 
                     // Make sure the iterator is empty
                     if it.next().is_some() {

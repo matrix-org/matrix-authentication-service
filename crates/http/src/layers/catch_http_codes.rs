@@ -24,12 +24,8 @@ pub enum Error<S, E> {
     #[error(transparent)]
     Service { inner: S },
 
-    #[error("request failed with status {status_code}")]
-    HttpError {
-        status_code: StatusCode,
-        #[source]
-        inner: E,
-    },
+    #[error("request failed with status {status_code}: {inner}")]
+    HttpError { status_code: StatusCode, inner: E },
 }
 
 impl<S, E> Error<S, E> {
@@ -45,10 +41,16 @@ impl<S, E> Error<S, E> {
     }
 }
 
+/// A layer that catches responses with the HTTP status codes lying within
+/// `bounds` and then maps the requests into a custom error type using `mapper`.
 #[derive(Clone)]
 pub struct CatchHttpCodes<S, M> {
+    /// The inner service
     inner: S,
+    /// Which HTTP status codes to catch
     bounds: (Bound<StatusCode>, Bound<StatusCode>),
+    /// The function used to convert errors, which must be
+    /// `Fn(Response<ResBody>) -> E + Send + Clone + 'static`.
     mapper: M,
 }
 
