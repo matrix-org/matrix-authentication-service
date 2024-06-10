@@ -19,6 +19,7 @@ import { Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "urql";
 
+import AccountManagementPasswordPreview from "../components/AccountManagementPasswordPreview";
 import BlockList from "../components/BlockList/BlockList";
 import { ButtonLink } from "../components/ButtonLink";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -105,6 +106,12 @@ function Index(): React.ReactElement {
           {siteConfig.emailChangeAllowed && (
             <AddEmailForm userId={user.id} onAdd={onAdd} />
           )}
+        </div>
+
+        <Separator />
+
+        <div className="flex flex-col gap-4" id="password">
+          <AccountManagementPasswordPreview />
         </div>
 
         <Separator />
