@@ -41,10 +41,10 @@ pub enum RouteError {
     #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
 
-    #[error("missing redirect_url")]
+    #[error("Missing redirectUrl")]
     MissingRedirectUrl,
 
-    #[error("invalid redirect_url")]
+    #[error("invalid redirectUrl")]
     InvalidRedirectUrl,
 }
 
