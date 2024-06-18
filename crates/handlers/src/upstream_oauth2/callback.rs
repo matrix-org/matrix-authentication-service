@@ -38,7 +38,10 @@ use serde::Deserialize;
 use thiserror::Error;
 use ulid::Ulid;
 
-use super::{cache::LazyProviderInfos, client_credentials_for_provider, UpstreamSessionsCookie};
+use super::{
+    cache::LazyProviderInfos, client_credentials_for_provider, template::environment,
+    UpstreamSessionsCookie,
+};
 use crate::{impl_from_error_for_route, upstream_oauth2::cache::MetadataCache};
 
 #[derive(Deserialize)]
@@ -241,7 +244,7 @@ pub(crate) async fn get(
     let (_header, id_token) = id_token.ok_or(RouteError::MissingIDToken)?.into_parts();
 
     let env = {
-        let mut env = minijinja::Environment::new();
+        let mut env = environment();
         env.add_global("user", minijinja::Value::from_serialize(&id_token));
         env
     };
