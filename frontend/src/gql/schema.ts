@@ -2500,6 +2500,17 @@ export default {
             "args": []
           },
           {
+            "name": "passwordChangeAllowed",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Any"
+              }
+            },
+            "args": []
+          },
+          {
             "name": "policyUri",
             "type": {
               "kind": "SCALAR",

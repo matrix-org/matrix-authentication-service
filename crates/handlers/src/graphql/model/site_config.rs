@@ -39,6 +39,9 @@ pub struct SiteConfig {
 
     /// Whether user can change their display name.
     display_name_change_allowed: bool,
+
+    /// Whether passwords are enabled and users can change their own passwords.
+    password_change_allowed: bool,
 }
 
 #[ComplexObject]
@@ -60,6 +63,7 @@ impl SiteConfig {
             imprint: data_model.imprint.clone(),
             email_change_allowed: data_model.email_change_allowed,
             display_name_change_allowed: data_model.displayname_change_allowed,
+            password_change_allowed: data_model.password_change_allowed,
         }
     }
 }
