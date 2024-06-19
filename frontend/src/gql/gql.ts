@@ -51,6 +51,7 @@ const documents = {
     "\n  query CurrentViewerQuery {\n    viewer {\n      __typename\n      ... on Node {\n        id\n      }\n    }\n  }\n": types.CurrentViewerQueryDocument,
     "\n  query DeviceRedirectQuery($deviceId: String!, $userId: ID!) {\n    session(deviceId: $deviceId, userId: $userId) {\n      __typename\n      ... on Node {\n        id\n      }\n    }\n  }\n": types.DeviceRedirectQueryDocument,
     "\n  query VerifyEmailQuery($id: ID!) {\n    userEmail(id: $id) {\n      ...UserEmail_verifyEmail\n    }\n  }\n": types.VerifyEmailQueryDocument,
+    "\n  mutation ChangePasswordMutation($userId: ID!, $oldPassword: String!, $newPassword: String!) {\n    setPassword(input: { userId: $userId, currentPassword: $oldPassword, newPassword: $newPassword }) {\n      status\n    }\n  }\n": types.ChangePasswordMutationDocument,
     "\n  mutation AllowCrossSigningReset($userId: ID!) {\n    allowUserCrossSigningReset(input: { userId: $userId }) {\n      user {\n        id\n      }\n    }\n  }\n": types.AllowCrossSigningResetDocument,
 };
 
@@ -220,6 +221,10 @@ export function graphql(source: "\n  query DeviceRedirectQuery($deviceId: String
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query VerifyEmailQuery($id: ID!) {\n    userEmail(id: $id) {\n      ...UserEmail_verifyEmail\n    }\n  }\n"): (typeof documents)["\n  query VerifyEmailQuery($id: ID!) {\n    userEmail(id: $id) {\n      ...UserEmail_verifyEmail\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation ChangePasswordMutation($userId: ID!, $oldPassword: String!, $newPassword: String!) {\n    setPassword(input: { userId: $userId, currentPassword: $oldPassword, newPassword: $newPassword }) {\n      status\n    }\n  }\n"): (typeof documents)["\n  mutation ChangePasswordMutation($userId: ID!, $oldPassword: String!, $newPassword: String!) {\n    setPassword(input: { userId: $userId, currentPassword: $oldPassword, newPassword: $newPassword }) {\n      status\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
