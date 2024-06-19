@@ -1341,11 +1341,11 @@ type SiteConfig implements Node {
   """
   imprint: String
   """
-  Whether user can change their email.
+  Whether users can change their email.
   """
   emailChangeAllowed: Boolean!
   """
-  Whether user can change their display name.
+  Whether users can change their display name.
   """
   displayNameChangeAllowed: Boolean!
   """

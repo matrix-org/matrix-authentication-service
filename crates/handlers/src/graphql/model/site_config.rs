@@ -34,10 +34,10 @@ pub struct SiteConfig {
     /// Imprint to show in the footer.
     imprint: Option<String>,
 
-    /// Whether user can change their email.
+    /// Whether users can change their email.
     email_change_allowed: bool,
 
-    /// Whether user can change their display name.
+    /// Whether users can change their display name.
     display_name_change_allowed: bool,
 
     /// Whether passwords are enabled and users can change their own passwords.

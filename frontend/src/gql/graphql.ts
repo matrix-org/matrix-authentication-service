@@ -997,9 +997,9 @@ export enum SetPrimaryEmailStatus {
 
 export type SiteConfig = Node & {
   __typename?: 'SiteConfig';
-  /** Whether user can change their display name. */
+  /** Whether users can change their display name. */
   displayNameChangeAllowed: Scalars['Boolean']['output'];
-  /** Whether user can change their email. */
+  /** Whether users can change their email. */
   emailChangeAllowed: Scalars['Boolean']['output'];
   /** The ID of the site configuration. */
   id: Scalars['ID']['output'];
