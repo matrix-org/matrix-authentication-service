@@ -1349,6 +1349,10 @@ type SiteConfig implements Node {
   """
   displayNameChangeAllowed: Boolean!
   """
+  Whether passwords are enabled for login.
+  """
+  passwordLoginEnabled: Boolean!
+  """
   Whether passwords are enabled and users can change their own passwords.
   """
   passwordChangeAllowed: Boolean!

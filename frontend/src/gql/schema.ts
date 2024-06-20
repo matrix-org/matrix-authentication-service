@@ -2511,6 +2511,17 @@ export default {
             "args": []
           },
           {
+            "name": "passwordLoginEnabled",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Any"
+              }
+            },
+            "args": []
+          },
+          {
             "name": "policyUri",
             "type": {
               "kind": "SCALAR",

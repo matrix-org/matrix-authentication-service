@@ -47,6 +47,7 @@ const QUERY = graphql(/* GraphQL */ `
     siteConfig {
       id
       emailChangeAllowed
+      passwordLoginEnabled
       ...UserEmailList_siteConfig
       ...UserEmail_siteConfig
       ...PasswordChange_siteConfig
@@ -111,9 +112,11 @@ function Index(): React.ReactElement {
 
         <Separator />
 
-        <div className="flex flex-col gap-4" id="password">
-          <AccountManagementPasswordPreview siteConfig={siteConfig} />
-        </div>
+        {siteConfig.passwordLoginEnabled && (
+          <div className="flex flex-col gap-4" id="password">
+            <AccountManagementPasswordPreview siteConfig={siteConfig} />
+          </div>
+        )}
 
         <Separator />
 
