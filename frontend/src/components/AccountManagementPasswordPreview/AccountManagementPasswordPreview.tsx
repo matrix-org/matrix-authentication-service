@@ -16,10 +16,24 @@ import { Link } from "@tanstack/react-router";
 import { Form } from "@vector-im/compound-web";
 import { useTranslation } from "react-i18next";
 
+import { FragmentType, graphql, useFragment } from "../../gql";
+
 import styles from "./AccountManagementPasswordPreview.module.css";
 
-export default function AccountManagementPasswordPreview(): React.ReactElement {
+const CONFIG_FRAGMENT = graphql(/* GraphQL */ `
+  fragment PasswordChange_siteConfig on SiteConfig {
+    id
+    passwordChangeAllowed
+  }
+`);
+
+export default function AccountManagementPasswordPreview({
+  siteConfig,
+}: {
+  siteConfig: FragmentType<typeof CONFIG_FRAGMENT>;
+}): React.ReactElement {
   const { t } = useTranslation();
+  const { passwordChangeAllowed } = useFragment(CONFIG_FRAGMENT, siteConfig);
 
   return (
     <Form.Root>
@@ -36,9 +50,14 @@ export default function AccountManagementPasswordPreview(): React.ReactElement {
         </div>
 
         <Form.HelpMessage>
-          <Link to="/password/change" className={styles.link}>
-            {t("frontend.account.password.change")}
-          </Link>
+          {passwordChangeAllowed && (
+            <Link to="/password/change" className={styles.link}>
+              {t("frontend.account.password.change")}
+            </Link>
+          )}
+
+          {!passwordChangeAllowed &&
+            t("frontend.account.password.change_disabled")}
         </Form.HelpMessage>
       </Form.Field>
     </Form.Root>

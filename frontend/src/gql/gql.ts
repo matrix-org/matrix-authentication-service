@@ -13,6 +13,7 @@ import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/
  * Therefore it is highly recommended to use the babel or swc plugin for production.
  */
 const documents = {
+    "\n  fragment PasswordChange_siteConfig on SiteConfig {\n    id\n    passwordChangeAllowed\n  }\n": types.PasswordChange_SiteConfigFragmentDoc,
     "\n  fragment BrowserSession_session on BrowserSession {\n    id\n    createdAt\n    finishedAt\n    userAgent {\n      raw\n      name\n      os\n      model\n      deviceType\n    }\n    lastActiveIp\n    lastActiveAt\n    lastAuthentication {\n      id\n      createdAt\n    }\n  }\n": types.BrowserSession_SessionFragmentDoc,
     "\n  mutation EndBrowserSession($id: ID!) {\n    endBrowserSession(input: { browserSessionId: $id }) {\n      status\n      browserSession {\n        id\n        ...BrowserSession_session\n      }\n    }\n  }\n": types.EndBrowserSessionDocument,
     "\n  fragment OAuth2Client_detail on Oauth2Client {\n    id\n    clientId\n    clientName\n    clientUri\n    logoUri\n    tosUri\n    policyUri\n    redirectUris\n  }\n": types.OAuth2Client_DetailFragmentDoc,
@@ -41,7 +42,7 @@ const documents = {
     "\n  fragment UserEmail_verifyEmail on UserEmail {\n    id\n    email\n  }\n": types.UserEmail_VerifyEmailFragmentDoc,
     "\n  mutation VerifyEmail($id: ID!, $code: String!) {\n    verifyEmail(input: { userEmailId: $id, code: $code }) {\n      status\n\n      user {\n        id\n        primaryEmail {\n          id\n        }\n      }\n\n      email {\n        id\n        ...UserEmail_email\n      }\n    }\n  }\n": types.VerifyEmailDocument,
     "\n  mutation ResendVerificationEmail($id: ID!) {\n    sendVerificationEmail(input: { userEmailId: $id }) {\n      status\n\n      user {\n        id\n        primaryEmail {\n          id\n        }\n      }\n\n      email {\n        id\n        ...UserEmail_email\n      }\n    }\n  }\n": types.ResendVerificationEmailDocument,
-    "\n  query UserProfileQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n\n        primaryEmail {\n          id\n          ...UserEmail_email\n        }\n\n        ...UserEmailList_user\n      }\n    }\n\n    siteConfig {\n      id\n      emailChangeAllowed\n      ...UserEmailList_siteConfig\n      ...UserEmail_siteConfig\n    }\n  }\n": types.UserProfileQueryDocument,
+    "\n  query UserProfileQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n\n        primaryEmail {\n          id\n          ...UserEmail_email\n        }\n\n        ...UserEmailList_user\n      }\n    }\n\n    siteConfig {\n      id\n      emailChangeAllowed\n      ...UserEmailList_siteConfig\n      ...UserEmail_siteConfig\n      ...PasswordChange_siteConfig\n    }\n  }\n": types.UserProfileQueryDocument,
     "\n  query SessionDetailQuery($id: ID!) {\n    viewerSession {\n      ... on Node {\n        id\n      }\n    }\n\n    node(id: $id) {\n      __typename\n      id\n      ...CompatSession_detail\n      ...OAuth2Session_detail\n      ...BrowserSession_detail\n    }\n  }\n": types.SessionDetailQueryDocument,
     "\n  query BrowserSessionList(\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    viewerSession {\n      __typename\n      ... on BrowserSession {\n        id\n\n        user {\n          id\n\n          browserSessions(\n            first: $first\n            after: $after\n            last: $last\n            before: $before\n            state: ACTIVE\n          ) {\n            totalCount\n\n            edges {\n              cursor\n              node {\n                id\n                ...BrowserSession_session\n              }\n            }\n\n            pageInfo {\n              hasNextPage\n              hasPreviousPage\n              startCursor\n              endCursor\n            }\n          }\n        }\n      }\n    }\n  }\n": types.BrowserSessionListDocument,
     "\n  query SessionsOverviewQuery {\n    viewer {\n      __typename\n\n      ... on User {\n        id\n        ...BrowserSessionsOverview_user\n      }\n    }\n  }\n": types.SessionsOverviewQueryDocument,
@@ -69,6 +70,10 @@ const documents = {
  */
 export function graphql(source: string): unknown;
 
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  fragment PasswordChange_siteConfig on SiteConfig {\n    id\n    passwordChangeAllowed\n  }\n"): (typeof documents)["\n  fragment PasswordChange_siteConfig on SiteConfig {\n    id\n    passwordChangeAllowed\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -184,7 +189,7 @@ export function graphql(source: "\n  mutation ResendVerificationEmail($id: ID!) 
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query UserProfileQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n\n        primaryEmail {\n          id\n          ...UserEmail_email\n        }\n\n        ...UserEmailList_user\n      }\n    }\n\n    siteConfig {\n      id\n      emailChangeAllowed\n      ...UserEmailList_siteConfig\n      ...UserEmail_siteConfig\n    }\n  }\n"): (typeof documents)["\n  query UserProfileQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n\n        primaryEmail {\n          id\n          ...UserEmail_email\n        }\n\n        ...UserEmailList_user\n      }\n    }\n\n    siteConfig {\n      id\n      emailChangeAllowed\n      ...UserEmailList_siteConfig\n      ...UserEmail_siteConfig\n    }\n  }\n"];
+export function graphql(source: "\n  query UserProfileQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n\n        primaryEmail {\n          id\n          ...UserEmail_email\n        }\n\n        ...UserEmailList_user\n      }\n    }\n\n    siteConfig {\n      id\n      emailChangeAllowed\n      ...UserEmailList_siteConfig\n      ...UserEmail_siteConfig\n      ...PasswordChange_siteConfig\n    }\n  }\n"): (typeof documents)["\n  query UserProfileQuery {\n    viewer {\n      __typename\n      ... on User {\n        id\n\n        primaryEmail {\n          id\n          ...UserEmail_email\n        }\n\n        ...UserEmailList_user\n      }\n    }\n\n    siteConfig {\n      id\n      emailChangeAllowed\n      ...UserEmailList_siteConfig\n      ...UserEmail_siteConfig\n      ...PasswordChange_siteConfig\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
