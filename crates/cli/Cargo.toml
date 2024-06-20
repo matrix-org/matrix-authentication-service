@@ -43,12 +43,12 @@ tracing-subscriber = { workspace = true, features = ["env-filter"] }
 tracing-opentelemetry.workspace = true
 opentelemetry.workspace = true
 opentelemetry-http.workspace = true
-opentelemetry-jaeger-propagator = "0.1.0"
-opentelemetry-otlp = { version = "0.15.0", default-features = false, features = ["trace", "metrics", "http-proto"] }
-opentelemetry-prometheus = "0.15.0"
+opentelemetry-jaeger-propagator = "0.2.0"
+opentelemetry-otlp = { version = "0.16.0", default-features = false, features = ["trace", "metrics", "http-proto"] }
+opentelemetry-prometheus = "0.16.0"
 opentelemetry-semantic-conventions.workspace = true
-opentelemetry-stdout = { version = "0.3.0", features = ["trace", "metrics"] }
-opentelemetry_sdk = { version = "0.22.1", features = ["trace", "metrics", "rt-tokio"] }
+opentelemetry-stdout = { version = "0.4.0", features = ["trace", "metrics"] }
+opentelemetry_sdk = { version = "0.23.0", features = ["trace", "metrics", "rt-tokio"] }
 prometheus = "0.13.4"
 sentry = { version = "0.31.8", default-features = false, features = ["backtrace", "contexts", "panic", "tower"] }
 sentry-tracing = "0.31.8"
