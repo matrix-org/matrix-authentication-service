@@ -31,8 +31,8 @@ use crate::{
         UpstreamOAuthSessionRepository,
     },
     user::{
-        BrowserSessionRepository, UserEmailRepository, UserPasswordRepository, UserRepository,
-        UserTermsRepository,
+        BrowserSessionRepository, UserEmailRepository, UserPasswordRepository,
+        UserRecoveryRepository, UserRepository, UserTermsRepository,
     },
     MapErr,
 };
@@ -148,6 +148,10 @@ pub trait RepositoryAccess: Send {
     /// Get an [`UserPasswordRepository`]
     fn user_password<'c>(&'c mut self)
         -> Box<dyn UserPasswordRepository<Error = Self::Error> + 'c>;
+
+    /// Get an [`UserRecoveryRepository`]
+    fn user_recovery<'c>(&'c mut self)
+        -> Box<dyn UserRecoveryRepository<Error = Self::Error> + 'c>;
 
     /// Get an [`UserTermsRepository`]
     fn user_terms<'c>(&'c mut self) -> Box<dyn UserTermsRepository<Error = Self::Error> + 'c>;
@@ -322,6 +326,12 @@ mod impls {
             Box::new(MapErr::new(self.inner.user_password(), &mut self.mapper))
         }
 
+        fn user_recovery<'c>(
+            &'c mut self,
+        ) -> Box<dyn crate::user::UserRecoveryRepository<Error = Self::Error> + 'c> {
+            Box::new(MapErr::new(self.inner.user_recovery(), &mut self.mapper))
+        }
+
         fn user_terms<'c>(&'c mut self) -> Box<dyn UserTermsRepository<Error = Self::Error> + 'c> {
             Box::new(MapErr::new(self.inner.user_terms(), &mut self.mapper))
         }
@@ -454,6 +464,12 @@ mod impls {
             &'c mut self,
         ) -> Box<dyn UserPasswordRepository<Error = Self::Error> + 'c> {
             (**self).user_password()
+        }
+
+        fn user_recovery<'c>(
+            &'c mut self,
+        ) -> Box<dyn crate::user::UserRecoveryRepository<Error = Self::Error> + 'c> {
+            (**self).user_recovery()
         }
 
         fn user_terms<'c>(&'c mut self) -> Box<dyn UserTermsRepository<Error = Self::Error> + 'c> {

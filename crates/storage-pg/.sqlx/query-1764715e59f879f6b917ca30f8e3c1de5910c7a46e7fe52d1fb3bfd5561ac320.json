@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                UPDATE user_recovery_sessions\n                SET consumed_at = $1\n                WHERE user_recovery_session_id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1764715e59f879f6b917ca30f8e3c1de5910c7a46e7fe52d1fb3bfd5561ac320"
+}
