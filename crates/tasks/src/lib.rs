@@ -28,6 +28,7 @@ use crate::storage::PostgresStorageFactory;
 mod database;
 mod email;
 mod matrix;
+mod recovery;
 mod storage;
 mod user;
 mod utils;
@@ -152,6 +153,7 @@ pub async fn init(
     let monitor = self::email::register(name, monitor, &state, &factory);
     let monitor = self::matrix::register(name, monitor, &state, &factory);
     let monitor = self::user::register(name, monitor, &state, &factory);
+    let monitor = self::recovery::register(name, monitor, &state, &factory);
     // TODO: we might want to grab the join handle here
     factory.listen().await?;
     debug!(?monitor, "workers registered");
