@@ -41,6 +41,7 @@ impl UserEmailState {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub struct UserEmailFilter<'a> {
     user: Option<&'a User>,
+    email: Option<&'a str>,
     state: Option<UserEmailState>,
 }
 
@@ -58,12 +59,27 @@ impl<'a> UserEmailFilter<'a> {
         self
     }
 
+    /// Filter for emails matching a specific email address
+    #[must_use]
+    pub fn for_email(mut self, email: &'a str) -> Self {
+        self.email = Some(email);
+        self
+    }
+
     /// Get the user filter
     ///
     /// Returns [`None`] if no user filter is set
     #[must_use]
     pub fn user(&self) -> Option<&User> {
         self.user
+    }
+
+    /// Get the email filter
+    ///
+    /// Returns [`None`] if no email filter is set
+    #[must_use]
+    pub fn email(&self) -> Option<&str> {
+        self.email
     }
 
     /// Filter for emails that are verified

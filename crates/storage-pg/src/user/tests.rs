@@ -1,4 +1,4 @@
-// Copyright 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2023, 2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -320,6 +320,38 @@ async fn test_user_email_repo(pool: PgPool) {
         .unwrap();
     assert!(!emails.has_next_page);
     assert!(emails.edges.is_empty());
+
+    // Listing emails from the email address should work
+    let emails = repo
+        .user_email()
+        .list(all.for_email(EMAIL), Pagination::first(10))
+        .await
+        .unwrap();
+    assert!(!emails.has_next_page);
+    assert_eq!(emails.edges.len(), 1);
+    assert_eq!(emails.edges[0], user_email);
+
+    // Filtering on another email should not return anything
+    let emails = repo
+        .user_email()
+        .list(all.for_email("hello@example.com"), Pagination::first(10))
+        .await
+        .unwrap();
+    assert!(!emails.has_next_page);
+    assert!(emails.edges.is_empty());
+
+    // Counting also works with the email filter
+    assert_eq!(
+        repo.user_email().count(all.for_email(EMAIL)).await.unwrap(),
+        1
+    );
+    assert_eq!(
+        repo.user_email()
+            .count(all.for_email("hello@example.com"))
+            .await
+            .unwrap(),
+        0
+    );
 
     // Deleting the user email should work
     repo.user_email().remove(user_email).await.unwrap();

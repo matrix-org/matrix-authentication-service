@@ -1,4 +1,4 @@
-// Copyright 2022, 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2022-2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -270,6 +270,11 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
             .and_where_option(filter.user().map(|user| {
                 Expr::col((UserEmails::Table, UserEmails::UserId)).eq(Uuid::from(user.id))
             }))
+            .and_where_option(
+                filter
+                    .email()
+                    .map(|email| Expr::col((UserEmails::Table, UserEmails::Email)).eq(email)),
+            )
             .and_where_option(filter.state().map(|state| {
                 if state.is_verified() {
                     Expr::col((UserEmails::Table, UserEmails::ConfirmedAt)).is_not_null()
@@ -305,6 +310,11 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
             .and_where_option(filter.user().map(|user| {
                 Expr::col((UserEmails::Table, UserEmails::UserId)).eq(Uuid::from(user.id))
             }))
+            .and_where_option(
+                filter
+                    .email()
+                    .map(|email| Expr::col((UserEmails::Table, UserEmails::Email)).eq(email)),
+            )
             .and_where_option(filter.state().map(|state| {
                 if state.is_verified() {
                     Expr::col((UserEmails::Table, UserEmails::ConfirmedAt)).is_not_null()
