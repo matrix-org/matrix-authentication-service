@@ -54,6 +54,6 @@ pub use self::{
     user_agent::{DeviceType, UserAgent},
     users::{
         Authentication, AuthenticationMethod, BrowserSession, Password, User, UserEmail,
-        UserEmailVerification, UserEmailVerificationState,
+        UserEmailVerification, UserEmailVerificationState, UserRecoverySession, UserRecoveryTicket,
     },
 };

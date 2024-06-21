@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021-2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -77,6 +77,44 @@ pub enum AuthenticationMethod {
     Password { user_password_id: Ulid },
     UpstreamOAuth2 { upstream_oauth2_session_id: Ulid },
     Unknown,
+}
+
+/// A session to recover a user if they have lost their credentials
+///
+/// For each session intiated, there may be multiple [`UserRecoveryTicket`]s
+/// sent to the user, either because multiple [`User`] have the same email
+/// address, or because the user asked to send the recovery email again.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct UserRecoverySession {
+    pub id: Ulid,
+    pub email: String,
+    pub user_agent: UserAgent,
+    pub ip_address: Option<IpAddr>,
+    pub locale: String,
+    pub created_at: DateTime<Utc>,
+    pub consumed_at: Option<DateTime<Utc>>,
+}
+
+/// A single recovery ticket for a user recovery session
+///
+/// Whenever a new recovery session is initiated, a new ticket is created for
+/// each email address matching in the database. That ticket is sent by email,
+/// as a link that the user can click to recover their account.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct UserRecoveryTicket {
+    pub id: Ulid,
+    pub user_recovery_session_id: Ulid,
+    pub user_email_id: Ulid,
+    pub ticket: String,
+    pub created_at: DateTime<Utc>,
+    pub expires_at: DateTime<Utc>,
+}
+
+impl UserRecoveryTicket {
+    #[must_use]
+    pub fn active(&self, now: DateTime<Utc>) -> bool {
+        now < self.expires_at
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]

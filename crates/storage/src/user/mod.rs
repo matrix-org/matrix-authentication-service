@@ -23,12 +23,14 @@ use crate::{repository_impl, Clock};
 
 mod email;
 mod password;
+mod recovery;
 mod session;
 mod terms;
 
 pub use self::{
     email::{UserEmailFilter, UserEmailRepository},
     password::UserPasswordRepository,
+    recovery::UserRecoveryRepository,
     session::{BrowserSessionFilter, BrowserSessionRepository},
     terms::UserTermsRepository,
 };

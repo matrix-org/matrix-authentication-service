@@ -1,4 +1,4 @@
-// Copyright 2022, 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2022-2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ use crate::{
     },
     user::{
         PgBrowserSessionRepository, PgUserEmailRepository, PgUserPasswordRepository,
-        PgUserRepository, PgUserTermsRepository,
+        PgUserRecoveryRepository, PgUserRepository, PgUserTermsRepository,
     },
     DatabaseError,
 };
@@ -177,6 +177,12 @@ where
         &'c mut self,
     ) -> Box<dyn UserPasswordRepository<Error = Self::Error> + 'c> {
         Box::new(PgUserPasswordRepository::new(self.conn.as_mut()))
+    }
+
+    fn user_recovery<'c>(
+        &'c mut self,
+    ) -> Box<dyn mas_storage::user::UserRecoveryRepository<Error = Self::Error> + 'c> {
+        Box::new(PgUserRecoveryRepository::new(self.conn.as_mut()))
     }
 
     fn user_terms<'c>(
