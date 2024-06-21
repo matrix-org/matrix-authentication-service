@@ -913,6 +913,61 @@ impl TemplateContext for EmailAddContext {
     }
 }
 
+/// Fields of the account recovery start form
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum RecoveryStartFormField {
+    /// The email
+    Email,
+}
+
+impl FormField for RecoveryStartFormField {
+    fn keep(&self) -> bool {
+        match self {
+            Self::Email => true,
+        }
+    }
+}
+
+/// Context used by the `pages/recovery/start.html` template
+#[derive(Serialize, Default)]
+pub struct RecoveryStartContext {
+    form: FormState<RecoveryStartFormField>,
+}
+
+impl RecoveryStartContext {
+    /// Constructs a context for the recovery start page
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Set the form state
+    #[must_use]
+    pub fn with_form_state(self, form: FormState<RecoveryStartFormField>) -> Self {
+        Self { form }
+    }
+}
+
+impl TemplateContext for RecoveryStartContext {
+    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        vec![
+            Self::new(),
+            Self::new().with_form_state(
+                FormState::default()
+                    .with_error_on_field(RecoveryStartFormField::Email, FieldError::Required),
+            ),
+            Self::new().with_form_state(
+                FormState::default()
+                    .with_error_on_field(RecoveryStartFormField::Email, FieldError::Invalid),
+            ),
+        ]
+    }
+}
+
 /// Context used by the `pages/upstream_oauth2/{link_mismatch,do_login}.html`
 /// templates
 #[derive(Serialize)]
