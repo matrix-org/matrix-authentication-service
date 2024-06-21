@@ -382,6 +382,10 @@ where
                 .post(self::views::account::emails::add::post),
         )
         .route(
+            mas_router::AccountRecoveryStart::route(),
+            get(self::views::recovery::start::get).post(self::views::recovery::start::post),
+        )
+        .route(
             mas_router::OAuth2AuthorizationEndpoint::route(),
             get(self::oauth2::authorization::get),
         )

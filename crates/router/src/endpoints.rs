@@ -776,6 +776,38 @@ impl SimpleRoute for OAuth2DeviceAuthorizationEndpoint {
     const PATH: &'static str = "/oauth2/device";
 }
 
+/// `GET|POST /recover`
+#[derive(Default, Serialize, Deserialize, Debug, Clone)]
+pub struct AccountRecoveryStart;
+
+impl SimpleRoute for AccountRecoveryStart {
+    const PATH: &'static str = "/recover";
+}
+
+/// `GET|POST /recover/progress/:session_id`
+#[derive(Default, Serialize, Deserialize, Debug, Clone)]
+pub struct AccountRecoveryProgress {
+    session_id: Ulid,
+}
+
+impl AccountRecoveryProgress {
+    #[must_use]
+    pub fn new(session_id: Ulid) -> Self {
+        Self { session_id }
+    }
+}
+
+impl Route for AccountRecoveryProgress {
+    type Query = ();
+    fn route() -> &'static str {
+        "/recover/progress/:session_id"
+    }
+
+    fn path(&self) -> std::borrow::Cow<'static, str> {
+        format!("/recover/progress/{}", self.session_id).into()
+    }
+}
+
 /// `GET /assets`
 pub struct StaticAsset {
     path: String,

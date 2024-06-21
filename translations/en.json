@@ -6,7 +6,7 @@
     },
     "continue": "Continue",
     "@continue": {
-      "context": "pages/account/emails/add.html:45:26-46, pages/account/emails/verify.html:60:26-46, pages/consent.html:63:28-48, pages/device_consent.html:129:13-33, pages/device_link.html:48:26-46, pages/login.html:62:30-50, pages/reauth.html:40:28-48, pages/register.html:84:28-48, pages/sso.html:45:28-48"
+      "context": "pages/account/emails/add.html:45:26-46, pages/account/emails/verify.html:60:26-46, pages/consent.html:63:28-48, pages/device_consent.html:129:13-33, pages/device_link.html:48:26-46, pages/login.html:62:30-50, pages/reauth.html:40:28-48, pages/recovery/start.html:45:26-46, pages/register.html:84:28-48, pages/sso.html:45:28-48"
     },
     "create_account": "Create Account",
     "@create_account": {
@@ -67,7 +67,7 @@
     },
     "email_address": "Email address",
     "@email_address": {
-      "context": "pages/account/emails/add.html:41:33-58, pages/register.html:48:35-60, pages/upstream_oauth2/do_register.html:87:37-62"
+      "context": "pages/account/emails/add.html:41:33-58, pages/recovery/start.html:42:33-58, pages/register.html:48:35-60, pages/upstream_oauth2/do_register.html:87:37-62"
     },
     "mxid": "Matrix ID",
     "@mxid": {
@@ -347,6 +347,20 @@
       "logged_as": "Logged as <span class=\"font-semibold\">%(username)s</span>",
       "@logged_as": {
         "context": "pages/policy_violation.html:43:11-86"
+      }
+    },
+    "recovery": {
+      "start": {
+        "description": "An email will be sent with a link to reset your password.",
+        "@description": {
+          "context": "pages/recovery/start.html:27:25-60",
+          "description": "The description of the page to initiate an account recovery"
+        },
+        "heading": "Enter your email to continue",
+        "@heading": {
+          "context": "pages/recovery/start.html:26:27-58",
+          "description": "The title of the page to initiate an account recovery"
+        }
       }
     },
     "register": {

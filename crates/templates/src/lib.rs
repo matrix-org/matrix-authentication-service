@@ -47,9 +47,10 @@ pub use self::{
         DeviceLinkFormField, EmailAddContext, EmailVerificationContext,
         EmailVerificationPageContext, EmptyContext, ErrorContext, FormPostContext, IndexContext,
         LoginContext, LoginFormField, NotFoundContext, PolicyViolationContext, PostAuthContext,
-        PostAuthContextInner, ReauthContext, ReauthFormField, RegisterContext, RegisterFormField,
-        SiteBranding, SiteConfigExt, SiteFeatures, TemplateContext, UpstreamExistingLinkContext,
-        UpstreamRegister, UpstreamRegisterFormField, UpstreamSuggestLink, WithCsrf, WithLanguage,
+        PostAuthContextInner, ReauthContext, ReauthFormField, RecoveryStartContext,
+        RecoveryStartFormField, RegisterContext, RegisterFormField, SiteBranding, SiteConfigExt,
+        SiteFeatures, TemplateContext, UpstreamExistingLinkContext, UpstreamRegister,
+        UpstreamRegisterFormField, UpstreamSuggestLink, WithCsrf, WithLanguage,
         WithOptionalSession, WithSession,
     },
     forms::{FieldError, FormError, FormField, FormState, ToFormState},
@@ -347,6 +348,9 @@ register_templates! {
     /// Render the email verification page
     pub fn render_account_add_email(WithLanguage<WithCsrf<WithSession<EmailAddContext>>>) { "pages/account/emails/add.html" }
 
+    /// Render the account recovery start page
+    pub fn render_recovery_start(WithLanguage<WithCsrf<RecoveryStartContext>>) { "pages/recovery/start.html" }
+
     /// Render the re-authentication form
     pub fn render_reauth(WithLanguage<WithCsrf<WithSession<ReauthContext>>>) { "pages/reauth.html" }
 
@@ -403,6 +407,7 @@ impl Templates {
         check::render_index(self, now, rng)?;
         check::render_account_add_email(self, now, rng)?;
         check::render_account_verify_email(self, now, rng)?;
+        check::render_recovery_start(self, now, rng)?;
         check::render_reauth(self, now, rng)?;
         check::render_form_post::<EmptyContext>(self, now, rng)?;
         check::render_error(self, now, rng)?;
