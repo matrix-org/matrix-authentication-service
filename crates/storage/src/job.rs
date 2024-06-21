@@ -1,4 +1,4 @@
-// Copyright 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2023, 2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -231,7 +231,7 @@ where
 mod jobs {
     // XXX: Move this somewhere else?
     use apalis_core::job::Job;
-    use mas_data_model::{Device, User, UserEmail};
+    use mas_data_model::{Device, User, UserEmail, UserRecoverySession};
     use serde::{Deserialize, Serialize};
     use ulid::Ulid;
 
@@ -432,8 +432,40 @@ mod jobs {
     impl Job for DeactivateUserJob {
         const NAME: &'static str = "deactivate-user";
     }
+
+    /// Send account recovery emails
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct SendAccountRecoveryEmailsJob {
+        user_recovery_session_id: Ulid,
+    }
+
+    impl SendAccountRecoveryEmailsJob {
+        /// Create a new job to send account recovery emails
+        ///
+        /// # Parameters
+        ///
+        /// * `user_recovery_session` - The user recovery session to send the
+        ///   email for
+        #[must_use]
+        pub fn new(user_recovery_session: &UserRecoverySession) -> Self {
+            Self {
+                user_recovery_session_id: user_recovery_session.id,
+            }
+        }
+
+        /// The ID of the user recovery session to send the email for
+        #[must_use]
+        pub fn user_recovery_session_id(&self) -> Ulid {
+            self.user_recovery_session_id
+        }
+    }
+
+    impl Job for SendAccountRecoveryEmailsJob {
+        const NAME: &'static str = "send-account-recovery-email";
+    }
 }
 
 pub use self::jobs::{
-    DeactivateUserJob, DeleteDeviceJob, ProvisionDeviceJob, ProvisionUserJob, VerifyEmailJob,
+    DeactivateUserJob, DeleteDeviceJob, ProvisionDeviceJob, ProvisionUserJob,
+    SendAccountRecoveryEmailsJob, VerifyEmailJob,
 };
