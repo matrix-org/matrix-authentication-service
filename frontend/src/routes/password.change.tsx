@@ -89,21 +89,9 @@ function ChangePassword(): React.ReactNode {
 
     const formData = new FormData(event.currentTarget);
 
-    const oldPassword = formData.get("current_password");
-    const newPassword = formData.get("new_password");
-    const newPasswordAgain = formData.get("new_password_again");
-
-    if (!oldPassword || !newPassword || !newPasswordAgain) {
-      throw new Error("not all passwords set");
-    }
-
-    // Assert that these are strings — according to the type system they could be Files
-    if (typeof oldPassword !== "string") {
-      throw new Error("oldPassword not string");
-    }
-    if (typeof newPassword !== "string") {
-      throw new Error("newPassword not string");
-    }
+    const oldPassword = formData.get("current_password") as string;
+    const newPassword = formData.get("new_password") as string;
+    const newPasswordAgain = formData.get("new_password_again") as string;
 
     if (newPassword !== newPasswordAgain) {
       throw new Error("passwords mismatch; this should be checked by the form");
@@ -164,8 +152,7 @@ function ChangePassword(): React.ReactNode {
               <Form.Field
                 name="current_password"
                 serverInvalid={
-                  result.data &&
-                  result.data.setPassword.status ==
+                  result.data?.setPassword.status ===
                     SetPasswordStatus.WrongPassword
                 }
               >
@@ -205,7 +192,7 @@ function ChangePassword(): React.ReactNode {
                   required
                   autoComplete="new-password"
                   ref={newPasswordRef}
-                  onBlur={() => newPasswordAgainRef.current!.reportValidity()}
+                  onBlur={() => newPasswordAgainRef.current!.value && newPasswordAgainRef.current!.reportValidity()}
                 />
 
                 {/* TODO Show a password bar. https://github.com/matrix-org/matrix-authentication-service/issues/2854 */}
