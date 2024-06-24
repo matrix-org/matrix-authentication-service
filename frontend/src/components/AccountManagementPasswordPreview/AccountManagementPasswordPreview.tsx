@@ -40,14 +40,11 @@ export default function AccountManagementPasswordPreview({
       <Form.Field name="password_preview">
         <Form.Label>{t("frontend.account.password.label")}</Form.Label>
 
-        <div className="flex items-center gap-2">
-          <Form.TextControl
-            type="password"
-            readOnly
-            value="this looks like a password"
-            className={styles.passwordPreviewField}
-          />
-        </div>
+        <Form.TextControl
+          type="password"
+          readOnly
+          value="this looks like a password"
+        />
 
         <Form.HelpMessage>
           {passwordChangeAllowed && (
