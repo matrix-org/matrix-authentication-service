@@ -110,24 +110,25 @@ function ChangePassword(): React.ReactNode {
     switch (result.data?.setPassword.status) {
       case SetPasswordStatus.InvalidNewPassword:
         return t(
-          "frontend.password_change.failure.description_INVALID_NEW_PASSWORD",
+          "frontend.password_change.failure.description.invalid_new_password",
         );
       case SetPasswordStatus.NoCurrentPassword:
         return t(
-          "frontend.password_change.failure.description_NO_CURRENT_PASSWORD",
+          "frontend.password_change.failure.description.no_current_password",
         );
-      case SetPasswordStatus.NotAllowed:
-        return t("frontend.password_change.failure.description_NOT_ALLOWED");
-      case SetPasswordStatus.NotFound:
-        return t("frontend.password_change.failure.description_NOT_FOUND");
       case SetPasswordStatus.PasswordChangesDisabled:
         return t(
-          "frontend.password_change.failure.description_PASSWORD_CHANGES_DISABLED",
+          "frontend.password_change.failure.description.password_changes_disabled",
         );
       case SetPasswordStatus.WrongPassword:
-        return t("frontend.password_change.failure.description_WRONG_PASSWORD");
-      default:
+        return t("frontend.password_change.failure.description.wrong_password");
+      case SetPasswordStatus.Allowed:
+      case undefined:
         return undefined;
+      default:
+        throw new Error(
+          `unexpected error when changing password: ${result.data!.setPassword.status}`,
+        );
     }
   })();
 
@@ -153,7 +154,7 @@ function ChangePassword(): React.ReactNode {
                 name="current_password"
                 serverInvalid={
                   result.data?.setPassword.status ===
-                    SetPasswordStatus.WrongPassword
+                  SetPasswordStatus.WrongPassword
                 }
               >
                 <Form.Label>
@@ -175,7 +176,7 @@ function ChangePassword(): React.ReactNode {
                     SetPasswordStatus.WrongPassword && (
                     <Form.ErrorMessage>
                       {t(
-                        "frontend.password_change.failure.description_WRONG_PASSWORD",
+                        "frontend.password_change.failure.description.wrong_password",
                       )}
                     </Form.ErrorMessage>
                   )}
@@ -192,7 +193,10 @@ function ChangePassword(): React.ReactNode {
                   required
                   autoComplete="new-password"
                   ref={newPasswordRef}
-                  onBlur={() => newPasswordAgainRef.current!.value && newPasswordAgainRef.current!.reportValidity()}
+                  onBlur={() =>
+                    newPasswordAgainRef.current!.value &&
+                    newPasswordAgainRef.current!.reportValidity()
+                  }
                 />
 
                 {/* TODO Show a password bar. https://github.com/matrix-org/matrix-authentication-service/issues/2854 */}
@@ -200,6 +204,16 @@ function ChangePassword(): React.ReactNode {
                 <Form.ErrorMessage match="valueMissing">
                   {t("frontend.errors.field_required")}
                 </Form.ErrorMessage>
+
+                {result.data &&
+                  result.data.setPassword.status ==
+                    SetPasswordStatus.InvalidNewPassword && (
+                    <Form.ErrorMessage>
+                      {t(
+                        "frontend.password_change.failure.description.invalid_new_password",
+                      )}
+                    </Form.ErrorMessage>
+                  )}
               </Form.Field>
 
               <Form.Field name="new_password_again">
@@ -242,7 +256,7 @@ function ChangePassword(): React.ReactNode {
               type="critical"
               title={t("frontend.password_change.failure.title")}
             >
-              {t("frontend.password_change.failure.description")}
+              {t("frontend.password_change.failure.description.unspecified")}
             </Alert>
           )}
           {!success && (
