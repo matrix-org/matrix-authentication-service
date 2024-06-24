@@ -38,6 +38,7 @@ mas-data-model.workspace = true
 mas-email.workspace = true
 mas-i18n.workspace = true
 mas-matrix.workspace = true
+mas-router.workspace = true
 mas-storage.workspace = true
 mas-storage-pg.workspace = true
 mas-templates.workspace = true

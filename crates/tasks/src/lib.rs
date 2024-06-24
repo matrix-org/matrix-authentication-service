@@ -17,6 +17,7 @@ use std::sync::Arc;
 use apalis_core::{executor::TokioExecutor, layers::extensions::Extension, monitor::Monitor};
 use mas_email::Mailer;
 use mas_matrix::HomeserverConnection;
+use mas_router::UrlBuilder;
 use mas_storage::{BoxClock, BoxRepository, Repository, SystemClock};
 use mas_storage_pg::{DatabaseError, PgRepository};
 use rand::SeedableRng;
@@ -39,6 +40,7 @@ struct State {
     mailer: Mailer,
     clock: SystemClock,
     homeserver: Arc<dyn HomeserverConnection<Error = anyhow::Error>>,
+    url_builder: UrlBuilder,
 }
 
 impl State {
@@ -47,12 +49,14 @@ impl State {
         clock: SystemClock,
         mailer: Mailer,
         homeserver: impl HomeserverConnection<Error = anyhow::Error> + 'static,
+        url_builder: UrlBuilder,
     ) -> Self {
         Self {
             pool,
             mailer,
             clock,
             homeserver: Arc::new(homeserver),
+            url_builder,
         }
     }
 
@@ -89,6 +93,10 @@ impl State {
 
     pub fn matrix_connection(&self) -> &dyn HomeserverConnection<Error = anyhow::Error> {
         self.homeserver.as_ref()
+    }
+
+    pub fn url_builder(&self) -> &UrlBuilder {
+        &self.url_builder
     }
 }
 
@@ -140,12 +148,14 @@ pub async fn init(
     pool: &Pool<Postgres>,
     mailer: &Mailer,
     homeserver: impl HomeserverConnection<Error = anyhow::Error> + 'static,
+    url_builder: UrlBuilder,
 ) -> Result<Monitor<TokioExecutor>, sqlx::Error> {
     let state = State::new(
         pool.clone(),
         SystemClock::default(),
         mailer.clone(),
         homeserver,
+        url_builder,
     );
     let factory = PostgresStorageFactory::new(pool.clone());
     let monitor = Monitor::new().executor(TokioExecutor::new());

@@ -77,7 +77,7 @@ impl Options {
         let worker_name = Alphanumeric.sample_string(&mut rng, 10);
 
         info!(worker_name, "Starting task scheduler");
-        let monitor = mas_tasks::init(&worker_name, &pool, &mailer, conn).await?;
+        let monitor = mas_tasks::init(&worker_name, &pool, &mailer, conn, url_builder).await?;
 
         span.exit();
 

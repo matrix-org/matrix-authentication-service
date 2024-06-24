@@ -56,7 +56,7 @@ pub struct WithCaptcha<T> {
 
 impl<T> WithCaptcha<T> {
     #[must_use]
-    pub fn new(captcha: Option<mas_data_model::CaptchaConfig>, inner: T) -> Self {
+    pub(crate) fn new(captcha: Option<mas_data_model::CaptchaConfig>, inner: T) -> Self {
         Self {
             captcha: captcha.map(|captcha| Value::from_object(CaptchaConfig(captcha))),
             inner,

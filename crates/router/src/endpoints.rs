@@ -808,6 +808,31 @@ impl Route for AccountRecoveryProgress {
     }
 }
 
+/// `GET|POST /recover/complete?ticket=:ticket`
+#[derive(Default, Serialize, Deserialize, Debug, Clone)]
+pub struct AccountRecoveryFinish {
+    ticket: String,
+}
+
+impl AccountRecoveryFinish {
+    #[must_use]
+    pub fn new(ticket: String) -> Self {
+        Self { ticket }
+    }
+}
+
+impl Route for AccountRecoveryFinish {
+    type Query = AccountRecoveryFinish;
+
+    fn route() -> &'static str {
+        "/recover/complete"
+    }
+
+    fn query(&self) -> Option<&Self::Query> {
+        Some(self)
+    }
+}
+
 /// `GET /assets`
 pub struct StaticAsset {
     path: String,

@@ -29,7 +29,7 @@ use http::{Method, Uri, Version};
 use mas_data_model::{
     AuthorizationGrant, BrowserSession, Client, CompatSsoLogin, CompatSsoLoginState,
     DeviceCodeGrant, UpstreamOAuthLink, UpstreamOAuthProvider, User, UserAgent, UserEmail,
-    UserEmailVerification,
+    UserEmailVerification, UserRecoverySession,
 };
 use mas_i18n::DataLocale;
 use mas_router::{Account, GraphQL, PostAuthAction, UrlBuilder};
@@ -748,6 +748,61 @@ impl CompatSsoContext {
 where {
         let action = PostAuthAction::continue_compat_sso_login(login.id);
         Self { login, action }
+    }
+}
+
+/// Context used by the `emails/recovery.{txt,html,subject}` templates
+#[derive(Serialize)]
+pub struct EmailRecoveryContext {
+    user: User,
+    session: UserRecoverySession,
+    recovery_link: Url,
+}
+
+impl EmailRecoveryContext {
+    /// Constructs a context for the recovery email
+    #[must_use]
+    pub fn new(user: User, session: UserRecoverySession, recovery_link: Url) -> Self {
+        Self {
+            user,
+            session,
+            recovery_link,
+        }
+    }
+
+    /// Returns the user associated with the recovery email
+    #[must_use]
+    pub fn user(&self) -> &User {
+        &self.user
+    }
+
+    /// Returns the recovery session associated with the recovery email
+    #[must_use]
+    pub fn session(&self) -> &UserRecoverySession {
+        &self.session
+    }
+}
+
+impl TemplateContext for EmailRecoveryContext {
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        User::samples(now, rng).into_iter().map(|user| {
+            let session = UserRecoverySession {
+                id: Ulid::from_datetime_with_source(now.into(), rng),
+                email: "hello@example.com".to_owned(),
+                user_agent: UserAgent::parse("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) AppleWebKit/536.30.1 (KHTML, like Gecko) Version/6.0.5 Safari/536.30.1".to_owned()),
+                ip_address: Some(IpAddr::from([192_u8, 0, 2, 1])),
+                locale: "en".to_owned(),
+                created_at: now,
+                consumed_at: None,
+            };
+
+            let link = "https://example.com/recovery/complete?ticket=abcdefghijklmnopqrstuvwxyz0123456789".parse().unwrap();
+
+            Self::new(user, session, link)
+        }).collect()
     }
 }
 

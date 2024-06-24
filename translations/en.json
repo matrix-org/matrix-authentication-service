@@ -221,6 +221,32 @@
         "context": "emails/verification.html:19:3-51, emails/verification.txt:19:3-51",
         "description": "Greeting at the top of emails sent to the user"
       },
+      "recovery": {
+        "click_button": "Click on the button below to create a new password:",
+        "@click_button": {
+          "context": "emails/recovery.html:36:7-44"
+        },
+        "copy_link": "Copy the following link and paste it into a browser to create a new password:",
+        "@copy_link": {
+          "context": "emails/recovery.txt:20:3-37"
+        },
+        "create_new_password": "Create new password",
+        "@create_new_password": {
+          "context": "emails/recovery.html:51:9-53"
+        },
+        "headline": "You requested a password reset for your %(server_name)s account.",
+        "@headline": {
+          "context": "emails/recovery.html:34:7-74, emails/recovery.txt:18:3-70"
+        },
+        "subject": "Reset your account password (%(mxid)s)",
+        "@subject": {
+          "context": "emails/recovery.subject:22:3-46"
+        },
+        "you_can_ignore": "If you didn't ask for a new password, you can ignore this email. Your current password will continue to work.",
+        "@you_can_ignore": {
+          "context": "emails/recovery.html:53:7-46, emails/recovery.txt:24:3-42"
+        }
+      },
       "verify": {
         "body_html": "Your verification code to confirm this email address is: <strong>%(code)s</strong>",
         "@body_html": {

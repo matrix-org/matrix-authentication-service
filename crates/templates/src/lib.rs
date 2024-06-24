@@ -22,7 +22,6 @@ use std::{collections::HashSet, sync::Arc};
 use anyhow::Context as _;
 use arc_swap::ArcSwap;
 use camino::{Utf8Path, Utf8PathBuf};
-use context::WithCaptcha;
 use mas_i18n::Translator;
 use mas_router::UrlBuilder;
 use mas_spa::ViteManifest;
@@ -44,13 +43,13 @@ mod macros;
 pub use self::{
     context::{
         AppContext, CompatSsoContext, ConsentContext, DeviceConsentContext, DeviceLinkContext,
-        DeviceLinkFormField, EmailAddContext, EmailVerificationContext,
+        DeviceLinkFormField, EmailAddContext, EmailRecoveryContext, EmailVerificationContext,
         EmailVerificationPageContext, EmptyContext, ErrorContext, FormPostContext, IndexContext,
         LoginContext, LoginFormField, NotFoundContext, PolicyViolationContext, PostAuthContext,
         PostAuthContextInner, ReauthContext, ReauthFormField, RecoveryStartContext,
         RecoveryStartFormField, RegisterContext, RegisterFormField, SiteBranding, SiteConfigExt,
         SiteFeatures, TemplateContext, UpstreamExistingLinkContext, UpstreamRegister,
-        UpstreamRegisterFormField, UpstreamSuggestLink, WithCsrf, WithLanguage,
+        UpstreamRegisterFormField, UpstreamSuggestLink, WithCaptcha, WithCsrf, WithLanguage,
         WithOptionalSession, WithSession,
     },
     forms::{FieldError, FormError, FormField, FormState, ToFormState},
@@ -359,6 +358,15 @@ register_templates! {
 
     /// Render the HTML error page
     pub fn render_error(ErrorContext) { "pages/error.html" }
+
+    /// Render the email recovery email (plain text variant)
+    pub fn render_email_recovery_txt(WithLanguage<EmailRecoveryContext>) { "emails/recovery.txt" }
+
+    /// Render the email recovery email (HTML text variant)
+    pub fn render_email_recovery_html(WithLanguage<EmailRecoveryContext>) { "emails/recovery.html" }
+
+    /// Render the email recovery subject
+    pub fn render_email_recovery_subject(WithLanguage<EmailRecoveryContext>) { "emails/recovery.subject" }
 
     /// Render the email verification email (plain text variant)
     pub fn render_email_verification_txt(WithLanguage<EmailVerificationContext>) { "emails/verification.txt" }
