@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute, notFound, useRouter } from "@tanstack/react-router";
 import IconCheckCircleSolid from "@vector-im/compound-design-tokens/icons/check-circle-solid.svg?react";
 import IconLockSolid from "@vector-im/compound-design-tokens/icons/lock-solid.svg?react";
 import { Alert, Form, Separator } from "@vector-im/compound-web";
@@ -74,6 +74,7 @@ export const Route = createFileRoute("/password/change")({
 function ChangePassword(): React.ReactNode {
   const { t } = useTranslation();
   const [viewer] = useQuery({ query: CURRENT_VIEWER_QUERY });
+  const router = useRouter();
   if (viewer.error) throw viewer.error;
   if (viewer.data?.viewer.__typename !== "User") throw notFound();
   const userId = viewer.data.viewer.id;
@@ -84,7 +85,7 @@ function ChangePassword(): React.ReactNode {
 
   const [result, changePassword] = useMutation(CHANGE_PASSWORD_MUTATION);
 
-  const onSubmit = (event: FormEvent<HTMLFormElement>): void => {
+  const onSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
 
     const formData = new FormData(event.currentTarget);
@@ -97,13 +98,15 @@ function ChangePassword(): React.ReactNode {
       throw new Error("passwords mismatch; this should be checked by the form");
     }
 
-    changePassword({ userId, oldPassword, newPassword });
+    const response = await changePassword({ userId, oldPassword, newPassword });
+
+    if (response.data?.setPassword.status === SetPasswordStatus.Allowed) {
+      router.navigate({ to: "/password/change_success" });
+    }
   };
 
-  const success =
-    result.data && result.data.setPassword.status == SetPasswordStatus.Allowed;
   const handleableError =
-    result.data && result.data.setPassword.status != SetPasswordStatus.Allowed;
+    result.data && result.data.setPassword.status !== SetPasswordStatus.Allowed;
   const unhandleableError = result.error !== undefined;
 
   const errorMsg: string | undefined = ((): string | undefined => {
@@ -148,108 +151,104 @@ function ChangePassword(): React.ReactNode {
             which could be logged, if for some reason the event handler fails.
           */}
 
-          {!success && (
-            <>
-              <Form.Field
-                name="current_password"
-                serverInvalid={
-                  result.data?.setPassword.status ===
-                  SetPasswordStatus.WrongPassword
-                }
-              >
-                <Form.Label>
-                  {t("frontend.password_change.current_password_label")}
-                </Form.Label>
+          <Form.Field
+            name="current_password"
+            serverInvalid={
+              result.data?.setPassword.status ===
+              SetPasswordStatus.WrongPassword
+            }
+          >
+            <Form.Label>
+              {t("frontend.password_change.current_password_label")}
+            </Form.Label>
 
-                <Form.PasswordControl
-                  required
-                  autoComplete="current-password"
-                  ref={currentPasswordRef}
-                />
+            <Form.PasswordControl
+              required
+              autoComplete="current-password"
+              ref={currentPasswordRef}
+            />
 
-                <Form.ErrorMessage match="valueMissing">
-                  {t("frontend.errors.field_required")}
-                </Form.ErrorMessage>
+            <Form.ErrorMessage match="valueMissing">
+              {t("frontend.errors.field_required")}
+            </Form.ErrorMessage>
 
-                {result.data &&
-                  result.data.setPassword.status ==
-                    SetPasswordStatus.WrongPassword && (
-                    <Form.ErrorMessage>
-                      {t(
-                        "frontend.password_change.failure.description.wrong_password",
-                      )}
-                    </Form.ErrorMessage>
+            {result.data &&
+              result.data.setPassword.status ===
+                SetPasswordStatus.WrongPassword && (
+                <Form.ErrorMessage>
+                  {t(
+                    "frontend.password_change.failure.description.wrong_password",
                   )}
-              </Form.Field>
-
-              <Separator />
-
-              <Form.Field name="new_password">
-                <Form.Label>
-                  {t("frontend.password_change.new_password_label")}
-                </Form.Label>
-
-                <Form.PasswordControl
-                  required
-                  autoComplete="new-password"
-                  ref={newPasswordRef}
-                  onBlur={() =>
-                    newPasswordAgainRef.current!.value &&
-                    newPasswordAgainRef.current!.reportValidity()
-                  }
-                />
-
-                {/* TODO Show a password bar. https://github.com/matrix-org/matrix-authentication-service/issues/2854 */}
-
-                <Form.ErrorMessage match="valueMissing">
-                  {t("frontend.errors.field_required")}
                 </Form.ErrorMessage>
+              )}
+          </Form.Field>
 
-                {result.data &&
-                  result.data.setPassword.status ==
-                    SetPasswordStatus.InvalidNewPassword && (
-                    <Form.ErrorMessage>
-                      {t(
-                        "frontend.password_change.failure.description.invalid_new_password",
-                      )}
-                    </Form.ErrorMessage>
+          <Separator />
+
+          <Form.Field name="new_password">
+            <Form.Label>
+              {t("frontend.password_change.new_password_label")}
+            </Form.Label>
+
+            <Form.PasswordControl
+              required
+              autoComplete="new-password"
+              ref={newPasswordRef}
+              onBlur={() =>
+                newPasswordAgainRef.current!.value &&
+                newPasswordAgainRef.current!.reportValidity()
+              }
+            />
+
+            {/* TODO Show a password bar. https://github.com/matrix-org/matrix-authentication-service/issues/2854 */}
+
+            <Form.ErrorMessage match="valueMissing">
+              {t("frontend.errors.field_required")}
+            </Form.ErrorMessage>
+
+            {result.data &&
+              result.data.setPassword.status ===
+                SetPasswordStatus.InvalidNewPassword && (
+                <Form.ErrorMessage>
+                  {t(
+                    "frontend.password_change.failure.description.invalid_new_password",
                   )}
-              </Form.Field>
-
-              <Form.Field name="new_password_again">
-                {/*
-                TODO This field has validation defects,
-                some caused by Radix-UI upstream bugs.
-                https://github.com/matrix-org/matrix-authentication-service/issues/2855
-              */}
-                <Form.Label>
-                  {t("frontend.password_change.new_password_again_label")}
-                </Form.Label>
-
-                <Form.PasswordControl
-                  required
-                  ref={newPasswordAgainRef}
-                  autoComplete="new-password"
-                />
-
-                <Form.ErrorMessage match="valueMissing">
-                  {t("frontend.errors.field_required")}
                 </Form.ErrorMessage>
+              )}
+          </Form.Field>
 
-                <Form.ErrorMessage
-                  match={(v, form) => v !== form.get("new_password")}
-                >
-                  {t("frontend.password_change.passwords_no_match")}
-                </Form.ErrorMessage>
+          <Form.Field name="new_password_again">
+            {/*
+            TODO This field has validation defects,
+            some caused by Radix-UI upstream bugs.
+            https://github.com/matrix-org/matrix-authentication-service/issues/2855
+          */}
+            <Form.Label>
+              {t("frontend.password_change.new_password_again_label")}
+            </Form.Label>
 
-                <Form.HelpMessage match="valid">
-                  {/* TODO Use SuccessMessage once ready. https://github.com/matrix-org/matrix-authentication-service/issues/2856 */}
-                  <IconCheckCircleSolid />
-                  {t("frontend.password_change.passwords_match")}
-                </Form.HelpMessage>
-              </Form.Field>
-            </>
-          )}
+            <Form.PasswordControl
+              required
+              ref={newPasswordAgainRef}
+              autoComplete="new-password"
+            />
+
+            <Form.ErrorMessage match="valueMissing">
+              {t("frontend.errors.field_required")}
+            </Form.ErrorMessage>
+
+            <Form.ErrorMessage
+              match={(v, form) => v !== form.get("new_password")}
+            >
+              {t("frontend.password_change.passwords_no_match")}
+            </Form.ErrorMessage>
+
+            <Form.HelpMessage match="valid">
+              {/* TODO Use SuccessMessage once ready. https://github.com/matrix-org/matrix-authentication-service/issues/2856 */}
+              <IconCheckCircleSolid />
+              {t("frontend.password_change.passwords_match")}
+            </Form.HelpMessage>
+          </Form.Field>
 
           {unhandleableError && (
             <Alert
@@ -259,22 +258,12 @@ function ChangePassword(): React.ReactNode {
               {t("frontend.password_change.failure.description.unspecified")}
             </Alert>
           )}
-          {!success && (
-            <>
-              <Form.Submit kind="primary" disabled={result.fetching}>
-                {!!result.fetching && <LoadingSpinner inline />}
-                {t("action.save")}
-              </Form.Submit>
-            </>
-          )}
-          {success && (
-            <Alert
-              type="success"
-              title={t("frontend.password_change.success.title")}
-            >
-              {t("frontend.password_change.success.description")}
-            </Alert>
-          )}
+
+          <Form.Submit kind="primary" disabled={result.fetching}>
+            {!!result.fetching && <LoadingSpinner inline />}
+            {t("action.save")}
+          </Form.Submit>
+
           {handleableError && (
             <Alert
               type="critical"
@@ -285,7 +274,7 @@ function ChangePassword(): React.ReactNode {
           )}
 
           <ButtonLink to="/" kind="tertiary">
-            {(result.data && t("action.back")) || t("action.cancel")}
+            {t("action.cancel")}
           </ButtonLink>
         </Form.Root>
       </BlockList>

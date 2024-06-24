@@ -14,6 +14,7 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as ResetCrossSigningImport } from './routes/reset-cross-signing'
 import { Route as AccountImport } from './routes/_account'
 import { Route as AccountIndexImport } from './routes/_account.index'
+import { Route as PasswordChangesuccessImport } from './routes/password.change_success'
 import { Route as PasswordChangeImport } from './routes/password.change'
 import { Route as DevicesSplatImport } from './routes/devices.$'
 import { Route as ClientsIdImport } from './routes/clients.$id'
@@ -37,6 +38,11 @@ const AccountRoute = AccountImport.update({
 const AccountIndexRoute = AccountIndexImport.update({
   path: '/',
   getParentRoute: () => AccountRoute,
+} as any)
+
+const PasswordChangesuccessRoute = PasswordChangesuccessImport.update({
+  path: '/password/change_success',
+  getParentRoute: () => rootRoute,
 } as any)
 
 const PasswordChangeRoute = PasswordChangeImport.update({
@@ -98,6 +104,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PasswordChangeImport
       parentRoute: typeof rootRoute
     }
+    '/password/change_success': {
+      preLoaderRoute: typeof PasswordChangesuccessImport
+      parentRoute: typeof rootRoute
+    }
     '/_account/': {
       preLoaderRoute: typeof AccountIndexImport
       parentRoute: typeof AccountImport
@@ -134,6 +144,7 @@ export const routeTree = rootRoute.addChildren([
   ClientsIdRoute,
   DevicesSplatRoute,
   PasswordChangeRoute,
+  PasswordChangesuccessRoute,
   EmailsIdVerifyRoute,
 ])
 
