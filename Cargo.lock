@@ -3534,6 +3534,7 @@ dependencies = [
  "mas-email",
  "mas-i18n",
  "mas-matrix",
+ "mas-router",
  "mas-storage",
  "mas-storage-pg",
  "mas-templates",

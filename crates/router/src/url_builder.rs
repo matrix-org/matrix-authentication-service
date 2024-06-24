@@ -237,6 +237,12 @@ impl UrlBuilder {
     pub fn account_management_uri(&self) -> Url {
         self.absolute_url_for(&crate::endpoints::Account::default())
     }
+
+    /// Account recovery link
+    #[must_use]
+    pub fn account_recovery_link(&self, ticket: String) -> Url {
+        self.absolute_url_for(&crate::endpoints::AccountRecoveryFinish::new(ticket))
+    }
 }
 
 #[cfg(test)]

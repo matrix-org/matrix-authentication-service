@@ -14,13 +14,16 @@
 
 use anyhow::Context;
 use apalis_core::{context::JobContext, executor::TokioExecutor, monitor::Monitor};
+use mas_email::{Address, Mailbox};
+use mas_i18n::DataLocale;
 use mas_storage::{
     job::{JobWithSpanContext, SendAccountRecoveryEmailsJob},
     user::{UserEmailFilter, UserRecoveryRepository},
     Pagination, RepositoryAccess,
 };
+use mas_templates::{EmailRecoveryContext, TemplateContext};
 use rand::distributions::{Alphanumeric, DistString};
-use tracing::info;
+use tracing::{error, info};
 
 use crate::{storage::PostgresStorageFactory, JobContextExt, State};
 
@@ -40,6 +43,8 @@ async fn send_account_recovery_email_job(
 ) -> Result<(), anyhow::Error> {
     let state = ctx.state();
     let clock = state.clock();
+    let mailer = state.mailer();
+    let url_builder = state.url_builder();
     let mut rng = state.rng();
     let mut repo = state.repository().await?;
 
@@ -58,6 +63,11 @@ async fn send_account_recovery_email_job(
 
     let mut cursor = Pagination::first(50);
 
+    let lang: DataLocale = session
+        .locale
+        .parse()
+        .context("Invalid locale in database on recovery session")?;
+
     loop {
         let page = repo
             .user_email()
@@ -72,13 +82,39 @@ async fn send_account_recovery_email_job(
         for email in page.edges {
             let ticket = Alphanumeric.sample_string(&mut rng, 32);
 
-            let _ticket = repo
+            let ticket = repo
                 .user_recovery()
                 .add_ticket(&mut rng, &clock, &session, &email, ticket)
                 .await?;
 
-            info!("Sending recovery email to {}", email.email);
-            // TODO
+            let user_email = repo
+                .user_email()
+                .lookup(email.id)
+                .await?
+                .context("User email not found")?;
+
+            let user = repo
+                .user()
+                .lookup(user_email.user_id)
+                .await?
+                .context("User not found")?;
+
+            let url = url_builder.account_recovery_link(ticket.ticket);
+
+            let address: Address = user_email.email.parse()?;
+            let mailbox = Mailbox::new(Some(user.username.clone()), address);
+
+            info!("Sending recovery email to {}", mailbox);
+            let context =
+                EmailRecoveryContext::new(user, session.clone(), url).with_language(lang.clone());
+
+            // XXX: we only log if the email fails to send, to avoid stopping the loop
+            if let Err(e) = mailer.send_recovery_email(mailbox, &context).await {
+                error!(
+                    error = &e as &dyn std::error::Error,
+                    "Failed to send recovery email"
+                );
+            }
 
             cursor = cursor.after(email.id);
         }

@@ -170,9 +170,14 @@ impl Options {
             let worker_name = Alphanumeric.sample_string(&mut rng, 10);
 
             info!(worker_name, "Starting task worker");
-            let monitor =
-                mas_tasks::init(&worker_name, &pool, &mailer, homeserver_connection.clone())
-                    .await?;
+            let monitor = mas_tasks::init(
+                &worker_name,
+                &pool,
+                &mailer,
+                homeserver_connection.clone(),
+                url_builder.clone(),
+            )
+            .await?;
             // TODO: grab the handle
             tokio::spawn(monitor.run());
         }

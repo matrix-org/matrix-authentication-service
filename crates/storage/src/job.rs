@@ -446,6 +446,7 @@ mod jobs {
         ///
         /// * `user_recovery_session` - The user recovery session to send the
         ///   email for
+        /// * `language` - The locale to send the email in
         #[must_use]
         pub fn new(user_recovery_session: &UserRecoverySession) -> Self {
             Self {

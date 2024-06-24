@@ -18,7 +18,7 @@ use lettre::{
     message::{Mailbox, MessageBuilder, MultiPart},
     AsyncTransport, Message,
 };
-use mas_templates::{EmailVerificationContext, Templates, WithLanguage};
+use mas_templates::{EmailRecoveryContext, EmailVerificationContext, Templates, WithLanguage};
 use thiserror::Error;
 
 use crate::MailTransport;
@@ -85,6 +85,28 @@ impl Mailer {
         Ok(message)
     }
 
+    fn prepare_recovery_email(
+        &self,
+        to: Mailbox,
+        context: &WithLanguage<EmailRecoveryContext>,
+    ) -> Result<Message, Error> {
+        let plain = self.templates.render_email_recovery_txt(context)?;
+
+        let html = self.templates.render_email_recovery_html(context)?;
+
+        let multipart = MultiPart::alternative_plain_html(plain, html);
+
+        let subject = self.templates.render_email_recovery_subject(context)?;
+
+        let message = self
+            .base_message()
+            .subject(subject.trim())
+            .to(to)
+            .multipart(multipart)?;
+
+        Ok(message)
+    }
+
     /// Send the verification email to a user
     ///
     /// # Errors
@@ -108,6 +130,32 @@ impl Mailer {
         context: &WithLanguage<EmailVerificationContext>,
     ) -> Result<(), Error> {
         let message = self.prepare_verification_email(to, context)?;
+        self.transport.send(message).await?;
+        Ok(())
+    }
+
+    /// Send the recovery email to a user
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if the email failed rendering or failed sending
+    #[tracing::instrument(
+        name = "email.recovery.send",
+        skip_all,
+        fields(
+            email.to = %to,
+            email.language = %context.language(),
+            user.id = %context.user().id,
+            user_recovery_session.id = %context.session().id,
+        ),
+        err,
+    )]
+    pub async fn send_recovery_email(
+        &self,
+        to: Mailbox,
+        context: &WithLanguage<EmailRecoveryContext>,
+    ) -> Result<(), Error> {
+        let message = self.prepare_recovery_email(to, context)?;
         self.transport.send(message).await?;
         Ok(())
     }
