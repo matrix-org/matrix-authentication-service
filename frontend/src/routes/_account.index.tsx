@@ -113,9 +113,7 @@ function Index(): React.ReactElement {
         <Separator />
 
         {siteConfig.passwordLoginEnabled && (
-          <div className="flex flex-col gap-4" id="password">
-            <AccountManagementPasswordPreview siteConfig={siteConfig} />
-          </div>
+          <AccountManagementPasswordPreview siteConfig={siteConfig} />
         )}
 
         <Separator />
