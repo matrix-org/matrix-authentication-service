@@ -13,8 +13,7 @@
 // limitations under the License.
 
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import IconLockSolid from "@vector-im/compound-design-tokens/icons/lock-solid.svg?react";
-import { Alert } from "@vector-im/compound-web";
+import IconCheckCircle from "@vector-im/compound-design-tokens/icons/check-circle-solid.svg?react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "urql";
 
@@ -59,18 +58,11 @@ function ChangePasswordSuccess(): React.ReactNode {
     <Layout>
       <BlockList>
         <PageHeading
-          Icon={IconLockSolid}
-          title={t("frontend.password_change.title")}
-          subtitle={t("frontend.password_change.subtitle")}
+          Icon={IconCheckCircle}
+          title={t("frontend.password_change.success.title")}
+          subtitle={t("frontend.password_change.success.description")}
           success
         />
-
-        <Alert
-          type="success"
-          title={t("frontend.password_change.success.title")}
-        >
-          {t("frontend.password_change.success.description")}
-        </Alert>
 
         <ButtonLink to="/" kind="tertiary">
           {t("action.back")}
