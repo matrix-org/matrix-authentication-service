@@ -105,16 +105,10 @@ function ChangePassword(): React.ReactNode {
     }
   };
 
-  const handleableError =
-    result.data && result.data.setPassword.status !== SetPasswordStatus.Allowed;
   const unhandleableError = result.error !== undefined;
 
   const errorMsg: string | undefined = ((): string | undefined => {
     switch (result.data?.setPassword.status) {
-      case SetPasswordStatus.InvalidNewPassword:
-        return t(
-          "frontend.password_change.failure.description.invalid_new_password",
-        );
       case SetPasswordStatus.NoCurrentPassword:
         return t(
           "frontend.password_change.failure.description.no_current_password",
@@ -123,11 +117,16 @@ function ChangePassword(): React.ReactNode {
         return t(
           "frontend.password_change.failure.description.password_changes_disabled",
         );
+
       case SetPasswordStatus.WrongPassword:
-        return t("frontend.password_change.failure.description.wrong_password");
+      case SetPasswordStatus.InvalidNewPassword:
+        // These cases are shown as inline errors in the form itself.
+        return undefined;
+
       case SetPasswordStatus.Allowed:
       case undefined:
         return undefined;
+
       default:
         throw new Error(
           `unexpected error when changing password: ${result.data!.setPassword.status}`,
@@ -159,7 +158,7 @@ function ChangePassword(): React.ReactNode {
             </Alert>
           )}
 
-          {handleableError && (
+          {errorMsg !== undefined && (
             <Alert
               type="critical"
               title={t("frontend.password_change.failure.title")}
