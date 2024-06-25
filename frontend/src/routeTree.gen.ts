@@ -14,11 +14,11 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as ResetCrossSigningImport } from './routes/reset-cross-signing'
 import { Route as AccountImport } from './routes/_account'
 import { Route as AccountIndexImport } from './routes/_account.index'
-import { Route as PasswordChangesuccessImport } from './routes/password.change_success'
-import { Route as PasswordChangeImport } from './routes/password.change'
 import { Route as DevicesSplatImport } from './routes/devices.$'
 import { Route as ClientsIdImport } from './routes/clients.$id'
+import { Route as PasswordChangeIndexImport } from './routes/password.change.index'
 import { Route as AccountSessionsIndexImport } from './routes/_account.sessions.index'
+import { Route as PasswordChangeSuccessImport } from './routes/password.change.success'
 import { Route as EmailsIdVerifyImport } from './routes/emails.$id.verify'
 import { Route as AccountSessionsBrowsersImport } from './routes/_account.sessions.browsers'
 import { Route as AccountSessionsIdImport } from './routes/_account.sessions.$id'
@@ -40,16 +40,6 @@ const AccountIndexRoute = AccountIndexImport.update({
   getParentRoute: () => AccountRoute,
 } as any)
 
-const PasswordChangesuccessRoute = PasswordChangesuccessImport.update({
-  path: '/password/change_success',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const PasswordChangeRoute = PasswordChangeImport.update({
-  path: '/password/change',
-  getParentRoute: () => rootRoute,
-} as any)
-
 const DevicesSplatRoute = DevicesSplatImport.update({
   path: '/devices/$',
   getParentRoute: () => rootRoute,
@@ -60,9 +50,19 @@ const ClientsIdRoute = ClientsIdImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const PasswordChangeIndexRoute = PasswordChangeIndexImport.update({
+  path: '/password/change/',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const AccountSessionsIndexRoute = AccountSessionsIndexImport.update({
   path: '/sessions/',
   getParentRoute: () => AccountRoute,
+} as any)
+
+const PasswordChangeSuccessRoute = PasswordChangeSuccessImport.update({
+  path: '/password/change/success',
+  getParentRoute: () => rootRoute,
 } as any)
 
 const EmailsIdVerifyRoute = EmailsIdVerifyImport.update({
@@ -100,14 +100,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevicesSplatImport
       parentRoute: typeof rootRoute
     }
-    '/password/change': {
-      preLoaderRoute: typeof PasswordChangeImport
-      parentRoute: typeof rootRoute
-    }
-    '/password/change_success': {
-      preLoaderRoute: typeof PasswordChangesuccessImport
-      parentRoute: typeof rootRoute
-    }
     '/_account/': {
       preLoaderRoute: typeof AccountIndexImport
       parentRoute: typeof AccountImport
@@ -124,9 +116,17 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EmailsIdVerifyImport
       parentRoute: typeof rootRoute
     }
+    '/password/change/success': {
+      preLoaderRoute: typeof PasswordChangeSuccessImport
+      parentRoute: typeof rootRoute
+    }
     '/_account/sessions/': {
       preLoaderRoute: typeof AccountSessionsIndexImport
       parentRoute: typeof AccountImport
+    }
+    '/password/change/': {
+      preLoaderRoute: typeof PasswordChangeIndexImport
+      parentRoute: typeof rootRoute
     }
   }
 }
@@ -143,9 +143,9 @@ export const routeTree = rootRoute.addChildren([
   ResetCrossSigningRoute,
   ClientsIdRoute,
   DevicesSplatRoute,
-  PasswordChangeRoute,
-  PasswordChangesuccessRoute,
   EmailsIdVerifyRoute,
+  PasswordChangeSuccessRoute,
+  PasswordChangeIndexRoute,
 ])
 
 /* prettier-ignore-end */

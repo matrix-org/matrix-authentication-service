@@ -57,7 +57,7 @@ const CHANGE_PASSWORD_MUTATION = graphql(/* GraphQL */ `
   }
 `);
 
-export const Route = createFileRoute("/password/change")({
+export const Route = createFileRoute("/password/change/")({
   async loader({ context, abortController: { signal } }) {
     const viewer = await context.client.query(
       CURRENT_VIEWER_QUERY,
@@ -101,7 +101,7 @@ function ChangePassword(): React.ReactNode {
     const response = await changePassword({ userId, oldPassword, newPassword });
 
     if (response.data?.setPassword.status === SetPasswordStatus.Allowed) {
-      router.navigate({ to: "/password/change_success" });
+      router.navigate({ to: "/password/change/success" });
     }
   };
 

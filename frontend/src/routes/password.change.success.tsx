@@ -35,7 +35,7 @@ const CURRENT_VIEWER_QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-export const Route = createFileRoute("/password/change_success")({
+export const Route = createFileRoute("/password/change/success")({
   async loader({ context, abortController: { signal } }) {
     const viewer = await context.client.query(
       CURRENT_VIEWER_QUERY,
