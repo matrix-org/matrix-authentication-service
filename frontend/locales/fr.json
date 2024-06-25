@@ -33,7 +33,11 @@
         "title": "Editer le profil",
         "username_label": "Nom d’utilisateur"
       },
-      "title": "Votre compte"
+      "title": "Votre compte",
+      "password": {
+        "label": "Mot de passe",
+        "change": "Changer le mot de passe"
+      }
     },
     "add_email_form": {
       "email_denied_alert": {
@@ -88,6 +92,9 @@
       "subtitle": "Une erreur inattendue s'est produite. Veuillez réessayer",
       "title": "Un problème est survenu"
     },
+    "errors": {
+      "field_required": "Ce champ est requis"
+    },
     "error_boundary_title": "Un problème est survenu",
     "last_active": {
       "active_date": "Actif {{relativeDate}}",
@@ -116,6 +123,13 @@
     },
     "pagination_controls": {
       "total": "Total : {{totalCount}}"
+    },
+    "password_change": {
+      "title": "Changer le mot de passe",
+      "subtitle": "Cela modifiera le mot de passe de votre compte.",
+      "current_password_label": "Mot de passe actuel",
+      "new_password_label": "Nouveau mot de passe",
+      "new_password_again_label": "Confirmer le mot de passe"
     },
     "reset_cross_signing": {
       "button": "Autoriser le remplacement de l'identité cryptographique",

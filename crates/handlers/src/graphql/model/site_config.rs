@@ -21,6 +21,7 @@ pub const SITE_CONFIG_ID: &str = "site_config";
 
 #[derive(SimpleObject)]
 #[graphql(complex)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct SiteConfig {
     /// The server name of the homeserver.
     server_name: String,
@@ -39,6 +40,9 @@ pub struct SiteConfig {
 
     /// Whether users can change their display name.
     display_name_change_allowed: bool,
+
+    /// Whether passwords are enabled for login.
+    password_login_enabled: bool,
 
     /// Whether passwords are enabled and users can change their own passwords.
     password_change_allowed: bool,
@@ -63,6 +67,7 @@ impl SiteConfig {
             imprint: data_model.imprint.clone(),
             email_change_allowed: data_model.email_change_allowed,
             display_name_change_allowed: data_model.displayname_change_allowed,
+            password_login_enabled: data_model.password_login_enabled,
             password_change_allowed: data_model.password_change_allowed,
         }
     }

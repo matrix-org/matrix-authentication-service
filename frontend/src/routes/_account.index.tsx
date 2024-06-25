@@ -19,6 +19,7 @@ import { Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "urql";
 
+import AccountManagementPasswordPreview from "../components/AccountManagementPasswordPreview";
 import BlockList from "../components/BlockList/BlockList";
 import { ButtonLink } from "../components/ButtonLink";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -46,8 +47,10 @@ const QUERY = graphql(/* GraphQL */ `
     siteConfig {
       id
       emailChangeAllowed
+      passwordLoginEnabled
       ...UserEmailList_siteConfig
       ...UserEmail_siteConfig
+      ...PasswordChange_siteConfig
     }
   }
 `);
@@ -106,6 +109,12 @@ function Index(): React.ReactElement {
             <AddEmailForm userId={user.id} onAdd={onAdd} />
           )}
         </div>
+
+        <Separator />
+
+        {siteConfig.passwordLoginEnabled && (
+          <AccountManagementPasswordPreview siteConfig={siteConfig} />
+        )}
 
         <Separator />
 

@@ -31,6 +31,11 @@
         "title": "Edit profile",
         "username_label": "Username"
       },
+      "password": {
+        "change": "Change password",
+        "change_disabled": "Password changes are disabled by the administrator.",
+        "label": "Password"
+      },
       "title": "Your account"
     },
     "add_email_form": {
@@ -79,6 +84,9 @@
       "subtitle": "An unexpected error occurred. Please try again.",
       "title": "Something went wrong"
     },
+    "errors": {
+      "field_required": "This field is required"
+    },
     "last_active": {
       "active_date": "Active {{relativeDate}}",
       "active_now": "Active now",
@@ -102,6 +110,29 @@
     },
     "pagination_controls": {
       "total": "Total: {{totalCount}}"
+    },
+    "password_change": {
+      "current_password_label": "Current password",
+      "failure": {
+        "description": {
+          "invalid_new_password": "The new password you chose is invalid; it may not meet the configured security policy.",
+          "no_current_password": "You don't have a current password.",
+          "password_changes_disabled": "Password changes are disabled.",
+          "unspecified": "This might be a temporary problem, so please try again later. If the problem persists, please contact your server administrator.",
+          "wrong_password": "The password you supplied as your current password is incorrect. Please try again."
+        },
+        "title": "Failed to update password"
+      },
+      "new_password_again_label": "Enter new password again",
+      "new_password_label": "New password",
+      "passwords_match": "Passwords match!",
+      "passwords_no_match": "Passwords don't match",
+      "subtitle": "Choose a new password for your account.",
+      "success": {
+        "description": "Your password has been updated successfully.",
+        "title": "Password updated"
+      },
+      "title": "Change your password"
     },
     "reset_cross_signing": {
       "button": "Allow crypto identity reset",
