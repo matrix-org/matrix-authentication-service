@@ -150,6 +150,23 @@ function ChangePassword(): React.ReactNode {
             method = POST just prevents sending passwords in the query string,
             which could be logged, if for some reason the event handler fails.
           */}
+          {unhandleableError && (
+            <Alert
+              type="critical"
+              title={t("frontend.password_change.failure.title")}
+            >
+              {t("frontend.password_change.failure.description.unspecified")}
+            </Alert>
+          )}
+
+          {handleableError && (
+            <Alert
+              type="critical"
+              title={t("frontend.password_change.failure.title")}
+            >
+              {errorMsg}
+            </Alert>
+          )}
 
           <Form.Field
             name="current_password"
@@ -250,28 +267,10 @@ function ChangePassword(): React.ReactNode {
             </Form.HelpMessage>
           </Form.Field>
 
-          {unhandleableError && (
-            <Alert
-              type="critical"
-              title={t("frontend.password_change.failure.title")}
-            >
-              {t("frontend.password_change.failure.description.unspecified")}
-            </Alert>
-          )}
-
           <Form.Submit kind="primary" disabled={result.fetching}>
             {!!result.fetching && <LoadingSpinner inline />}
             {t("action.save")}
           </Form.Submit>
-
-          {handleableError && (
-            <Alert
-              type="critical"
-              title={t("frontend.password_change.failure.title")}
-            >
-              {errorMsg}
-            </Alert>
-          )}
 
           <ButtonLink to="/" kind="tertiary">
             {t("action.cancel")}
