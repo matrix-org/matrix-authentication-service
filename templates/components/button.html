@@ -26,6 +26,10 @@ limitations under the License.
   <a class="cpd-button {{ class }}" data-kind="secondary" data-size="lg" href="{{ href | prefix_url }}">{{ text }}</a>
 {% endmacro %}
 
+{% macro link_tertiary(text, href="#", class="", size="lg") %}
+  <a class="cpd-button {{ class }}" data-kind="tertiary" data-size="{{ size }}" href="{{ href | prefix_url }}">{{ text }}</a>
+{% endmacro %}
+
 {% macro button(
   text,
   name="",
@@ -33,6 +37,7 @@ limitations under the License.
   class="",
   value="",
   disabled=False,
+  size="lg",
   autocomplete=False,
   autocorrect=False,
   autocapitalize=False) %}
@@ -43,7 +48,7 @@ limitations under the License.
     {% if disabled %}disabled{% endif %}
     class="cpd-button {{ class }}"
     data-kind="primary"
-    data-size="lg"
+    data-size="{{ size }}"
     {% if autocapitalize %}autocapitilize="{{ autocapitilize }}"{% endif %}
     {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
     {% if autocorrect %}autocorrect="{{ autocorrect }}"{% endif %}
@@ -80,6 +85,7 @@ limitations under the License.
   class="",
   value="",
   disabled=False,
+  size="lg",
   autocomplete=False,
   autocorrect=False,
   autocapitalize=False) %}
@@ -89,7 +95,7 @@ limitations under the License.
     type="{{ type }}"
     class="cpd-button {{ class }}"
     data-kind="secondary"
-    data-size="lg"
+    data-size="{{ size }}"
     {% if disabled %}disabled{% endif %}
     {% if autocapitalize %}autocapitilize="{{ autocapitilize }}"{% endif %}
     {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}

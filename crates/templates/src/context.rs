@@ -1023,6 +1023,39 @@ impl TemplateContext for RecoveryStartContext {
     }
 }
 
+/// Context used by the `pages/recovery/progress.html` template
+#[derive(Serialize)]
+pub struct RecoveryProgressContext {
+    session: UserRecoverySession,
+}
+
+impl RecoveryProgressContext {
+    /// Constructs a context for the recovery progress page
+    #[must_use]
+    pub fn new(session: UserRecoverySession) -> Self {
+        Self { session }
+    }
+}
+
+impl TemplateContext for RecoveryProgressContext {
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        let session = UserRecoverySession {
+            id: Ulid::from_datetime_with_source(now.into(), rng),
+            email: "name@mail.com".to_owned(),
+            user_agent: UserAgent::parse("Mozilla/5.0".to_owned()),
+            ip_address: None,
+            locale: "en".to_owned(),
+            created_at: now,
+            consumed_at: None,
+        };
+
+        vec![Self { session }]
+    }
+}
+
 /// Context used by the `pages/upstream_oauth2/{link_mismatch,do_login}.html`
 /// templates
 #[derive(Serialize)]

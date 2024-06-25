@@ -376,6 +376,28 @@
       }
     },
     "recovery": {
+      "progress": {
+        "change_email": "Try a different email",
+        "@change_email": {
+          "context": "pages/recovery/progress.html:38:33-72",
+          "description": "Button to change the email address for the password recovery link"
+        },
+        "description": "We sent an email with a link to reset your password if there's an account using <span>%(email)s</span>.",
+        "@description": {
+          "context": "pages/recovery/progress.html:27:46-105",
+          "description": "The description of the password recovery page, informing the user that an email has been sent to reset their password"
+        },
+        "heading": "Check your email",
+        "@heading": {
+          "context": "pages/recovery/progress.html:26:27-61",
+          "description": "The title of the password recovery page, informing the user that an email has been sent to reset their password"
+        },
+        "resend_email": "Resend email",
+        "@resend_email": {
+          "context": "pages/recovery/progress.html:35:36-75",
+          "description": "Button to resend the email with the password recovery link"
+        }
+      },
       "start": {
         "description": "An email will be sent with a link to reset your password.",
         "@description": {
