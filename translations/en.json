@@ -284,7 +284,7 @@
       },
       "password_mismatch": "Password fields don't match",
       "@password_mismatch": {
-        "context": "components/errors.html:21:7-40"
+        "context": "components/errors.html:21:7-40, components/field.html:74:17-50"
       },
       "username_taken": "This username is already taken",
       "@username_taken": {
@@ -356,7 +356,7 @@
     },
     "or_separator": "Or",
     "@or_separator": {
-      "context": "components/field.html:91:10-31",
+      "context": "components/field.html:93:10-31",
       "description": "Separator between the login methods"
     },
     "policy_violation": {
@@ -376,6 +376,33 @@
       }
     },
     "recovery": {
+      "finish": {
+        "confirm": "Enter new password again",
+        "@confirm": {
+          "context": "pages/recovery/finish.html:49:33-65",
+          "description": "Label for the password confirmation field"
+        },
+        "description": "Choose a new password for your account.",
+        "@description": {
+          "context": "pages/recovery/finish.html:27:25-61",
+          "description": "Description for the final password recovery page"
+        },
+        "heading": "Reset your password",
+        "@heading": {
+          "context": "pages/recovery/finish.html:26:27-59",
+          "description": "Heading for the final password recovery page"
+        },
+        "new": "New password",
+        "@new": {
+          "context": "pages/recovery/finish.html:45:33-61",
+          "description": "Label for the new password field"
+        },
+        "save_and_continue": "Save and continue",
+        "@save_and_continue": {
+          "context": "pages/recovery/finish.html:53:26-68",
+          "description": "Button to save the new password and continue"
+        }
+      },
       "progress": {
         "change_email": "Try a different email",
         "@change_email": {
