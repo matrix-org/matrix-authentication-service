@@ -387,7 +387,7 @@ where
         )
         .route(
             mas_router::AccountRecoveryProgress::route(),
-            get(self::views::recovery::progress::get),
+            get(self::views::recovery::progress::get).post(self::views::recovery::progress::post),
         )
         .route(
             mas_router::OAuth2AuthorizationEndpoint::route(),
