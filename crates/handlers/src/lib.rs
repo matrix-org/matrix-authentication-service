@@ -386,6 +386,10 @@ where
             get(self::views::recovery::start::get).post(self::views::recovery::start::post),
         )
         .route(
+            mas_router::AccountRecoveryProgress::route(),
+            get(self::views::recovery::progress::get),
+        )
+        .route(
             mas_router::OAuth2AuthorizationEndpoint::route(),
             get(self::oauth2::authorization::get),
         )
