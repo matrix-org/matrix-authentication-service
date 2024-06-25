@@ -36,6 +36,9 @@ pub enum FieldError {
     /// Invalid value for this field
     Invalid,
 
+    /// The password confirmation doesn't match the password
+    PasswordMismatch,
+
     /// That value already exists
     Exists,
 

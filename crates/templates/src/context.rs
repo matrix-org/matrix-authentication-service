@@ -1056,6 +1056,76 @@ impl TemplateContext for RecoveryProgressContext {
     }
 }
 
+/// Fields of the account recovery finish form
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum RecoveryFinishFormField {
+    /// The new password
+    NewPassword,
+
+    /// The new password confirmation
+    NewPasswordConfirm,
+}
+
+impl FormField for RecoveryFinishFormField {
+    fn keep(&self) -> bool {
+        false
+    }
+}
+
+/// Context used by the `pages/recovery/finish.html` template
+#[derive(Serialize)]
+pub struct RecoveryFinishContext {
+    user: User,
+    form: FormState<RecoveryFinishFormField>,
+}
+
+impl RecoveryFinishContext {
+    /// Constructs a context for the recovery finish page
+    #[must_use]
+    pub fn new(user: User) -> Self {
+        Self {
+            user,
+            form: FormState::default(),
+        }
+    }
+
+    /// Set the form state
+    #[must_use]
+    pub fn with_form_state(mut self, form: FormState<RecoveryFinishFormField>) -> Self {
+        self.form = form;
+        self
+    }
+}
+
+impl TemplateContext for RecoveryFinishContext {
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        User::samples(now, rng)
+            .into_iter()
+            .flat_map(|user| {
+                vec![
+                    Self::new(user.clone()),
+                    Self::new(user.clone()).with_form_state(
+                        FormState::default().with_error_on_field(
+                            RecoveryFinishFormField::NewPassword,
+                            FieldError::Invalid,
+                        ),
+                    ),
+                    Self::new(user.clone()).with_form_state(
+                        FormState::default().with_error_on_field(
+                            RecoveryFinishFormField::NewPasswordConfirm,
+                            FieldError::Invalid,
+                        ),
+                    ),
+                ]
+            })
+            .collect()
+    }
+}
+
 /// Context used by the `pages/upstream_oauth2/{link_mismatch,do_login}.html`
 /// templates
 #[derive(Serialize)]

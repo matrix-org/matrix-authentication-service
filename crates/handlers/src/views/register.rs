@@ -191,9 +191,11 @@ pub(crate) async fn post(
         }
 
         if form.password != form.password_confirm {
-            state.add_error_on_form(FormError::PasswordMismatch);
             state.add_error_on_field(RegisterFormField::Password, FieldError::Unspecified);
-            state.add_error_on_field(RegisterFormField::PasswordConfirm, FieldError::Unspecified);
+            state.add_error_on_field(
+                RegisterFormField::PasswordConfirm,
+                FieldError::PasswordMismatch,
+            );
         }
 
         // If the site has terms of service, the user must accept them
