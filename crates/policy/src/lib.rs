@@ -21,9 +21,7 @@ use thiserror::Error;
 use tokio::io::{AsyncRead, AsyncReadExt};
 use wasmtime::{Config, Engine, Module, Store};
 
-use self::model::{
-    AuthorizationGrantInput, ClientRegistrationInput, EmailInput, PasswordInput, RegisterInput,
-};
+use self::model::{AuthorizationGrantInput, ClientRegistrationInput, EmailInput, RegisterInput};
 pub use self::model::{EvaluationResult, Violation};
 use crate::model::GrantType;
 
@@ -188,21 +186,6 @@ impl Policy {
         let [res]: [EvaluationResult; 1] = self
             .instance
             .evaluate(&mut self.store, &self.entrypoints.email, &input)
-            .await?;
-
-        Ok(res)
-    }
-
-    #[tracing::instrument(name = "policy.evaluate_password", skip_all, err)]
-    pub async fn evaluate_password(
-        &mut self,
-        password: &str,
-    ) -> Result<EvaluationResult, EvaluationError> {
-        let input = PasswordInput { password };
-
-        let [res]: [EvaluationResult; 1] = self
-            .instance
-            .evaluate(&mut self.store, &self.entrypoints.password, &input)
             .await?;
 
         Ok(res)
