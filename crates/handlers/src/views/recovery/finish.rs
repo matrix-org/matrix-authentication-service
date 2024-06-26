@@ -24,7 +24,6 @@ use mas_axum_utils::{
     FancyError,
 };
 use mas_data_model::SiteConfig;
-use mas_policy::Policy;
 use mas_router::UrlBuilder;
 use mas_storage::{BoxClock, BoxRepository, BoxRng};
 use mas_templates::{
@@ -129,7 +128,6 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
-    mut policy: Policy,
     State(site_config): State<SiteConfig>,
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
@@ -224,17 +222,6 @@ pub(crate) async fn post(
                 RecoveryFinishFormField::NewPasswordConfirm,
                 FieldError::PasswordMismatch,
             );
-    }
-
-    let res = policy.evaluate_password(&form.new_password).await?;
-
-    if !res.valid() {
-        form_state = form_state.with_error_on_field(
-            RecoveryFinishFormField::NewPassword,
-            FieldError::Policy {
-                message: res.to_string(),
-            },
-        );
     }
 
     if !form_state.is_valid() {
