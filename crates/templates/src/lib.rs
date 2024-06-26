@@ -46,12 +46,12 @@ pub use self::{
         DeviceLinkFormField, EmailAddContext, EmailRecoveryContext, EmailVerificationContext,
         EmailVerificationPageContext, EmptyContext, ErrorContext, FormPostContext, IndexContext,
         LoginContext, LoginFormField, NotFoundContext, PolicyViolationContext, PostAuthContext,
-        PostAuthContextInner, ReauthContext, ReauthFormField, RecoveryFinishContext,
-        RecoveryFinishFormField, RecoveryProgressContext, RecoveryStartContext,
-        RecoveryStartFormField, RegisterContext, RegisterFormField, SiteBranding, SiteConfigExt,
-        SiteFeatures, TemplateContext, UpstreamExistingLinkContext, UpstreamRegister,
-        UpstreamRegisterFormField, UpstreamSuggestLink, WithCaptcha, WithCsrf, WithLanguage,
-        WithOptionalSession, WithSession,
+        PostAuthContextInner, ReauthContext, ReauthFormField, RecoveryExpiredContext,
+        RecoveryFinishContext, RecoveryFinishFormField, RecoveryProgressContext,
+        RecoveryStartContext, RecoveryStartFormField, RegisterContext, RegisterFormField,
+        SiteBranding, SiteConfigExt, SiteFeatures, TemplateContext, UpstreamExistingLinkContext,
+        UpstreamRegister, UpstreamRegisterFormField, UpstreamSuggestLink, WithCaptcha, WithCsrf,
+        WithLanguage, WithOptionalSession, WithSession,
     },
     forms::{FieldError, FormError, FormField, FormState, ToFormState},
 };
@@ -357,6 +357,9 @@ register_templates! {
     /// Render the account recovery finish page
     pub fn render_recovery_finish(WithLanguage<WithCsrf<RecoveryFinishContext>>) { "pages/recovery/finish.html" }
 
+    /// Render the account recovery link expired page
+    pub fn render_recovery_expired(WithLanguage<WithCsrf<RecoveryExpiredContext>>) { "pages/recovery/expired.html" }
+
     /// Render the account recovery disabled page
     pub fn render_recovery_disabled(WithLanguage<EmptyContext>) { "pages/recovery/disabled.html" }
 
@@ -428,6 +431,7 @@ impl Templates {
         check::render_recovery_start(self, now, rng)?;
         check::render_recovery_progress(self, now, rng)?;
         check::render_recovery_finish(self, now, rng)?;
+        check::render_recovery_expired(self, now, rng)?;
         check::render_recovery_disabled(self, now, rng)?;
         check::render_reauth(self, now, rng)?;
         check::render_form_post::<EmptyContext>(self, now, rng)?;

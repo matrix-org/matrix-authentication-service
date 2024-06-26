@@ -14,16 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 #}
 
-{% macro link(text, href="#", class="") %}
-  <a class="cpd-button {{ class }}" data-kind="primary" data-size="lg" href="{{ href | prefix_url }}">{{ text }}</a>
+{% macro link(text, href="#", class="", size="lg") %}
+  <a class="cpd-button {{ class }}" data-kind="primary" data-size="{{ size }}" href="{{ href | prefix_url }}">{{ text }}</a>
 {% endmacro %}
 
 {% macro link_text(text, href="#", class="") %}
   <a class="cpd-link {{ class }}" data-kind="primary" href="{{ href | prefix_url }}">{{ text }}</a>
 {% endmacro %}
 
-{% macro link_outline(text, href="#", class="") %}
-  <a class="cpd-button {{ class }}" data-kind="secondary" data-size="lg" href="{{ href | prefix_url }}">{{ text }}</a>
+{% macro link_outline(text, href="#", class="", size="lg") %}
+  <a class="cpd-button {{ class }}" data-kind="secondary" data-size="{{ size }}" href="{{ href | prefix_url }}">{{ text }}</a>
 {% endmacro %}
 
 {% macro link_tertiary(text, href="#", class="", size="lg") %}
