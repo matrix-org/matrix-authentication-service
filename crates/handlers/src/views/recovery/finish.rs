@@ -23,12 +23,13 @@ use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     FancyError,
 };
+use mas_data_model::SiteConfig;
 use mas_policy::Policy;
 use mas_router::UrlBuilder;
 use mas_storage::{BoxClock, BoxRepository, BoxRng};
 use mas_templates::{
-    ErrorContext, FieldError, FormState, RecoveryFinishContext, RecoveryFinishFormField,
-    TemplateContext, Templates,
+    EmptyContext, ErrorContext, FieldError, FormState, RecoveryFinishContext,
+    RecoveryFinishFormField, TemplateContext, Templates,
 };
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroizing;
@@ -50,11 +51,18 @@ pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
+    State(site_config): State<SiteConfig>,
     State(templates): State<Templates>,
     PreferredLanguage(locale): PreferredLanguage,
     cookie_jar: CookieJar,
     Query(query): Query<RouteQuery>,
 ) -> Result<Response, FancyError> {
+    if !site_config.account_recovery_allowed {
+        let context = EmptyContext.with_language(locale);
+        let rendered = templates.render_recovery_disabled(&context)?;
+        return Ok((cookie_jar, Html(rendered)).into_response());
+    }
+
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
 
     let ticket = repo
@@ -117,6 +125,7 @@ pub(crate) async fn post(
     clock: BoxClock,
     mut repo: BoxRepository,
     mut policy: Policy,
+    State(site_config): State<SiteConfig>,
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
@@ -125,6 +134,12 @@ pub(crate) async fn post(
     Query(query): Query<RouteQuery>,
     Form(form): Form<ProtectedForm<RouteForm>>,
 ) -> Result<Response, FancyError> {
+    if !site_config.account_recovery_allowed {
+        let context = EmptyContext.with_language(locale);
+        let rendered = templates.render_recovery_disabled(&context)?;
+        return Ok((cookie_jar, Html(rendered)).into_response());
+    }
+
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
 
     let ticket = repo

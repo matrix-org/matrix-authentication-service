@@ -357,6 +357,9 @@ register_templates! {
     /// Render the account recovery finish page
     pub fn render_recovery_finish(WithLanguage<WithCsrf<RecoveryFinishContext>>) { "pages/recovery/finish.html" }
 
+    /// Render the account recovery disabled page
+    pub fn render_recovery_disabled(WithLanguage<EmptyContext>) { "pages/recovery/disabled.html" }
+
     /// Render the re-authentication form
     pub fn render_reauth(WithLanguage<WithCsrf<WithSession<ReauthContext>>>) { "pages/reauth.html" }
 
@@ -425,6 +428,7 @@ impl Templates {
         check::render_recovery_start(self, now, rng)?;
         check::render_recovery_progress(self, now, rng)?;
         check::render_recovery_finish(self, now, rng)?;
+        check::render_recovery_disabled(self, now, rng)?;
         check::render_reauth(self, now, rng)?;
         check::render_form_post::<EmptyContext>(self, now, rng)?;
         check::render_error(self, now, rng)?;
@@ -455,6 +459,7 @@ mod tests {
         let features = SiteFeatures {
             password_login: true,
             password_registration: true,
+            account_recovery: true,
         };
         let vite_manifest_path =
             Utf8Path::new(env!("CARGO_MANIFEST_DIR")).join("../../frontend/dist/manifest.json");

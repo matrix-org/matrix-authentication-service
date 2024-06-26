@@ -36,6 +36,15 @@ const fn is_default_true(value: &bool) -> bool {
     *value == default_true()
 }
 
+const fn default_false() -> bool {
+    false
+}
+
+#[allow(clippy::trivially_copy_pass_by_ref)]
+const fn is_default_false(value: &bool) -> bool {
+    *value == default_false()
+}
+
 /// Configuration sections for experimental options
 ///
 /// Do not change these options unless you know what you are doing.
@@ -80,6 +89,10 @@ pub struct ExperimentalConfig {
     /// Whether users are allowed to change their passwords. Defaults to `true`.
     #[serde(default = "default_true", skip_serializing_if = "is_default_true")]
     pub password_change_allowed: bool,
+
+    /// Whether email-based account recovery is enabled. Defaults to `false`.
+    #[serde(default = "default_false", skip_serializing_if = "is_default_false")]
+    pub account_recovery_enabled: bool,
 }
 
 impl Default for ExperimentalConfig {
@@ -91,6 +104,7 @@ impl Default for ExperimentalConfig {
             email_change_allowed: default_true(),
             displayname_change_allowed: default_true(),
             password_change_allowed: default_true(),
+            account_recovery_enabled: default_false(),
         }
     }
 }
@@ -103,6 +117,7 @@ impl ExperimentalConfig {
             && is_default_true(&self.email_change_allowed)
             && is_default_true(&self.displayname_change_allowed)
             && is_default_true(&self.password_change_allowed)
+            && is_default_false(&self.account_recovery_enabled)
     }
 }
 

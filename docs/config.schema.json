@@ -2038,6 +2038,10 @@
         "password_change_allowed": {
           "description": "Whether users are allowed to change their passwords. Defaults to `true`.",
           "type": "boolean"
+        },
+        "account_recovery_enabled": {
+          "description": "Whether email-based account recovery is enabled. Defaults to `false`.",
+          "type": "boolean"
         }
       }
     }
