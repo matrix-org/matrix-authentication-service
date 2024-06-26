@@ -13,4 +13,3 @@
 // limitations under the License.
 
 pub mod emails;
-pub mod password;

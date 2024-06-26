@@ -341,9 +341,6 @@ register_templates! {
     /// Render the home page
     pub fn render_index(WithLanguage<WithCsrf<WithOptionalSession<IndexContext>>>) { "pages/index.html" }
 
-    /// Render the password change page
-    pub fn render_account_password(WithLanguage<WithCsrf<WithSession<EmptyContext>>>) { "pages/account/password.html" }
-
     /// Render the email verification page
     pub fn render_account_verify_email(WithLanguage<WithCsrf<WithSession<EmailVerificationPageContext>>>) { "pages/account/emails/verify.html" }
 
@@ -404,7 +401,6 @@ impl Templates {
         check::render_policy_violation(self, now, rng)?;
         check::render_sso_login(self, now, rng)?;
         check::render_index(self, now, rng)?;
-        check::render_account_password(self, now, rng)?;
         check::render_account_add_email(self, now, rng)?;
         check::render_account_verify_email(self, now, rng)?;
         check::render_reauth(self, now, rng)?;

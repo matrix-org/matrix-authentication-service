@@ -77,7 +77,7 @@ impl PostAuthAction {
             Self::ContinueCompatSsoLogin { id } => {
                 url_builder.redirect(&CompatLoginSsoComplete::new(*id, None))
             }
-            Self::ChangePassword => url_builder.redirect(&AccountPassword),
+            Self::ChangePassword => url_builder.redirect(&AccountPasswordChange),
             Self::LinkUpstream { id } => url_builder.redirect(&UpstreamOAuth2Link::new(*id)),
             Self::ManageAccount { action } => url_builder.redirect(&Account {
                 action: action.clone(),
@@ -506,12 +506,15 @@ impl SimpleRoute for AccountWildcard {
     const PATH: &'static str = "/account/*rest";
 }
 
-/// `GET|POST /change-password`
+/// `GET /account/password/change`
+///
+/// Handled by the React frontend; this struct definition is purely for
+/// redirects.
 #[derive(Default, Debug, Clone)]
-pub struct AccountPassword;
+pub struct AccountPasswordChange;
 
-impl SimpleRoute for AccountPassword {
-    const PATH: &'static str = "/change-password";
+impl SimpleRoute for AccountPasswordChange {
+    const PATH: &'static str = "/account/password/change";
 }
 
 /// `GET /authorize/:grant_id`
