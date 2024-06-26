@@ -73,6 +73,9 @@ pub struct SiteConfig {
     /// Whether users can change their password.
     pub password_change_allowed: bool,
 
+    /// Whether users can recover their account via email.
+    pub account_recovery_allowed: bool,
+
     /// Captcha configuration
     pub captcha: Option<CaptchaConfig>,
 }

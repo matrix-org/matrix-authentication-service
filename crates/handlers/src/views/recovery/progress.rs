@@ -22,12 +22,13 @@ use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
 };
+use mas_data_model::SiteConfig;
 use mas_router::UrlBuilder;
 use mas_storage::{
     job::{JobRepositoryExt, SendAccountRecoveryEmailsJob},
     BoxClock, BoxRepository, BoxRng,
 };
-use mas_templates::{RecoveryProgressContext, TemplateContext, Templates};
+use mas_templates::{EmptyContext, RecoveryProgressContext, TemplateContext, Templates};
 use ulid::Ulid;
 
 use crate::PreferredLanguage;
@@ -36,12 +37,19 @@ pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
+    State(site_config): State<SiteConfig>,
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
     PreferredLanguage(locale): PreferredLanguage,
     cookie_jar: CookieJar,
     Path(id): Path<Ulid>,
 ) -> Result<Response, FancyError> {
+    if !site_config.account_recovery_allowed {
+        let context = EmptyContext.with_language(locale);
+        let rendered = templates.render_recovery_disabled(&context)?;
+        return Ok((cookie_jar, Html(rendered)).into_response());
+    }
+
     let (session_info, cookie_jar) = cookie_jar.session_info();
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
 
@@ -75,6 +83,7 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
+    State(site_config): State<SiteConfig>,
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
     PreferredLanguage(locale): PreferredLanguage,
@@ -82,6 +91,12 @@ pub(crate) async fn post(
     Path(id): Path<Ulid>,
     Form(form): Form<ProtectedForm<()>>,
 ) -> Result<Response, FancyError> {
+    if !site_config.account_recovery_allowed {
+        let context = EmptyContext.with_language(locale);
+        let rendered = templates.render_recovery_disabled(&context)?;
+        return Ok((cookie_jar, Html(rendered)).into_response());
+    }
+
     let (session_info, cookie_jar) = cookie_jar.session_info();
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
 

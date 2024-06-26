@@ -170,6 +170,8 @@ pub fn site_config_from_config(
         displayname_change_allowed: experimental_config.displayname_change_allowed,
         password_change_allowed: password_config.enabled()
             && experimental_config.password_change_allowed,
+        account_recovery_allowed: password_config.enabled()
+            && experimental_config.account_recovery_enabled,
         captcha,
     })
 }
