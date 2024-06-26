@@ -28,8 +28,8 @@ use mas_policy::Policy;
 use mas_router::UrlBuilder;
 use mas_storage::{BoxClock, BoxRepository, BoxRng};
 use mas_templates::{
-    EmptyContext, ErrorContext, FieldError, FormState, RecoveryFinishContext,
-    RecoveryFinishFormField, TemplateContext, Templates,
+    EmptyContext, ErrorContext, FieldError, FormState, RecoveryExpiredContext,
+    RecoveryFinishContext, RecoveryFinishFormField, TemplateContext, Templates,
 };
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroizing;
@@ -78,12 +78,10 @@ pub(crate) async fn get(
         .context("Unknown session")?;
 
     if !ticket.active(clock.now()) || session.consumed_at.is_some() {
-        // TODO: render a 'link expired' page
-        let rendered = templates.render_error(
-            &ErrorContext::new()
-                .with_code("Link expired")
-                .with_language(&locale),
-        )?;
+        let context = RecoveryExpiredContext::new(session)
+            .with_csrf(csrf_token.form_value())
+            .with_language(locale);
+        let rendered = templates.render_recovery_expired(&context)?;
         return Ok((cookie_jar, Html(rendered)).into_response());
     }
 
@@ -155,12 +153,10 @@ pub(crate) async fn post(
         .context("Unknown session")?;
 
     if !ticket.active(clock.now()) || session.consumed_at.is_some() {
-        // TODO: render a 'link expired' page
-        let rendered = templates.render_error(
-            &ErrorContext::new()
-                .with_code("Link expired")
-                .with_language(&locale),
-        )?;
+        let context = RecoveryExpiredContext::new(session)
+            .with_csrf(csrf_token.form_value())
+            .with_language(locale);
+        let rendered = templates.render_recovery_expired(&context)?;
         return Ok((cookie_jar, Html(rendered)).into_response());
     }
 

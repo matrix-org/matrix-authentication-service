@@ -1056,6 +1056,39 @@ impl TemplateContext for RecoveryProgressContext {
     }
 }
 
+/// Context used by the `pages/recovery/expired.html` template
+#[derive(Serialize)]
+pub struct RecoveryExpiredContext {
+    session: UserRecoverySession,
+}
+
+impl RecoveryExpiredContext {
+    /// Constructs a context for the recovery expired page
+    #[must_use]
+    pub fn new(session: UserRecoverySession) -> Self {
+        Self { session }
+    }
+}
+
+impl TemplateContext for RecoveryExpiredContext {
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        let session = UserRecoverySession {
+            id: Ulid::from_datetime_with_source(now.into(), rng),
+            email: "name@mail.com".to_owned(),
+            user_agent: UserAgent::parse("Mozilla/5.0".to_owned()),
+            ip_address: None,
+            locale: "en".to_owned(),
+            created_at: now,
+            consumed_at: None,
+        };
+
+        vec![Self { session }]
+    }
+}
+
 /// Fields of the account recovery finish form
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
