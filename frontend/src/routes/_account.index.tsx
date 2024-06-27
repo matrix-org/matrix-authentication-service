@@ -79,8 +79,8 @@ function Index(): React.ReactElement {
   if (!siteConfig) throw Error(); // This should never happen
 
   // When adding an email, we want to go to the email verification form
-  const onAdd = (id: string): void => {
-    navigate({ to: "/emails/$id/verify", params: { id } });
+  const onAdd = async (id: string): Promise<void> => {
+    await navigate({ to: "/emails/$id/verify", params: { id } });
   };
 
   return (
