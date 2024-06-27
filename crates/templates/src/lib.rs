@@ -360,6 +360,9 @@ register_templates! {
     /// Render the account recovery link expired page
     pub fn render_recovery_expired(WithLanguage<WithCsrf<RecoveryExpiredContext>>) { "pages/recovery/expired.html" }
 
+    /// Render the account recovery link consumed page
+    pub fn render_recovery_consumed(WithLanguage<EmptyContext>) { "pages/recovery/consumed.html" }
+
     /// Render the account recovery disabled page
     pub fn render_recovery_disabled(WithLanguage<EmptyContext>) { "pages/recovery/disabled.html" }
 
@@ -432,6 +435,7 @@ impl Templates {
         check::render_recovery_progress(self, now, rng)?;
         check::render_recovery_finish(self, now, rng)?;
         check::render_recovery_expired(self, now, rng)?;
+        check::render_recovery_consumed(self, now, rng)?;
         check::render_recovery_disabled(self, now, rng)?;
         check::render_reauth(self, now, rng)?;
         check::render_form_post::<EmptyContext>(self, now, rng)?;

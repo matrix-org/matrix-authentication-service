@@ -68,6 +68,12 @@ pub(crate) async fn get(
             .into_response());
     };
 
+    if recovery_session.consumed_at.is_some() {
+        let context = EmptyContext.with_language(locale);
+        let rendered = templates.render_recovery_consumed(&context)?;
+        return Ok((cookie_jar, Html(rendered)).into_response());
+    }
+
     let context = RecoveryProgressContext::new(recovery_session)
         .with_csrf(csrf_token.form_value())
         .with_language(locale);
@@ -114,6 +120,12 @@ pub(crate) async fn post(
         )
             .into_response());
     };
+
+    if recovery_session.consumed_at.is_some() {
+        let context = EmptyContext.with_language(locale);
+        let rendered = templates.render_recovery_consumed(&context)?;
+        return Ok((cookie_jar, Html(rendered)).into_response());
+    }
 
     // Verify the CSRF token
     let () = cookie_jar.verify_form(&clock, form)?;
