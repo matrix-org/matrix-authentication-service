@@ -26,7 +26,7 @@
     },
     "start_over": "Start over",
     "@start_over": {
-      "context": "pages/recovery/expired.html:38:32-54"
+      "context": "pages/recovery/consumed.html:30:32-54, pages/recovery/expired.html:38:32-54"
     }
   },
   "app": {
@@ -389,6 +389,18 @@
       }
     },
     "recovery": {
+      "consumed": {
+        "description": "To create a new password, start over and select “Forgot password”.",
+        "@description": {
+          "context": "pages/recovery/consumed.html:27:25-63",
+          "description": "Description on the error page shown when a user tries to use a recovery link that has already been used"
+        },
+        "heading": "The link to reset your password has already been used",
+        "@heading": {
+          "context": "pages/recovery/consumed.html:26:27-61",
+          "description": "Title on the error page shown when a user tries to use a recovery link that has already been used"
+        }
+      },
       "disabled": {
         "description": "If you have lost your credentials, please contact the administrator to recover your account.",
         "@description": {

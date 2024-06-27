@@ -77,7 +77,13 @@ pub(crate) async fn get(
         .await?
         .context("Unknown session")?;
 
-    if !ticket.active(clock.now()) || session.consumed_at.is_some() {
+    if session.consumed_at.is_some() {
+        let context = EmptyContext.with_language(locale);
+        let rendered = templates.render_recovery_consumed(&context)?;
+        return Ok((cookie_jar, Html(rendered)).into_response());
+    }
+
+    if !ticket.active(clock.now()) {
         let context = RecoveryExpiredContext::new(session)
             .with_csrf(csrf_token.form_value())
             .with_language(locale);
@@ -118,6 +124,7 @@ pub(crate) async fn get(
     Ok((cookie_jar, Html(rendered)).into_response())
 }
 
+#[allow(clippy::too_many_lines)]
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
@@ -152,7 +159,13 @@ pub(crate) async fn post(
         .await?
         .context("Unknown session")?;
 
-    if !ticket.active(clock.now()) || session.consumed_at.is_some() {
+    if session.consumed_at.is_some() {
+        let context = EmptyContext.with_language(locale);
+        let rendered = templates.render_recovery_consumed(&context)?;
+        return Ok((cookie_jar, Html(rendered)).into_response());
+    }
+
+    if !ticket.active(clock.now()) {
         let context = RecoveryExpiredContext::new(session)
             .with_csrf(csrf_token.form_value())
             .with_language(locale);
