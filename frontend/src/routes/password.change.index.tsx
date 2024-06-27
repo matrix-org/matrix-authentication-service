@@ -13,7 +13,6 @@
 // limitations under the License.
 
 import { createFileRoute, notFound, useRouter } from "@tanstack/react-router";
-import IconCheckCircleSolid from "@vector-im/compound-design-tokens/icons/check-circle-solid.svg?react";
 import IconLockSolid from "@vector-im/compound-design-tokens/icons/lock-solid.svg?react";
 import { Alert, Form, Separator } from "@vector-im/compound-web";
 import { FormEvent, useRef } from "react";
@@ -259,11 +258,9 @@ function ChangePassword(): React.ReactNode {
               {t("frontend.password_change.passwords_no_match")}
             </Form.ErrorMessage>
 
-            <Form.HelpMessage match="valid">
-              {/* TODO Use SuccessMessage once ready. https://github.com/matrix-org/matrix-authentication-service/issues/2856 */}
-              <IconCheckCircleSolid />
+            <Form.SuccessMessage match="valid">
               {t("frontend.password_change.passwords_match")}
-            </Form.HelpMessage>
+            </Form.SuccessMessage>
           </Form.Field>
 
           <Form.Submit kind="primary" disabled={result.fetching}>
