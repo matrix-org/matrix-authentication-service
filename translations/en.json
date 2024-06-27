@@ -118,31 +118,24 @@
     "change_password": {
       "change": "Change password",
       "@change": {
-        "context": "pages/account/password.html:46:26-57",
         "description": "Button to change the user's password"
       },
       "confirm": "Confirm password",
       "@confirm": {
-        "context": "pages/account/password.html:42:33-65",
         "description": "Confirmation field for the new password"
       },
       "current": "Current password",
       "@current": {
-        "context": "pages/account/password.html:34:33-65",
         "description": "Field for the user's current password"
       },
       "description": "This will change the password on your account.",
-      "@description": {
-        "context": "pages/account/password.html:27:25-61"
-      },
+      "@description": {},
       "heading": "Change my password",
       "@heading": {
-        "context": "pages/account/password.html:26:27-59",
         "description": "Heading on the change password page"
       },
       "new": "New password",
       "@new": {
-        "context": "pages/account/password.html:38:33-61",
         "description": "Field for the user's new password"
       }
     },

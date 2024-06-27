@@ -354,7 +354,7 @@ where
         .route(
             mas_router::ChangePasswordDiscovery::route(),
             get(|State(url_builder): State<UrlBuilder>| async move {
-                url_builder.redirect(&mas_router::AccountPassword)
+                url_builder.redirect(&mas_router::AccountPasswordChange)
             }),
         )
         .route(mas_router::Index::route(), get(self::views::index::get))
@@ -370,10 +370,6 @@ where
         .route(
             mas_router::Register::route(),
             get(self::views::register::get).post(self::views::register::post),
-        )
-        .route(
-            mas_router::AccountPassword::route(),
-            get(self::views::account::password::get).post(self::views::account::password::post),
         )
         .route(
             mas_router::AccountVerifyEmail::route(),
