@@ -204,7 +204,7 @@ default-features = false
 
 # URL manipulation
 [workspace.dependencies.url]
-version = "2.5.0"
+version = "2.5.2"
 features = ["serde"]
 
 # ULID support
