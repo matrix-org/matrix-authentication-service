@@ -1529,13 +1529,13 @@ checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 
 [[package]]
 name = "duration-str"
-version = "0.7.1"
+version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8bb6a301a95ba86fa0ebaf71d49ae4838c51f8b84cb88ed140dfb66452bb3c4"
+checksum = "709d653e7c92498eb29fb86a2a6f0f3502b97530f33aedb32ef848d4d28b31a3"
 dependencies = [
- "nom",
  "rust_decimal",
  "thiserror",
+ "winnow 0.6.13",
 ]
 
 [[package]]
@@ -2292,7 +2292,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.5.7",
+ "socket2 0.4.10",
  "tokio",
  "tower-service",
  "tracing",
@@ -3874,7 +3874,7 @@ checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
 [[package]]
 name = "opa-wasm"
 version = "0.1.0"
-source = "git+https://github.com/matrix-org/rust-opa-wasm.git#96829c22c54f269ba2e99873ad9b02e1baf357d8"
+source = "git+https://github.com/matrix-org/rust-opa-wasm.git#865c0447a28f13fc66affd82dfb4ae16801eb9e6"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -3887,7 +3887,7 @@ dependencies = [
  "form_urlencoded",
  "hex",
  "hmac",
- "indexmap 2.2.6",
+ "indexmap 1.9.3",
  "json-patch",
  "md-5",
  "parse-size",
@@ -5486,9 +5486,9 @@ dependencies = [
 
 [[package]]
 name = "sprintf"
-version = "0.2.1"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2819cb5194dfe9e6d102f4519a9fb9dc7106d2879b71b4fd4d4677f1175bd39"
+checksum = "50e0732124cafd6bf2c9bc15f330fce49acb262beb57c877a2997898244e7f8a"
 dependencies = [
  "thiserror",
 ]
@@ -6029,7 +6029,7 @@ checksum = "1b5bb770da30e5cbfde35a2d7b9b8a2c4b8ef89548a7a6aeab5c9a576e3e7421"
 dependencies = [
  "indexmap 2.2.6",
  "toml_datetime",
- "winnow",
+ "winnow 0.5.40",
 ]
 
 [[package]]
@@ -6947,6 +6947,15 @@ name = "winnow"
 version = "0.5.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f593a95398737aeed53e489c785df13f3618e41dbcd6718c6addbf1395aa6876"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
+name = "winnow"
+version = "0.6.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "59b5e5f6c299a3c7890b876a2a587f3115162487e704907d9b6cd29473052ba1"
 dependencies = [
  "memchr",
 ]
