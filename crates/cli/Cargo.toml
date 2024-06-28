@@ -46,6 +46,7 @@ opentelemetry-http.workspace = true
 opentelemetry-jaeger-propagator = "0.2.0"
 opentelemetry-otlp = { version = "0.16.0", default-features = false, features = ["trace", "metrics", "http-proto"] }
 opentelemetry-prometheus = "0.16.0"
+opentelemetry-resource-detectors = "0.2.0"
 opentelemetry-semantic-conventions.workspace = true
 opentelemetry-stdout = { version = "0.4.0", features = ["trace", "metrics"] }
 opentelemetry_sdk = { version = "0.23.0", features = ["trace", "metrics", "rt-tokio"] }
