@@ -12,12 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  notFound,
+  redirect,
+  useNavigate,
+} from "@tanstack/react-router";
 import IconKey from "@vector-im/compound-design-tokens/icons/key.svg?react";
 import { Alert, Separator } from "@vector-im/compound-web";
 import { Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "urql";
+import * as z from "zod";
 
 import AccountManagementPasswordPreview from "../components/AccountManagementPasswordPreview";
 import BlockList from "../components/BlockList/BlockList";
@@ -55,7 +61,73 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
+// XXX: we probably shouldn't have to specify the search parameters on /sessions/
+const PAGE_SIZE = 6;
+
+const actionSchema = z
+  .discriminatedUnion("action", [
+    z.object({
+      action: z.enum(["profile", "org.matrix.profile"]),
+    }),
+    z.object({
+      action: z.enum(["sessions_list", "org.matrix.sessions_list"]),
+    }),
+    z.object({
+      action: z.enum(["session_view", "org.matrix.session_view"]),
+      device_id: z.string().optional(),
+    }),
+    z.object({
+      action: z.enum(["session_end", "org.matrix.session_end"]),
+      device_id: z.string().optional(),
+    }),
+    z.object({
+      action: z.literal("org.matrix.cross_signing_reset"),
+    }),
+    z.object({
+      action: z.undefined(),
+    }),
+  ])
+  .catch({ action: undefined });
+
 export const Route = createFileRoute("/_account/")({
+  validateSearch: actionSchema,
+
+  beforeLoad({ search }) {
+    switch (search.action) {
+      case "profile":
+      case "org.matrix.profile":
+        throw redirect({ to: "/" });
+
+      case "sessions_list":
+      case "org.matrix.sessions_list":
+        throw redirect({ to: "/sessions", search: { last: PAGE_SIZE } });
+
+      case "session_view":
+      case "org.matrix.session_view":
+        if (search.device_id)
+          throw redirect({
+            to: "/devices/$",
+            params: { _splat: search.device_id },
+          });
+        throw redirect({ to: "/sessions", search: { last: PAGE_SIZE } });
+
+      case "session_end":
+      case "org.matrix.session_end":
+        if (search.device_id)
+          throw redirect({
+            to: "/devices/$",
+            params: { _splat: search.device_id },
+          });
+        throw redirect({ to: "/sessions", search: { last: PAGE_SIZE } });
+
+      case "org.matrix.cross_signing_reset":
+        throw redirect({
+          to: "/reset-cross-signing",
+          search: { deepLink: true },
+        });
+    }
+  },
+
   async loader({ context, abortController: { signal } }) {
     const result = await context.client.query(
       QUERY,

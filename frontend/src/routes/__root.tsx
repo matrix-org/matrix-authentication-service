@@ -12,87 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {
-  createRootRouteWithContext,
-  Outlet,
-  redirect,
-} from "@tanstack/react-router";
+import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import { Client } from "urql";
-import * as z from "zod";
 
 import Layout from "../components/Layout";
 import NotFound from "../components/NotFound";
 
-const actionSchema = z
-  .discriminatedUnion("action", [
-    z.object({
-      action: z.enum(["profile", "org.matrix.profile"]),
-    }),
-    z.object({
-      action: z.enum(["sessions_list", "org.matrix.sessions_list"]),
-    }),
-    z.object({
-      action: z.enum(["session_view", "org.matrix.session_view"]),
-      device_id: z.string().optional(),
-    }),
-    z.object({
-      action: z.enum(["session_end", "org.matrix.session_end"]),
-      device_id: z.string().optional(),
-    }),
-    z.object({
-      action: z.literal("org.matrix.cross_signing_reset"),
-    }),
-    z.object({
-      action: z.undefined(),
-    }),
-  ])
-  .catch({ action: undefined });
-
-// XXX: we probably shouldn't have to specify the search parameters on /sessions/
-const PAGE_SIZE = 6;
-
 export const Route = createRootRouteWithContext<{
   client: Client;
 }>()({
-  validateSearch: actionSchema,
-
-  beforeLoad({ search }) {
-    switch (search.action) {
-      case "profile":
-      case "org.matrix.profile":
-        throw redirect({ to: "/" });
-
-      case "sessions_list":
-      case "org.matrix.sessions_list":
-        throw redirect({ to: "/sessions", search: { last: PAGE_SIZE } });
-
-      case "session_view":
-      case "org.matrix.session_view":
-        if (search.device_id)
-          throw redirect({
-            to: "/devices/$",
-            params: { _splat: search.device_id },
-          });
-        throw redirect({ to: "/sessions", search: { last: PAGE_SIZE } });
-
-      case "session_end":
-      case "org.matrix.session_end":
-        if (search.device_id)
-          throw redirect({
-            to: "/devices/$",
-            params: { _splat: search.device_id },
-          });
-        throw redirect({ to: "/sessions", search: { last: PAGE_SIZE } });
-
-      case "org.matrix.cross_signing_reset":
-        throw redirect({
-          to: "/reset-cross-signing",
-          search: { deepLink: true },
-        });
-    }
-  },
-
   component: () => (
     <>
       <Outlet />
