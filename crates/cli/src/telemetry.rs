@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2021-2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -127,12 +127,12 @@ fn tracer(config: &TracingConfig) -> anyhow::Result<Option<Tracer>> {
         }
     };
 
-    let tracer = tracer_provider.versioned_tracer(
-        env!("CARGO_PKG_NAME"),
-        Some(env!("CARGO_PKG_VERSION")),
-        Some(semcov::SCHEMA_URL),
-        None,
-    );
+    let tracer = tracer_provider
+        .tracer_builder(env!("CARGO_PKG_NAME"))
+        .with_version(env!("CARGO_PKG_VERSION"))
+        .with_schema_url(semcov::SCHEMA_URL)
+        .build();
+
     global::set_tracer_provider(tracer_provider);
 
     Ok(Some(tracer))
@@ -248,8 +248,8 @@ fn resource() -> Resource {
         Duration::from_secs(5),
         vec![
             Box::new(opentelemetry_sdk::resource::EnvResourceDetector::new()),
-            Box::new(opentelemetry_sdk::resource::OsResourceDetector),
-            Box::new(opentelemetry_sdk::resource::ProcessResourceDetector),
+            Box::new(opentelemetry_resource_detectors::OsResourceDetector),
+            Box::new(opentelemetry_resource_detectors::ProcessResourceDetector),
             Box::new(opentelemetry_sdk::resource::TelemetryResourceDetector),
         ],
     );

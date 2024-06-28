@@ -115,7 +115,15 @@ default-features = false
 [workspace.dependencies.lettre]
 version = "=0.11.4"
 default-features = false
-features = ["tokio1-rustls-tls", "hostname", "builder", "tracing", "pool", "smtp-transport", "sendmail-transport"]
+features = [
+    "tokio1-rustls-tls",
+    "hostname",
+    "builder",
+    "tracing",
+    "pool",
+    "smtp-transport",
+    "sendmail-transport",
+]
 
 # Templates
 [workspace.dependencies.minijinja]
@@ -151,7 +159,15 @@ features = ["preserve_order"]
 # SQL database support
 [workspace.dependencies.sqlx]
 version = "0.7.4"
-features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "json", "uuid", "ipnetwork"]
+features = [
+    "runtime-tokio-rustls",
+    "postgres",
+    "migrate",
+    "chrono",
+    "json",
+    "uuid",
+    "ipnetwork",
+]
 
 # Custom error types
 [workspace.dependencies.thiserror]
@@ -175,15 +191,15 @@ version = "0.3.18"
 
 # OpenTelemetry
 [workspace.dependencies.opentelemetry]
-version = "0.22.0"
+version = "0.23.0"
 features = ["trace", "metrics"]
 [workspace.dependencies.opentelemetry-http]
-version = "0.11.1"
+version = "0.12.0"
 features = ["hyper", "tokio"]
 [workspace.dependencies.opentelemetry-semantic-conventions]
-version = "0.14.0"
+version = "0.15.0"
 [workspace.dependencies.tracing-opentelemetry]
-version = "0.23.0"
+version = "0.24.0"
 default-features = false
 
 # URL manipulation
