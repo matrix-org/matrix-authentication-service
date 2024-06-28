@@ -85,46 +85,79 @@ const AccountSessionsIdRoute = AccountSessionsIdImport.update({
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/_account': {
+      id: '/_account'
+      path: ''
+      fullPath: ''
       preLoaderRoute: typeof AccountImport
       parentRoute: typeof rootRoute
     }
     '/reset-cross-signing': {
+      id: '/reset-cross-signing'
+      path: '/reset-cross-signing'
+      fullPath: '/reset-cross-signing'
       preLoaderRoute: typeof ResetCrossSigningImport
       parentRoute: typeof rootRoute
     }
     '/clients/$id': {
+      id: '/clients/$id'
+      path: '/clients/$id'
+      fullPath: '/clients/$id'
       preLoaderRoute: typeof ClientsIdImport
       parentRoute: typeof rootRoute
     }
     '/devices/$': {
+      id: '/devices/$'
+      path: '/devices/$'
+      fullPath: '/devices/$'
       preLoaderRoute: typeof DevicesSplatImport
       parentRoute: typeof rootRoute
     }
     '/_account/': {
+      id: '/_account/'
+      path: '/'
+      fullPath: '/'
       preLoaderRoute: typeof AccountIndexImport
       parentRoute: typeof AccountImport
     }
     '/_account/sessions/$id': {
+      id: '/_account/sessions/$id'
+      path: '/sessions/$id'
+      fullPath: '/sessions/$id'
       preLoaderRoute: typeof AccountSessionsIdImport
       parentRoute: typeof AccountImport
     }
     '/_account/sessions/browsers': {
+      id: '/_account/sessions/browsers'
+      path: '/sessions/browsers'
+      fullPath: '/sessions/browsers'
       preLoaderRoute: typeof AccountSessionsBrowsersImport
       parentRoute: typeof AccountImport
     }
     '/emails/$id/verify': {
+      id: '/emails/$id/verify'
+      path: '/emails/$id/verify'
+      fullPath: '/emails/$id/verify'
       preLoaderRoute: typeof EmailsIdVerifyImport
       parentRoute: typeof rootRoute
     }
     '/password/change/success': {
+      id: '/password/change/success'
+      path: '/password/change/success'
+      fullPath: '/password/change/success'
       preLoaderRoute: typeof PasswordChangeSuccessImport
       parentRoute: typeof rootRoute
     }
     '/_account/sessions/': {
+      id: '/_account/sessions/'
+      path: '/sessions'
+      fullPath: '/sessions'
       preLoaderRoute: typeof AccountSessionsIndexImport
       parentRoute: typeof AccountImport
     }
     '/password/change/': {
+      id: '/password/change/'
+      path: '/password/change'
+      fullPath: '/password/change'
       preLoaderRoute: typeof PasswordChangeIndexImport
       parentRoute: typeof rootRoute
     }
@@ -133,19 +166,81 @@ declare module '@tanstack/react-router' {
 
 // Create and export the route tree
 
-export const routeTree = rootRoute.addChildren([
-  AccountRoute.addChildren([
+export const routeTree = rootRoute.addChildren({
+  AccountRoute: AccountRoute.addChildren({
     AccountIndexRoute,
     AccountSessionsIdRoute,
     AccountSessionsBrowsersRoute,
     AccountSessionsIndexRoute,
-  ]),
+  }),
   ResetCrossSigningRoute,
   ClientsIdRoute,
   DevicesSplatRoute,
   EmailsIdVerifyRoute,
   PasswordChangeSuccessRoute,
   PasswordChangeIndexRoute,
-])
+})
 
 /* prettier-ignore-end */
+
+/* ROUTE_MANIFEST_START
+{
+  "routes": {
+    "__root__": {
+      "filePath": "__root.tsx",
+      "children": [
+        "/_account",
+        "/reset-cross-signing",
+        "/clients/$id",
+        "/devices/$",
+        "/emails/$id/verify",
+        "/password/change/success",
+        "/password/change/"
+      ]
+    },
+    "/_account": {
+      "filePath": "_account.tsx",
+      "children": [
+        "/_account/",
+        "/_account/sessions/$id",
+        "/_account/sessions/browsers",
+        "/_account/sessions/"
+      ]
+    },
+    "/reset-cross-signing": {
+      "filePath": "reset-cross-signing.tsx"
+    },
+    "/clients/$id": {
+      "filePath": "clients.$id.tsx"
+    },
+    "/devices/$": {
+      "filePath": "devices.$.tsx"
+    },
+    "/_account/": {
+      "filePath": "_account.index.tsx",
+      "parent": "/_account"
+    },
+    "/_account/sessions/$id": {
+      "filePath": "_account.sessions.$id.tsx",
+      "parent": "/_account"
+    },
+    "/_account/sessions/browsers": {
+      "filePath": "_account.sessions.browsers.tsx",
+      "parent": "/_account"
+    },
+    "/emails/$id/verify": {
+      "filePath": "emails.$id.verify.tsx"
+    },
+    "/password/change/success": {
+      "filePath": "password.change.success.tsx"
+    },
+    "/_account/sessions/": {
+      "filePath": "_account.sessions.index.tsx",
+      "parent": "/_account"
+    },
+    "/password/change/": {
+      "filePath": "password.change.index.tsx"
+    }
+  }
+}
+ROUTE_MANIFEST_END */
