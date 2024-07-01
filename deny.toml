@@ -76,7 +76,6 @@ skip = [
     { name = "heck", version = "0.4.1" },
     # we depend on old http/http-body/hyper versions, but some dependencies already upgraded
     { name = "http", version = "0.2.12" },
-    { name = "socket2", version = "0.4.10" },
     # sea-query-attr uses an old version of darling
     { name = "darling", version = "0.14.4" },
     { name = "darling_core", version = "0.14.4" },
@@ -97,7 +96,3 @@ unknown-registry = "warn"
 unknown-git = "warn"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
 allow-git = []
-
-[sources.allow-org]
-# Allow our own crates
-github = ["matrix-org"]
