@@ -44,4 +44,4 @@ pub use self::{
     service::{BoxCloneSyncService, HttpService},
 };
 
-pub type EmptyBody = http_body::Empty<bytes::Bytes>;
+pub type EmptyBody = http_body_util::Empty<bytes::Bytes>;

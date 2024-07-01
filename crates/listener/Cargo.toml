@@ -23,7 +23,7 @@ pin-project-lite = "0.2.14"
 socket2 = "0.5.7"
 thiserror.workspace = true
 tokio.workspace = true
-tokio-rustls = "0.25.0"
+tokio-rustls = "0.26.0"
 tower.workspace = true
 tower-http = { version = "0.5.2", features = ["add-extension"] }
 tracing.workspace = true

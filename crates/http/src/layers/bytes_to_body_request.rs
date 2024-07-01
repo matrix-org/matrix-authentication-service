@@ -14,7 +14,7 @@
 
 use bytes::Bytes;
 use http::Request;
-use http_body::Full;
+use http_body_util::Full;
 use tower::{Layer, Service};
 
 #[derive(Clone)]

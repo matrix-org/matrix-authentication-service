@@ -12,12 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use hyper::client::{
-    connect::dns::{GaiResolver, Name},
-    HttpConnector,
-};
-pub use hyper::Client;
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
+pub use hyper_util::client::legacy::Client;
+use hyper_util::{
+    client::legacy::connect::{
+        dns::{GaiResolver, Name},
+        HttpConnector,
+    },
+    rt::TokioExecutor,
+};
 use mas_tower::{
     DurationRecorderLayer, DurationRecorderService, FnWrapper, InFlightCounterLayer,
     InFlightCounterService, TraceLayer, TraceService,
@@ -26,8 +29,8 @@ use opentelemetry_semantic_conventions::trace::SERVER_ADDRESS;
 use tower::Layer;
 use tracing::Span;
 
-pub type UntracedClient<B> = hyper::Client<UntracedConnector, B>;
-pub type TracedClient<B> = hyper::Client<TracedConnector, B>;
+pub type UntracedClient<B> = Client<UntracedConnector, B>;
+pub type TracedClient<B> = Client<TracedConnector, B>;
 
 /// Create a basic Hyper HTTP & HTTPS client without any tracing
 #[must_use]
@@ -37,7 +40,7 @@ where
     B::Data: Send,
 {
     let https = make_untraced_connector();
-    Client::builder().build(https)
+    Client::builder(TokioExecutor::new()).build(https)
 }
 
 pub type TraceResolver<S> =

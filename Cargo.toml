@@ -109,6 +109,10 @@ version = "1.1.0"
 [workspace.dependencies.http-body]
 version = "1.0.0"
 
+# http-body utilities
+[workspace.dependencies.http-body-util]
+version = "0.1.2"
+
 # HTTP client and server
 [workspace.dependencies.hyper]
 version = "1.4.0"
@@ -117,7 +121,15 @@ features = ["client", "http1", "http2"]
 # Additional Hyper utilties
 [workspace.dependencies.hyper-util]
 version = "0.1.6"
-features = ["server", "server-auto", "service", "http1", "http2", "tokio"]
+features = [
+    "client",
+    "server",
+    "server-auto",
+    "service",
+    "http1",
+    "http2",
+    "tokio",
+]
 
 # Hyper Rustls support
 [workspace.dependencies.hyper-rustls]
@@ -127,7 +139,7 @@ default-features = false
 
 # Email sending
 [workspace.dependencies.lettre]
-version = "=0.11.4"
+version = "0.11.7"
 default-features = false
 features = [
     "tokio1-rustls-tls",
@@ -149,11 +161,11 @@ version = "0.8.5"
 
 # TLS stack
 [workspace.dependencies.rustls]
-version = "0.22.4"
+version = "0.23.10"
 
 # Use platform-specific verifier for TLS
 [workspace.dependencies.rustls-platform-verifier]
-version = "0.2.0"
+version = "0.3.1"
 
 # JSON Schema generation
 [workspace.dependencies.schemars]
