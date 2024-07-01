@@ -22,14 +22,17 @@ use std::{
 
 use event_listener::{Event, EventListener};
 use futures_util::{stream::SelectAll, Stream, StreamExt};
-use http_body::Body;
-use hyper::{body::HttpBody, server::conn::Connection, Request, Response};
+use hyper::{Request, Response};
+use hyper_util::{
+    rt::{TokioExecutor, TokioIo},
+    server::conn::auto::Connection,
+    service::TowerToHyperService,
+};
 use pin_project_lite::pin_project;
 use thiserror::Error;
-use tokio::io::{AsyncRead, AsyncWrite};
 use tokio_rustls::rustls::ServerConfig;
+use tower::Service;
 use tower_http::add_extension::AddExtension;
-use tower_service::Service;
 use tracing::Instrument;
 
 use crate::{
@@ -91,10 +94,10 @@ impl<S> Server<S> {
     /// Run a single server
     pub async fn run<B, SD>(self, shutdown: SD)
     where
-        S: Service<Request<hyper::Body>, Response = Response<B>> + Clone + Send + 'static,
+        S: Service<Request<hyper::body::Incoming>, Response = Response<B>> + Clone + Send + 'static,
         S::Future: Send + 'static,
         S::Error: std::error::Error + Send + Sync + 'static,
-        B: Body + Send + 'static,
+        B: http_body::Body + Send + 'static,
         B::Data: Send,
         B::Error: std::error::Error + Send + Sync + 'static,
         SD: Stream + Unpin,
@@ -173,15 +176,20 @@ async fn accept<S, B>(
     stream: UnixOrTcpConnection,
     service: S,
 ) -> Result<
-    Connection<MaybeTlsStream<Rewind<UnixOrTcpConnection>>, AddExtension<S, ConnectionInfo>>,
+    Connection<
+        'static,
+        TokioIo<MaybeTlsStream<Rewind<UnixOrTcpConnection>>>,
+        TowerToHyperService<AddExtension<S, ConnectionInfo>>,
+        TokioExecutor,
+    >,
     AcceptError,
 >
 where
-    S: Service<Request<hyper::Body>, Response = Response<B>>,
+    S: Service<Request<hyper::body::Incoming>, Response = Response<B>> + Send + Clone + 'static,
     S::Error: std::error::Error + Send + Sync + 'static,
     S::Future: Send + 'static,
-    B: HttpBody + Send + 'static,
-    B::Data: Send + 'static,
+    B: http_body::Body + Send + 'static,
+    B::Data: Send,
     B::Error: std::error::Error + Send + Sync + 'static,
 {
     let span = tracing::Span::current();
@@ -219,18 +227,17 @@ where
             net_peer_addr: peer_addr.into_net(),
         };
 
-        let service = AddExtension::new(service, info);
+        let mut builder = hyper_util::server::conn::auto::Builder::new(TokioExecutor::new());
+        if is_h2 {
+            builder = builder.http2_only();
+        }
+        builder.http1().keep_alive(true);
 
-        let conn = if is_h2 {
-            hyper::server::conn::Http::new()
-                .http2_only(true)
-                .serve_connection(stream, service)
-        } else {
-            hyper::server::conn::Http::new()
-                .http1_only(true)
-                .http1_keep_alive(true)
-                .serve_connection(stream, service)
-        };
+        let service = TowerToHyperService::new(AddExtension::new(service, info));
+
+        let conn = builder
+            .serve_connection(TokioIo::new(stream), service)
+            .into_owned();
 
         Ok(conn)
     })
@@ -270,18 +277,19 @@ impl<C> AbortableConnection<C> {
     }
 }
 
-impl<T, S, B> Future for AbortableConnection<Connection<T, S>>
+impl<T, S, B> Future
+    for AbortableConnection<Connection<'static, T, TowerToHyperService<S>, TokioExecutor>>
 where
-    Connection<T, S>: Future,
-    S: Service<Request<hyper::Body>, Response = Response<B>> + Send + 'static,
+    Connection<'static, T, TowerToHyperService<S>, TokioExecutor>: Future,
+    S: Service<Request<hyper::body::Incoming>, Response = Response<B>> + Send + Clone + 'static,
     S::Future: Send + 'static,
     S::Error: std::error::Error + Send + Sync,
-    B: HttpBody + Send + 'static,
+    T: hyper::rt::Read + hyper::rt::Write + Unpin,
+    B: http_body::Body + Send + 'static,
     B::Data: Send,
-    B::Error: std::error::Error + Send + Sync,
-    T: AsyncRead + AsyncWrite + Unpin,
+    B::Error: std::error::Error + Send + Sync + 'static,
 {
-    type Output = <Connection<T, S> as Future>::Output;
+    type Output = <Connection<'static, T, TowerToHyperService<S>, TokioExecutor> as Future>::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let mut this = self.project();
@@ -308,10 +316,10 @@ where
 #[allow(clippy::too_many_lines)]
 pub async fn run_servers<S, B, SD>(listeners: impl IntoIterator<Item = Server<S>>, mut shutdown: SD)
 where
-    S: Service<Request<hyper::Body>, Response = Response<B>> + Clone + Send + 'static,
+    S: Service<Request<hyper::body::Incoming>, Response = Response<B>> + Clone + Send + 'static,
     S::Future: Send + 'static,
     S::Error: std::error::Error + Send + Sync + 'static,
-    B: Body + Send + 'static,
+    B: http_body::Body + Send + 'static,
     B::Data: Send,
     B::Error: std::error::Error + Send + Sync + 'static,
     SD: Stream + Unpin,

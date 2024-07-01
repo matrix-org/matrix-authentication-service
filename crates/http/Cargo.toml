@@ -40,13 +40,12 @@ tokio.workspace = true
 
 [features]
 client = [
-  "dep:mas-tower",
-  "dep:rustls",
-  "hyper/tcp",
-  "dep:hyper-rustls",
-  "dep:rustls-platform-verifier",
-  "tower/limit",
-  "tower-http/timeout",
-  "tower-http/follow-redirect",
-  "tower-http/set-header",
+    "dep:mas-tower",
+    "dep:rustls",
+    "dep:hyper-rustls",
+    "dep:rustls-platform-verifier",
+    "tower/limit",
+    "tower-http/timeout",
+    "tower-http/follow-redirect",
+    "tower-http/set-header",
 ]
