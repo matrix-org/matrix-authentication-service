@@ -102,7 +102,7 @@ version = "0.4.6"
 
 # HTTP client
 [workspace.dependencies.hyper]
-version = "0.14.28"
+version = "0.14.29"
 features = ["client", "http1", "http2", "stream", "runtime"]
 
 # Hyper Rustls support

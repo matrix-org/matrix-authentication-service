@@ -583,7 +583,7 @@ dependencies = [
  "headers",
  "http 0.2.12",
  "http-body 0.4.6",
- "hyper 0.14.28",
+ "hyper 0.14.29",
  "itoa",
  "matchit",
  "memchr",
@@ -2282,9 +2282,9 @@ checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
 
 [[package]]
 name = "hyper"
-version = "0.14.28"
+version = "0.14.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf96e135eb83a2a8ddf766e426a841d8ddd7449d5f00d34ea02b41d2f19eef80"
+checksum = "f361cde2f109281a220d4307746cdfd5ee3f410da58a70377762396775634b33"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -2333,7 +2333,7 @@ checksum = "399c78f9338483cb7e630c8474b07268983c6bd5acee012e4211f9f7bb21b070"
 dependencies = [
  "futures-util",
  "http 0.2.12",
- "hyper 0.14.28",
+ "hyper 0.14.29",
  "rustls 0.22.4",
  "rustls-pki-types",
  "tokio",
@@ -3031,7 +3031,7 @@ dependencies = [
  "dotenvy",
  "figment",
  "httpdate",
- "hyper 0.14.28",
+ "hyper 0.14.29",
  "ipnetwork",
  "itertools 0.13.0",
  "listenfd",
@@ -3163,7 +3163,7 @@ dependencies = [
  "cookie_store",
  "futures-util",
  "headers",
- "hyper 0.14.28",
+ "hyper 0.14.29",
  "insta",
  "lettre",
  "mas-axum-utils",
@@ -3218,7 +3218,7 @@ dependencies = [
  "headers",
  "http 0.2.12",
  "http-body 0.4.6",
- "hyper 0.14.28",
+ "hyper 0.14.29",
  "hyper-rustls",
  "mas-tower",
  "opentelemetry",
@@ -3291,7 +3291,7 @@ dependencies = [
  "convert_case",
  "csv",
  "futures-util",
- "hyper 0.14.28",
+ "hyper 0.14.29",
  "serde",
  "tokio",
  "tracing",
@@ -3367,7 +3367,7 @@ dependencies = [
  "event-listener 5.3.1",
  "futures-util",
  "http-body 0.4.6",
- "hyper 0.14.28",
+ "hyper 0.14.29",
  "libc",
  "pin-project-lite",
  "rustls-pemfile 2.1.2",
@@ -3426,7 +3426,7 @@ dependencies = [
  "headers",
  "http 0.2.12",
  "http-body 0.4.6",
- "hyper 0.14.28",
+ "hyper 0.14.29",
  "hyper-rustls",
  "language-tags",
  "mas-http",
@@ -3960,7 +3960,7 @@ dependencies = [
  "async-trait",
  "bytes",
  "http 0.2.12",
- "hyper 0.14.28",
+ "hyper 0.14.29",
  "opentelemetry",
  "tokio",
 ]
