@@ -68,6 +68,15 @@ version = "0.1.80"
 [workspace.dependencies.anyhow]
 version = "1.0.86"
 
+# HTTP router
+[workspace.dependencies.axum]
+version = "0.7.5"
+
+# Extra utilities for Axum
+[workspace.dependencies.axum-extra]
+version = "0.9.3"
+features = ["cookie-private", "cookie-key-expansion", "typed-header"]
+
 # UTF-8 paths
 [workspace.dependencies.camino]
 version = "1.1.7"
@@ -94,20 +103,25 @@ version = "0.3.9"
 
 # HTTP request/response
 [workspace.dependencies.http]
-version = "0.2.12"
+version = "1.1.0"
 
 # HTTP body trait
 [workspace.dependencies.http-body]
-version = "0.4.6"
+version = "1.0.0"
 
-# HTTP client
+# HTTP client and server
 [workspace.dependencies.hyper]
-version = "0.14.29"
-features = ["client", "http1", "http2", "stream", "runtime"]
+version = "1.4.0"
+features = ["client", "http1", "http2"]
+
+# Additional Hyper utilties
+[workspace.dependencies.hyper-util]
+version = "0.1.6"
+features = ["server", "server-auto", "service", "http1", "http2", "tokio"]
 
 # Hyper Rustls support
 [workspace.dependencies.hyper-rustls]
-version = "0.25.0"
+version = "0.27.2"
 features = ["http1", "http2"]
 default-features = false
 
