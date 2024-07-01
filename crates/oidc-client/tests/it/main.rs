@@ -15,6 +15,8 @@
 use std::collections::HashMap;
 
 use chrono::{DateTime, Duration, Utc};
+use http_body_util::Full;
+use mas_http::{BodyToBytesResponseLayer, BoxCloneSyncService};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use mas_jose::{
     claims::{self, hash_token},
@@ -24,7 +26,7 @@ use mas_jose::{
 };
 use mas_keystore::{JsonWebKey, JsonWebKeySet, Keystore, PrivateKey};
 use mas_oidc_client::{
-    http_service::{hyper::hyper_service, HttpService},
+    http_service::HttpService,
     types::{
         client_credentials::{ClientCredentials, JwtSigningFn, JwtSigningMethod},
         IdToken,
@@ -33,6 +35,10 @@ use mas_oidc_client::{
 use rand::{
     distributions::{Alphanumeric, DistString},
     SeedableRng,
+};
+use tower::{
+    util::{MapErrLayer, MapRequestLayer},
+    BoxError, Layer,
 };
 use url::Url;
 use wiremock::MockServer;
@@ -58,7 +64,13 @@ fn now() -> DateTime<Utc> {
 }
 
 async fn init_test() -> (HttpService, MockServer, Url) {
-    let http_service = hyper_service();
+    let http_service = (
+        MapErrLayer::new(BoxError::from),
+        MapRequestLayer::new(|req: http::Request<_>| req.map(Full::new)),
+        BodyToBytesResponseLayer,
+    )
+        .layer(mas_http::make_untraced_client());
+    let http_service = BoxCloneSyncService::new(http_service);
     let mock_server = MockServer::start().await;
     let issuer = Url::parse(&mock_server.uri()).expect("Couldn't parse URL");
 

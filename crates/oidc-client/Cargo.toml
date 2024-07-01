@@ -12,16 +12,7 @@ repository.workspace = true
 workspace = true
 
 [features]
-default = ["hyper", "keystore"]
-hyper = [
-    "dep:http-body",
-    "dep:hyper",
-    "dep:hyper-rustls",
-    "dep:rustls",
-    "dep:rustls-platform-verifier",
-    "dep:tower-http",
-    "tower/limit",
-]
+default = ["keystore"]
 keystore = ["dep:mas-keystore"]
 
 [dependencies]
@@ -50,18 +41,6 @@ mas-jose.workspace = true
 mas-keystore = { workspace = true, optional = true }
 oauth2-types.workspace = true
 
-# Default http service
-http-body = { workspace = true, optional = true }
-hyper = { workspace = true, optional = true }
-hyper-rustls = { workspace = true, optional = true }
-rustls = { workspace = true, optional = true }
-rustls-platform-verifier = { workspace = true, optional = true }
-
-[dependencies.tower-http]
-version = "0.4.4"
-features = ["follow-redirect", "set-header", "timeout", "map-request-body", "util"]
-optional = true
-
 [dev-dependencies]
 assert_matches = "1.5.0"
 bitflags = "2.6.0"
@@ -69,3 +48,6 @@ mas-keystore.workspace = true
 rand_chacha = "0.3.1"
 tokio.workspace = true
 wiremock = "0.6.0"
+http-body-util.workspace = true
+
+mas-http = { workspace = true, features = ["client"] }

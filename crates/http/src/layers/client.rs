@@ -16,7 +16,7 @@ use std::time::Duration;
 
 use headers::{ContentLength, HeaderMapExt, Host, UserAgent};
 use http::{header::USER_AGENT, HeaderValue, Request, Response};
-use hyper::client::connect::HttpInfo;
+use hyper_util::client::legacy::connect::HttpInfo;
 use mas_tower::{
     DurationRecorderLayer, DurationRecorderService, EnrichSpan, InFlightCounterLayer,
     InFlightCounterService, MakeSpan, MetricsAttributes, TraceContextLayer, TraceContextService,
