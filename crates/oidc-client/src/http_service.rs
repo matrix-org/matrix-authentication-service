@@ -15,7 +15,4 @@
 //! Reexports of traits to implement to provide a custom HTTP service for
 //! `Client`.
 
-#[cfg(feature = "hyper")]
-pub mod hyper;
-
 pub use mas_http::{BoxCloneSyncService, HttpService};
