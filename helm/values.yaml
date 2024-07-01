@@ -1,0 +1,342 @@
+# Default values for mas.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/matrix-org/matrix-authentication-service
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "0.9.0"
+  # debug images are available with have a shell use $imageTag-debug
+  # the debug version has the mas-cli in /usr/local/bin
+  # the command `mas-cli doctor` can test some functionality
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Automatically mount a ServiceAccount's API credentials?
+  automount: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: "mas-sa"
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # kubernetes.io/tls-acme: "true"
+    # nginx.ingress.kubernetes.io/use-regex: "true"
+  hosts:
+    - host: auth.example.com
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+    - host: synapse.example.com
+      paths:
+        - path: /_matrix/client/(.*)/(login|logout|refresh)
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 2
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+# Additional volumes on the output Deployment definition.
+volumes:
+  - name: config-main
+    configMap:
+      name: "config-main"
+      items:
+        - key: config.yaml
+          path: config.yaml
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
+
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts:
+  - name: config-main
+    mountPath: "/config.yaml"
+    subPath: config.yaml
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+config:
+  http:
+    # MAS URL
+    public_base: https://auth.example.com
+    # OIDC issuer advertised by the service. Defaults to `public_base`
+    issuer:
+  listeners:
+    resources:
+      - name: discovery # Serves the .well-known/openid-configuration document
+      - name: human # Serves the human-facing pages, such as the login page
+      - name: oauth # Serves the OAuth 2.0/OIDC endpoints
+      - name: compat # Serves the Matrix C-S API compatibility endpoints
+      - name: graphql # Serve the GraphQL API used by the frontend, and optionally the GraphQL playground
+        playground: false
+      - name: assets # Serve the given folder on the /assets/ path
+        path: /usr/local/share/mas-cli/assets/
+
+  proxy_protocol: false
+  trusted_proxies:
+  - 10.0.0.0/10
+  - 127.0.0.1/8
+  - fd00::/8
+  - ::1/128
+
+# must be PostgreSQL
+database:
+  host: postgres
+  port: 5432
+  username: user1
+  password: password
+  dbName: database
+  min_connections: 0
+  max_connections: 10
+  connect_timeout: 30
+  idle_timeout: 600
+  max_lifetime: 1800
+
+# Settings related to the connection to the Matrix homeserver
+matrix:
+  # `server_name` in the Synapse configuration file
+  homeserver: example.com
+  sharedSecret: someRandomSecret
+  homeserverUrl: https://synapse.example.com
+
+# Allows loading custom templates
+# From where to load the templates
+# This is relative to the current working directory, *not* the config file
+templates:
+  enabled: false
+  path: /usr/local/share/mas-cli/templates/
+  # Path to the frontend assets manifest file
+  assets: /to/manifest.json
+
+clients:
+  # Confidential client
+  # Each client_id must be a ULID https://github.com/ulid/spec
+  client_id: 0000000000000000000SYNAPSE
+  client_auth_method: client_secret_post
+  client_secret: secret
+  redirect_uris:
+    - http://localhost:1234/callback
+  # Public client
+  pub_id: 0000000000000000000SYNAPSX
+  pubAuthMethod: none
+
+
+passwords:
+  # Whether to enable the password database.
+  # If disabled, users will only be able to log in using upstream OIDC providers
+  enabled: true
+  schemes:
+    - version: 2
+      algorithm: argon2id
+    - version: 1
+      algorithm: bcrypt
+
+
+policy:
+  data:
+    admins:
+      - system-admin
+    # defaults to false
+    clientHostMismatch: true
+    # defaults to false
+    clientNoSsl: true
+    pass:
+      minLength: 8
+      reqLowCase: true
+      reqUpCase: true
+      reqNum: true
+
+telemetry:
+  # disables telemetry, metrics export sentry
+  enabled: false
+  propagators:
+      #- tracecontext #Propagate according to the W3C Trace Context specification
+      #- baggage #Propagate according to the W3C Baggage specification
+      #- b3 #Propagate trace context with Zipkin compatible headers (single `b3` header variant)
+      #- b3multi #Propagate trace context with Zipkin compatible headers (multiple `x-b3-*` headers variant)
+
+  # telementry exporter can be none, otlp
+  exporter: none
+  useOTLP:
+    enabled: false
+    endpoint: https://localhost:4317
+
+  metrics:
+    # disables only metrics export/collection
+    enabled: false
+    # can be otlp, prometheus (requires mounting the `prometheus` resource to an HTTP listener)
+    exporter: none
+    endpoint: https://localhost:4317
+
+  sentry:
+    enabled: true
+    dsn: https://public@host:port/1
+
+email:
+  enabled: false
+  from: '"The almighty auth service" <auth@example.com>'
+  reply2: '"No reply" <no-reply@example.com>'
+  # possible values: smtp, sendmail, blackhole (don't send any)
+  transport: blackhole
+  hostname: localhost
+  # possinle values: plain, tls, starttls
+  mode: starttls
+  port: 587
+  username:
+  password:
+
+  # Sample configurations for popular providers can be found in the upstream provider setup guide.
+  # https://matrix-org.github.io/matrix-authentication-service/setup/sso.html#sample-configurations
+upstream_oauth2:
+  # remove empty brackets from config.yaml if you're enabling this
+  enabled: false
+  # Must be a valid ULID
+  providerId:
+  # The issuer URL, which will be used to discover the provider's configuration.
+  # If discovery is enabled, this *must* exactly match the `issuer` field
+  # advertised in `<issuer>/.well-known/openid-configuration`.
+  issuerUrl: https://example.com/
+  # A human-readable name for the provider,
+  # which will be displayed on the login page
+  humanName: Example
+  # Values supported by the default template: apple, google, facebook, github, gitlabm twitter
+  brand:
+  # The client ID to use to authenticate to the provider
+  clientId:
+  # The client secret to use to authenticate to the provider
+  # This is only used by the `client_secret_post`, `client_secret_basic`
+  # and `client_secret_jwk` authentication methods
+  client_secret:
+  # possilble Values: none, client_secret_basic, client_secret_post, client_secret_jwt, `private_key_jwt` (using the keys defined in the `secrets.keys` section)
+  endpointAuth: client_secret_post
+  # set to true if you use one of the jwt auth methods
+  endpoint:
+    useJwt: false
+  # What signing algorithm to use to sign the authentication request when using the `private_key_jwt` or the `client_secret_jwt` authentication methods
+  endpointAuthSignAlg: RS256
+  # The scopes to request from the provider
+  # In most cases, it should always include `openid` scope
+  scope: "openid email profile"
+  # How the provider configuration and endpoints should be discovered
+  # oidc, insecure, disabled
+  discovery_mode: oidc
+  # Whether PKCE should be used during the authorization code flow.
+  # auto, always, never
+  pkce: auto
+  authorization_endpoint: https://example.com/oauth2/authorize
+  token_endpoint: https://example.com/oauth2/token
+  jwks_uri: https://example.com/oauth2/keys
+
+  # Most of those attributes have two main properties:
+  #   - `action`: what to do with the attribute. Possible values are:
+  #      - `ignore`: ignore the attribute
+  #      - `suggest`: suggest the attribute to the user, but let them opt out
+  #      - `force`: always import the attribute, and don't fail if it's missing
+  #      - `require`: always import the attribute, and fail if it's missing
+  #   - `template`: a Jinja2 template used to generate the value. In this template,
+  #      the `user` variable is available, which contains the user's attributes
+  #      retrieved from the `id_token` given by the upstream provider.
+  #
+  # Each attribute has a default template which follows the well-known OIDC claims.
+  #
+
+  claims_imports:
+    # The subject is an internal identifier used to link the
+    # user's provider identity to local accounts.
+    # By default it uses the `sub` claim as per the OIDC spec,
+    # which should fit most use cases.
+    subject:
+      template: "{{ user.sub }}"
+
+    # The localpart is the local part of the user's Matrix ID.
+    # For example, on the `example.com` server, if the localpart is `alice`,
+    #  the user's Matrix ID will be `@alice:example.com`.
+    localpart:
+      action: force
+      template: "{{ user.preferred_username }}"
+
+    # The display name is the user's display name.
+    displayname:
+      action: suggest
+      template: "{{ user.name }}"
+
+    # An email address to import.
+    email:
+      action: suggest
+      template: "{{ user.email }}"
+      # Whether the email address must be marked as verified.
+      # Possible values are:
+      #  - `import`: mark the email address as verified if the upstream provider
+      #     has marked it as verified, using the `email_verified` claim.
+      #     This is the default.
+      #   - `always`: mark the email address as verified
+      #   - `never`: mark the email address as not verified
+      set_email_verification: always
