@@ -635,7 +635,7 @@ dependencies = [
  "bytes",
  "cookie",
  "futures-util",
- "headers 0.4.0",
+ "headers",
  "http 1.1.0",
  "http-body 1.0.0",
  "http-body-util",
@@ -2102,41 +2102,17 @@ dependencies = [
 
 [[package]]
 name = "headers"
-version = "0.3.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06683b93020a07e3dbcf5f8c0f6d40080d725bea7936fc01ad345c01b97dc270"
-dependencies = [
- "base64 0.21.7",
- "bytes",
- "headers-core 0.2.0",
- "http 0.2.12",
- "httpdate",
- "mime",
- "sha1",
-]
-
-[[package]]
-name = "headers"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "322106e6bd0cba2d5ead589ddb8150a13d7c4217cf80d7c4f682ca994ccc6aa9"
 dependencies = [
  "base64 0.21.7",
  "bytes",
- "headers-core 0.3.0",
+ "headers-core",
  "http 1.1.0",
  "httpdate",
  "mime",
  "sha1",
-]
-
-[[package]]
-name = "headers-core"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7f66481bfee273957b1f20485a4ff3362987f85b2c236580d81b4eb7a326429"
-dependencies = [
- "http 0.2.12",
 ]
 
 [[package]]
@@ -3028,7 +3004,7 @@ dependencies = [
  "chrono",
  "data-encoding",
  "futures-util",
- "headers 0.3.9",
+ "headers",
  "http 1.1.0",
  "http-body 1.0.0",
  "icu_locid",
@@ -3175,7 +3151,7 @@ name = "mas-email"
 version = "0.9.0"
 dependencies = [
  "async-trait",
- "headers 0.3.9",
+ "headers",
  "lettre",
  "mas-templates",
  "thiserror",
@@ -3199,7 +3175,7 @@ dependencies = [
  "chrono",
  "cookie_store",
  "futures-util",
- "headers 0.3.9",
+ "headers",
  "hyper 1.4.0",
  "insta",
  "lettre",
@@ -3252,7 +3228,7 @@ dependencies = [
  "anyhow",
  "bytes",
  "futures-util",
- "headers 0.3.9",
+ "headers",
  "http 1.1.0",
  "http-body 1.0.0",
  "hyper 1.4.0",
@@ -3461,7 +3437,7 @@ dependencies = [
  "chrono",
  "form_urlencoded",
  "futures-util",
- "headers 0.3.9",
+ "headers",
  "http 1.1.0",
  "http-body 1.0.0",
  "hyper 1.4.0",
