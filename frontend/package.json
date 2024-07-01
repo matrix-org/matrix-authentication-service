@@ -21,7 +21,7 @@
     "@fontsource/inter": "^5.0.18",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-dialog": "^1.0.5",
-    "@radix-ui/react-form": "^0.0.3",
+    "@radix-ui/react-form": "^0.1.0",
     "@tanstack/react-router": "^1.43.4",
     "@urql/core": "^5.0.4",
     "@urql/devtools": "^2.0.3",
