@@ -17,7 +17,9 @@ futures-util = "0.3.30"
 headers.workspace = true
 http.workspace = true
 http-body.workspace = true
+http-body-util.workspace = true
 hyper.workspace = true
+hyper-util.workspace = true
 hyper-rustls = { workspace = true, optional = true }
 opentelemetry.workspace = true
 opentelemetry-semantic-conventions.workspace = true
@@ -28,7 +30,7 @@ serde_json.workspace = true
 serde_urlencoded = "0.7.1"
 thiserror.workspace = true
 tower.workspace = true
-tower-http = { version = "0.4.4", features = ["cors"] }
+tower-http = { version = "0.5.2", features = ["cors"] }
 tracing.workspace = true
 tracing-opentelemetry.workspace = true
 
