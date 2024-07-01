@@ -76,10 +76,13 @@ skip = [
     { name = "heck", version = "0.4.1" },
     # we depend on old http/http-body/hyper versions, but some dependencies already upgraded
     { name = "http", version = "0.2.12" },
+    { name = "socket2", version = "0.4.10" },
     # sea-query-attr uses an old version of darling
     { name = "darling", version = "0.14.4" },
     { name = "darling_core", version = "0.14.4" },
     { name = "darling_macro", version = "0.14.4" },
+    # async-graphql -> toml_edit depends on this old version
+    { name = "winnow", version = "0.5.40" },
 ]
 
 skip-tree = []
