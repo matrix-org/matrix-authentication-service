@@ -15,7 +15,6 @@
 use anyhow::Context;
 use async_trait::async_trait;
 use convert_case::{Case, Casing};
-use hyper::http;
 use serde::de::DeserializeOwned;
 
 use super::Client;
@@ -74,23 +73,23 @@ pub trait EnumEntry: DeserializeOwned + Send + Sync {
 
     async fn fetch(client: &Client) -> anyhow::Result<Vec<(&'static str, EnumMember)>> {
         tracing::info!("Fetching CSV");
-        let request = http::Request::get(Self::URL)
-            .header("User-Agent", "mas-iana-codegen/0.1")
-            .body(hyper::Body::empty())?;
 
         let response = client
-            .request(request)
+            .get(Self::URL)
+            .header("User-Agent", "mas-iana-codegen/0.1")
+            .send()
             .await
             .context(format!("can't the CSV at {}", Self::URL))?;
 
         let status = response.status();
         anyhow::ensure!(status.is_success(), "HTTP status code is not 200: {status}");
 
-        let body = hyper::body::to_bytes(response.into_body())
+        let body = response
+            .text()
             .await
             .context(format!("can't the CSV body at {}", Self::URL))?;
 
-        let parsed: Result<Vec<_>, _> = csv::Reader::from_reader(body.as_ref())
+        let parsed: Result<Vec<_>, _> = csv::Reader::from_reader(body.as_bytes())
             .into_deserialize()
             .filter_map(|item: Result<Self, _>| {
                 item.map(|item| {
