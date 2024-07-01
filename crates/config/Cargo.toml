@@ -27,7 +27,7 @@ ulid.workspace = true
 url.workspace = true
 
 serde.workspace = true
-serde_with = { version = "3.8.1", features = ["hex", "chrono"] }
+serde_with = { version = "3.8.2", features = ["hex", "chrono"] }
 serde_json.workspace = true
 
 pem-rfc7468 = "0.7.0"
