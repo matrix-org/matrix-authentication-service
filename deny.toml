@@ -83,6 +83,8 @@ skip = [
     { name = "darling_macro", version = "0.14.4" },
     # async-graphql -> toml_edit depends on this old version
     { name = "winnow", version = "0.5.40" },
+    # wasmtime, prost and sqlformat depend on this old version
+    { name = "itertools", version = "0.12.1" },
 ]
 
 skip-tree = []
