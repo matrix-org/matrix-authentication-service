@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2022-2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::body::Full;
+use http_body_util::Full;
+use hyper_util::rt::TokioExecutor;
 use mas_http::{
     make_traced_connector, BodyToBytesResponseLayer, Client, ClientLayer, ClientService,
     HttpService, TracedClient, TracedConnector,
@@ -50,7 +51,7 @@ impl HttpClientFactory {
         B: axum::body::HttpBody + Send,
         B::Data: Send,
     {
-        let client = Client::builder().build(self.traced_connector.clone());
+        let client = Client::builder(TokioExecutor::new()).build(self.traced_connector.clone());
         self.client_layer
             .clone()
             .with_category(category)

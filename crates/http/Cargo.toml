@@ -25,12 +25,13 @@ opentelemetry.workspace = true
 opentelemetry-semantic-conventions.workspace = true
 rustls = { workspace = true, optional = true }
 rustls-platform-verifier = { workspace = true, optional = true }
+pin-project-lite = "0.2.14"
 serde.workspace = true
 serde_json.workspace = true
 serde_urlencoded = "0.7.1"
 thiserror.workspace = true
 tower.workspace = true
-tower-http = { version = "0.5.2", features = ["cors"] }
+tower-http.workspace = true
 tracing.workspace = true
 tracing-opentelemetry.workspace = true
 

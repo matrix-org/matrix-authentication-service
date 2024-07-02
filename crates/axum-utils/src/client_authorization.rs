@@ -16,14 +16,14 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 use axum::{
-    body::HttpBody,
     extract::{
-        rejection::{FailedToDeserializeForm, FormRejection, TypedHeaderRejectionReason},
-        Form, FromRequest, FromRequestParts, TypedHeader,
+        rejection::{FailedToDeserializeForm, FormRejection},
+        Form, FromRequest, FromRequestParts,
     },
     response::IntoResponse,
     BoxError, Json,
 };
+use axum_extra::typed_header::{TypedHeader, TypedHeaderRejectionReason};
 use headers::{authorization::Basic, Authorization};
 use http::{Request, StatusCode};
 use mas_data_model::{Client, JwksOrJwksUri};
@@ -337,18 +337,18 @@ impl IntoResponse for ClientAuthorizationError {
 }
 
 #[async_trait]
-impl<S, B, F> FromRequest<S, B> for ClientAuthorization<F>
+impl<S, F> FromRequest<S> for ClientAuthorization<F>
 where
     F: DeserializeOwned,
-    B: HttpBody + Send + 'static,
-    B::Data: Send,
-    B::Error: Into<BoxError>,
     S: Send + Sync,
 {
     type Rejection = ClientAuthorizationError;
 
     #[allow(clippy::too_many_lines)]
-    async fn from_request(req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
+    async fn from_request(
+        req: Request<axum::body::Body>,
+        state: &S,
+    ) -> Result<Self, Self::Rejection> {
         // Split the request into parts so we can extract some headers
         let (mut parts, body) = req.into_parts();
 
