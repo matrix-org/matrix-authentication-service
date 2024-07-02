@@ -21,16 +21,17 @@ use std::{
 };
 
 use anyhow::Context;
-use hyper::{service::service_fn, Request, Response};
+use hyper::{Request, Response};
 use mas_listener::{server::Server, shutdown::ShutdownStream, ConnectionInfo};
 use tokio::signal::unix::SignalKind;
 use tokio_rustls::rustls::{server::WebPkiClientVerifier, RootCertStore, ServerConfig};
+use tower::service_fn;
 
 static CA_CERT_PEM: &[u8] = include_bytes!("./certs/ca.pem");
 static SERVER_CERT_PEM: &[u8] = include_bytes!("./certs/server.pem");
 static SERVER_KEY_PEM: &[u8] = include_bytes!("./certs/server-key.pem");
 
-async fn handler(req: Request<hyper::Body>) -> Result<Response<String>, Infallible> {
+async fn handler(req: Request<hyper::body::Incoming>) -> Result<Response<String>, Infallible> {
     tracing::info!("Handling request");
     tokio::time::sleep(Duration::from_secs(3)).await;
     let info = req.extensions().get::<ConnectionInfo>().unwrap();

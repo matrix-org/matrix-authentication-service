@@ -16,14 +16,13 @@ use std::{collections::HashMap, error::Error};
 
 use async_trait::async_trait;
 use axum::{
-    body::HttpBody,
     extract::{
-        rejection::{FailedToDeserializeForm, FormRejection, TypedHeaderRejectionReason},
-        Form, FromRequest, FromRequestParts, TypedHeader,
+        rejection::{FailedToDeserializeForm, FormRejection},
+        Form, FromRequest, FromRequestParts,
     },
     response::{IntoResponse, Response},
-    BoxError,
 };
+use axum_extra::typed_header::{TypedHeader, TypedHeaderRejectionReason};
 use headers::{authorization::Bearer, Authorization, Header, HeaderMapExt, HeaderName};
 use http::{header::WWW_AUTHENTICATE, HeaderMap, HeaderValue, Request, StatusCode};
 use mas_data_model::Session;
@@ -289,17 +288,17 @@ where
 }
 
 #[async_trait]
-impl<S, B, F> FromRequest<S, B> for UserAuthorization<F>
+impl<S, F> FromRequest<S> for UserAuthorization<F>
 where
     F: DeserializeOwned,
-    B: HttpBody + Send + 'static,
-    B::Data: Send,
-    B::Error: Into<BoxError>,
     S: Send + Sync,
 {
     type Rejection = UserAuthorizationError;
 
-    async fn from_request(req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
+    async fn from_request(
+        req: Request<axum::body::Body>,
+        state: &S,
+    ) -> Result<Self, Self::Rejection> {
         let (mut parts, body) = req.into_parts();
         let header =
             TypedHeader::<Authorization<Bearer>>::from_request_parts(&mut parts, state).await;

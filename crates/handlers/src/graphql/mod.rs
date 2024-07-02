@@ -23,11 +23,13 @@ use async_graphql::{
 };
 use axum::{
     async_trait,
-    extract::{BodyStream, RawQuery, State as AxumState},
+    body::Body,
+    extract::{RawQuery, State as AxumState},
     http::StatusCode,
     response::{Html, IntoResponse, Response},
-    Json, TypedHeader,
+    Json,
 };
+use axum_extra::typed_header::TypedHeader;
 use futures_util::TryStreamExt;
 use headers::{authorization::Bearer, Authorization, ContentType, HeaderValue};
 use hyper::header::CACHE_CONTROL;
@@ -286,8 +288,9 @@ pub async fn post(
     cookie_jar: CookieJar,
     content_type: Option<TypedHeader<ContentType>>,
     authorization: Option<TypedHeader<Authorization<Bearer>>>,
-    body: BodyStream,
+    body: Body,
 ) -> Result<impl IntoResponse, RouteError> {
+    let body = body.into_data_stream();
     let token = authorization
         .as_ref()
         .map(|TypedHeader(Authorization(bearer))| bearer.token());

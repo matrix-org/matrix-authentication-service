@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{extract::State, response::IntoResponse, Json, TypedHeader};
+use axum::{extract::State, response::IntoResponse, Json};
+use axum_extra::typed_header::TypedHeader;
 use chrono::Duration;
 use headers::{CacheControl, HeaderMap, HeaderMapExt, Pragma};
 use hyper::StatusCode;
@@ -781,11 +782,11 @@ mod tests {
     use sqlx::PgPool;
 
     use super::*;
-    use crate::test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState};
+    use crate::test_utils::{setup, RequestBuilderExt, ResponseExt, TestState};
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_auth_code_grant(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Provision a client
@@ -995,7 +996,7 @@ mod tests {
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_refresh_token_grant(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Provision a client
@@ -1118,7 +1119,7 @@ mod tests {
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_client_credentials(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Provision a client
@@ -1245,7 +1246,7 @@ mod tests {
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_device_code_grant(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Provision a client
@@ -1431,7 +1432,7 @@ mod tests {
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_unsupported_grant(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Provision a client

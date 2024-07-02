@@ -17,8 +17,9 @@ use std::str::FromStr;
 use axum::{
     extract::State,
     response::{Html, IntoResponse, Response},
-    Form, TypedHeader,
+    Form,
 };
+use axum_extra::typed_header::TypedHeader;
 use lettre::Address;
 use mas_axum_utils::{
     cookies::CookieJar,

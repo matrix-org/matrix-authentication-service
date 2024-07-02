@@ -26,11 +26,10 @@
 use std::{convert::Infallible, time::Duration};
 
 use axum::{
-    body::{Bytes, HttpBody},
     extract::{FromRef, FromRequestParts, OriginalUri, RawQuery, State},
     http::Method,
     response::{Html, IntoResponse},
-    routing::{get, on, post, MethodFilter},
+    routing::{get, post},
     Router,
 };
 use headers::HeaderName;
@@ -97,20 +96,16 @@ pub use self::{
     upstream_oauth2::cache::MetadataCache,
 };
 
-pub fn healthcheck_router<S, B>() -> Router<S, B>
+pub fn healthcheck_router<S>() -> Router<S>
 where
-    B: HttpBody + Send + 'static,
     S: Clone + Send + Sync + 'static,
     PgPool: FromRef<S>,
 {
     Router::new().route(mas_router::Healthcheck::route(), get(self::health::get))
 }
 
-pub fn graphql_router<S, B>(playground: bool) -> Router<S, B>
+pub fn graphql_router<S>(playground: bool) -> Router<S>
 where
-    B: HttpBody + Send + 'static,
-    <B as HttpBody>::Data: Into<Bytes>,
-    <B as HttpBody>::Error: std::error::Error + Send + Sync,
     S: Clone + Send + Sync + 'static,
     graphql::Schema: FromRef<S>,
     BoundActivityTracker: FromRequestParts<S>,
@@ -147,9 +142,8 @@ where
     router
 }
 
-pub fn discovery_router<S, B>() -> Router<S, B>
+pub fn discovery_router<S>() -> Router<S>
 where
-    B: HttpBody + Send + 'static,
     S: Clone + Send + Sync + 'static,
     Keystore: FromRef<S>,
     SiteConfig: FromRef<S>,
@@ -181,11 +175,8 @@ where
         )
 }
 
-pub fn api_router<S, B>() -> Router<S, B>
+pub fn api_router<S>() -> Router<S>
 where
-    B: HttpBody + Send + 'static,
-    <B as HttpBody>::Data: Send,
-    <B as HttpBody>::Error: std::error::Error + Send + Sync,
     S: Clone + Send + Sync + 'static,
     Keystore: FromRef<S>,
     UrlBuilder: FromRef<S>,
@@ -207,10 +198,7 @@ where
         )
         .route(
             mas_router::OidcUserinfo::route(),
-            on(
-                MethodFilter::POST | MethodFilter::GET,
-                self::oauth2::userinfo::get,
-            ),
+            get(self::oauth2::userinfo::get).post(self::oauth2::userinfo::get),
         )
         .route(
             mas_router::OAuth2Introspection::route(),
@@ -248,11 +236,8 @@ where
 }
 
 #[allow(clippy::trait_duplication_in_bounds)]
-pub fn compat_router<S, B>() -> Router<S, B>
+pub fn compat_router<S>() -> Router<S>
 where
-    B: HttpBody + Send + 'static,
-    <B as HttpBody>::Data: Send,
-    <B as HttpBody>::Error: std::error::Error + Send + Sync,
     S: Clone + Send + Sync + 'static,
     UrlBuilder: FromRef<S>,
     SiteConfig: FromRef<S>,
@@ -305,11 +290,8 @@ where
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn human_router<S, B>(templates: Templates) -> Router<S, B>
+pub fn human_router<S>(templates: Templates) -> Router<S>
 where
-    B: HttpBody + Send + 'static,
-    <B as HttpBody>::Data: Send,
-    <B as HttpBody>::Error: std::error::Error + Send + Sync,
     S: Clone + Send + Sync + 'static,
     UrlBuilder: FromRef<S>,
     PreferredLanguage: FromRequestParts<S>,

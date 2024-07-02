@@ -18,8 +18,8 @@ use axum::{
     async_trait,
     extract::{FromRef, FromRequestParts},
     http::request::Parts,
-    TypedHeader,
 };
+use axum_extra::typed_header::TypedHeader;
 use mas_axum_utils::language_detection::AcceptLanguage;
 use mas_i18n::{locale, DataLocale, Translator};
 

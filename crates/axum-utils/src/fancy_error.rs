@@ -15,8 +15,9 @@
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
-    Extension, TypedHeader,
+    Extension,
 };
+use axum_extra::typed_header::TypedHeader;
 use headers::ContentType;
 use mas_templates::ErrorContext;
 

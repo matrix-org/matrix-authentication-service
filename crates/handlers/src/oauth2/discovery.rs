@@ -206,11 +206,11 @@ mod tests {
     use oauth2_types::oidc::ProviderMetadata;
     use sqlx::PgPool;
 
-    use crate::test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState};
+    use crate::test_utils::{setup, RequestBuilderExt, ResponseExt, TestState};
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_valid_discovery_metadata(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         let request = Request::get("/.well-known/openid-configuration").empty();

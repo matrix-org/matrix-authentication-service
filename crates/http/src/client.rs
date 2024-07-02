@@ -12,22 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use hyper::client::{
-    connect::dns::{GaiResolver, Name},
-    HttpConnector,
-};
-pub use hyper::Client;
+use bytes::Bytes;
+use http_body_util::{BodyExt, Full};
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
+pub use hyper_util::client::legacy::Client;
+use hyper_util::{
+    client::legacy::connect::{
+        dns::{GaiResolver, Name},
+        HttpConnector,
+    },
+    rt::TokioExecutor,
+};
 use mas_tower::{
     DurationRecorderLayer, DurationRecorderService, FnWrapper, InFlightCounterLayer,
     InFlightCounterService, TraceLayer, TraceService,
 };
+use opentelemetry_http::HttpClient;
 use opentelemetry_semantic_conventions::trace::SERVER_ADDRESS;
 use tower::Layer;
 use tracing::Span;
 
-pub type UntracedClient<B> = hyper::Client<UntracedConnector, B>;
-pub type TracedClient<B> = hyper::Client<TracedConnector, B>;
+pub type UntracedClient<B> = Client<UntracedConnector, B>;
+pub type TracedClient<B> = Client<TracedConnector, B>;
 
 /// Create a basic Hyper HTTP & HTTPS client without any tracing
 #[must_use]
@@ -37,7 +43,7 @@ where
     B::Data: Send,
 {
     let https = make_untraced_connector();
-    Client::builder().build(https)
+    Client::builder(TokioExecutor::new()).build(https)
 }
 
 pub type TraceResolver<S> =
@@ -90,4 +96,77 @@ fn make_connector<R>(
         .enable_http1()
         .enable_http2()
         .wrap_connector(http)
+}
+
+/// A client which can be used by opentelemetry-http to send request through
+/// hyper 1.x
+///
+/// This is needed until OTEL upgrades to hyper 1.x
+/// <https://github.com/open-telemetry/opentelemetry-rust/pull/1674>
+#[derive(Debug)]
+pub struct OtelClient {
+    client: UntracedClient<Full<Bytes>>,
+}
+
+impl OtelClient {
+    /// Create a new [`OtelClient`] from a [`UntracedClient`]
+    #[must_use]
+    pub fn new(client: UntracedClient<Full<Bytes>>) -> Self {
+        Self { client }
+    }
+}
+
+#[async_trait::async_trait]
+impl HttpClient for OtelClient {
+    async fn send(
+        &self,
+        request: opentelemetry_http::Request<Vec<u8>>,
+    ) -> Result<opentelemetry_http::Response<Bytes>, opentelemetry_http::HttpError> {
+        // This is the annoying part: converting the OTEL http0.2 request to a http1
+        // request
+        let (parts, body) = request.into_parts();
+        let body = Full::new(Bytes::from(body));
+        let mut request = http::Request::new(body);
+
+        *request.uri_mut() = parts.uri.to_string().parse().unwrap();
+        *request.method_mut() = match parts.method {
+            http02::Method::GET => http::Method::GET,
+            http02::Method::POST => http::Method::POST,
+            http02::Method::PUT => http::Method::PUT,
+            http02::Method::DELETE => http::Method::DELETE,
+            http02::Method::HEAD => http::Method::HEAD,
+            http02::Method::OPTIONS => http::Method::OPTIONS,
+            http02::Method::CONNECT => http::Method::CONNECT,
+            http02::Method::PATCH => http::Method::PATCH,
+            http02::Method::TRACE => http::Method::TRACE,
+            _ => return Err(opentelemetry_http::HttpError::from("Unsupported method")),
+        };
+        request
+            .headers_mut()
+            .extend(parts.headers.into_iter().map(|(k, v)| {
+                (
+                    k.map(|k| http::HeaderName::from_bytes(k.as_ref()).unwrap()),
+                    http::HeaderValue::from_bytes(v.as_ref()).unwrap(),
+                )
+            }));
+
+        // Send the request
+        let response = self.client.request(request).await?;
+
+        // Convert back the response
+        let (parts, body) = response.into_parts();
+        let body = body.collect().await?.to_bytes();
+        let mut response = opentelemetry_http::Response::new(body);
+        *response.status_mut() = parts.status.as_u16().try_into().unwrap();
+        response
+            .headers_mut()
+            .extend(parts.headers.into_iter().map(|(k, v)| {
+                (
+                    k.map(|k| http02::HeaderName::from_bytes(k.as_ref()).unwrap()),
+                    http02::HeaderValue::from_bytes(v.as_ref()).unwrap(),
+                )
+            }));
+
+        Ok(response)
+    }
 }

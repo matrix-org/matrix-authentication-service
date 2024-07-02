@@ -68,7 +68,7 @@ This means some clients will refuse to use it."#
 
         let request = hyper::Request::builder()
             .uri(&well_known_uri)
-            .body(hyper::Body::empty())?;
+            .body(axum::body::Body::empty())?;
         let result = client.ready().await?.call(request).await;
 
         let expected_well_known = serde_json::json!({
@@ -180,7 +180,7 @@ Error details: {e}
         let client_versions = hs_api.join("/_matrix/client/versions")?;
         let request = hyper::Request::builder()
             .uri(client_versions.as_str())
-            .body(hyper::Body::empty())?;
+            .body(axum::body::Body::empty())?;
         let result = client.ready().await?.call(request).await;
         let can_reach_cs = match result {
             Ok(response) => {
@@ -234,7 +234,7 @@ Error details: {e}
                     "Bearer averyinvalidtokenireallyhopethisisnotvalid",
                 )
                 .uri(whoami.as_str())
-                .body(hyper::Body::empty())?;
+                .body(axum::body::Body::empty())?;
             let result = client.ready().await?.call(request).await;
             match result {
                 Ok(response) => {
@@ -284,7 +284,7 @@ Error details: {e}
             let server_version = hs_api.join("/_synapse/admin/v1/server_version")?;
             let request = hyper::Request::builder()
                 .uri(server_version.as_str())
-                .body(hyper::Body::empty())?;
+                .body(axum::body::Body::empty())?;
             let result = client.ready().await?.call(request).await;
             match result {
                 Ok(response) => {
@@ -313,7 +313,7 @@ Error details: {e}
             let request = hyper::Request::builder()
                 .uri(background_updates.as_str())
                 .header("Authorization", format!("Bearer {admin_token}"))
-                .body(hyper::Body::empty())?;
+                .body(axum::body::Body::empty())?;
             let result = client.ready().await?.call(request).await;
             match result {
                 Ok(response) => {
@@ -361,7 +361,7 @@ Error details: {e}
         let compat_login = compat_login.as_str();
         let request = hyper::Request::builder()
             .uri(compat_login)
-            .body(hyper::Body::empty())?;
+            .body(axum::body::Body::empty())?;
         let result = client.ready().await?.call(request).await;
         match result {
             Ok(response) => {

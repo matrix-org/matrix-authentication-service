@@ -107,6 +107,9 @@ module.exports = {
           },
         ],
 
+        // async-graphql generates a few unused directives, let's not warn about them
+        "@graphql-eslint/no-unreachable-types": "off",
+
         // We need to disable this rule because of the 'username' field in the 'User' node
         "@graphql-eslint/no-typename-prefix": "off",
 

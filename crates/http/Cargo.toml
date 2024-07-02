@@ -12,25 +12,33 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-bytes = "1.6.0"
+async-trait.workspace = true
+bytes.workspace = true
 futures-util = "0.3.30"
 headers.workspace = true
 http.workspace = true
 http-body.workspace = true
+http-body-util.workspace = true
 hyper.workspace = true
+hyper-util.workspace = true
 hyper-rustls = { workspace = true, optional = true }
 opentelemetry.workspace = true
+opentelemetry-http = { workspace = true, optional = true }
 opentelemetry-semantic-conventions.workspace = true
 rustls = { workspace = true, optional = true }
 rustls-platform-verifier = { workspace = true, optional = true }
+pin-project-lite = "0.2.14"
 serde.workspace = true
 serde_json.workspace = true
 serde_urlencoded = "0.7.1"
 thiserror.workspace = true
 tower.workspace = true
-tower-http = { version = "0.4.4", features = ["cors"] }
+tower-http.workspace = true
 tracing.workspace = true
 tracing-opentelemetry.workspace = true
+
+# opentelemetry-http still requires http 0.2, and we need to convert types
+http02 = { package = "http", version = "0.2.12", optional = true }
 
 mas-tower = { workspace = true, optional = true }
 
@@ -40,13 +48,14 @@ tokio.workspace = true
 
 [features]
 client = [
-  "dep:mas-tower",
-  "dep:rustls",
-  "hyper/tcp",
-  "dep:hyper-rustls",
-  "dep:rustls-platform-verifier",
-  "tower/limit",
-  "tower-http/timeout",
-  "tower-http/follow-redirect",
-  "tower-http/set-header",
+    "dep:mas-tower",
+    "dep:rustls",
+    "dep:hyper-rustls",
+    "dep:rustls-platform-verifier",
+    "dep:http02",
+    "dep:opentelemetry-http",
+    "tower/limit",
+    "tower-http/timeout",
+    "tower-http/follow-redirect",
+    "tower-http/set-header",
 ]

@@ -59,10 +59,17 @@ async fn try_main() -> anyhow::Result<()> {
     let (log_writer, _guard) = tracing_appender::non_blocking(output);
     let fmt_layer = tracing_subscriber::fmt::layer()
         .with_writer(log_writer)
+        .with_file(true)
+        .with_line_number(true)
         .with_ansi(with_ansi);
     let filter_layer = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("info"))
         .context("could not setup logging filter")?;
+
+    // Setup the rustls crypto provider
+    rustls::crypto::aws_lc_rs::default_provider()
+        .install_default()
+        .map_err(|_| anyhow::anyhow!("could not install the AWS LC crypto provider"))?;
 
     // Parse the CLI arguments
     let opts = self::commands::Options::parse();

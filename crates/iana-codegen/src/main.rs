@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{collections::HashMap, fmt::Display, sync::Arc};
+use std::{collections::HashMap, fmt::Display};
 
 use camino::{Utf8Path, Utf8PathBuf};
+use reqwest::Client;
 use tokio::io::AsyncWriteExt;
 use tracing::Level;
-
-type Client = hyper::Client<hyper::client::HttpConnector>;
 
 mod gen;
 pub mod jose;
@@ -27,7 +26,7 @@ pub mod traits;
 
 #[derive(Debug)]
 struct File {
-    client: Arc<Client>,
+    client: Client,
     registry_name: &'static str,
     registry_url: &'static str,
     sections: Vec<Section>,
@@ -42,7 +41,7 @@ fn resolve_path(relative: impl AsRef<Utf8Path>) -> Utf8PathBuf {
 
 impl File {
     #[tracing::instrument(skip(client))]
-    fn new(registry_name: &'static str, registry_url: &'static str, client: Arc<Client>) -> Self {
+    fn new(registry_name: &'static str, registry_url: &'static str, client: Client) -> Self {
         tracing::info!("Generating file from IANA registry");
         Self {
             client,
@@ -142,7 +141,7 @@ use self::traits::{EnumEntry, EnumMember, Section};
 
 #[tracing::instrument(skip_all, fields(%path))]
 async fn generate_jose(
-    client: &Arc<Client>,
+    client: &Client,
     path: impl AsRef<Utf8Path> + std::fmt::Display,
 ) -> anyhow::Result<()> {
     let path = resolve_path(path);
@@ -173,7 +172,7 @@ async fn generate_jose(
 
 #[tracing::instrument(skip_all, fields(%path))]
 async fn generate_oauth(
-    client: &Arc<Client>,
+    client: &Client,
     path: impl AsRef<Utf8Path> + std::fmt::Display,
 ) -> anyhow::Result<()> {
     let path = resolve_path(path);
@@ -182,7 +181,7 @@ async fn generate_oauth(
     let file = File::new(
         "OAuth Parameters",
         "https://www.iana.org/assignments/jose/jose.xhtml",
-        client.clone(),
+        client,
     )
     .load::<oauth::AccessTokenType>()
     .await?
@@ -208,7 +207,6 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let client = Client::new();
-    let client = Arc::new(client);
 
     let iana_crate_root = Utf8Path::new("crates/iana/");
 

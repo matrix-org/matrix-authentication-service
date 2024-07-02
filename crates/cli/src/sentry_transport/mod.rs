@@ -1,4 +1,4 @@
-// Copyright 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2023-2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,10 @@
 
 use std::{sync::Arc, time::Duration};
 
-use hyper::{client::connect::Connect, header::RETRY_AFTER, Client, StatusCode};
+use bytes::Bytes;
+use http_body_util::{BodyExt, Full};
+use hyper::{header::RETRY_AFTER, StatusCode};
+use mas_http::UntracedClient;
 use sentry::{sentry_debug, ClientOptions, Transport, TransportFactory};
 
 use self::tokio_thread::TransportThread;
@@ -34,30 +37,24 @@ pub struct HyperTransport {
     thread: TransportThread,
 }
 
-pub struct HyperTransportFactory<C> {
-    client: Client<C>,
+pub struct HyperTransportFactory {
+    client: UntracedClient<Full<Bytes>>,
 }
 
-impl<C> HyperTransportFactory<C> {
-    pub fn new(client: Client<C>) -> Self {
+impl HyperTransportFactory {
+    pub fn new(client: UntracedClient<Full<Bytes>>) -> Self {
         Self { client }
     }
 }
 
-impl<C> TransportFactory for HyperTransportFactory<C>
-where
-    C: Connect + Clone + Send + Sync + 'static,
-{
+impl TransportFactory for HyperTransportFactory {
     fn create_transport(&self, options: &ClientOptions) -> Arc<dyn Transport> {
         Arc::new(HyperTransport::new(options, self.client.clone()))
     }
 }
 
 impl HyperTransport {
-    pub fn new<C>(options: &ClientOptions, client: Client<C>) -> Self
-    where
-        C: Connect + Clone + Send + Sync + 'static,
-    {
+    pub fn new(options: &ClientOptions, client: UntracedClient<Full<Bytes>>) -> Self {
         let dsn = options.dsn.as_ref().unwrap();
         let user_agent = options.user_agent.clone();
         let auth = dsn.to_auth(Some(&user_agent)).to_string();
@@ -69,7 +66,7 @@ impl HyperTransport {
 
             let request = hyper::Request::post(&url)
                 .header("X-Sentry-Auth", &auth)
-                .body(hyper::Body::from(body))
+                .body(Full::new(Bytes::from(body)))
                 .unwrap();
 
             let fut = client.request(request);
@@ -93,12 +90,13 @@ impl HyperTransport {
                             rl.update_from_429();
                         }
 
-                        match hyper::body::to_bytes(response.into_body()).await {
+                        match response.into_body().collect().await {
                             Err(err) => {
                                 sentry_debug!("Failed to read sentry response: {}", err);
                             }
-                            Ok(bytes) => {
-                                let text = String::from_utf8_lossy(&bytes);
+                            Ok(body) => {
+                                let body = body.to_bytes();
+                                let text = String::from_utf8_lossy(&body);
                                 sentry_debug!("Get response: `{}`", text);
                             }
                         }

@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2022-2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ use std::{
 
 use anyhow::Context;
 use axum::{
-    body::HttpBody,
     error_handling::HandleErrorLayer,
     extract::{FromRef, MatchedPath},
     Extension, Router,
@@ -39,7 +38,6 @@ use mas_tower::{
     KV,
 };
 use opentelemetry::{Key, KeyValue};
-use opentelemetry_http::HeaderExtractor;
 use opentelemetry_semantic_conventions::trace::{
     HTTP_REQUEST_METHOD, HTTP_RESPONSE_STATUS_CODE, HTTP_ROUTE, NETWORK_PROTOCOL_NAME,
     NETWORK_PROTOCOL_VERSION, URL_PATH, URL_QUERY, URL_SCHEME, USER_AGENT_ORIGINAL,
@@ -54,6 +52,22 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 use crate::app_state::AppState;
 
 const MAS_LISTENER_NAME: Key = Key::from_static_str("mas.listener.name");
+
+/// Same as the extractor from opentelemetry-http, but using http@1
+struct HeaderExtractor<'a>(pub &'a http::HeaderMap);
+
+impl<'a> opentelemetry::propagation::Extractor for HeaderExtractor<'a> {
+    fn get(&self, key: &str) -> Option<&str> {
+        self.0.get(key).and_then(|value| value.to_str().ok())
+    }
+
+    fn keys(&self) -> Vec<&str> {
+        self.0
+            .keys()
+            .map(http::HeaderName::as_str)
+            .collect::<Vec<_>>()
+    }
+}
 
 #[inline]
 fn otel_http_method<B>(request: &Request<B>) -> &'static str {
@@ -179,36 +193,31 @@ fn on_http_response_labels<B>(res: &Response<B>) -> Vec<KeyValue> {
     )]
 }
 
-pub fn build_router<B>(
+pub fn build_router(
     state: AppState,
     resources: &[HttpResource],
     prefix: Option<&str>,
     name: Option<&str>,
-) -> Router<(), B>
-where
-    B: HttpBody + Send + 'static,
-    <B as HttpBody>::Data: Into<axum::body::Bytes> + Send,
-    <B as HttpBody>::Error: std::error::Error + Send + Sync,
-{
+) -> Router<()> {
     let templates = Templates::from_ref(&state);
     let mut router = Router::new();
 
     for resource in resources {
         router = match resource {
             mas_config::HttpResource::Health => {
-                router.merge(mas_handlers::healthcheck_router::<AppState, B>())
+                router.merge(mas_handlers::healthcheck_router::<AppState>())
             }
             mas_config::HttpResource::Prometheus => {
                 router.route_service("/metrics", crate::telemetry::prometheus_service())
             }
             mas_config::HttpResource::Discovery => {
-                router.merge(mas_handlers::discovery_router::<AppState, B>())
+                router.merge(mas_handlers::discovery_router::<AppState>())
             }
             mas_config::HttpResource::Human => {
-                router.merge(mas_handlers::human_router::<AppState, B>(templates.clone()))
+                router.merge(mas_handlers::human_router::<AppState>(templates.clone()))
             }
             mas_config::HttpResource::GraphQL { playground } => {
-                router.merge(mas_handlers::graphql_router::<AppState, B>(*playground))
+                router.merge(mas_handlers::graphql_router::<AppState>(*playground))
             }
             mas_config::HttpResource::Assets { path } => {
                 let static_service = ServeDir::new(path)
@@ -230,11 +239,9 @@ where
                     (error_layer, cache_layer).layer(static_service),
                 )
             }
-            mas_config::HttpResource::OAuth => {
-                router.merge(mas_handlers::api_router::<AppState, B>())
-            }
+            mas_config::HttpResource::OAuth => router.merge(mas_handlers::api_router::<AppState>()),
             mas_config::HttpResource::Compat => {
-                router.merge(mas_handlers::compat_router::<AppState, B>())
+                router.merge(mas_handlers::compat_router::<AppState>())
             }
             // TODO: do a better handler here
             mas_config::HttpResource::ConnectionInfo => router.route(
