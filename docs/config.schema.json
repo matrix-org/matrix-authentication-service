@@ -66,7 +66,7 @@
           }
         ],
         "trusted_proxies": [
-          "192.128.0.0/16",
+          "192.168.0.0/16",
           "172.16.0.0/12",
           "10.0.0.0/10",
           "127.0.0.1/8",
@@ -586,7 +586,7 @@
         "trusted_proxies": {
           "description": "List of trusted reverse proxies that can set the `X-Forwarded-For` header",
           "default": [
-            "192.128.0.0/16",
+            "192.168.0.0/16",
             "172.16.0.0/12",
             "10.0.0.0/10",
             "127.0.0.1/8",

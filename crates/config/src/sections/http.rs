@@ -65,7 +65,7 @@ fn is_default_http_listener_assets_path(value: &Utf8PathBuf) -> bool {
 
 fn default_trusted_proxies() -> Vec<IpNetwork> {
     vec![
-        IpNetwork::new([192, 128, 0, 0].into(), 16).unwrap(),
+        IpNetwork::new([192, 168, 0, 0].into(), 16).unwrap(),
         IpNetwork::new([172, 16, 0, 0].into(), 12).unwrap(),
         IpNetwork::new([10, 0, 0, 0].into(), 10).unwrap(),
         IpNetwork::new(std::net::Ipv4Addr::LOCALHOST.into(), 8).unwrap(),
