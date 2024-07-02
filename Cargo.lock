@@ -3348,9 +3348,11 @@ name = "mas-http"
 version = "0.9.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "bytes",
  "futures-util",
  "headers",
+ "http 0.2.12",
  "http 1.1.0",
  "http-body 1.0.0",
  "http-body-util",
@@ -3359,6 +3361,7 @@ dependencies = [
  "hyper-util",
  "mas-tower",
  "opentelemetry",
+ "opentelemetry-http",
  "opentelemetry-semantic-conventions",
  "pin-project-lite",
  "rustls 0.23.10",

@@ -26,8 +26,8 @@ mod service;
 #[cfg(feature = "client")]
 pub use self::{
     client::{
-        make_traced_connector, make_untraced_client, Client, TracedClient, TracedConnector,
-        UntracedClient, UntracedConnector,
+        make_traced_connector, make_untraced_client, Client, OtelClient, TracedClient,
+        TracedConnector, UntracedClient, UntracedConnector,
     },
     layers::client::{ClientLayer, ClientService},
 };

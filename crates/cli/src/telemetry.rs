@@ -15,11 +15,12 @@
 use std::time::Duration;
 
 use anyhow::Context as _;
-use hyper::{header::CONTENT_TYPE, Body, Response};
+use hyper::{header::CONTENT_TYPE, Response};
 use mas_config::{
     MetricsConfig, MetricsExporterKind, Propagator, TelemetryConfig, TracingConfig,
     TracingExporterKind,
 };
+use mas_http::OtelClient;
 use opentelemetry::{
     global,
     propagation::{TextMapCompositePropagator, TextMapPropagator},
@@ -87,7 +88,7 @@ fn propagator(propagators: &[Propagator]) -> impl TextMapPropagator {
 
 fn http_client() -> impl opentelemetry_http::HttpClient + 'static {
     let client = mas_http::make_untraced_client();
-    opentelemetry_http::hyper::HyperClient::new_with_timeout(client, Duration::from_secs(30))
+    OtelClient::new(client)
 }
 
 fn stdout_tracer_provider() -> TracerProvider {
@@ -161,14 +162,14 @@ fn stdout_metric_reader() -> PeriodicReader {
     PeriodicReader::builder(exporter, opentelemetry_sdk::runtime::Tokio).build()
 }
 
-type PromServiceFuture = std::future::Ready<Result<Response<Body>, std::convert::Infallible>>;
+type PromServiceFuture = std::future::Ready<Result<Response<String>, std::convert::Infallible>>;
 
 #[allow(clippy::needless_pass_by_value)]
 fn prometheus_service_fn<T>(_req: T) -> PromServiceFuture {
     use prometheus::{Encoder, TextEncoder};
 
     let response = if let Some(registry) = PROMETHEUS_REGISTRY.get() {
-        let mut buffer = vec![];
+        let mut buffer = String::new();
         let encoder = TextEncoder::new();
         let metric_families = registry.gather();
 
@@ -178,7 +179,7 @@ fn prometheus_service_fn<T>(_req: T) -> PromServiceFuture {
         Response::builder()
             .status(200)
             .header(CONTENT_TYPE, encoder.format_type())
-            .body(Body::from(buffer))
+            .body(buffer)
             .unwrap()
     } else {
         Response::builder()
