@@ -64,6 +64,8 @@ fn now() -> DateTime<Utc> {
 }
 
 async fn init_test() -> (HttpService, MockServer, Url) {
+    let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+
     let http_service = (
         MapErrLayer::new(BoxError::from),
         MapRequestLayer::new(|req: http::Request<_>| req.map(Full::new)),

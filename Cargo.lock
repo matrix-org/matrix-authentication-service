@@ -3542,6 +3542,7 @@ dependencies = [
  "oauth2-types",
  "rand",
  "rand_chacha",
+ "rustls 0.23.10",
  "serde",
  "serde_json",
  "serde_urlencoded",
