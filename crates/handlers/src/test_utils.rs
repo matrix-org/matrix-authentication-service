@@ -60,10 +60,11 @@ use crate::{
     ActivityTracker, BoundActivityTracker,
 };
 
-// This might fail if it's not the first time it's being called, which is fine,
-// so we ignore the result
+/// Setup rustcrypto and tracing for tests.
 #[allow(unused_must_use)]
-pub(crate) fn init_tracing() {
+pub(crate) fn setup() {
+    rustls::crypto::aws_lc_rs::default_provider().install_default();
+
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
         .with_test_writer()
@@ -230,8 +231,7 @@ impl TestState {
 
     pub async fn request<B>(&self, request: Request<B>) -> Response<String>
     where
-        B: HttpBody + Send + 'static,
-        <B as HttpBody>::Data: Into<Bytes>,
+        B: HttpBody<Data = Bytes> + Send + 'static,
         <B as HttpBody>::Error: std::error::Error + Send + Sync,
         B::Error: std::error::Error + Send + Sync,
         B::Data: Send,
@@ -242,7 +242,8 @@ impl TestState {
             .merge(crate::compat_router())
             .merge(crate::human_router(self.templates.clone()))
             .merge(crate::graphql_router(false))
-            .with_state(self.clone());
+            .with_state(self.clone())
+            .into_service();
 
         // Both unwrap are on Infallible, so this is safe
         let response = app
@@ -256,7 +257,7 @@ impl TestState {
         let (parts, body) = response.into_parts();
 
         // This could actually fail, but do we really care about that?
-        let body = hyper::body::to_bytes(body)
+        let body = axum::body::to_bytes(body, usize::MAX)
             .await
             .expect("Failed to read response body");
         let body = std::str::from_utf8(&body)

@@ -34,6 +34,7 @@ tower-http.workspace = true
 axum.workspace = true
 axum-macros = "0.4.1"
 axum-extra.workspace = true
+rustls.workspace = true
 
 async-graphql.workspace = true
 

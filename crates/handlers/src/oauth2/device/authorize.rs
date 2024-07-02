@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{extract::State, response::IntoResponse, Json, TypedHeader};
+use axum::{extract::State, response::IntoResponse, Json};
+use axum_extra::typed_header::TypedHeader;
 use chrono::Duration;
 use headers::{CacheControl, Pragma};
 use hyper::StatusCode;
@@ -177,11 +178,11 @@ mod tests {
     };
     use sqlx::PgPool;
 
-    use crate::test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState};
+    use crate::test_utils::{setup, RequestBuilderExt, ResponseExt, TestState};
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_device_code_request(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Provision a client

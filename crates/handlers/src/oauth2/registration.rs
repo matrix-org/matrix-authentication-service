@@ -317,7 +317,7 @@ mod tests {
 
     use crate::{
         oauth2::registration::host_is_public_suffix,
-        test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState},
+        test_utils::{setup, RequestBuilderExt, ResponseExt, TestState},
     };
 
     #[test]
@@ -342,7 +342,7 @@ mod tests {
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_registration_error(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Body is not a JSON
@@ -439,7 +439,7 @@ mod tests {
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_registration(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // A successful registration with no authentication should not return a client

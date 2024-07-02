@@ -17,8 +17,8 @@ use std::str::FromStr;
 use axum::{
     extract::{Form, Query, State},
     response::{Html, IntoResponse, Response},
-    TypedHeader,
 };
+use axum_extra::typed_header::TypedHeader;
 use hyper::StatusCode;
 use lettre::Address;
 use mas_axum_utils::{
@@ -335,14 +335,14 @@ mod tests {
 
     use crate::{
         test_utils::{
-            init_tracing, test_site_config, CookieHelper, RequestBuilderExt, ResponseExt, TestState,
+            setup, test_site_config, CookieHelper, RequestBuilderExt, ResponseExt, TestState,
         },
         SiteConfig,
     };
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_password_disabled(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool_with_site_config(
             pool,
             SiteConfig {
@@ -375,7 +375,7 @@ mod tests {
     /// Test the registration happy path
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_register(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
         let cookies = CookieHelper::new();
 
@@ -425,7 +425,7 @@ mod tests {
     /// When the two password fields mismatch, it should give an error
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_register_password_mismatch(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
         let cookies = CookieHelper::new();
 
@@ -466,7 +466,7 @@ mod tests {
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_register_username_too_short(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
         let cookies = CookieHelper::new();
 
@@ -508,7 +508,7 @@ mod tests {
     /// When the user already exists in the database, it should give an error
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_register_user_exists(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
         let mut rng = state.rng();
         let cookies = CookieHelper::new();
@@ -560,7 +560,7 @@ mod tests {
     /// an error
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_register_user_reserved(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
         let cookies = CookieHelper::new();
 
