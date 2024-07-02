@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2022-2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 
 use clap::Parser;
 use figment::Figment;
+use http_body_util::BodyExt;
 use hyper::{Response, Uri};
 use mas_config::{ConfigurationSection, PolicyConfig};
 use mas_handlers::HttpClientFactory;
@@ -79,7 +80,7 @@ impl Options {
                 let mut client = http_client_factory.client("debug");
                 let request = hyper::Request::builder()
                     .uri(url)
-                    .body(hyper::Body::empty())?;
+                    .body(axum::body::Body::empty())?;
 
                 let response = client.ready().await?.call(request).await?;
                 let (parts, body) = response.into_parts();
@@ -88,7 +89,7 @@ impl Options {
                     print_headers(&parts);
                 }
 
-                let mut body = hyper::body::aggregate(body).await?;
+                let mut body = body.collect().await?.to_bytes();
                 let mut stdout = tokio::io::stdout();
                 stdout.write_all_buf(&mut body).await?;
             }
@@ -105,7 +106,7 @@ impl Options {
                     .json_response();
                 let request = hyper::Request::builder()
                     .uri(url)
-                    .body(hyper::Body::empty())?;
+                    .body(axum::body::Body::empty())?;
 
                 let response: Response<serde_json::Value> =
                     client.ready().await?.call(request).await?;

@@ -17,7 +17,7 @@ keystore = ["dep:mas-keystore"]
 
 [dependencies]
 base64ct = { version = "1.6.0", features = ["std"] }
-bytes = "1.6.0"
+bytes.workspace = true
 chrono.workspace = true
 form_urlencoded = "1.2.1"
 futures-util = "0.3.30"

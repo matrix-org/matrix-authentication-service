@@ -15,6 +15,8 @@
 use std::time::Duration;
 
 use anyhow::Context as _;
+use bytes::Bytes;
+use http_body_util::Full;
 use hyper::{header::CONTENT_TYPE, Response};
 use mas_config::{
     MetricsConfig, MetricsExporterKind, Propagator, TelemetryConfig, TracingConfig,
@@ -48,7 +50,16 @@ static METER_PROVIDER: OnceCell<SdkMeterProvider> = OnceCell::const_new();
 static PROMETHEUS_REGISTRY: OnceCell<Registry> = OnceCell::const_new();
 
 pub fn setup(config: &TelemetryConfig) -> anyhow::Result<Option<Tracer>> {
-    global::set_error_handler(|e| tracing::error!("{}", e))?;
+    global::set_error_handler(|e| {
+        // Don't log the propagation errors, else we'll log an error on each request if
+        // the propagation errors aren't there
+        if matches!(e, opentelemetry::global::Error::Propagation(_)) {
+            return;
+        }
+
+        tracing::error!(error = &e as &dyn std::error::Error);
+    })?;
+
     let propagator = propagator(&config.tracing.propagators);
 
     // The CORS filter needs to know what headers it should whitelist for
@@ -162,14 +173,15 @@ fn stdout_metric_reader() -> PeriodicReader {
     PeriodicReader::builder(exporter, opentelemetry_sdk::runtime::Tokio).build()
 }
 
-type PromServiceFuture = std::future::Ready<Result<Response<String>, std::convert::Infallible>>;
+type PromServiceFuture =
+    std::future::Ready<Result<Response<Full<Bytes>>, std::convert::Infallible>>;
 
 #[allow(clippy::needless_pass_by_value)]
 fn prometheus_service_fn<T>(_req: T) -> PromServiceFuture {
     use prometheus::{Encoder, TextEncoder};
 
     let response = if let Some(registry) = PROMETHEUS_REGISTRY.get() {
-        let mut buffer = String::new();
+        let mut buffer = Vec::new();
         let encoder = TextEncoder::new();
         let metric_families = registry.gather();
 
@@ -179,13 +191,15 @@ fn prometheus_service_fn<T>(_req: T) -> PromServiceFuture {
         Response::builder()
             .status(200)
             .header(CONTENT_TYPE, encoder.format_type())
-            .body(buffer)
+            .body(Full::new(Bytes::from(buffer)))
             .unwrap()
     } else {
         Response::builder()
             .status(500)
             .header(CONTENT_TYPE, "text/plain")
-            .body(Body::from("Prometheus exporter was not enabled in config"))
+            .body(Full::new(Bytes::from_static(
+                b"Prometheus exporter was not enabled in config",
+            )))
             .unwrap()
     };
 

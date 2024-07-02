@@ -13,7 +13,7 @@ workspace = true
 
 [dependencies]
 async-trait.workspace = true
-bytes = "1.6.0"
+bytes.workspace = true
 futures-util = "0.3.30"
 headers.workspace = true
 http.workspace = true
