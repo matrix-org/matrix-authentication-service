@@ -157,7 +157,7 @@ features = [
 
 # Templates
 [workspace.dependencies.minijinja]
-version = "2.0.2"
+version = "2.0.3"
 
 # Random values
 [workspace.dependencies.rand]
@@ -169,7 +169,7 @@ version = "0.23.10"
 
 # Use platform-specific verifier for TLS
 [workspace.dependencies.rustls-platform-verifier]
-version = "0.3.1"
+version = "0.3.2"
 
 # JSON Schema generation
 [workspace.dependencies.schemars]
@@ -198,7 +198,7 @@ features = ["derive"] # Most of the time, if we need serde, we need derive
 
 # JSON serialization and deserialization
 [workspace.dependencies.serde_json]
-version = "1.0.119"
+version = "1.0.120"
 features = ["preserve_order"]
 
 # SQL database support
