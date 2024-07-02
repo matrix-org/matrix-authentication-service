@@ -172,6 +172,21 @@ version = "0.3.1"
 version = "0.8.21"
 features = ["url", "chrono", "preserve_order"]
 
+# Sentry error tracking
+[workspace.dependencies.sentry]
+version = "0.34.0"
+default-features = false
+features = ["backtrace", "contexts", "panic", "tower"]
+
+# Sentry tower layer
+[workspace.dependencies.sentry-tower]
+version = "0.34.0"
+features = ["http"]
+
+# Sentry tracing integration
+[workspace.dependencies.sentry-tracing]
+version = "0.34.0"
+
 # Serialization and deserialization
 [workspace.dependencies.serde]
 version = "1.0.203"

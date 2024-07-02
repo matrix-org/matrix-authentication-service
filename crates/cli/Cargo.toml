@@ -51,9 +51,9 @@ opentelemetry-semantic-conventions.workspace = true
 opentelemetry-stdout = { version = "0.4.0", features = ["trace", "metrics"] }
 opentelemetry_sdk = { version = "0.23.0", features = ["trace", "metrics", "rt-tokio"] }
 prometheus = "0.13.4"
-sentry = { version = "0.31.8", default-features = false, features = ["backtrace", "contexts", "panic", "tower"] }
-sentry-tracing = "0.31.8"
-sentry-tower = { version = "0.31.8", features = ["http"] }
+sentry.workspace = true
+sentry-tracing.workspace = true
+sentry-tower.workspace = true
 
 mas-config.workspace = true
 mas-data-model.workspace = true
