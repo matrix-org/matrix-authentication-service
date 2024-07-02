@@ -55,6 +55,13 @@ impl Default for DatabaseConfig {
             username: None,
             password: None,
             database: None,
+            ssl_mode: None,
+            ssl_ca: None,
+            ssl_ca_file: None,
+            ssl_certificate: None,
+            ssl_certificate_file: None,
+            ssl_key: None,
+            ssl_key_file: None,
             max_connections: default_max_connections(),
             min_connections: Default::default(),
             connect_timeout: default_connect_timeout(),
@@ -62,6 +69,34 @@ impl Default for DatabaseConfig {
             max_lifetime: default_max_lifetime(),
         }
     }
+}
+
+/// Options for controlling the level of protection provided for PostgreSQL SSL
+/// connections.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum PgSslMode {
+    /// Only try a non-SSL connection.
+    Disable,
+
+    /// First try a non-SSL connection; if that fails, try an SSL connection.
+    Allow,
+
+    /// First try an SSL connection; if that fails, try a non-SSL connection.
+    Prefer,
+
+    /// Only try an SSL connection. If a root CA file is present, verify the
+    /// connection in the same way as if `VerifyCa` was specified.
+    Require,
+
+    /// Only try an SSL connection, and verify that the server certificate is
+    /// issued by a trusted certificate authority (CA).
+    VerifyCa,
+
+    /// Only try an SSL connection; verify that the server certificate is issued
+    /// by a trusted CA and that the requested server host name matches that
+    /// in the certificate.
+    VerifyFull,
 }
 
 /// Database connection configuration
@@ -115,6 +150,50 @@ pub struct DatabaseConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub database: Option<String>,
 
+    /// How to handle SSL connections
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ssl_mode: Option<PgSslMode>,
+
+    /// The PEM-encoded root certificate for SSL connections
+    ///
+    /// This must not be specified if the `ssl_ca_file` option is specified.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ssl_ca: Option<String>,
+
+    /// Path to the root certificate for SSL connections
+    ///
+    /// This must not be specified if the `ssl_ca` option is specified.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(with = "Option<String>")]
+    pub ssl_ca_file: Option<Utf8PathBuf>,
+
+    /// The PEM-encoded client certificate for SSL connections
+    ///
+    /// This must not be specified if the `ssl_certificate_file` option is
+    /// specified.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ssl_certificate: Option<String>,
+
+    /// Path to the client certificate for SSL connections
+    ///
+    /// This must not be specified if the `ssl_certificate` option is specified.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(with = "Option<String>")]
+    pub ssl_certificate_file: Option<Utf8PathBuf>,
+
+    /// The PEM-encoded client key for SSL connections
+    ///
+    /// This must not be specified if the `ssl_key_file` option is specified.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ssl_key: Option<String>,
+
+    /// Path to the client key for SSL connections
+    ///
+    /// This must not be specified if the `ssl_key` option is specified.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(with = "Option<String>")]
+    pub ssl_key_file: Option<Utf8PathBuf>,
+
     /// Set the maximum number of connections the pool should maintain
     #[serde(default = "default_max_connections")]
     pub max_connections: NonZeroU32,
@@ -153,6 +232,12 @@ impl ConfigurationSection for DatabaseConfig {
 
     fn validate(&self, figment: &figment::Figment) -> Result<(), figment::error::Error> {
         let metadata = figment.find_metadata(Self::PATH.unwrap());
+        let annotate = |mut error: figment::Error| {
+            error.metadata = metadata.cloned();
+            error.profile = Some(figment::Profile::Default);
+            error.path = vec![Self::PATH.unwrap().to_owned()];
+            Err(error)
+        };
 
         // Check that the user did not specify both `uri` and the split options at the
         // same time
@@ -164,19 +249,42 @@ impl ConfigurationSection for DatabaseConfig {
             || self.database.is_some();
 
         if self.uri.is_some() && has_split_options {
-            let mut error = figment::error::Error::from(
+            return annotate(figment::error::Error::from(
                 "uri must not be specified if host, port, socket, username, password, or database are specified".to_owned(),
-            );
-            error.metadata = metadata.cloned();
-            error.profile = Some(figment::Profile::Default);
-            error.path = vec![Self::PATH.unwrap().to_owned(), "uri".to_owned()];
-            return Err(error);
+            ));
+        }
+
+        if self.ssl_ca.is_some() && self.ssl_ca_file.is_some() {
+            return annotate(figment::error::Error::from(
+                "ssl_ca must not be specified if ssl_ca_file is specified".to_owned(),
+            ));
+        }
+
+        if self.ssl_certificate.is_some() && self.ssl_certificate_file.is_some() {
+            return annotate(figment::error::Error::from(
+                "ssl_certificate must not be specified if ssl_certificate_file is specified"
+                    .to_owned(),
+            ));
+        }
+
+        if self.ssl_key.is_some() && self.ssl_key_file.is_some() {
+            return annotate(figment::error::Error::from(
+                "ssl_key must not be specified if ssl_key_file is specified".to_owned(),
+            ));
+        }
+
+        if (self.ssl_key.is_some() || self.ssl_key_file.is_some())
+            ^ (self.ssl_certificate.is_some() || self.ssl_certificate_file.is_some())
+        {
+            return annotate(figment::error::Error::from(
+                "both a ssl_certificate and a ssl_key must be set at the same time or none of them"
+                    .to_owned(),
+            ));
         }
 
         Ok(())
     }
 }
-
 #[cfg(test)]
 mod tests {
     use figment::{
