@@ -15,8 +15,9 @@
 use axum::{
     extract::{Query, State},
     response::IntoResponse,
-    Json, TypedHeader,
+    Json,
 };
+use axum_extra::typed_header::TypedHeader;
 use headers::ContentType;
 use mas_router::UrlBuilder;
 use oauth2_types::webfinger::WebFingerResponse;

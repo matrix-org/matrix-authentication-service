@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{extract::State, response::IntoResponse, Json, TypedHeader};
+use axum::{extract::State, response::IntoResponse, Json};
+use axum_extra::typed_header::TypedHeader;
 use chrono::Duration;
 use hyper::StatusCode;
 use mas_axum_utils::sentry::SentryEventID;
@@ -433,12 +434,12 @@ mod tests {
     use sqlx::PgPool;
 
     use super::*;
-    use crate::test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState};
+    use crate::test_utils::{setup, RequestBuilderExt, ResponseExt, TestState};
 
     /// Test that the server advertises the right login flows.
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_get_login(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Now let's get the login flows
@@ -470,7 +471,7 @@ mod tests {
     /// manager is disabled
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_password_disabled(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = {
             let mut state = TestState::from_pool(pool).await.unwrap();
             state.password_manager = PasswordManager::disabled();
@@ -518,7 +519,7 @@ mod tests {
     /// compatibility API.
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_user_password_login(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Let's provision a user and add a password to it. This part is hard to test
@@ -633,7 +634,7 @@ mod tests {
     /// Test the response of an unsupported login flow.
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_unsupported_login(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Try to login with an unsupported login flow.
@@ -650,7 +651,7 @@ mod tests {
     /// Test `m.login.token` login flow.
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_login_token_login(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Provision a user

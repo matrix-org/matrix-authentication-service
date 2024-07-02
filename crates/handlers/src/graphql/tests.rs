@@ -29,7 +29,7 @@ use sqlx::PgPool;
 
 use crate::{
     test_utils,
-    test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState},
+    test_utils::{setup, RequestBuilderExt, ResponseExt, TestState},
 };
 
 async fn create_test_client(state: &TestState) -> Client {
@@ -131,7 +131,7 @@ struct GraphQLResponse {
 /// Test that the GraphQL endpoint can be queried with a GET request.
 #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
 async fn test_get(pool: PgPool) {
-    init_tracing();
+    setup();
     let state = TestState::from_pool(pool).await.unwrap();
 
     let request = Request::get("/graphql?query={viewer{__typename}}").empty();
@@ -155,7 +155,7 @@ async fn test_get(pool: PgPool) {
 /// anonymously.
 #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
 async fn test_anonymous_viewer(pool: PgPool) {
-    init_tracing();
+    setup();
     let state = TestState::from_pool(pool).await.unwrap();
 
     let req = Request::post("/graphql").json(serde_json::json!({
@@ -186,7 +186,7 @@ async fn test_anonymous_viewer(pool: PgPool) {
 /// Test that the GraphQL endpoint can be authenticated with a bearer token.
 #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
 async fn test_oauth2_viewer(pool: PgPool) {
-    init_tracing();
+    setup();
     let state = TestState::from_pool(pool).await.unwrap();
 
     // Start by creating a user, a client and a token
@@ -203,7 +203,7 @@ async fn test_oauth2_viewer(pool: PgPool) {
                 query {
                     viewer {
                         __typename
-                        
+
                         ... on User {
                             id
                             username
@@ -233,7 +233,7 @@ async fn test_oauth2_viewer(pool: PgPool) {
 /// Test that the GraphQL endpoint requires the GraphQL scope.
 #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
 async fn test_oauth2_no_scope(pool: PgPool) {
-    init_tracing();
+    setup();
     let state = TestState::from_pool(pool).await.unwrap();
 
     // Start by creating a user, a client and a token
@@ -271,7 +271,7 @@ async fn test_oauth2_no_scope(pool: PgPool) {
 /// Test the admin scope on the GraphQL endpoint.
 #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
 async fn test_oauth2_admin(pool: PgPool) {
-    init_tracing();
+    setup();
     let state = TestState::from_pool(pool).await.unwrap();
 
     // Start by creating a user, a client and two tokens
@@ -301,7 +301,7 @@ async fn test_oauth2_admin(pool: PgPool) {
                         username
                     }
                 }
-            ", 
+            ",
             "variables": {
                 "id": format!("user:{id}", id = user2.id),
             },
@@ -331,7 +331,7 @@ async fn test_oauth2_admin(pool: PgPool) {
                         username
                     }
                 }
-            ", 
+            ",
             "variables": {
                 "id": format!("user:{id}", id = user2.id),
             },
@@ -358,7 +358,7 @@ async fn test_oauth2_admin(pool: PgPool) {
 /// client_credentials grant.
 #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
 async fn test_oauth2_client_credentials(pool: PgPool) {
-    init_tracing();
+    setup();
     let state = TestState::from_pool(pool).await.unwrap();
 
     // Provision a client
@@ -397,7 +397,7 @@ async fn test_oauth2_client_credentials(pool: PgPool) {
                     viewer {
                         __typename
                     }
-                    
+
                     viewerSession {
                         __typename
                     }
@@ -464,7 +464,7 @@ async fn test_oauth2_client_credentials(pool: PgPool) {
                     viewer {
                         __typename
                     }
-                    
+
                     viewerSession {
                         __typename
                     }
@@ -572,7 +572,7 @@ async fn test_oauth2_client_credentials(pool: PgPool) {
 /// Test the addUser mutation
 #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
 async fn test_add_user(pool: PgPool) {
-    init_tracing();
+    setup();
     let state = TestState::from_pool(pool).await.unwrap();
 
     // Provision a client

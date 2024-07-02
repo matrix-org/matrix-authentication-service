@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{response::IntoResponse, Json, TypedHeader};
+use axum::{response::IntoResponse, Json};
+use axum_extra::typed_header::TypedHeader;
 use headers::{authorization::Bearer, Authorization};
 use hyper::StatusCode;
 use mas_axum_utils::sentry::SentryEventID;

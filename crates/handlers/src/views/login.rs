@@ -15,8 +15,8 @@
 use axum::{
     extract::{Form, Query, State},
     response::{Html, IntoResponse, Response},
-    TypedHeader,
 };
+use axum_extra::typed_header::TypedHeader;
 use hyper::StatusCode;
 use mas_axum_utils::{
     cookies::CookieJar,
@@ -319,14 +319,14 @@ mod test {
 
     use crate::{
         test_utils::{
-            init_tracing, test_site_config, CookieHelper, RequestBuilderExt, ResponseExt, TestState,
+            setup, test_site_config, CookieHelper, RequestBuilderExt, ResponseExt, TestState,
         },
         SiteConfig,
     };
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_password_disabled(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool_with_site_config(
             pool,
             SiteConfig {
@@ -431,7 +431,7 @@ mod test {
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_password_login(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
         let mut rng = state.rng();
         let cookies = CookieHelper::new();

@@ -489,7 +489,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use axum::body::{Bytes, Full};
+    use axum::body::Body;
     use http::{Method, Request};
 
     use super::*;
@@ -502,7 +502,7 @@ mod tests {
                 http::header::CONTENT_TYPE,
                 mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
             )
-            .body(Full::<Bytes>::new("client_id=client-id&foo=bar".into()))
+            .body(Body::new("client_id=client-id&foo=bar".to_owned()))
             .unwrap();
 
         assert_eq!(
@@ -530,7 +530,7 @@ mod tests {
                 http::header::AUTHORIZATION,
                 "Basic Y2xpZW50LWlkOmNsaWVudC1zZWNyZXQ=",
             )
-            .body(Full::<Bytes>::new("foo=bar".into()))
+            .body(Body::new("foo=bar".to_owned()))
             .unwrap();
 
         assert_eq!(
@@ -557,7 +557,7 @@ mod tests {
                 http::header::AUTHORIZATION,
                 "Basic Y2xpZW50LWlkOmNsaWVudC1zZWNyZXQ=",
             )
-            .body(Full::<Bytes>::new("client_id=client-id&foo=bar".into()))
+            .body(Body::new("client_id=client-id&foo=bar".to_owned()))
             .unwrap();
 
         assert_eq!(
@@ -584,7 +584,7 @@ mod tests {
                 http::header::AUTHORIZATION,
                 "Basic Y2xpZW50LWlkOmNsaWVudC1zZWNyZXQ=",
             )
-            .body(Full::<Bytes>::new("client_id=mismatch-id&foo=bar".into()))
+            .body(Body::new("client_id=mismatch-id&foo=bar".to_owned()))
             .unwrap();
 
         assert!(matches!(
@@ -600,7 +600,7 @@ mod tests {
                 mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
             )
             .header(http::header::AUTHORIZATION, "Basic invalid")
-            .body(Full::<Bytes>::new("foo=bar".into()))
+            .body(Body::new("foo=bar".to_owned()))
             .unwrap();
 
         assert!(matches!(
@@ -617,8 +617,8 @@ mod tests {
                 http::header::CONTENT_TYPE,
                 mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
             )
-            .body(Full::<Bytes>::new(
-                "client_id=client-id&client_secret=client-secret&foo=bar".into(),
+            .body(Body::new(
+                "client_id=client-id&client_secret=client-secret&foo=bar".to_owned(),
             ))
             .unwrap();
 
@@ -640,7 +640,7 @@ mod tests {
     async fn client_assertion_test() {
         // Signed with client_secret = "client-secret"
         let jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjbGllbnQtaWQiLCJzdWIiOiJjbGllbnQtaWQiLCJhdWQiOiJodHRwczovL2V4YW1wbGUuY29tL29hdXRoMi9pbnRyb3NwZWN0IiwianRpIjoiYWFiYmNjIiwiZXhwIjoxNTE2MjM5MzIyLCJpYXQiOjE1MTYyMzkwMjJ9.XTaACG_Rww0GPecSZvkbem-AczNy9LLNBueCLCiQajU";
-        let body = Bytes::from(format!(
+        let body = Body::new(format!(
             "client_assertion_type={JWT_BEARER_CLIENT_ASSERTION}&client_assertion={jwt}&foo=bar",
         ));
 
@@ -650,7 +650,7 @@ mod tests {
                 http::header::CONTENT_TYPE,
                 mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
             )
-            .body(Full::new(body))
+            .body(body)
             .unwrap();
 
         let authz = ClientAuthorization::<serde_json::Value>::from_request(req, &())

@@ -474,12 +474,12 @@ mod tests {
 
     use crate::{
         oauth2::generate_token_pair,
-        test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState},
+        test_utils::{setup, RequestBuilderExt, ResponseExt, TestState},
     };
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_introspect_oauth_tokens(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Provision a client which will be used to do introspection requests
@@ -678,7 +678,7 @@ mod tests {
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_introspect_compat_tokens(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Provision a client which will be used to do introspection requests
