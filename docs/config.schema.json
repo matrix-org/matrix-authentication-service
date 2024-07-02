@@ -1003,6 +1003,38 @@
           "description": "The database name\n\nThis must not be specified if `uri` is specified.",
           "type": "string"
         },
+        "ssl_mode": {
+          "description": "How to handle SSL connections",
+          "allOf": [
+            {
+              "$ref": "#/definitions/PgSslMode"
+            }
+          ]
+        },
+        "ssl_ca": {
+          "description": "The PEM-encoded root certificate for SSL connections\n\nThis must not be specified if the `ssl_ca_file` option is specified.",
+          "type": "string"
+        },
+        "ssl_ca_file": {
+          "description": "Path to the root certificate for SSL connections\n\nThis must not be specified if the `ssl_ca` option is specified.",
+          "type": "string"
+        },
+        "ssl_certificate": {
+          "description": "The PEM-encoded client certificate for SSL connections\n\nThis must not be specified if the `ssl_certificate_file` option is specified.",
+          "type": "string"
+        },
+        "ssl_certificate_file": {
+          "description": "Path to the client certificate for SSL connections\n\nThis must not be specified if the `ssl_certificate` option is specified.",
+          "type": "string"
+        },
+        "ssl_key": {
+          "description": "The PEM-encoded client key for SSL connections\n\nThis must not be specified if the `ssl_key_file` option is specified.",
+          "type": "string"
+        },
+        "ssl_key_file": {
+          "description": "Path to the client key for SSL connections\n\nThis must not be specified if the `ssl_key` option is specified.",
+          "type": "string"
+        },
         "max_connections": {
           "description": "Set the maximum number of connections the pool should maintain",
           "default": 10,
@@ -1043,6 +1075,53 @@
     "Hostname": {
       "type": "string",
       "format": "hostname"
+    },
+    "PgSslMode": {
+      "description": "Options for controlling the level of protection provided for PostgreSQL SSL connections.",
+      "oneOf": [
+        {
+          "description": "Only try a non-SSL connection.",
+          "type": "string",
+          "enum": [
+            "disable"
+          ]
+        },
+        {
+          "description": "First try a non-SSL connection; if that fails, try an SSL connection.",
+          "type": "string",
+          "enum": [
+            "allow"
+          ]
+        },
+        {
+          "description": "First try an SSL connection; if that fails, try a non-SSL connection.",
+          "type": "string",
+          "enum": [
+            "prefer"
+          ]
+        },
+        {
+          "description": "Only try an SSL connection. If a root CA file is present, verify the connection in the same way as if `VerifyCa` was specified.",
+          "type": "string",
+          "enum": [
+            "require"
+          ]
+        },
+        {
+          "description": "Only try an SSL connection, and verify that the server certificate is issued by a trusted certificate authority (CA).",
+          "type": "string",
+          "enum": [
+            "verify-ca"
+          ]
+        },
+        {
+          "description": "Only try an SSL connection; verify that the server certificate is issued by a trusted CA and that the requested server host name matches that in the certificate.",
+          "type": "string",
+          "enum": [
+            "verify-full"
+          ]
+        }
+      ]
     },
     "TelemetryConfig": {
       "description": "Configuration related to sending monitoring data",

@@ -35,7 +35,7 @@ pub use self::{
     branding::BrandingConfig,
     captcha::{CaptchaConfig, CaptchaServiceKind},
     clients::{ClientAuthMethodConfig, ClientConfig, ClientsConfig},
-    database::DatabaseConfig,
+    database::{DatabaseConfig, PgSslMode},
     email::{EmailConfig, EmailSmtpMode, EmailTransportKind},
     experimental::ExperimentalConfig,
     http::{

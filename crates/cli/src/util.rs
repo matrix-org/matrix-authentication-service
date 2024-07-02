@@ -228,6 +228,54 @@ fn database_connect_options_from_config(
         opts
     };
 
+    let options = match (config.ssl_ca.as_deref(), config.ssl_ca_file.as_deref()) {
+        (None, None) => options,
+        (Some(pem), None) => options.ssl_root_cert_from_pem(pem.as_bytes().to_owned()),
+        (None, Some(path)) => options.ssl_root_cert(path),
+        (Some(_), Some(_)) => {
+            anyhow::bail!("invalid database configuration: both `ssl_ca` and `ssl_ca_file` are set")
+        }
+    };
+
+    let options = match (
+        config.ssl_certificate.as_deref(),
+        config.ssl_certificate_file.as_deref(),
+    ) {
+        (None, None) => options,
+        (Some(pem), None) => options.ssl_client_cert_from_pem(pem.as_bytes()),
+        (None, Some(path)) => options.ssl_client_cert(path),
+        (Some(_), Some(_)) => {
+            anyhow::bail!("invalid database configuration: both `ssl_certificate` and `ssl_certificate_file` are set")
+        }
+    };
+
+    let options = match (config.ssl_key.as_deref(), config.ssl_key_file.as_deref()) {
+        (None, None) => options,
+        (Some(pem), None) => options.ssl_client_key_from_pem(pem.as_bytes()),
+        (None, Some(path)) => options.ssl_client_key(path),
+        (Some(_), Some(_)) => {
+            anyhow::bail!(
+                "invalid database configuration: both `ssl_key` and `ssl_key_file` are set"
+            )
+        }
+    };
+
+    let options = match &config.ssl_mode {
+        Some(ssl_mode) => {
+            let ssl_mode = match ssl_mode {
+                mas_config::PgSslMode::Disable => sqlx::postgres::PgSslMode::Disable,
+                mas_config::PgSslMode::Allow => sqlx::postgres::PgSslMode::Allow,
+                mas_config::PgSslMode::Prefer => sqlx::postgres::PgSslMode::Prefer,
+                mas_config::PgSslMode::Require => sqlx::postgres::PgSslMode::Require,
+                mas_config::PgSslMode::VerifyCa => sqlx::postgres::PgSslMode::VerifyCa,
+                mas_config::PgSslMode::VerifyFull => sqlx::postgres::PgSslMode::VerifyFull,
+            };
+
+            options.ssl_mode(ssl_mode)
+        }
+        None => options,
+    };
+
     let options = options
         .log_statements(LevelFilter::Debug)
         .log_slow_statements(LevelFilter::Warn, Duration::from_millis(100));

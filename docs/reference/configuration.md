@@ -100,6 +100,17 @@ database:
   password: password
   database: database
 
+  # Whether to use SSL to connect to the database
+  ssl_mode: require # or disable, prefer, verify-ca, verify-full
+  #ssl_ca: # PEM-encoded certificate
+  ssl_ca_file: /path/to/ca.pem # Path to the root certificate file
+
+  # Client certificate to present to the server when SSL is enabled
+  #ssl_certificate: # PEM-encoded certificate
+  ssl_certificate_file: /path/to/cert.pem # Path to the certificate file
+  #ssl_key: # PEM-encoded key
+  ssl_key_file: /path/to/key.pem # Path to the key file
+
   # Additional parameters for the connection pool
   min_connections: 0
   max_connections: 10
