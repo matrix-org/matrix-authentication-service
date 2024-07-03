@@ -12,20 +12,14 @@
   "bin": {
     "syn2mas": "dist/index.js"
   },
-  "files": [
-    "src",
-    "dist",
-    "package.json",
-    "LICENSE",
-    "README.md"
-  ],
+  "files": ["src", "dist", "package.json", "LICENSE", "README.md"],
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
     "prepare": "npm run build",
     "build": "tsc",
-    "dev": "ts-node --esm src/index.ts",
+    "dev": "tsx src/index.ts",
     "lint": "npm run lint:types && npm run lint:style",
     "lint:style": "eslint . .eslintrc.cjs",
     "lint:types": "tsc --noEmit",
@@ -48,7 +42,7 @@
     "eslint-plugin-prettier": "^5.0.0",
     "eslint-plugin-unicorn": "^51.0.1",
     "prettier": "^3.0.3",
-    "ts-node": "^11.0.0-beta.1",
+    "tsx": "^4.16.2",
     "typescript": "^5.2.2"
   },
   "dependencies": {

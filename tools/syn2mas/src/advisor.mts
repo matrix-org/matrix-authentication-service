@@ -80,7 +80,7 @@ export async function advisor(): Promise<void> {
   );
 
   // connect to synapse databases
-  const synapse = connectToSynapseDatabase(synapseConfig);
+  const synapse = await connectToSynapseDatabase(synapseConfig);
 
   async function count(query: Knex.QueryBuilder): Promise<number> {
     const res = await query.first();
