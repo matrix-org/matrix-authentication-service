@@ -27,8 +27,13 @@ const psycopg2DatabaseConfig = z.object({
     user: z.string().nullish(),
     password: z.string().nullish(),
     database: z.string().nullish(),
+    dbname: z.string().nullish(),
     host: z.string().nullish(),
     port: z.union([z.number(), z.string()]).nullish(),
+    sslcert: z.string().nullish(),
+    sslkey: z.string().nullish(),
+    sslpassword: z.string().nullish(),
+    sslrootcert: z.string().nullish(),
   }),
 });
 
