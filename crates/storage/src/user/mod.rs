@@ -19,7 +19,7 @@ use mas_data_model::User;
 use rand_core::RngCore;
 use ulid::Ulid;
 
-use crate::{repository_impl, Clock};
+use crate::{repository_impl, Clock, Page, Pagination};
 
 mod email;
 mod password;
@@ -34,6 +34,94 @@ pub use self::{
     session::{BrowserSessionFilter, BrowserSessionRepository},
     terms::UserTermsRepository,
 };
+
+/// The state of a user account
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum UserState {
+    /// The account is locked, it has the `locked_at` timestamp set
+    Locked,
+
+    /// The account is active
+    Active,
+}
+
+impl UserState {
+    /// Returns `true` if the user state is [`Locked`].
+    ///
+    /// [`Locked`]: UserState::Locked
+    #[must_use]
+    pub fn is_locked(&self) -> bool {
+        matches!(self, Self::Locked)
+    }
+
+    /// Returns `true` if the user state is [`Active`].
+    ///
+    /// [`Active`]: UserState::Active
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        matches!(self, Self::Active)
+    }
+}
+
+/// Filter parameters for listing users
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub struct UserFilter<'a> {
+    state: Option<UserState>,
+    can_request_admin: Option<bool>,
+    _phantom: std::marker::PhantomData<&'a ()>,
+}
+
+impl<'a> UserFilter<'a> {
+    /// Create a new [`UserFilter`] with default values
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Filter for active users
+    #[must_use]
+    pub fn active_only(mut self) -> Self {
+        self.state = Some(UserState::Active);
+        self
+    }
+
+    /// Filter for locked users
+    #[must_use]
+    pub fn locked_only(mut self) -> Self {
+        self.state = Some(UserState::Locked);
+        self
+    }
+
+    /// Filter for users that can request admin privileges
+    #[must_use]
+    pub fn can_request_admin_only(mut self) -> Self {
+        self.can_request_admin = Some(true);
+        self
+    }
+
+    /// Filter for users that can't request admin privileges
+    #[must_use]
+    pub fn cannot_request_admin_only(mut self) -> Self {
+        self.can_request_admin = Some(false);
+        self
+    }
+
+    /// Get the state filter
+    ///
+    /// Returns [`None`] if no state filter was set
+    #[must_use]
+    pub fn state(&self) -> Option<UserState> {
+        self.state
+    }
+
+    /// Get the can request admin filter
+    ///
+    /// Returns [`None`] if no can request admin filter was set
+    #[must_use]
+    pub fn can_request_admin(&self) -> Option<bool> {
+        self.can_request_admin
+    }
+}
 
 /// A [`UserRepository`] helps interacting with [`User`] saved in the storage
 /// backend
@@ -144,6 +232,33 @@ pub trait UserRepository: Send + Sync {
         user: User,
         can_request_admin: bool,
     ) -> Result<User, Self::Error>;
+
+    /// List [`User`] with the given filter and pagination
+    ///
+    /// # Parameters
+    ///
+    /// * `filter`: The filter parameters
+    /// * `pagination`: The pagination parameters
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn list(
+        &mut self,
+        filter: UserFilter<'_>,
+        pagination: Pagination,
+    ) -> Result<Page<User>, Self::Error>;
+
+    /// Count the [`User`] with the given filter
+    ///
+    /// # Parameters
+    ///
+    /// * `filter`: The filter parameters
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn count(&mut self, filter: UserFilter<'_>) -> Result<usize, Self::Error>;
 }
 
 repository_impl!(UserRepository:
@@ -163,4 +278,10 @@ repository_impl!(UserRepository:
         user: User,
         can_request_admin: bool,
     ) -> Result<User, Self::Error>;
+    async fn list(
+        &mut self,
+        filter: UserFilter<'_>,
+        pagination: Pagination,
+    ) -> Result<Page<User>, Self::Error>;
+    async fn count(&mut self, filter: UserFilter<'_>) -> Result<usize, Self::Error>;
 );
