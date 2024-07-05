@@ -22,8 +22,8 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 pub struct HeaderInjector<'a>(pub &'a mut http::HeaderMap);
 
 impl<'a> Injector for HeaderInjector<'a> {
-    /// Set a key and value in the [`HeaderMap`].  Does nothing if the key or
-    /// value are not valid inputs.
+    /// Set a key and value in the [`http::HeaderMap`].  Does nothing if the key
+    /// or value are not valid inputs.
     fn set(&mut self, key: &str, value: String) {
         if let Ok(name) = http::header::HeaderName::from_bytes(key.as_bytes()) {
             if let Ok(val) = http::header::HeaderValue::from_str(&value) {
