@@ -13,7 +13,6 @@
 // limitations under the License.
 
 use async_graphql::{Context, MergedObject, Object, ID};
-use mas_storage::user::UserRepository;
 
 use crate::graphql::{
     model::{
@@ -21,18 +20,26 @@ use crate::graphql::{
         SiteConfig, User, UserEmail,
     },
     state::ContextExt,
-    UserId,
 };
 
 mod session;
 mod upstream_oauth;
+mod user;
 mod viewer;
 
-use self::{session::SessionQuery, upstream_oauth::UpstreamOAuthQuery, viewer::ViewerQuery};
+use self::{
+    session::SessionQuery, upstream_oauth::UpstreamOAuthQuery, user::UserQuery, viewer::ViewerQuery,
+};
 
 /// The query root of the GraphQL interface.
 #[derive(Default, MergedObject)]
-pub struct Query(BaseQuery, UpstreamOAuthQuery, SessionQuery, ViewerQuery);
+pub struct Query(
+    BaseQuery,
+    UserQuery,
+    UpstreamOAuthQuery,
+    SessionQuery,
+    ViewerQuery,
+);
 
 impl Query {
     #[must_use]
@@ -81,50 +88,6 @@ impl BaseQuery {
         repo.cancel().await?;
 
         Ok(client.map(OAuth2Client))
-    }
-
-    /// Fetch a user by its ID.
-    async fn user(&self, ctx: &Context<'_>, id: ID) -> Result<Option<User>, async_graphql::Error> {
-        let id = NodeType::User.extract_ulid(&id)?;
-
-        let requester = ctx.requester();
-        if !requester.is_owner_or_admin(&UserId(id)) {
-            return Ok(None);
-        }
-
-        // We could avoid the database lookup if the requester is the user we're looking
-        // for but that would make the code more complex and we're not very
-        // concerned about performance yet
-        let state = ctx.state();
-        let mut repo = state.repository().await?;
-        let user = repo.user().lookup(id).await?;
-        repo.cancel().await?;
-
-        Ok(user.map(User))
-    }
-
-    /// Fetch a user by its username.
-    async fn user_by_username(
-        &self,
-        ctx: &Context<'_>,
-        username: String,
-    ) -> Result<Option<User>, async_graphql::Error> {
-        let requester = ctx.requester();
-        let state = ctx.state();
-        let mut repo = state.repository().await?;
-
-        let user = repo.user().find_by_username(&username).await?;
-        let Some(user) = user else {
-            // We don't want to leak the existence of a user
-            return Ok(None);
-        };
-
-        // Users can only see themselves, except for admins
-        if !requester.is_owner_or_admin(&user) {
-            return Ok(None);
-        }
-
-        Ok(Some(User(user)))
     }
 
     /// Fetch a browser session by its ID.
@@ -281,7 +244,10 @@ impl BaseQuery {
                 .await?
                 .map(|s| Node::BrowserSession(Box::new(s))),
 
-            NodeType::User => self.user(ctx, id).await?.map(|u| Node::User(Box::new(u))),
+            NodeType::User => UserQuery
+                .user(ctx, id)
+                .await?
+                .map(|u| Node::User(Box::new(u))),
         };
 
         Ok(ret)
