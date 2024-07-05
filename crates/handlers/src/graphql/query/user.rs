@@ -12,10 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use async_graphql::{Context, Object, ID};
+use async_graphql::{
+    connection::{query, Connection, Edge, OpaqueCursor},
+    Context, Enum, Object, ID,
+};
+use mas_storage::{user::UserFilter, Pagination};
 
 use crate::graphql::{
-    model::{NodeType, User},
+    model::{Cursor, NodeCursor, NodeType, PreloadedTotalCount, User},
     state::ContextExt as _,
     UserId,
 };
@@ -72,4 +76,100 @@ impl UserQuery {
 
         Ok(Some(User(user)))
     }
+
+    /// Get a list of users.
+    ///
+    /// This is only available to administrators.
+    async fn users(
+        &self,
+        ctx: &Context<'_>,
+
+        #[graphql(name = "state", desc = "List only users with the given state.")]
+        state_param: Option<UserState>,
+
+        #[graphql(
+            name = "canRequestAdmin",
+            desc = "List only users with the given 'canRequestAdmin' value"
+        )]
+        can_request_admin_param: Option<bool>,
+
+        #[graphql(desc = "Returns the elements in the list that come after the cursor.")]
+        after: Option<String>,
+        #[graphql(desc = "Returns the elements in the list that come before the cursor.")]
+        before: Option<String>,
+        #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
+        #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
+    ) -> Result<Connection<Cursor, User, PreloadedTotalCount>, async_graphql::Error> {
+        let requester = ctx.requester();
+        if !requester.is_admin() {
+            return Err(async_graphql::Error::new("Unauthorized"));
+        }
+
+        let state = ctx.state();
+        let mut repo = state.repository().await?;
+
+        query(
+            after,
+            before,
+            first,
+            last,
+            |after, before, first, last| async move {
+                let after_id = after
+                    .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::User))
+                    .transpose()?;
+                let before_id = before
+                    .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::User))
+                    .transpose()?;
+                let pagination = Pagination::try_new(before_id, after_id, first, last)?;
+
+                // Build the query filter
+                let filter = UserFilter::new();
+                let filter = match can_request_admin_param {
+                    Some(true) => filter.can_request_admin_only(),
+                    Some(false) => filter.cannot_request_admin_only(),
+                    None => filter,
+                };
+                let filter = match state_param {
+                    Some(UserState::Active) => filter.active_only(),
+                    Some(UserState::Locked) => filter.locked_only(),
+                    None => filter,
+                };
+
+                let page = repo.user().list(filter, pagination).await?;
+
+                // Preload the total count if requested
+                let count = if ctx.look_ahead().field("totalCount").exists() {
+                    Some(repo.user().count(filter).await?)
+                } else {
+                    None
+                };
+
+                repo.cancel().await?;
+
+                let mut connection = Connection::with_additional_fields(
+                    page.has_previous_page,
+                    page.has_next_page,
+                    PreloadedTotalCount(count),
+                );
+                connection.edges.extend(
+                    page.edges.into_iter().map(|p| {
+                        Edge::new(OpaqueCursor(NodeCursor(NodeType::User, p.id)), User(p))
+                    }),
+                );
+
+                Ok::<_, async_graphql::Error>(connection)
+            },
+        )
+        .await
+    }
+}
+
+/// The state of a user.
+#[derive(Enum, Copy, Clone, Eq, PartialEq)]
+enum UserState {
+    /// The user is active.
+    Active,
+
+    /// The user is locked.
+    Locked,
 }
