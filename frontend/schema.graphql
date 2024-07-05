@@ -999,6 +999,37 @@ type Query {
   """
   userByUsername(username: String!): User
   """
+  Get a list of users.
+
+  This is only available to administrators.
+  """
+  users(
+    """
+    List only users with the given state.
+    """
+    state: UserState
+    """
+    List only users with the given 'canRequestAdmin' value
+    """
+    canRequestAdmin: Boolean
+    """
+    Returns the elements in the list that come after the cursor.
+    """
+    after: String
+    """
+    Returns the elements in the list that come before the cursor.
+    """
+    before: String
+    """
+    Returns the first *n* elements from the list.
+    """
+    first: Int
+    """
+    Returns the last *n* elements from the list.
+    """
+    last: Int
+  ): UserConnection!
+  """
   Fetch an upstream OAuth 2.0 link by its ID.
   """
   upstreamOauth2Link(id: ID!): UpstreamOAuth2Link
@@ -1727,6 +1758,39 @@ type UserAgent {
   deviceType: DeviceType!
 }
 
+type UserConnection {
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  A list of edges.
+  """
+  edges: [UserEdge!]!
+  """
+  A list of nodes.
+  """
+  nodes: [User!]!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+
+"""
+An edge in a connection.
+"""
+type UserEdge {
+  """
+  The item at the end of the edge
+  """
+  node: User!
+  """
+  A cursor for use in pagination
+  """
+  cursor: String!
+}
+
 """
 A user email address
 """
@@ -1795,6 +1859,20 @@ enum UserEmailState {
   The email address has been confirmed.
   """
   CONFIRMED
+}
+
+"""
+The state of a user.
+"""
+enum UserState {
+  """
+  The user is active.
+  """
+  ACTIVE
+  """
+  The user is locked.
+  """
+  LOCKED
 }
 
 """

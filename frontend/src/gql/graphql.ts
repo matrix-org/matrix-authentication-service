@@ -733,6 +733,12 @@ export type Query = {
   userByUsername?: Maybe<User>;
   /** Fetch a user email by its ID. */
   userEmail?: Maybe<UserEmail>;
+  /**
+   * Get a list of users.
+   *
+   * This is only available to administrators.
+   */
+  users: UserConnection;
   /** Get the viewer */
   viewer: Viewer;
   /** Get the viewer's session */
@@ -813,6 +819,17 @@ export type QueryUserByUsernameArgs = {
 /** The query root of the GraphQL interface. */
 export type QueryUserEmailArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+/** The query root of the GraphQL interface. */
+export type QueryUsersArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  canRequestAdmin?: InputMaybe<Scalars['Boolean']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  state?: InputMaybe<UserState>;
 };
 
 /** The input for the `removeEmail` mutation */
@@ -1212,6 +1229,27 @@ export type UserAgent = {
   version?: Maybe<Scalars['String']['output']>;
 };
 
+export type UserConnection = {
+  __typename?: 'UserConnection';
+  /** A list of edges. */
+  edges: Array<UserEdge>;
+  /** A list of nodes. */
+  nodes: Array<User>;
+  /** Information to aid in pagination. */
+  pageInfo: PageInfo;
+  /** Identifies the total count of items in the connection. */
+  totalCount: Scalars['Int']['output'];
+};
+
+/** An edge in a connection. */
+export type UserEdge = {
+  __typename?: 'UserEdge';
+  /** A cursor for use in pagination */
+  cursor: Scalars['String']['output'];
+  /** The item at the end of the edge */
+  node: User;
+};
+
 /** A user email address */
 export type UserEmail = CreationEvent & Node & {
   __typename?: 'UserEmail';
@@ -1255,6 +1293,14 @@ export enum UserEmailState {
   Confirmed = 'CONFIRMED',
   /** The email address is pending confirmation. */
   Pending = 'PENDING'
+}
+
+/** The state of a user. */
+export enum UserState {
+  /** The user is active. */
+  Active = 'ACTIVE',
+  /** The user is locked. */
+  Locked = 'LOCKED'
 }
 
 /** The input for the `verifyEmail` mutation */
