@@ -967,14 +967,6 @@ type Query {
   """
   oauth2Client(id: ID!): Oauth2Client
   """
-  Fetch a user by its ID.
-  """
-  user(id: ID!): User
-  """
-  Fetch a user by its username.
-  """
-  userByUsername(username: String!): User
-  """
   Fetch a browser session by its ID.
   """
   browserSession(id: ID!): BrowserSession
@@ -998,6 +990,14 @@ type Query {
   Get the current site configuration
   """
   siteConfig: SiteConfig!
+  """
+  Fetch a user by its ID.
+  """
+  user(id: ID!): User
+  """
+  Fetch a user by its username.
+  """
+  userByUsername(username: String!): User
   """
   Fetch an upstream OAuth 2.0 link by its ID.
   """
