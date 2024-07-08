@@ -325,6 +325,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: matrix-org/done-action@v2
+      - uses: matrix-org/done-action@v3
         with:
           needs: ${{ toJSON(needs) }}
