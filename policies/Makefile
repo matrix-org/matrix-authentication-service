@@ -7,7 +7,6 @@ INPUTS := \
 	client_registration.rego \
 	register.rego \
 	authorization_grant.rego \
-	password.rego \
 	email.rego
 
 ifeq ($(DOCKER), 1)
@@ -27,7 +26,6 @@ policy.wasm: $(INPUTS)
 		-e "client_registration/violation" \
 		-e "register/violation" \
 		-e "authorization_grant/violation" \
-		-e "password/violation" \
 		-e "email/violation" \
 		$^
 	tar xzf bundle.tar.gz /policy.wasm

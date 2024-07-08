@@ -7,7 +7,6 @@
       "type": "object",
       "required": [
         "email",
-        "password",
         "registration_method",
         "username"
       ],
@@ -19,9 +18,6 @@
           ]
         },
         "username": {
-          "type": "string"
-        },
-        "password": {
           "type": "string"
         },
         "email": {

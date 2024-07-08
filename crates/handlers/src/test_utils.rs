@@ -84,7 +84,6 @@ pub(crate) async fn policy_factory(
         client_registration: "client_registration/violation".to_owned(),
         authorization_grant: "authorization_grant/violation".to_owned(),
         email: "email/violation".to_owned(),
-        password: "password/violation".to_owned(),
     };
 
     let policy_factory = PolicyFactory::load(file, data, entrypoints).await?;

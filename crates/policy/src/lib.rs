@@ -62,17 +62,15 @@ pub struct Entrypoints {
     pub client_registration: String,
     pub authorization_grant: String,
     pub email: String,
-    pub password: String,
 }
 
 impl Entrypoints {
-    fn all(&self) -> [&str; 5] {
+    fn all(&self) -> [&str; 4] {
         [
             self.register.as_str(),
             self.client_registration.as_str(),
             self.authorization_grant.as_str(),
             self.email.as_str(),
-            self.password.as_str(),
         ]
     }
 }
@@ -204,14 +202,9 @@ impl Policy {
     pub async fn evaluate_register(
         &mut self,
         username: &str,
-        password: &str,
         email: &str,
     ) -> Result<EvaluationResult, EvaluationError> {
-        let input = RegisterInput::Password {
-            username,
-            password,
-            email,
-        };
+        let input = RegisterInput::Password { username, email };
 
         let [res]: [EvaluationResult; 1] = self
             .instance
@@ -396,7 +389,6 @@ mod tests {
             client_registration: "client_registration/violation".to_owned(),
             authorization_grant: "authorization_grant/violation".to_owned(),
             email: "email/violation".to_owned(),
-            password: "password/violation".to_owned(),
         };
 
         let factory = PolicyFactory::load(file, data, entrypoints).await.unwrap();
@@ -404,19 +396,19 @@ mod tests {
         let mut policy = factory.instantiate().await.unwrap();
 
         let res = policy
-            .evaluate_register("hello", "hunter2", "hello@example.com")
+            .evaluate_register("hello", "hello@example.com")
             .await
             .unwrap();
         assert!(!res.valid());
 
         let res = policy
-            .evaluate_register("hello", "hunter2", "hello@foo.element.io")
+            .evaluate_register("hello", "hello@foo.element.io")
             .await
             .unwrap();
         assert!(res.valid());
 
         let res = policy
-            .evaluate_register("hello", "hunter2", "hello@staging.element.io")
+            .evaluate_register("hello", "hello@staging.element.io")
             .await
             .unwrap();
         assert!(!res.valid());

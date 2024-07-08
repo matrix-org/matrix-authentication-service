@@ -4,7 +4,6 @@
 package register
 
 import data.email as email_policy
-import data.password as password_policy
 
 import future.keywords.in
 
@@ -32,14 +31,6 @@ violation[{"msg": "unspecified registration method"}] {
 
 violation[{"msg": "unknown registration method"}] {
 	not input.registration_method in ["password", "upstream-oauth2"]
-}
-
-violation[object.union({"field": "password"}, v)] {
-	# Check if the registration method is password
-	input.registration_method == "password"
-
-	# Get the violation object from the password policy
-	some v in password_policy.violation
 }
 
 # Check that we supplied an email for password registration

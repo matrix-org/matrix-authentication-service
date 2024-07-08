@@ -112,7 +112,6 @@ pub async fn policy_factory_from_config(
         client_registration: config.client_registration_entrypoint.clone(),
         authorization_grant: config.authorization_grant_entrypoint.clone(),
         email: config.email_entrypoint.clone(),
-        password: config.password_entrypoint.clone(),
     };
 
     PolicyFactory::load(policy_file, config.data.clone(), entrypoints)
