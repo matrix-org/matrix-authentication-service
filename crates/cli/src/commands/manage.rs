@@ -34,7 +34,7 @@ use mas_storage::{
 use mas_storage_pg::{DatabaseError, PgRepository};
 use rand::{RngCore, SeedableRng};
 use sqlx::{types::Uuid, Acquire};
-use tracing::{info, info_span, warn};
+use tracing::{error, info, info_span, warn};
 
 use crate::util::{database_connection_from_config, password_manager_from_config};
 
@@ -69,7 +69,14 @@ enum Subcommand {
     VerifyEmail { username: String, email: String },
 
     /// Set a user password
-    SetPassword { username: String, password: String },
+    SetPassword {
+        username: String,
+        password: String,
+        /// Don't enforce that the password provided is above the minimum
+        /// configured complexity.
+        #[clap(long)]
+        ignore_complexity: bool,
+    },
 
     /// Issue a compatibility token
     IssueCompatibilityToken {
@@ -158,6 +165,10 @@ enum Subcommand {
         /// Set the user's display name
         #[arg(short, long, help_heading = USER_ATTRIBUTES_HEADING)]
         display_name: Option<String>,
+        /// Don't enforce that the password provided is above the minimum
+        /// configured complexity.
+        #[clap(long)]
+        ignore_password_complexity: bool,
     },
 }
 
@@ -170,7 +181,11 @@ impl Options {
         let mut rng = rand_chacha::ChaChaRng::from_entropy();
 
         match self.subcommand {
-            SC::SetPassword { username, password } => {
+            SC::SetPassword {
+                username,
+                password,
+                ignore_complexity,
+            } => {
                 let _span =
                     info_span!("cli.manage.set_password", user.username = %username).entered();
 
@@ -187,6 +202,11 @@ impl Options {
                     .find_by_username(&username)
                     .await?
                     .context("User not found")?;
+
+                if !ignore_complexity && !password_manager.is_password_complex_enough(&password)? {
+                    error!("That password is too weak.");
+                    return Ok(());
+                }
 
                 let password = password.into_bytes().into();
 
@@ -495,6 +515,7 @@ impl Options {
                 no_admin,
                 display_name,
                 yes,
+                ignore_password_complexity,
             } => {
                 let http_client_factory = HttpClientFactory::new();
                 let password_config = PasswordsConfig::extract(figment)?;
@@ -511,6 +532,15 @@ impl Options {
                 let mut conn = database_connection_from_config(&database_config).await?;
                 let txn = conn.begin().await?;
                 let mut repo = PgRepository::from_conn(txn);
+
+                if let Some(password) = &password {
+                    if !ignore_password_complexity
+                        && !password_manager.is_password_complex_enough(password)?
+                    {
+                        error!("That password is too weak.");
+                        return Ok(());
+                    }
+                }
 
                 // If the username is provided, check if it's available and normalize it.
                 let localpart = if let Some(username) = username {

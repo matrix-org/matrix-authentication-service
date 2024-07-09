@@ -226,6 +226,18 @@ pub(crate) async fn post(
             );
     }
 
+    if !password_manager.is_password_complex_enough(&form.new_password)? {
+        // TODO This error should be localised,
+        //      but actually this entire form should be pushed down into the
+        //      React frontend so user gets real-time feedback.
+        form_state = form_state.with_error_on_field(
+            RecoveryFinishFormField::NewPassword,
+            FieldError::Policy {
+                message: "Password is too weak".to_owned(),
+            },
+        );
+    }
+
     let res = policy.evaluate_password(&form.new_password).await?;
 
     if !res.valid() {

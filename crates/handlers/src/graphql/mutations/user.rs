@@ -480,6 +480,20 @@ impl UserMutations {
             });
         }
 
+        let password_manager = state.password_manager();
+
+        if !password_manager.is_enabled() {
+            return Ok(SetPasswordPayload {
+                status: SetPasswordStatus::PasswordChangesDisabled,
+            });
+        }
+
+        if !password_manager.is_password_complex_enough(&input.new_password)? {
+            return Ok(SetPasswordPayload {
+                status: SetPasswordStatus::InvalidNewPassword,
+            });
+        }
+
         let mut repo = state.repository().await?;
         let Some(user) = repo.user().lookup(user_id).await? else {
             return Ok(SetPasswordPayload {
@@ -487,13 +501,12 @@ impl UserMutations {
             });
         };
 
-        let password_manager = state.password_manager();
         if !requester.is_admin() {
             // If the user isn't an admin, we:
             // - check that password changes are enabled
             // - check that they know their current password
 
-            if !state.site_config().password_change_allowed || !password_manager.is_enabled() {
+            if !state.site_config().password_change_allowed {
                 return Ok(SetPasswordPayload {
                     status: SetPasswordStatus::PasswordChangesDisabled,
                 });
