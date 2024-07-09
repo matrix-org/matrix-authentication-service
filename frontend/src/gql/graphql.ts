@@ -1022,6 +1022,12 @@ export type SiteConfig = Node & {
   id: Scalars['ID']['output'];
   /** Imprint to show in the footer. */
   imprint?: Maybe<Scalars['String']['output']>;
+  /**
+   * Minimum password complexity, from 0 to 4, in terms of a zxcvbn score.
+   * The exact scorer (including dictionaries and other data tables)
+   * in use is <https://crates.io/crates/zxcvbn>.
+   */
+  minimumPasswordComplexity: Scalars['Int']['output'];
   /** Whether passwords are enabled and users can change their own passwords. */
   passwordChangeAllowed: Scalars['Boolean']['output'];
   /** Whether passwords are enabled for login. */

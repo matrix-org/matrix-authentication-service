@@ -173,6 +173,7 @@ pub fn site_config_from_config(
         account_recovery_allowed: password_config.enabled()
             && experimental_config.account_recovery_enabled,
         captcha,
+        minimum_password_complexity: password_config.minimum_complexity(),
     })
 }
 

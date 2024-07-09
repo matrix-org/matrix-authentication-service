@@ -2555,6 +2555,17 @@ export default {
             "args": []
           },
           {
+            "name": "minimumPasswordComplexity",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Any"
+              }
+            },
+            "args": []
+          },
+          {
             "name": "passwordChangeAllowed",
             "type": {
               "kind": "NON_NULL",
