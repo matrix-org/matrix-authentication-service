@@ -63,10 +63,10 @@ jobs:
       - name: Install zig
         uses: goto-bus-stop/setup-zig@v2
         with:
-          version: 0.11.0
+          version: 0.13.0
 
       - name: Install cargo-zigbuild
-        run: curl -L https://github.com/rust-cross/cargo-zigbuild/releases/download/v0.18.4/cargo-zigbuild-v0.18.4.x86_64-unknown-linux-musl.tar.gz | tar -z -x -C /usr/local/bin
+        run: curl -L https://github.com/rust-cross/cargo-zigbuild/releases/download/v0.19.0/cargo-zigbuild-v0.19.0.x86_64-unknown-linux-musl.tar.gz | tar -z -x -C /usr/local/bin
 
       - name: Download the macOS SDK
         run: curl -L "https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX11.3.sdk.tar.xz" | tar -J -x -C /opt

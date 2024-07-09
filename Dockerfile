@@ -9,14 +9,12 @@
 ARG DEBIAN_VERSION=12
 ARG DEBIAN_VERSION_NAME=bookworm
 ARG RUSTC_VERSION=1.80.0
-# XXX: Upgrade to 0.10.0 blocked by https://github.com/ziglang/zig/issues/10915#issuecomment-1354548110
-# XXX: Upgrade to 0.11.0 blocked by https://github.com/rust-cross/cargo-zigbuild/issues/162
-ARG ZIG_VERSION=0.9.1
-ARG NODEJS_VERSION=20.12.2
+ARG ZIG_VERSION=0.13.0
+ARG NODEJS_VERSION=20.15.0
 ARG OPA_VERSION=0.64.1
-ARG CARGO_AUDITABLE_VERSION=0.6.3
-ARG CARGO_CHEF_VERSION=0.1.66
-ARG CARGO_ZIGBUILD_VERSION=0.18.4
+ARG CARGO_AUDITABLE_VERSION=0.6.4
+ARG CARGO_CHEF_VERSION=0.1.67
+ARG CARGO_ZIGBUILD_VERSION=0.19.0
 
 ##########################################
 ## Build stage that builds the frontend ##
