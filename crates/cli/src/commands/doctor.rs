@@ -17,6 +17,8 @@
 //! The code is quite repetitive for now, but we can refactor later with a
 //! better check abstraction
 
+use std::process::ExitCode;
+
 use anyhow::Context;
 use clap::Parser;
 use figment::Figment;
@@ -35,7 +37,7 @@ pub(super) struct Options {}
 
 impl Options {
     #[allow(clippy::too_many_lines)]
-    pub async fn run(self, figment: &Figment) -> anyhow::Result<()> {
+    pub async fn run(self, figment: &Figment) -> anyhow::Result<ExitCode> {
         let _span = info_span!("cli.doctor").entered();
         info!("💡 Running diagnostics, make sure that both MAS and Synapse are running, and that MAS is using the same configuration files as this tool.");
 
@@ -423,6 +425,6 @@ Error details: {e}"#
             ),
         }
 
-        Ok(())
+        Ok(ExitCode::SUCCESS)
     }
 }

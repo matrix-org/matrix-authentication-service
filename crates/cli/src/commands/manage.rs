@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, process::ExitCode};
 
 use anyhow::Context;
 use clap::{ArgAction, CommandFactory, Parser};
@@ -174,7 +174,7 @@ enum Subcommand {
 
 impl Options {
     #[allow(clippy::too_many_lines)]
-    pub async fn run(self, figment: &Figment) -> anyhow::Result<()> {
+    pub async fn run(self, figment: &Figment) -> anyhow::Result<ExitCode> {
         use Subcommand as SC;
         let clock = SystemClock::default();
         // XXX: we should disallow SeedableRng::from_entropy
@@ -205,7 +205,7 @@ impl Options {
 
                 if !ignore_complexity && !password_manager.is_password_complex_enough(&password)? {
                     error!("That password is too weak.");
-                    return Ok(());
+                    return Ok(ExitCode::from(1));
                 }
 
                 let password = password.into_bytes().into();
@@ -219,7 +219,7 @@ impl Options {
                 info!(%user.id, %user.username, "Password changed");
                 repo.into_inner().commit().await?;
 
-                Ok(())
+                Ok(ExitCode::SUCCESS)
             }
 
             SC::VerifyEmail { username, email } => {
@@ -256,7 +256,7 @@ impl Options {
                 repo.into_inner().commit().await?;
                 info!(?email, "Email marked as verified");
 
-                Ok(())
+                Ok(ExitCode::SUCCESS)
             }
 
             SC::IssueCompatibilityToken {
@@ -304,7 +304,7 @@ impl Options {
                     "Compatibility token issued: {}", compat_access_token.token
                 );
 
-                Ok(())
+                Ok(ExitCode::SUCCESS)
             }
 
             SC::ProvisionAllUsers => {
@@ -329,7 +329,7 @@ impl Options {
 
                 repo.into_inner().commit().await?;
 
-                Ok(())
+                Ok(ExitCode::SUCCESS)
             }
 
             SC::KillSessions { username, dry_run } => {
@@ -447,7 +447,7 @@ impl Options {
                     txn.commit().await?;
                 }
 
-                Ok(())
+                Ok(ExitCode::SUCCESS)
             }
 
             SC::LockUser {
@@ -482,7 +482,7 @@ impl Options {
 
                 repo.into_inner().commit().await?;
 
-                Ok(())
+                Ok(ExitCode::SUCCESS)
             }
 
             SC::UnlockUser { username } => {
@@ -503,7 +503,7 @@ impl Options {
                 repo.user().unlock(user).await?;
                 repo.into_inner().commit().await?;
 
-                Ok(())
+                Ok(ExitCode::SUCCESS)
             }
 
             SC::RegisterUser {
@@ -538,7 +538,7 @@ impl Options {
                         && !password_manager.is_password_complex_enough(password)?
                     {
                         error!("That password is too weak.");
-                        return Ok(());
+                        return Ok(ExitCode::from(1));
                     }
                 }
 
@@ -752,7 +752,7 @@ impl Options {
                     warn!("Aborted");
                 }
 
-                Ok(())
+                Ok(ExitCode::SUCCESS)
             }
         }
     }

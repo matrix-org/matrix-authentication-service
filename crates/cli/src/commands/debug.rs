@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::process::ExitCode;
+
 use clap::Parser;
 use figment::Figment;
 use http_body_util::BodyExt;
@@ -67,7 +69,7 @@ fn print_headers(parts: &hyper::http::response::Parts) {
 
 impl Options {
     #[tracing::instrument(skip_all)]
-    pub async fn run(self, figment: &Figment) -> anyhow::Result<()> {
+    pub async fn run(self, figment: &Figment) -> anyhow::Result<ExitCode> {
         use Subcommand as SC;
         let http_client_factory = HttpClientFactory::new();
         match self.subcommand {
@@ -130,6 +132,6 @@ impl Options {
             }
         }
 
-        Ok(())
+        Ok(ExitCode::SUCCESS)
     }
 }

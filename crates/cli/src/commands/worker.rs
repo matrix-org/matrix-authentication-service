@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::process::ExitCode;
+
 use clap::Parser;
 use figment::Figment;
 use mas_config::{AppConfig, ConfigurationSection};
@@ -32,7 +34,7 @@ use crate::util::{
 pub(super) struct Options {}
 
 impl Options {
-    pub async fn run(self, figment: &Figment) -> anyhow::Result<()> {
+    pub async fn run(self, figment: &Figment) -> anyhow::Result<ExitCode> {
         let span = info_span!("cli.worker.init").entered();
         let config = AppConfig::extract(figment)?;
 
@@ -82,6 +84,6 @@ impl Options {
         span.exit();
 
         monitor.run().await?;
-        Ok(())
+        Ok(ExitCode::SUCCESS)
     }
 }

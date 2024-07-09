@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::process::ExitCode;
+
 use anyhow::Context;
 use clap::Parser;
 use figment::Figment;
@@ -34,7 +36,7 @@ enum Subcommand {
 }
 
 impl Options {
-    pub async fn run(self, figment: &Figment) -> anyhow::Result<()> {
+    pub async fn run(self, figment: &Figment) -> anyhow::Result<ExitCode> {
         let _span = info_span!("cli.database.migrate").entered();
         let config = DatabaseConfig::extract(figment)?;
         let mut conn = database_connection_from_config(&config).await?;
@@ -46,6 +48,6 @@ impl Options {
             .await
             .context("could not run migrations")?;
 
-        Ok(())
+        Ok(ExitCode::SUCCESS)
     }
 }

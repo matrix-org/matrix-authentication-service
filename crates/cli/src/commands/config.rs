@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::process::ExitCode;
+
 use anyhow::Context;
 use camino::Utf8PathBuf;
 use clap::Parser;
@@ -68,7 +70,7 @@ enum Subcommand {
 }
 
 impl Options {
-    pub async fn run(self, figment: &Figment) -> anyhow::Result<()> {
+    pub async fn run(self, figment: &Figment) -> anyhow::Result<ExitCode> {
         use Subcommand as SC;
         match self.subcommand {
             SC::Dump { output } => {
@@ -139,6 +141,6 @@ impl Options {
             }
         }
 
-        Ok(())
+        Ok(ExitCode::SUCCESS)
     }
 }
