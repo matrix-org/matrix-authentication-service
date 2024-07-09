@@ -178,7 +178,10 @@ impl TestState {
         let metadata_cache = MetadataCache::new();
 
         let password_manager = if site_config.password_login_enabled {
-            PasswordManager::new([(1, Hasher::argon2id(None))])?
+            PasswordManager::new(
+                site_config.minimum_password_complexity,
+                [(1, Hasher::argon2id(None))],
+            )?
         } else {
             PasswordManager::disabled()
         };

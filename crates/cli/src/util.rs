@@ -53,7 +53,7 @@ pub async fn password_manager_from_config(
             (version, hasher)
         });
 
-    PasswordManager::new(schemes)
+    PasswordManager::new(config.minimum_complexity(), schemes)
 }
 
 pub fn mailer_from_config(

@@ -113,6 +113,13 @@ impl PasswordsConfig {
         self.enabled
     }
 
+    /// Minimum complexity of passwords, from 0 to 4, according to the zxcvbn
+    /// scorer.
+    #[must_use]
+    pub fn minimum_complexity(&self) -> u8 {
+        self.minimum_complexity
+    }
+
     /// Load the password hashing schemes defined by the config
     ///
     /// # Errors
