@@ -1388,6 +1388,12 @@ type SiteConfig implements Node {
   """
   passwordChangeAllowed: Boolean!
   """
+  Minimum password complexity, from 0 to 4, in terms of a zxcvbn score.
+  The exact scorer (including dictionaries and other data tables)
+  in use is <https://crates.io/crates/zxcvbn>.
+  """
+  minimumPasswordComplexity: Int!
+  """
   The ID of the site configuration.
   """
   id: ID!

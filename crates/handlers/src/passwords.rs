@@ -21,6 +21,7 @@ use pbkdf2::Pbkdf2;
 use rand::{CryptoRng, Rng, RngCore, SeedableRng};
 use thiserror::Error;
 use zeroize::Zeroizing;
+use zxcvbn::zxcvbn;
 
 pub type SchemeVersion = u16;
 
@@ -34,6 +35,9 @@ pub struct PasswordManager {
 }
 
 struct InnerPasswordManager {
+    /// Minimum complexity score of new passwords (between 0 and 4) as evaluated
+    /// by zxcvbn.
+    minimum_complexity: u8,
     current_hasher: Hasher,
     current_version: SchemeVersion,
 
@@ -42,7 +46,8 @@ struct InnerPasswordManager {
 }
 
 impl PasswordManager {
-    /// Creates a new [`PasswordManager`] from an iterator. The first item in
+    /// Creates a new [`PasswordManager`] from an iterator and a minimum allowed
+    /// complexity score between 0 and 4. The first item in
     /// the iterator will be the default hashing scheme.
     ///
     /// # Example
@@ -50,7 +55,7 @@ impl PasswordManager {
     /// ```rust
     /// pub use mas_handlers::passwords::{PasswordManager, Hasher};
     ///
-    /// PasswordManager::new([
+    /// PasswordManager::new(3, [
     ///     (3, Hasher::argon2id(Some(b"a-secret-pepper".to_vec()))),
     ///     (2, Hasher::argon2id(None)),
     ///     (1, Hasher::bcrypt(Some(10), None)),
@@ -61,6 +66,7 @@ impl PasswordManager {
     ///
     /// Returns an error if the iterator was empty
     pub fn new<I: IntoIterator<Item = (SchemeVersion, Hasher)>>(
+        minimum_complexity: u8,
         iter: I,
     ) -> Result<Self, anyhow::Error> {
         let mut iter = iter.into_iter();
@@ -75,6 +81,7 @@ impl PasswordManager {
 
         Ok(Self {
             inner: Some(Arc::new(InnerPasswordManager {
+                minimum_complexity,
                 current_hasher,
                 current_version,
                 other_hashers,
@@ -101,6 +108,18 @@ impl PasswordManager {
     /// Returns an error if the password manager is disabled
     fn get_inner(&self) -> Result<Arc<InnerPasswordManager>, PasswordManagerDisabledError> {
         self.inner.clone().ok_or(PasswordManagerDisabledError)
+    }
+
+    /// Returns true if and only if the given password satisfies the minimum
+    /// complexity requirements.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the password manager is disabled
+    pub fn is_password_complex_enough(&self, password: &str) -> Result<bool, anyhow::Error> {
+        let inner = self.get_inner()?;
+        let score = zxcvbn(password, &[]);
+        Ok(u8::from(score.score()) >= inner.minimum_complexity)
     }
 
     /// Hash a password with the default hashing scheme.
@@ -461,13 +480,16 @@ mod tests {
         let password = Zeroizing::new(b"hunter2".to_vec());
         let wrong_password = Zeroizing::new(b"wrong-password".to_vec());
 
-        let manager = PasswordManager::new([
-            // Start with one hashing scheme: the one used by synapse, bcrypt + pepper
-            (
-                1,
-                Hasher::bcrypt(Some(10), Some(b"a-secret-pepper".to_vec())),
-            ),
-        ])
+        let manager = PasswordManager::new(
+            0,
+            [
+                // Start with one hashing scheme: the one used by synapse, bcrypt + pepper
+                (
+                    1,
+                    Hasher::bcrypt(Some(10), Some(b"a-secret-pepper".to_vec())),
+                ),
+            ],
+        )
         .unwrap();
 
         let (version, hash) = manager
@@ -510,13 +532,16 @@ mod tests {
             .await
             .expect_err("Verification should have failed");
 
-        let manager = PasswordManager::new([
-            (2, Hasher::argon2id(None)),
-            (
-                1,
-                Hasher::bcrypt(Some(10), Some(b"a-secret-pepper".to_vec())),
-            ),
-        ])
+        let manager = PasswordManager::new(
+            0,
+            [
+                (2, Hasher::argon2id(None)),
+                (
+                    1,
+                    Hasher::bcrypt(Some(10), Some(b"a-secret-pepper".to_vec())),
+                ),
+            ],
+        )
         .unwrap();
 
         // Verifying still works
@@ -563,14 +588,17 @@ mod tests {
             .await
             .expect_err("Verification should have failed");
 
-        let manager = PasswordManager::new([
-            (3, Hasher::argon2id(Some(b"a-secret-pepper".to_vec()))),
-            (2, Hasher::argon2id(None)),
-            (
-                1,
-                Hasher::bcrypt(Some(10), Some(b"a-secret-pepper".to_vec())),
-            ),
-        ])
+        let manager = PasswordManager::new(
+            0,
+            [
+                (3, Hasher::argon2id(Some(b"a-secret-pepper".to_vec()))),
+                (2, Hasher::argon2id(None)),
+                (
+                    1,
+                    Hasher::bcrypt(Some(10), Some(b"a-secret-pepper".to_vec())),
+                ),
+            ],
+        )
         .unwrap();
 
         // Verifying still works

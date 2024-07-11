@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, process::ExitCode};
 
 use anyhow::Context;
 use clap::{ArgAction, CommandFactory, Parser};
@@ -34,7 +34,7 @@ use mas_storage::{
 use mas_storage_pg::{DatabaseError, PgRepository};
 use rand::{RngCore, SeedableRng};
 use sqlx::{types::Uuid, Acquire};
-use tracing::{info, info_span, warn};
+use tracing::{error, info, info_span, warn};
 
 use crate::util::{database_connection_from_config, password_manager_from_config};
 
@@ -69,7 +69,14 @@ enum Subcommand {
     VerifyEmail { username: String, email: String },
 
     /// Set a user password
-    SetPassword { username: String, password: String },
+    SetPassword {
+        username: String,
+        password: String,
+        /// Don't enforce that the password provided is above the minimum
+        /// configured complexity.
+        #[clap(long)]
+        ignore_complexity: bool,
+    },
 
     /// Issue a compatibility token
     IssueCompatibilityToken {
@@ -158,19 +165,27 @@ enum Subcommand {
         /// Set the user's display name
         #[arg(short, long, help_heading = USER_ATTRIBUTES_HEADING)]
         display_name: Option<String>,
+        /// Don't enforce that the password provided is above the minimum
+        /// configured complexity.
+        #[clap(long)]
+        ignore_password_complexity: bool,
     },
 }
 
 impl Options {
     #[allow(clippy::too_many_lines)]
-    pub async fn run(self, figment: &Figment) -> anyhow::Result<()> {
+    pub async fn run(self, figment: &Figment) -> anyhow::Result<ExitCode> {
         use Subcommand as SC;
         let clock = SystemClock::default();
         // XXX: we should disallow SeedableRng::from_entropy
         let mut rng = rand_chacha::ChaChaRng::from_entropy();
 
         match self.subcommand {
-            SC::SetPassword { username, password } => {
+            SC::SetPassword {
+                username,
+                password,
+                ignore_complexity,
+            } => {
                 let _span =
                     info_span!("cli.manage.set_password", user.username = %username).entered();
 
@@ -188,6 +203,11 @@ impl Options {
                     .await?
                     .context("User not found")?;
 
+                if !ignore_complexity && !password_manager.is_password_complex_enough(&password)? {
+                    error!("That password is too weak.");
+                    return Ok(ExitCode::from(1));
+                }
+
                 let password = password.into_bytes().into();
 
                 let (version, hashed_password) = password_manager.hash(&mut rng, password).await?;
@@ -199,7 +219,7 @@ impl Options {
                 info!(%user.id, %user.username, "Password changed");
                 repo.into_inner().commit().await?;
 
-                Ok(())
+                Ok(ExitCode::SUCCESS)
             }
 
             SC::VerifyEmail { username, email } => {
@@ -236,7 +256,7 @@ impl Options {
                 repo.into_inner().commit().await?;
                 info!(?email, "Email marked as verified");
 
-                Ok(())
+                Ok(ExitCode::SUCCESS)
             }
 
             SC::IssueCompatibilityToken {
@@ -284,7 +304,7 @@ impl Options {
                     "Compatibility token issued: {}", compat_access_token.token
                 );
 
-                Ok(())
+                Ok(ExitCode::SUCCESS)
             }
 
             SC::ProvisionAllUsers => {
@@ -309,7 +329,7 @@ impl Options {
 
                 repo.into_inner().commit().await?;
 
-                Ok(())
+                Ok(ExitCode::SUCCESS)
             }
 
             SC::KillSessions { username, dry_run } => {
@@ -427,7 +447,7 @@ impl Options {
                     txn.commit().await?;
                 }
 
-                Ok(())
+                Ok(ExitCode::SUCCESS)
             }
 
             SC::LockUser {
@@ -462,7 +482,7 @@ impl Options {
 
                 repo.into_inner().commit().await?;
 
-                Ok(())
+                Ok(ExitCode::SUCCESS)
             }
 
             SC::UnlockUser { username } => {
@@ -483,7 +503,7 @@ impl Options {
                 repo.user().unlock(user).await?;
                 repo.into_inner().commit().await?;
 
-                Ok(())
+                Ok(ExitCode::SUCCESS)
             }
 
             SC::RegisterUser {
@@ -495,6 +515,7 @@ impl Options {
                 no_admin,
                 display_name,
                 yes,
+                ignore_password_complexity,
             } => {
                 let http_client_factory = HttpClientFactory::new();
                 let password_config = PasswordsConfig::extract(figment)?;
@@ -511,6 +532,15 @@ impl Options {
                 let mut conn = database_connection_from_config(&database_config).await?;
                 let txn = conn.begin().await?;
                 let mut repo = PgRepository::from_conn(txn);
+
+                if let Some(password) = &password {
+                    if !ignore_password_complexity
+                        && !password_manager.is_password_complex_enough(password)?
+                    {
+                        error!("That password is too weak.");
+                        return Ok(ExitCode::from(1));
+                    }
+                }
 
                 // If the username is provided, check if it's available and normalize it.
                 let localpart = if let Some(username) = username {
@@ -722,7 +752,7 @@ impl Options {
                     warn!("Aborted");
                 }
 
-                Ok(())
+                Ok(ExitCode::SUCCESS)
             }
         }
     }

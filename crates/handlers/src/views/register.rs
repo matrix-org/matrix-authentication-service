@@ -198,6 +198,16 @@ pub(crate) async fn post(
             );
         }
 
+        if !password_manager.is_password_complex_enough(&form.password)? {
+            // TODO localise this error
+            state.add_error_on_field(
+                RegisterFormField::Password,
+                FieldError::Policy {
+                    message: "Password is too weak".to_owned(),
+                },
+            );
+        }
+
         // If the site has terms of service, the user must accept them
         if site_config.tos_uri.is_some() && form.accept_terms != "on" {
             state.add_error_on_field(RegisterFormField::AcceptTerms, FieldError::Required);
@@ -402,8 +412,8 @@ mod tests {
                 "csrf": csrf_token,
                 "username": "john",
                 "email": "john@example.com",
-                "password": "hunter2",
-                "password_confirm": "hunter2",
+                "password": "correcthorsebatterystaple",
+                "password_confirm": "correcthorsebatterystaple",
                 "accept_terms": "on",
             }),
         );

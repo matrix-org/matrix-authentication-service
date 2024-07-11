@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::process::ExitCode;
+
 use camino::Utf8PathBuf;
 use clap::Parser;
 use figment::{
@@ -67,7 +69,7 @@ pub struct Options {
 }
 
 impl Options {
-    pub async fn run(self, figment: &Figment) -> anyhow::Result<()> {
+    pub async fn run(self, figment: &Figment) -> anyhow::Result<ExitCode> {
         use Subcommand as S;
         // We Box the futures for each subcommand so that we avoid this function being
         // big on the stack all the time
