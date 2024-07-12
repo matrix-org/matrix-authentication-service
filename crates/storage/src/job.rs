@@ -394,6 +394,31 @@ mod jobs {
         const NAME: &'static str = "delete-device";
     }
 
+    /// A job which syncs the list of devices of a user with the homeserver
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct SyncDevicesJob {
+        user_id: Ulid,
+    }
+
+    impl SyncDevicesJob {
+        /// Create a new job to sync the list of devices of a user with the
+        /// homeserver
+        #[must_use]
+        pub fn new(user: &User) -> Self {
+            Self { user_id: user.id }
+        }
+
+        /// The ID of the user to sync the devices for
+        #[must_use]
+        pub fn user_id(&self) -> Ulid {
+            self.user_id
+        }
+    }
+
+    impl Job for SyncDevicesJob {
+        const NAME: &'static str = "sync-devices";
+    }
+
     /// A job to deactivate and lock a user
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct DeactivateUserJob {
@@ -468,5 +493,5 @@ mod jobs {
 
 pub use self::jobs::{
     DeactivateUserJob, DeleteDeviceJob, ProvisionDeviceJob, ProvisionUserJob,
-    SendAccountRecoveryEmailsJob, VerifyEmailJob,
+    SendAccountRecoveryEmailsJob, SyncDevicesJob, VerifyEmailJob,
 };

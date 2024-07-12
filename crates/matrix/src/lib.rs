@@ -14,7 +14,7 @@
 
 mod mock;
 
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 
 pub use self::mock::HomeserverConnection as MockHomeserverConnection;
 
@@ -262,6 +262,19 @@ pub trait HomeserverConnection: Send + Sync {
     /// not be deleted.
     async fn delete_device(&self, mxid: &str, device_id: &str) -> Result<(), Self::Error>;
 
+    /// Sync the list of devices of a user with the homeserver.
+    ///
+    /// # Parameters
+    ///
+    /// * `mxid` - The Matrix ID of the user to sync the devices for.
+    /// * `devices` - The list of devices to sync.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the homeserver is unreachable or the devices could
+    /// not be synced.
+    async fn sync_devices(&self, mxid: &str, devices: HashSet<String>) -> Result<(), Self::Error>;
+
     /// Delete a user on the homeserver.
     ///
     /// # Parameters
@@ -341,6 +354,10 @@ impl<T: HomeserverConnection + Send + Sync + ?Sized> HomeserverConnection for &T
         (**self).delete_device(mxid, device_id).await
     }
 
+    async fn sync_devices(&self, mxid: &str, devices: HashSet<String>) -> Result<(), Self::Error> {
+        (**self).sync_devices(mxid, devices).await
+    }
+
     async fn delete_user(&self, mxid: &str, erase: bool) -> Result<(), Self::Error> {
         (**self).delete_user(mxid, erase).await
     }
@@ -385,6 +402,10 @@ impl<T: HomeserverConnection + ?Sized> HomeserverConnection for Arc<T> {
 
     async fn delete_device(&self, mxid: &str, device_id: &str) -> Result<(), Self::Error> {
         (**self).delete_device(mxid, device_id).await
+    }
+
+    async fn sync_devices(&self, mxid: &str, devices: HashSet<String>) -> Result<(), Self::Error> {
+        (**self).sync_devices(mxid, devices).await
     }
 
     async fn delete_user(&self, mxid: &str, erase: bool) -> Result<(), Self::Error> {

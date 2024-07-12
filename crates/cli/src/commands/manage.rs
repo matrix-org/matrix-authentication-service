@@ -27,7 +27,7 @@ use mas_matrix::HomeserverConnection;
 use mas_matrix_synapse::SynapseConnection;
 use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatSessionRepository},
-    job::{DeactivateUserJob, DeleteDeviceJob, JobRepositoryExt, ProvisionUserJob},
+    job::{DeactivateUserJob, JobRepositoryExt, ProvisionUserJob, SyncDevicesJob},
     user::{UserEmailRepository, UserPasswordRepository, UserRepository},
     Clock, RepositoryAccess, SystemClock,
 };
@@ -368,10 +368,6 @@ impl Options {
                     if dry_run {
                         continue;
                     }
-
-                    let job = DeleteDeviceJob::new(&user, &compat_session.device);
-                    repo.job().schedule_job(job).await?;
-                    repo.compat_session().finish(&clock, compat_session).await?;
                 }
 
                 let oauth2_sessions_ids: Vec<Uuid> = sqlx::query_scalar(
@@ -398,16 +394,6 @@ impl Options {
                     if dry_run {
                         continue;
                     }
-
-                    for scope in &*oauth2_session.scope {
-                        if let Some(device) = Device::from_scope_token(scope) {
-                            // Schedule a job to delete the device.
-                            repo.job()
-                                .schedule_job(DeleteDeviceJob::new(&user, &device))
-                                .await?;
-                        }
-                    }
-
                     repo.oauth2_session().finish(&clock, oauth2_session).await?;
                 }
 
@@ -438,6 +424,10 @@ impl Options {
                         .finish(&clock, browser_session)
                         .await?;
                 }
+
+                // Schedule a job to sync the devices of the user with the homeserver
+                warn!("Scheduling job to sync devices for the user");
+                repo.job().schedule_job(SyncDevicesJob::new(&user)).await?;
 
                 let txn = repo.into_inner();
                 if dry_run {

@@ -19,11 +19,11 @@ use mas_axum_utils::{
     http_client_factory::HttpClientFactory,
     sentry::SentryEventID,
 };
-use mas_data_model::{Device, TokenType};
+use mas_data_model::TokenType;
 use mas_iana::oauth::OAuthTokenTypeHint;
 use mas_keystore::Encrypter;
 use mas_storage::{
-    job::{DeleteDeviceJob, JobRepositoryExt},
+    job::{JobRepositoryExt, SyncDevicesJob},
     BoxClock, BoxRepository, RepositoryAccess,
 };
 use oauth2_types::{
@@ -217,20 +217,8 @@ pub(crate) async fn post(
             .await?
             .ok_or(RouteError::UnknownToken)?;
 
-        // Scan the scopes of the session to find if there is any device that should be
-        // deleted from the Matrix server.
-        // TODO: this should be moved in a higher level "end oauth session" method.
-        // XXX: this might not be the right semantic, but it's the best we
-        // can do for now, since we're not explicitly storing devices for OAuth2
-        // sessions.
-        for scope in &*session.scope {
-            if let Some(device) = Device::from_scope_token(scope) {
-                // Schedule a job to delete the device.
-                repo.job()
-                    .schedule_job(DeleteDeviceJob::new(&user, &device))
-                    .await?;
-            }
-        }
+        // Schedule a job to sync the devices of the user with the homeserver
+        repo.job().schedule_job(SyncDevicesJob::new(&user)).await?;
     }
 
     // Now that we checked everything, we can end the session.

@@ -128,6 +128,13 @@ impl crate::HomeserverConnection for HomeserverConnection {
         Ok(())
     }
 
+    async fn sync_devices(&self, mxid: &str, devices: HashSet<String>) -> Result<(), Self::Error> {
+        let mut users = self.users.write().await;
+        let user = users.get_mut(mxid).context("User not found")?;
+        user.devices = devices;
+        Ok(())
+    }
+
     async fn delete_user(&self, mxid: &str, erase: bool) -> Result<(), Self::Error> {
         let mut users = self.users.write().await;
         let user = users.get_mut(mxid).context("User not found")?;
