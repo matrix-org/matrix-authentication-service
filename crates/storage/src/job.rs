@@ -455,6 +455,34 @@ mod jobs {
         const NAME: &'static str = "deactivate-user";
     }
 
+    /// A job to reactivate a user
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct ReactivateUserJob {
+        user_id: Ulid,
+    }
+
+    impl ReactivateUserJob {
+        /// Create a new job to reactivate a user
+        ///
+        /// # Parameters
+        ///
+        /// * `user` - The user to reactivate
+        #[must_use]
+        pub fn new(user: &User) -> Self {
+            Self { user_id: user.id }
+        }
+
+        /// The ID of the user to reactivate
+        #[must_use]
+        pub fn user_id(&self) -> Ulid {
+            self.user_id
+        }
+    }
+
+    impl Job for ReactivateUserJob {
+        const NAME: &'static str = "reactivate-user";
+    }
+
     /// Send account recovery emails
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct SendAccountRecoveryEmailsJob {
@@ -489,6 +517,6 @@ mod jobs {
 }
 
 pub use self::jobs::{
-    DeactivateUserJob, DeleteDeviceJob, ProvisionDeviceJob, ProvisionUserJob,
+    DeactivateUserJob, DeleteDeviceJob, ProvisionDeviceJob, ProvisionUserJob, ReactivateUserJob,
     SendAccountRecoveryEmailsJob, SyncDevicesJob, VerifyEmailJob,
 };

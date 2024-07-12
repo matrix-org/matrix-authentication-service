@@ -1,4 +1,4 @@
-// Copyright 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2023, 2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -131,6 +131,9 @@ struct SynapseUser {
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     external_ids: Option<Vec<ExternalID>>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    deactivated: Option<bool>,
 }
 
 #[derive(Deserialize)]
@@ -537,6 +540,50 @@ impl HomeserverConnection for SynapseConnection {
         }
 
         Ok(())
+    }
+
+    #[tracing::instrument(
+        name = "homeserver.reactivate_user",
+        skip_all,
+        fields(
+            matrix.homeserver = self.homeserver,
+            matrix.mxid = mxid,
+        ),
+        err(Debug),
+    )]
+    async fn reactivate_user(&self, mxid: &str) -> Result<(), anyhow::Error> {
+        let body = SynapseUser {
+            deactivated: Some(false),
+            ..SynapseUser::default()
+        };
+
+        let mut client = self
+            .http_client_factory
+            .client("homeserver.reactivate_user")
+            .request_bytes_to_body()
+            .json_request()
+            .response_body_to_bytes()
+            .catch_http_errors(catch_homeserver_error);
+
+        let mxid = urlencoding::encode(mxid);
+        let request = self
+            .put(&format!("_synapse/admin/v2/users/{mxid}"))
+            .body(body)?;
+
+        let response = client
+            .ready()
+            .await?
+            .call(request)
+            .await
+            .context("Failed to provision user in Synapse")?;
+
+        match response.status() {
+            StatusCode::CREATED | StatusCode::OK => Ok(()),
+            code => Err(anyhow::anyhow!(
+                "Failed to provision user in Synapse: {}",
+                code
+            )),
+        }
     }
 
     #[tracing::instrument(
