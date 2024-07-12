@@ -735,6 +735,10 @@ type Mutation {
   """
   lockUser(input: LockUserInput!): LockUserPayload!
   """
+  Unlock a user. This is only available to administrators.
+  """
+  unlockUser(input: UnlockUserInput!): UnlockUserPayload!
+  """
   Set whether a user can request admin. This is only available to
   administrators.
   """
@@ -1397,6 +1401,44 @@ type SiteConfig implements Node {
   The ID of the site configuration.
   """
   id: ID!
+}
+
+"""
+The input for the `unlockUser` mutation.
+"""
+input UnlockUserInput {
+  """
+  The ID of the user to unlock
+  """
+  userId: ID!
+}
+
+"""
+The payload for the `unlockUser` mutation.
+"""
+type UnlockUserPayload {
+  """
+  Status of the operation
+  """
+  status: UnlockUserStatus!
+  """
+  The user that was unlocked.
+  """
+  user: User
+}
+
+"""
+The status of the `unlockUser` mutation.
+"""
+enum UnlockUserStatus {
+  """
+  The user was unlocked.
+  """
+  UNLOCKED
+  """
+  The user was not found.
+  """
+  NOT_FOUND
 }
 
 type UpstreamOAuth2Link implements Node & CreationEvent {

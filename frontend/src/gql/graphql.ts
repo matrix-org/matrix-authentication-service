@@ -497,6 +497,8 @@ export type Mutation = {
   setPassword: SetPasswordPayload;
   /** Set an email address as primary */
   setPrimaryEmail: SetPrimaryEmailPayload;
+  /** Unlock a user. This is only available to administrators. */
+  unlockUser: UnlockUserPayload;
   /** Submit a verification code for an email address */
   verifyEmail: VerifyEmailPayload;
 };
@@ -583,6 +585,12 @@ export type MutationSetPasswordArgs = {
 /** The mutations root of the GraphQL interface. */
 export type MutationSetPrimaryEmailArgs = {
   input: SetPrimaryEmailInput;
+};
+
+
+/** The mutations root of the GraphQL interface. */
+export type MutationUnlockUserArgs = {
+  input: UnlockUserInput;
 };
 
 
@@ -1039,6 +1047,29 @@ export type SiteConfig = Node & {
   /** The URL to the terms of service. */
   tosUri?: Maybe<Scalars['Url']['output']>;
 };
+
+/** The input for the `unlockUser` mutation. */
+export type UnlockUserInput = {
+  /** The ID of the user to unlock */
+  userId: Scalars['ID']['input'];
+};
+
+/** The payload for the `unlockUser` mutation. */
+export type UnlockUserPayload = {
+  __typename?: 'UnlockUserPayload';
+  /** Status of the operation */
+  status: UnlockUserStatus;
+  /** The user that was unlocked. */
+  user?: Maybe<User>;
+};
+
+/** The status of the `unlockUser` mutation. */
+export enum UnlockUserStatus {
+  /** The user was not found. */
+  NotFound = 'NOT_FOUND',
+  /** The user was unlocked. */
+  Unlocked = 'UNLOCKED'
+}
 
 export type UpstreamOAuth2Link = CreationEvent & Node & {
   __typename?: 'UpstreamOAuth2Link';

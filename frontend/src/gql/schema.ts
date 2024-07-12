@@ -1469,6 +1469,29 @@ export default {
             ]
           },
           {
+            "name": "unlockUser",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "UnlockUserPayload",
+                "ofType": null
+              }
+            },
+            "args": [
+              {
+                "name": "input",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Any"
+                  }
+                }
+              }
+            ]
+          },
+          {
             "name": "verifyEmail",
             "type": {
               "kind": "NON_NULL",
@@ -2621,6 +2644,33 @@ export default {
             "name": "Node"
           }
         ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "UnlockUserPayload",
+        "fields": [
+          {
+            "name": "status",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Any"
+              }
+            },
+            "args": []
+          },
+          {
+            "name": "user",
+            "type": {
+              "kind": "OBJECT",
+              "name": "User",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
       },
       {
         "kind": "OBJECT",

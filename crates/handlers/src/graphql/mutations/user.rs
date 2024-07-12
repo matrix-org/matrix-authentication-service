@@ -141,6 +141,52 @@ impl LockUserPayload {
     }
 }
 
+/// The input for the `unlockUser` mutation.
+#[derive(InputObject)]
+struct UnlockUserInput {
+    /// The ID of the user to unlock
+    user_id: ID,
+}
+
+/// The status of the `unlockUser` mutation.
+#[derive(Enum, Copy, Clone, Eq, PartialEq)]
+enum UnlockUserStatus {
+    /// The user was unlocked.
+    Unlocked,
+
+    /// The user was not found.
+    NotFound,
+}
+
+/// The payload for the `unlockUser` mutation.
+#[derive(Description)]
+enum UnlockUserPayload {
+    /// The user was unlocked.
+    Unlocked(mas_data_model::User),
+
+    /// The user was not found.
+    NotFound,
+}
+
+#[Object(use_type_description)]
+impl UnlockUserPayload {
+    /// Status of the operation
+    async fn status(&self) -> UnlockUserStatus {
+        match self {
+            Self::Unlocked(_) => UnlockUserStatus::Unlocked,
+            Self::NotFound => UnlockUserStatus::NotFound,
+        }
+    }
+
+    /// The user that was unlocked.
+    async fn user(&self) -> Option<User> {
+        match self {
+            Self::Unlocked(user) => Some(User(user.clone())),
+            Self::NotFound => None,
+        }
+    }
+}
+
 /// The input for the `setCanRequestAdmin` mutation.
 #[derive(InputObject)]
 struct SetCanRequestAdminInput {
@@ -380,6 +426,40 @@ impl UserMutations {
         repo.save().await?;
 
         Ok(LockUserPayload::Locked(user))
+    }
+
+    /// Unlock a user. This is only available to administrators.
+    async fn unlock_user(
+        &self,
+        ctx: &Context<'_>,
+        input: UnlockUserInput,
+    ) -> Result<UnlockUserPayload, async_graphql::Error> {
+        let state = ctx.state();
+        let requester = ctx.requester();
+        let matrix = state.homeserver_connection();
+
+        if !requester.is_admin() {
+            return Err(async_graphql::Error::new("Unauthorized"));
+        }
+
+        let mut repo = state.repository().await?;
+        let user_id = NodeType::User.extract_ulid(&input.user_id)?;
+        let user = repo.user().lookup(user_id).await?;
+
+        let Some(user) = user else {
+            return Ok(UnlockUserPayload::NotFound);
+        };
+
+        // Call the homeserver synchronously to unlock the user
+        let mxid = matrix.mxid(&user.username);
+        matrix.reactivate_user(&mxid).await?;
+
+        // Now unlock the user in our database
+        let user = repo.user().unlock(user).await?;
+
+        repo.save().await?;
+
+        Ok(UnlockUserPayload::Unlocked(user))
     }
 
     /// Set whether a user can request admin. This is only available to
