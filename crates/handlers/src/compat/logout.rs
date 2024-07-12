@@ -20,7 +20,7 @@ use mas_axum_utils::sentry::SentryEventID;
 use mas_data_model::TokenType;
 use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatSessionRepository},
-    job::{DeleteDeviceJob, JobRepositoryExt},
+    job::{JobRepositoryExt, SyncDevicesJob},
     BoxClock, BoxRepository, Clock, RepositoryAccess,
 };
 use thiserror::Error;
@@ -111,9 +111,8 @@ pub(crate) async fn post(
         // XXX: this is probably not the right error
         .ok_or(RouteError::InvalidAuthorization)?;
 
-    repo.job()
-        .schedule_job(DeleteDeviceJob::new(&user, &session.device))
-        .await?;
+    // Schedule a job to sync the devices of the user with the homeserver
+    repo.job().schedule_job(SyncDevicesJob::new(&user)).await?;
 
     repo.compat_session().finish(&clock, session).await?;
 

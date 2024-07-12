@@ -17,7 +17,7 @@ use async_graphql::{Context, Description, Enum, InputObject, Object, ID};
 use chrono::Duration;
 use mas_data_model::{Device, TokenType};
 use mas_storage::{
-    job::{DeleteDeviceJob, JobRepositoryExt, ProvisionDeviceJob},
+    job::{JobRepositoryExt, ProvisionDeviceJob, SyncDevicesJob},
     oauth2::{
         OAuth2AccessTokenRepository, OAuth2ClientRepository, OAuth2RefreshTokenRepository,
         OAuth2SessionRepository,
@@ -236,20 +236,8 @@ impl OAuth2SessionMutations {
                 .await?
                 .context("Could not load user")?;
 
-            // Scan the scopes of the session to find if there is any device that should be
-            // deleted from the Matrix server.
-            // TODO: this should be moved in a higher level "end oauth session" method.
-            // XXX: this might not be the right semantic, but it's the best we
-            // can do for now, since we're not explicitly storing devices for OAuth2
-            // sessions.
-            for scope in &*session.scope {
-                if let Some(device) = Device::from_scope_token(scope) {
-                    // Schedule a job to delete the device.
-                    repo.job()
-                        .schedule_job(DeleteDeviceJob::new(&user, &device))
-                        .await?;
-                }
-            }
+            // Schedule a job to sync the devices of the user with the homeserver
+            repo.job().schedule_job(SyncDevicesJob::new(&user)).await?;
         }
 
         let session = repo.oauth2_session().finish(&clock, session).await?;

@@ -16,7 +16,7 @@ use anyhow::Context as _;
 use async_graphql::{Context, Enum, InputObject, Object, ID};
 use mas_storage::{
     compat::CompatSessionRepository,
-    job::{DeleteDeviceJob, JobRepositoryExt},
+    job::{JobRepositoryExt, SyncDevicesJob},
     RepositoryAccess,
 };
 
@@ -101,10 +101,8 @@ impl CompatSessionMutations {
             .await?
             .context("Could not load user")?;
 
-        // Schedule a job to delete the device.
-        repo.job()
-            .schedule_job(DeleteDeviceJob::new(&user, &session.device))
-            .await?;
+        // Schedule a job to sync the devices of the user with the homeserver
+        repo.job().schedule_job(SyncDevicesJob::new(&user)).await?;
 
         let session = repo.compat_session().finish(&clock, session).await?;
 
