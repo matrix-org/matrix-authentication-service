@@ -217,6 +217,7 @@ impl HomeserverConnection for SynapseConnection {
         Ok(MatrixUser {
             displayname: body.display_name,
             avatar_url: body.avatar_url,
+            deactivated: body.deactivated.unwrap_or(false),
         })
     }
 

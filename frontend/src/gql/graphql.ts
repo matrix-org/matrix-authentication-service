@@ -449,6 +449,8 @@ export type MatrixUser = {
   __typename?: 'MatrixUser';
   /** The avatar URL of the user, if any. */
   avatarUrl?: Maybe<Scalars['String']['output']>;
+  /** Whether the user is deactivated on the homeserver. */
+  deactivated: Scalars['Boolean']['output'];
   /** The display name of the user, if any. */
   displayName?: Maybe<Scalars['String']['output']>;
   /** The Matrix ID of the user. */
