@@ -2,13 +2,13 @@ name: Build
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     tags:
-      - 'v*'
+      - "v*"
 
   # Only run for pull requests if relevant files were changed
   pull_request:
-    branches: [ main ]
+    branches: [main]
     paths:
       - Dockerfile
       - docker-bake.hcl
@@ -21,8 +21,8 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   CARGO_NET_GIT_FETCH_WITH_CLI: "true"
-  #SCCACHE_GHA_ENABLED: "true"
-  #RUSTC_WRAPPER: "sccache"
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: "sccache"
   IMAGE: ghcr.io/matrix-org/matrix-authentication-service
   IMAGE_SYN2MAS: ghcr.io/matrix-org/matrix-authentication-service/syn2mas
   BUILDCACHE: ghcr.io/matrix-org/matrix-authentication-service/buildcache
@@ -32,9 +32,6 @@ jobs:
   build-binaries:
     name: Build binaries
     runs-on: ubuntu-22.04
-
-    env:
-      SDKROOT: /opt/MacOSX11.3.sdk
 
     permissions:
       contents: read
@@ -54,11 +51,9 @@ jobs:
           targets: |
             x86_64-unknown-linux-gnu
             aarch64-unknown-linux-gnu
-            x86_64-apple-darwin
-            aarch64-apple-darwin
 
-      #- name: Setup sccache
-      #  uses: mozilla-actions/sccache-action@v0.0.5
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.5
 
       - name: Install zig
         uses: goto-bus-stop/setup-zig@v2
@@ -66,10 +61,7 @@ jobs:
           version: 0.13.0
 
       - name: Install cargo-zigbuild
-        run: curl -L https://github.com/rust-cross/cargo-zigbuild/releases/download/v0.19.0/cargo-zigbuild-v0.19.0.x86_64-unknown-linux-musl.tar.gz | tar -z -x -C /usr/local/bin
-
-      - name: Download the macOS SDK
-        run: curl -L "https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX11.3.sdk.tar.xz" | tar -J -x -C /opt
+        run: curl -L https://github.com/rust-cross/cargo-zigbuild/releases/download/v0.19.1/cargo-zigbuild-v0.19.1.x86_64-unknown-linux-musl.tar.gz | tar -z -x -C /usr/local/bin
 
       - name: Install frontend Node
         uses: actions/setup-node@v4.0.3
@@ -88,44 +80,45 @@ jobs:
         working-directory: ./policies
         run: make
 
-      - name: Force Cargo to create the target directory
-        # Run `cargo clean` with an empty package name to force it to create the target directory
-        # This fails because there is no package with an empty name, but the target directory is created
-        # See https://github.com/rust-lang/cargo/issues/12441
-        # This is needed because `cargo-zigbuild` sometimes (wrongly) creates the target directory
-        # See https://github.com/rust-cross/cargo-zigbuild/issues/165
-        run: |
-          cargo clean -p '' \
-            --target x86_64-unknown-linux-gnu \
-            --target aarch64-unknown-linux-gnu \
-            --target x86_64-apple-darwin \
-            --target aarch64-apple-darwin \
-            || true
-
       - name: Build the binary
         run: |
           cargo zigbuild \
             --release \
             --target x86_64-unknown-linux-gnu.2.17 \
             --target aarch64-unknown-linux-gnu.2.17 \
-            --target x86_64-apple-darwin \
-            --target aarch64-apple-darwin \
             --no-default-features \
             --features dist \
             -p mas-cli
+
+      - name: Create one archive per architecture
+        run: |
+          for arch in x86_64 aarch64; do
+            # Create one directory per architecture
+            mkdir -p dist/${arch}/share/
+            # Copy the artifacts to the right place
+            cp policies/policy.wasm dist/${arch}/share/policy.wasm
+            cp frontend/dist/manifest.json dist/${arch}/share/manifest.json
+            cp -r frontend/dist/ dist/${arch}/share/assets
+            cp -r templates/ dist/${arch}/share/templates
+            cp -r translations/ dist/${arch}/share/translations
+            cp LICENSE dist/${arch}/LICENSE
+            chmod -R u=rwX,go=rX dist/${arch}/
+
+            # Copy the binary to the right place
+            cp target/${arch}-unknown-linux-gnu/release/mas-cli dist/${arch}/
+            chmod u=rwx,go=rx dist/${arch}/mas-cli
+
+            # Create the archive
+            tar -czvf mas-cli-${arch}-linux.tar.gz --owner=0 --group=0 -C dist/${arch}/ .
+          done
 
       - name: Upload the artifacts
         uses: actions/upload-artifact@v4.3.5
         with:
           name: binaries
           path: |
-            target/*/release/mas-cli
-            frontend/dist/
-            policies/policy.wasm
-            templates/
-            translations/
-            LICENSE
-
+            mas-cli-aarch64-linux.tar.gz
+            mas-cli-x86_64-linux.tar.gz
 
   build-image:
     name: Build and push Docker image
@@ -261,7 +254,6 @@ jobs:
             "${{ env.IMAGE }}@${{ fromJSON(steps.output.outputs.metadata).regular.digest }}" \
             "${{ env.IMAGE }}@${{ fromJSON(steps.output.outputs.metadata).debug.digest }}" \
             "${{ env.IMAGE_SYN2MAS }}@${{ fromJSON(steps.output.outputs.metadata).syn2mas.digest }}"
-          
 
   syn2mas:
     name: Release syn2mas on NPM
@@ -291,7 +283,6 @@ jobs:
           provenance: true
           dry-run: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
-
   release:
     name: Release
     if: startsWith(github.ref, 'refs/tags/')
@@ -307,38 +298,15 @@ jobs:
           name: binaries
           path: artifacts
 
-      - name: Prepare the archive directory
-        run: |
-          mkdir -p dist/share/
-          mv artifacts/policies/policy.wasm dist/share/policy.wasm
-          mv artifacts/frontend/dist/manifest.json dist/share/manifest.json
-          mv artifacts/frontend/dist/ dist/share/assets
-          mv artifacts/templates/ dist/share/templates
-          mv artifacts/translations/ dist/share/translations
-          mv artifacts/LICENSE dist/LICENSE
-          chmod -R u=rwX,go=rX dist/
-
-      - name: Create the archives
-        run: |
-          for arch in x86_64 aarch64; do
-            mv artifacts/target/${arch}-unknown-linux-gnu/release/mas-cli dist/mas-cli
-            chmod u=rwx,go=rx dist/mas-cli
-            tar -czvf mas-cli-${arch}-linux.tar.gz --owner=0 --group=0 -C dist/ .
-          
-            mv artifacts/target/${arch}-apple-darwin/release/mas-cli dist/mas-cli
-            chmod u=rwx,go=rx dist/mas-cli
-            tar -czvf mas-cli-${arch}-macos.tar.gz --owner=0 --group=0 -C dist/ .
-          done
-
       - name: Prepare a release
         uses: softprops/action-gh-release@v2
         with:
           body: |
             ### Docker image
-            
-            Regular image: 
-            
-              - Digest: 
+
+            Regular image:
+
+              - Digest:
                 ```
                 ${{ env.IMAGE }}@${{ fromJSON(needs.build-image.outputs.metadata).regular.digest }}
                 ```
@@ -347,10 +315,10 @@ jobs:
                 ${{ join(fromJSON(needs.build-image.outputs.metadata).regular.tags, '
                 ') }}
                 ```
-            
-            Debug variant: 
-            
-              - Digest: 
+
+            Debug variant:
+
+              - Digest:
                 ```
                 ${{ env.IMAGE }}@${{ fromJSON(needs.build-image.outputs.metadata).debug.digest }}
                 ```
@@ -359,10 +327,10 @@ jobs:
                 ${{ join(fromJSON(needs.build-image.outputs.metadata).debug.tags, '
                 ') }}
                 ```
-            
-            `syn2mas` migration tool: 
-            
-              - Digest: 
+
+            `syn2mas` migration tool:
+
+              - Digest:
                 ```
                 ${{ env.IMAGE_SYN2MAS }}@${{ fromJSON(needs.build-image.outputs.metadata).syn2mas.digest }}
                 ```
@@ -373,8 +341,6 @@ jobs:
                 ```
 
           files: |
-            mas-cli-aarch64-linux.tar.gz
-            mas-cli-aarch64-macos.tar.gz
-            mas-cli-x86_64-linux.tar.gz
-            mas-cli-x86_64-macos.tar.gz
+            artifacts/mas-cli-aarch64-linux.tar.gz
+            artifacts/mas-cli-x86_64-linux.tar.gz
           draft: true
