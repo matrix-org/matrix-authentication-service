@@ -1121,6 +1121,17 @@ export default {
             "args": []
           },
           {
+            "name": "deactivated",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Any"
+              }
+            },
+            "args": []
+          },
+          {
             "name": "displayName",
             "type": {
               "kind": "SCALAR",

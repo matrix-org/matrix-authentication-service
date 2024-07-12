@@ -698,6 +698,10 @@ type MatrixUser {
   The avatar URL of the user, if any.
   """
   avatarUrl: String
+  """
+  Whether the user is deactivated on the homeserver.
+  """
+  deactivated: Boolean!
 }
 
 """

@@ -26,6 +26,7 @@ pub type BoxHomeserverConnection<Error = anyhow::Error> =
 pub struct MatrixUser {
     pub displayname: Option<String>,
     pub avatar_url: Option<String>,
+    pub deactivated: bool,
 }
 
 #[derive(Debug, Default)]
