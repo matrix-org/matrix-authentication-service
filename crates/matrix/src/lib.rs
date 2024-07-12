@@ -1,4 +1,4 @@
-// Copyright 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2023, 2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -288,6 +288,18 @@ pub trait HomeserverConnection: Send + Sync {
     /// be deleted.
     async fn delete_user(&self, mxid: &str, erase: bool) -> Result<(), Self::Error>;
 
+    /// Reactivate a user on the homeserver.
+    ///
+    /// # Parameters
+    ///
+    /// * `mxid` - The Matrix ID of the user to reactivate.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the homeserver is unreachable or the user could not
+    /// be reactivated.
+    async fn reactivate_user(&self, mxid: &str) -> Result<(), Self::Error>;
+
     /// Set the displayname of a user on the homeserver.
     ///
     /// # Parameters
@@ -362,6 +374,10 @@ impl<T: HomeserverConnection + Send + Sync + ?Sized> HomeserverConnection for &T
         (**self).delete_user(mxid, erase).await
     }
 
+    async fn reactivate_user(&self, mxid: &str) -> Result<(), Self::Error> {
+        (**self).reactivate_user(mxid).await
+    }
+
     async fn set_displayname(&self, mxid: &str, displayname: &str) -> Result<(), Self::Error> {
         (**self).set_displayname(mxid, displayname).await
     }
@@ -410,6 +426,10 @@ impl<T: HomeserverConnection + ?Sized> HomeserverConnection for Arc<T> {
 
     async fn delete_user(&self, mxid: &str, erase: bool) -> Result<(), Self::Error> {
         (**self).delete_user(mxid, erase).await
+    }
+
+    async fn reactivate_user(&self, mxid: &str) -> Result<(), Self::Error> {
+        (**self).reactivate_user(mxid).await
     }
 
     async fn set_displayname(&self, mxid: &str, displayname: &str) -> Result<(), Self::Error> {

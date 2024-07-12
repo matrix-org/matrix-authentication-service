@@ -1,4 +1,4 @@
-// Copyright 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2023, 2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 use anyhow::Context;
 use apalis_core::{context::JobContext, executor::TokioExecutor, monitor::Monitor};
 use mas_storage::{
-    job::{DeactivateUserJob, JobWithSpanContext},
+    job::{DeactivateUserJob, JobWithSpanContext, ReactivateUserJob},
     user::UserRepository,
     RepositoryAccess,
 };
@@ -54,12 +54,46 @@ async fn deactivate_user(
 
     // TODO: delete the sessions & access tokens
 
-    // Before calling back to the homeserver, commit the changes to the database
+    // Before calling back to the homeserver, commit the changes to the database, as
+    // we want the user to be locked out as soon as possible
     repo.save().await?;
 
     let mxid = matrix.mxid(&user.username);
     info!("Deactivating user {} on homeserver", mxid);
     matrix.delete_user(&mxid, job.hs_erase()).await?;
+
+    Ok(())
+}
+
+/// Job to reactivate a user, both locally and on the Matrix homeserver.
+#[tracing::instrument(
+    name = "job.reactivate_user",
+    fields(user.id = %job.user_id()),
+    skip_all,
+    err(Debug),
+)]
+pub async fn reactivate_user(
+    job: JobWithSpanContext<ReactivateUserJob>,
+    ctx: JobContext,
+) -> Result<(), anyhow::Error> {
+    let state = ctx.state();
+    let matrix = state.matrix_connection();
+    let mut repo = state.repository().await?;
+
+    let user = repo
+        .user()
+        .lookup(job.user_id())
+        .await?
+        .context("User not found")?;
+
+    let mxid = matrix.mxid(&user.username);
+    info!("Reactivating user {} on homeserver", mxid);
+    matrix.reactivate_user(&mxid).await?;
+
+    // We want to unlock the user from our side only once it has been reactivated on
+    // the homeserver
+    let _user = repo.user().unlock(user).await?;
+    repo.save().await?;
 
     Ok(())
 }
@@ -73,5 +107,10 @@ pub(crate) fn register(
     let deactivate_user_worker =
         crate::build!(DeactivateUserJob => deactivate_user, suffix, state, storage_factory);
 
-    monitor.register(deactivate_user_worker)
+    let reactivate_user_worker =
+        crate::build!(ReactivateUserJob => reactivate_user, suffix, state, storage_factory);
+
+    monitor
+        .register(deactivate_user_worker)
+        .register(reactivate_user_worker)
 }

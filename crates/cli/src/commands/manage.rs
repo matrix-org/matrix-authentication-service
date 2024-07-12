@@ -27,7 +27,9 @@ use mas_matrix::HomeserverConnection;
 use mas_matrix_synapse::SynapseConnection;
 use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatSessionRepository},
-    job::{DeactivateUserJob, JobRepositoryExt, ProvisionUserJob, SyncDevicesJob},
+    job::{
+        DeactivateUserJob, JobRepositoryExt, ProvisionUserJob, ReactivateUserJob, SyncDevicesJob,
+    },
     user::{UserEmailRepository, UserPasswordRepository, UserRepository},
     Clock, RepositoryAccess, SystemClock,
 };
@@ -488,9 +490,11 @@ impl Options {
                     .await?
                     .context("User not found")?;
 
-                info!(%user.id, "Unlocking user");
+                warn!(%user.id, "User scheduling user reactivation");
+                repo.job()
+                    .schedule_job(ReactivateUserJob::new(&user))
+                    .await?;
 
-                repo.user().unlock(user).await?;
                 repo.into_inner().commit().await?;
 
                 Ok(ExitCode::SUCCESS)
