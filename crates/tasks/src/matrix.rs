@@ -225,8 +225,9 @@ async fn sync_devices(
         }
     }
 
-    // We now have a complete list of devices, so we can sync them with the
-    // homeserver
+    // We now have a complete list of devices, we can now release the connection and
+    // sync with the homeserver
+    repo.save().await?;
     let mxid = matrix.mxid(&user.username);
     matrix.sync_devices(&mxid, devices).await?;
 
