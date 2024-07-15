@@ -12,7 +12,6 @@ exports[`<SessionHeader /> > renders a session header 1`] = `
       href="/"
     >
       <svg
-        class="cpd-icon"
         fill="currentColor"
         height="1em"
         viewBox="0 0 24 24"

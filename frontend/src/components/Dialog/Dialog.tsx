@@ -21,7 +21,7 @@ import {
   Overlay as DialogOverlay,
   Content as DialogContent,
 } from "@radix-ui/react-dialog";
-import IconClose from "@vector-im/compound-design-tokens/icons/close.svg?react";
+import IconClose from "@vector-im/compound-design-tokens/assets/web/icons/close";
 import { Glass, Tooltip } from "@vector-im/compound-web";
 import { PropsWithChildren } from "react";
 import { useTranslation } from "react-i18next";

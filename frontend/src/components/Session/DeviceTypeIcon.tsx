@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import IconComputer from "@vector-im/compound-design-tokens/icons/computer.svg?react";
-import IconMobile from "@vector-im/compound-design-tokens/icons/mobile.svg?react";
-import IconUnknown from "@vector-im/compound-design-tokens/icons/unknown.svg?react";
-import IconBrowser from "@vector-im/compound-design-tokens/icons/web-browser.svg?react";
+import IconComputer from "@vector-im/compound-design-tokens/assets/web/icons/computer";
+import IconMobile from "@vector-im/compound-design-tokens/assets/web/icons/mobile";
+import IconUnknown from "@vector-im/compound-design-tokens/assets/web/icons/unknown";
+import IconBrowser from "@vector-im/compound-design-tokens/assets/web/icons/web-browser";
 import { FunctionComponent, SVGProps } from "react";
 import { useTranslation } from "react-i18next";
 

@@ -13,7 +13,6 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
         href="/sessions"
       >
         <svg
-          class="cpd-icon"
           fill="currentColor"
           height="1em"
           viewBox="0 0 24 24"
@@ -116,7 +115,6 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
             class="_scope_040867"
           >
             <svg
-              class="cpd-icon"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"
@@ -143,7 +141,6 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
             class="_scope_040867"
           >
             <svg
-              class="cpd-icon"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"
@@ -164,7 +161,6 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
             class="_scope_040867"
           >
             <svg
-              class="cpd-icon"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"
@@ -274,7 +270,6 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
         href="/sessions"
       >
         <svg
-          class="cpd-icon"
           fill="currentColor"
           height="1em"
           viewBox="0 0 24 24"
@@ -377,7 +372,6 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
             class="_scope_040867"
           >
             <svg
-              class="cpd-icon"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"
@@ -404,7 +398,6 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
             class="_scope_040867"
           >
             <svg
-              class="cpd-icon"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"
@@ -425,7 +418,6 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
             class="_scope_040867"
           >
             <svg
-              class="cpd-icon"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"
@@ -490,7 +482,6 @@ exports[`<CompatSessionDetail> > renders a finished compatability session detail
         href="/sessions"
       >
         <svg
-          class="cpd-icon"
           fill="currentColor"
           height="1em"
           viewBox="0 0 24 24"
@@ -607,7 +598,6 @@ exports[`<CompatSessionDetail> > renders a finished compatability session detail
             class="_scope_040867"
           >
             <svg
-              class="cpd-icon"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"
@@ -634,7 +624,6 @@ exports[`<CompatSessionDetail> > renders a finished compatability session detail
             class="_scope_040867"
           >
             <svg
-              class="cpd-icon"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"
@@ -655,7 +644,6 @@ exports[`<CompatSessionDetail> > renders a finished compatability session detail
             class="_scope_040867"
           >
             <svg
-              class="cpd-icon"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"

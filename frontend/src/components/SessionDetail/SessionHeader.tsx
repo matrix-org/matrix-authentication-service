@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { Link } from "@tanstack/react-router";
-import IconChevronLeft from "@vector-im/compound-design-tokens/icons/chevron-left.svg?react";
+import IconChevronLeft from "@vector-im/compound-design-tokens/assets/web/icons/chevron-left";
 import { H3 } from "@vector-im/compound-web";
 
 import styles from "./SessionHeader.module.css";

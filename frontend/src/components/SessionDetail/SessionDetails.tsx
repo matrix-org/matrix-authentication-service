@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import IconChat from "@vector-im/compound-design-tokens/icons/chat.svg?react";
-import IconComputer from "@vector-im/compound-design-tokens/icons/computer.svg?react";
-import IconError from "@vector-im/compound-design-tokens/icons/error.svg?react";
-import IconInfo from "@vector-im/compound-design-tokens/icons/info.svg?react";
-import IconSend from "@vector-im/compound-design-tokens/icons/send.svg?react";
-import IconUserProfile from "@vector-im/compound-design-tokens/icons/user-profile.svg?react";
+import IconChat from "@vector-im/compound-design-tokens/assets/web/icons/chat";
+import IconComputer from "@vector-im/compound-design-tokens/assets/web/icons/computer";
+import IconError from "@vector-im/compound-design-tokens/assets/web/icons/error";
+import IconInfo from "@vector-im/compound-design-tokens/assets/web/icons/info";
+import IconSend from "@vector-im/compound-design-tokens/assets/web/icons/send";
+import IconUserProfile from "@vector-im/compound-design-tokens/assets/web/icons/user-profile";
 import { Text } from "@vector-im/compound-web";
 import { ReactNode } from "react";
 import { useTranslation } from "react-i18next";

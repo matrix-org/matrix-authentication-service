@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import IconError from "@vector-im/compound-design-tokens/icons/error.svg?react";
+import IconError from "@vector-im/compound-design-tokens/assets/web/icons/error";
 import { Button } from "@vector-im/compound-web";
 import { useState } from "react";
 import { Translation } from "react-i18next";
