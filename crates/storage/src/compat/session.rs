@@ -209,6 +209,24 @@ pub trait CompatSessionRepository: Send + Sync {
         compat_session: CompatSession,
     ) -> Result<CompatSession, Self::Error>;
 
+    /// Mark all the [`CompatSession`] matching the given filter as finished
+    ///
+    /// Returns the number of sessions affected
+    ///
+    /// # Parameters
+    ///
+    /// * `clock`: The clock used to generate timestamps
+    /// * `filter`: The filter to apply
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn finish_bulk(
+        &mut self,
+        clock: &dyn Clock,
+        filter: CompatSessionFilter<'_>,
+    ) -> Result<usize, Self::Error>;
+
     /// List [`CompatSession`] with the given filter and pagination
     ///
     /// Returns a page of compat sessions, with the associated SSO logins if any
@@ -288,6 +306,12 @@ repository_impl!(CompatSessionRepository:
         clock: &dyn Clock,
         compat_session: CompatSession,
     ) -> Result<CompatSession, Self::Error>;
+
+    async fn finish_bulk(
+        &mut self,
+        clock: &dyn Clock,
+        filter: CompatSessionFilter<'_>,
+    ) -> Result<usize, Self::Error>;
 
     async fn list(
         &mut self,

@@ -288,6 +288,16 @@ mod tests {
                 .unwrap(),
             1
         );
+
+        // Check that we can batch finish sessions
+        let affected = repo
+            .compat_session()
+            .finish_bulk(&clock, all.sso_login_only().active_only())
+            .await
+            .unwrap();
+        assert_eq!(affected, 1);
+        assert_eq!(repo.compat_session().count(finished).await.unwrap(), 2);
+        assert_eq!(repo.compat_session().count(active).await.unwrap(), 0);
     }
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
