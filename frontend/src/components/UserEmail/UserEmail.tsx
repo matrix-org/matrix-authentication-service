@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import IconDelete from "@vector-im/compound-design-tokens/icons/delete.svg?react";
-import IconEmail from "@vector-im/compound-design-tokens/icons/email.svg?react";
+import IconDelete from "@vector-im/compound-design-tokens/assets/web/icons/delete";
+import IconEmail from "@vector-im/compound-design-tokens/assets/web/icons/email";
 import { Button, Form, IconButton, Tooltip } from "@vector-im/compound-web";
 import { ComponentProps, ReactNode } from "react";
 import { Translation, useTranslation } from "react-i18next";

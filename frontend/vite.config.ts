@@ -22,7 +22,6 @@ import type { Manifest, PluginOption } from "vite";
 import compression from "vite-plugin-compression";
 import codegen from "vite-plugin-graphql-codegen";
 import manifestSRI from "vite-plugin-manifest-sri";
-import svgr from "vite-plugin-svgr";
 import { defineConfig } from "vitest/config";
 
 function i18nHotReload(): PluginOption {
@@ -127,25 +126,6 @@ export default defineConfig((env) => ({
     },
 
     manifestSRI(),
-
-    svgr({
-      esbuildOptions: {
-        // This makes sure we're using the same JSX runtime as React itself
-        jsx: "automatic",
-        jsxDev: env.mode === "development",
-      },
-
-      svgrOptions: {
-        // Using 1em in order to make SVG size inherits from text size.
-        icon: "1em",
-
-        svgProps: {
-          // Adding a class in case we want to add global overrides, but one
-          // should probably stick to using CSS modules most of the time
-          className: "cpd-icon",
-        },
-      },
-    }),
 
     // Pre-compress the assets, so that the server can serve them directly
     compression({

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { createFileRoute, notFound, useRouter } from "@tanstack/react-router";
-import IconLockSolid from "@vector-im/compound-design-tokens/icons/lock-solid.svg?react";
+import IconLockSolid from "@vector-im/compound-design-tokens/assets/web/icons/lock-solid";
 import { Alert, Form, Progress, Separator } from "@vector-im/compound-web";
 import {
   FormEvent,

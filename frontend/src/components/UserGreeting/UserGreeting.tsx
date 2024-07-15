@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import IconClose from "@vector-im/compound-design-tokens/icons/close.svg?react";
-import IconEdit from "@vector-im/compound-design-tokens/icons/edit.svg?react";
+import IconClose from "@vector-im/compound-design-tokens/assets/web/icons/close";
+import IconEdit from "@vector-im/compound-design-tokens/assets/web/icons/edit";
 import {
   Text,
   Avatar,

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import IconCheckCircle from "@vector-im/compound-design-tokens/icons/check-circle-solid.svg?react";
+import IconCheckCircle from "@vector-im/compound-design-tokens/assets/web/icons/check-circle-solid";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "urql";
 

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import type { Meta, StoryObj } from "@storybook/react";
-import IconSignOut from "@vector-im/compound-design-tokens/icons/sign-out.svg?react";
+import IconSignOut from "@vector-im/compound-design-tokens/assets/web/icons/sign-out";
 import { Button } from "@vector-im/compound-web";
 import { useTranslation } from "react-i18next";
 

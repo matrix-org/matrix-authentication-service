@@ -13,8 +13,8 @@
 // limitations under the License.
 
 import { useLinkProps, useNavigate } from "@tanstack/react-router";
-import IconArrowLeft from "@vector-im/compound-design-tokens/icons/arrow-left.svg?react";
-import IconSend from "@vector-im/compound-design-tokens/icons/send-solid.svg?react";
+import IconArrowLeft from "@vector-im/compound-design-tokens/assets/web/icons/arrow-left";
+import IconSend from "@vector-im/compound-design-tokens/assets/web/icons/send-solid";
 import { Button, Form, Alert, H1, Text } from "@vector-im/compound-web";
 import { useRef } from "react";
 import { Trans, useTranslation } from "react-i18next";

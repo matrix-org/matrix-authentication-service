@@ -18,7 +18,7 @@ import {
   redirect,
   useNavigate,
 } from "@tanstack/react-router";
-import IconKey from "@vector-im/compound-design-tokens/icons/key.svg?react";
+import IconKey from "@vector-im/compound-design-tokens/assets/web/icons/key";
 import { Alert, Separator } from "@vector-im/compound-web";
 import { Suspense } from "react";
 import { useTranslation } from "react-i18next";

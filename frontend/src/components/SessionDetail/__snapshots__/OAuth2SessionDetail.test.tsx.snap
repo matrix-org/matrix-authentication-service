@@ -13,7 +13,6 @@ exports[`<OAuth2SessionDetail> > renders a finished session details 1`] = `
         href="/sessions"
       >
         <svg
-          class="cpd-icon"
           fill="currentColor"
           height="1em"
           viewBox="0 0 24 24"
@@ -130,7 +129,6 @@ exports[`<OAuth2SessionDetail> > renders a finished session details 1`] = `
             class="_scope_040867"
           >
             <svg
-              class="cpd-icon"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"
@@ -157,7 +155,6 @@ exports[`<OAuth2SessionDetail> > renders a finished session details 1`] = `
             class="_scope_040867"
           >
             <svg
-              class="cpd-icon"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"
@@ -178,7 +175,6 @@ exports[`<OAuth2SessionDetail> > renders a finished session details 1`] = `
             class="_scope_040867"
           >
             <svg
-              class="cpd-icon"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"
@@ -275,7 +271,6 @@ exports[`<OAuth2SessionDetail> > renders session details 1`] = `
         href="/sessions"
       >
         <svg
-          class="cpd-icon"
           fill="currentColor"
           height="1em"
           viewBox="0 0 24 24"
@@ -378,7 +373,6 @@ exports[`<OAuth2SessionDetail> > renders session details 1`] = `
             class="_scope_040867"
           >
             <svg
-              class="cpd-icon"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"
@@ -405,7 +399,6 @@ exports[`<OAuth2SessionDetail> > renders session details 1`] = `
             class="_scope_040867"
           >
             <svg
-              class="cpd-icon"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"
@@ -426,7 +419,6 @@ exports[`<OAuth2SessionDetail> > renders session details 1`] = `
             class="_scope_040867"
           >
             <svg
-              class="cpd-icon"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import IconSignOut from "@vector-im/compound-design-tokens/icons/sign-out.svg?react";
+import IconSignOut from "@vector-im/compound-design-tokens/assets/web/icons/sign-out";
 import { Button } from "@vector-im/compound-web";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
