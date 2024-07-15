@@ -26,7 +26,6 @@ use mas_storage::{
         CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository,
         CompatSsoLoginRepository,
     },
-    job::{JobRepositoryExt, ProvisionDeviceJob},
     user::{UserPasswordRepository, UserRepository},
     BoxClock, BoxRepository, BoxRng, Clock, RepositoryAccess,
 };
@@ -168,6 +167,9 @@ pub enum RouteError {
 
     #[error("invalid login token")]
     InvalidLoginToken,
+
+    #[error("failed to provision device")]
+    ProvisionDeviceFailed(#[source] anyhow::Error),
 }
 
 impl_from_error_for_route!(mas_storage::RepositoryError);
@@ -176,11 +178,13 @@ impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         let event_id = sentry::capture_error(&self);
         let response = match self {
-            Self::Internal(_) | Self::SessionNotFound => MatrixError {
-                errcode: "M_UNKNOWN",
-                error: "Internal server error",
-                status: StatusCode::INTERNAL_SERVER_ERROR,
-            },
+            Self::Internal(_) | Self::SessionNotFound | Self::ProvisionDeviceFailed(_) => {
+                MatrixError {
+                    errcode: "M_UNKNOWN",
+                    error: "Internal server error",
+                    status: StatusCode::INTERNAL_SERVER_ERROR,
+                }
+            }
             Self::Unsupported => MatrixError {
                 errcode: "M_UNRECOGNIZED",
                 error: "Invalid login type",
@@ -235,6 +239,7 @@ pub(crate) async fn post(
                 &clock,
                 &password_manager,
                 &mut repo,
+                &homeserver,
                 user,
                 password,
             )
@@ -368,6 +373,7 @@ async fn user_password_login(
     clock: &impl Clock,
     password_manager: &PasswordManager,
     repo: &mut BoxRepository,
+    homeserver: &BoxHomeserverConnection,
     username: String,
     password: String,
 ) -> Result<(CompatSession, User), RouteError> {
@@ -415,9 +421,11 @@ async fn user_password_login(
 
     // Now that the user credentials have been verified, start a new compat session
     let device = Device::generate(&mut rng);
-    repo.job()
-        .schedule_job(ProvisionDeviceJob::new(&user, &device))
-        .await?;
+    let mxid = homeserver.mxid(&user.username);
+    homeserver
+        .create_device(&mxid, device.as_str())
+        .await
+        .map_err(RouteError::ProvisionDeviceFailed)?;
 
     let session = repo
         .compat_session()
