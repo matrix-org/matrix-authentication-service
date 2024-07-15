@@ -461,6 +461,7 @@ mod tests {
     use hyper::{Request, StatusCode};
     use mas_data_model::{AccessToken, RefreshToken};
     use mas_iana::oauth::OAuthTokenTypeHint;
+    use mas_matrix::{HomeserverConnection, ProvisionRequest};
     use mas_router::{OAuth2Introspection, OAuth2RegistrationEndpoint, SimpleRoute};
     use mas_storage::Clock;
     use oauth2_types::{
@@ -515,6 +516,13 @@ mod tests {
         let user = repo
             .user()
             .add(&mut state.rng(), &state.clock, "alice".to_owned())
+            .await
+            .unwrap();
+
+        let mxid = state.homeserver_connection.mxid(&user.username);
+        state
+            .homeserver_connection
+            .provision_user(&ProvisionRequest::new(mxid, &user.sub))
             .await
             .unwrap();
 
@@ -700,6 +708,13 @@ mod tests {
         let user = repo
             .user()
             .add(&mut state.rng(), &state.clock, "alice".to_owned())
+            .await
+            .unwrap();
+
+        let mxid = state.homeserver_connection.mxid(&user.username);
+        state
+            .homeserver_connection
+            .provision_user(&ProvisionRequest::new(mxid, &user.sub))
             .await
             .unwrap();
 

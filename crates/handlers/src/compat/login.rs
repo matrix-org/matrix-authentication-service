@@ -438,6 +438,7 @@ async fn user_password_login(
 #[cfg(test)]
 mod tests {
     use hyper::Request;
+    use mas_matrix::{HomeserverConnection, ProvisionRequest};
     use rand::distributions::{Alphanumeric, DistString};
     use sqlx::PgPool;
 
@@ -537,6 +538,13 @@ mod tests {
         let user = repo
             .user()
             .add(&mut state.rng(), &state.clock, "alice".to_owned())
+            .await
+            .unwrap();
+
+        let mxid = state.homeserver_connection.mxid(&user.username);
+        state
+            .homeserver_connection
+            .provision_user(&ProvisionRequest::new(mxid, &user.sub))
             .await
             .unwrap();
 
@@ -671,6 +679,13 @@ mod tests {
             .await
             .unwrap();
         repo.save().await.unwrap();
+
+        let mxid = state.homeserver_connection.mxid(&user.username);
+        state
+            .homeserver_connection
+            .provision_user(&ProvisionRequest::new(mxid, &user.sub))
+            .await
+            .unwrap();
 
         // First try with an invalid token
         let request = Request::post("/_matrix/client/v3/login").json(serde_json::json!({
