@@ -461,6 +461,11 @@ async fn authorization_code_grant(
         params = params.with_id_token(id_token);
     }
 
+    // Lock the user sync to make sure we don't get into a race condition
+    repo.user()
+        .acquire_lock_for_sync(&browser_session.user)
+        .await?;
+
     // Look for device to provision
     let mxid = homeserver.mxid(&browser_session.user.username);
     for scope in &*session.scope {
@@ -747,6 +752,11 @@ async fn device_code_grant(
 
         params = params.with_id_token(id_token);
     }
+
+    // Lock the user sync to make sure we don't get into a race condition
+    repo.user()
+        .acquire_lock_for_sync(&browser_session.user)
+        .await?;
 
     // Look for device to provision
     let mxid = homeserver.mxid(&browser_session.user.username);

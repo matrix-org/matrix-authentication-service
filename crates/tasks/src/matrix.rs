@@ -170,6 +170,9 @@ async fn sync_devices(
         .await?
         .context("User not found")?;
 
+    // Lock the user sync to make sure we don't get into a race condition
+    repo.user().acquire_lock_for_sync(&user).await?;
+
     let mut devices = HashSet::new();
 
     // Cycle through all the compat sessions of the user, and grab the devices
@@ -219,11 +222,12 @@ async fn sync_devices(
         }
     }
 
-    // We now have a complete list of devices, we can now release the connection and
-    // sync with the homeserver
-    repo.save().await?;
     let mxid = matrix.mxid(&user.username);
     matrix.sync_devices(&mxid, devices).await?;
+
+    // We kept the connection until now, so that we still hold the lock on the user
+    // throughout the sync
+    repo.save().await?;
 
     Ok(())
 }
