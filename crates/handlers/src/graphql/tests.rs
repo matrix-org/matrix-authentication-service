@@ -15,6 +15,7 @@
 use axum::http::Request;
 use hyper::StatusCode;
 use mas_data_model::{AccessToken, Client, TokenType, User};
+use mas_matrix::{HomeserverConnection, ProvisionRequest};
 use mas_router::SimpleRoute;
 use mas_storage::{
     oauth2::{OAuth2AccessTokenRepository, OAuth2ClientRepository},
@@ -517,7 +518,7 @@ async fn test_oauth2_client_credentials(pool: PgPool) {
     response.assert_status(StatusCode::OK);
     let response: GraphQLResponse = response.json();
     assert!(response.errors.is_empty(), "{:?}", response.errors);
-    let user_id = &response.data["addUser"]["user"]["id"];
+    let user_id = response.data["addUser"]["user"]["id"].as_str().unwrap();
 
     assert_eq!(
         response.data,
@@ -530,6 +531,16 @@ async fn test_oauth2_client_credentials(pool: PgPool) {
             }
         })
     );
+
+    // XXX: we don't run the task worker here, so even though the addUser mutation
+    // should have scheduled a job to provision the user, it won't run in the test,
+    // so we need to do it manually
+    let mxid = state.homeserver_connection.mxid("alice");
+    state
+        .homeserver_connection
+        .provision_user(&ProvisionRequest::new(mxid, user_id))
+        .await
+        .unwrap();
 
     // We should now be able to create an arbitrary access token for the user
     let request = Request::post("/graphql")
