@@ -186,6 +186,7 @@ where
     Encrypter: FromRef<S>,
     HttpClientFactory: FromRef<S>,
     SiteConfig: FromRef<S>,
+    BoxHomeserverConnection: FromRef<S>,
     BoxClock: FromRequestParts<S>,
     BoxRng: FromRequestParts<S>,
     Policy: FromRequestParts<S>,

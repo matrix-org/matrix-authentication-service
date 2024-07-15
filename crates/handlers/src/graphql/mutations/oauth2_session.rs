@@ -17,7 +17,7 @@ use async_graphql::{Context, Description, Enum, InputObject, Object, ID};
 use chrono::Duration;
 use mas_data_model::{Device, TokenType};
 use mas_storage::{
-    job::{JobRepositoryExt, ProvisionDeviceJob, SyncDevicesJob},
+    job::{JobRepositoryExt, SyncDevicesJob},
     oauth2::{
         OAuth2AccessTokenRepository, OAuth2ClientRepository, OAuth2RefreshTokenRepository,
         OAuth2SessionRepository,
@@ -129,6 +129,7 @@ impl OAuth2SessionMutations {
         input: CreateOAuth2SessionInput,
     ) -> Result<CreateOAuth2SessionPayload, async_graphql::Error> {
         let state = ctx.state();
+        let homeserver = state.homeserver_connection();
         let user_id = NodeType::User.extract_ulid(&input.user_id)?;
         let scope: Scope = input.scope.parse().context("Invalid scope")?;
         let permanent = input.permanent.unwrap_or(false);
@@ -168,11 +169,13 @@ impl OAuth2SessionMutations {
             .await?;
 
         // Look for devices to provision
+        let mxid = homeserver.mxid(&user.username);
         for scope in &*session.scope {
             if let Some(device) = Device::from_scope_token(scope) {
-                repo.job()
-                    .schedule_job(ProvisionDeviceJob::new(&user, &device))
-                    .await?;
+                homeserver
+                    .create_device(&mxid, device.as_str())
+                    .await
+                    .context("Failed to provision device")?;
             }
         }
 

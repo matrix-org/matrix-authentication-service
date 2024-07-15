@@ -27,10 +27,10 @@ use mas_axum_utils::{
     FancyError, SessionInfoExt,
 };
 use mas_data_model::Device;
+use mas_matrix::BoxHomeserverConnection;
 use mas_router::{CompatLoginSsoAction, PostAuthAction, UrlBuilder};
 use mas_storage::{
     compat::{CompatSessionRepository, CompatSsoLoginRepository},
-    job::{JobRepositoryExt, ProvisionDeviceJob},
     BoxClock, BoxRepository, BoxRng, Clock, RepositoryAccess,
 };
 use mas_templates::{CompatSsoContext, ErrorContext, TemplateContext, Templates};
@@ -136,6 +136,7 @@ pub async fn post(
     PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
+    State(homeserver): State<BoxHomeserverConnection>,
     cookie_jar: CookieJar,
     Path(id): Path<Ulid>,
     Query(params): Query<Params>,
@@ -202,9 +203,11 @@ pub async fn post(
     };
 
     let device = Device::generate(&mut rng);
-    repo.job()
-        .schedule_job(ProvisionDeviceJob::new(&session.user, &device))
-        .await?;
+    let mxid = homeserver.mxid(&session.user.username);
+    homeserver
+        .create_device(&mxid, device.as_str())
+        .await
+        .context("Failed to provision device")?;
 
     let compat_session = repo
         .compat_session()
