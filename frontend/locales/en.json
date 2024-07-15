@@ -152,6 +152,7 @@
         "sequences": "Avoid common character sequences.",
         "use_words": "Use multiple words, but avoid common phrases."
       },
+      "too_weak": "This password is too weak",
       "warning": {
         "common": "This is a commonly used password.",
         "common_names": "Common names and surnames are easy to guess.",
