@@ -37,13 +37,18 @@ import {
   estimatePasswordComplexity,
 } from "../utils/password_complexity";
 
-const CURRENT_VIEWER_QUERY = graphql(/* GraphQL */ `
-  query CurrentViewerQuery {
+const QUERY = graphql(/* GraphQL */ `
+  query PasswordChangeQuery {
     viewer {
       __typename
       ... on Node {
         id
       }
+    }
+
+    siteConfig {
+      id
+      minimumPasswordComplexity
     }
   }
 `);
@@ -68,13 +73,13 @@ const CHANGE_PASSWORD_MUTATION = graphql(/* GraphQL */ `
 
 export const Route = createFileRoute("/password/change/")({
   async loader({ context, abortController: { signal } }) {
-    const viewer = await context.client.query(
-      CURRENT_VIEWER_QUERY,
+    const queryResult = await context.client.query(
+      QUERY,
       {},
       { fetchOptions: { signal } },
     );
-    if (viewer.error) throw viewer.error;
-    if (viewer.data?.viewer.__typename !== "User") throw notFound();
+    if (queryResult.error) throw queryResult.error;
+    if (queryResult.data?.viewer.__typename !== "User") throw notFound();
   },
 
   component: ChangePassword,
@@ -108,11 +113,13 @@ const usePasswordComplexity = (password: string): PasswordComplexity => {
 
 function ChangePassword(): React.ReactNode {
   const { t } = useTranslation();
-  const [viewer] = useQuery({ query: CURRENT_VIEWER_QUERY });
+  const [queryResult] = useQuery({ query: QUERY });
   const router = useRouter();
-  if (viewer.error) throw viewer.error;
-  if (viewer.data?.viewer.__typename !== "User") throw notFound();
-  const userId = viewer.data.viewer.id;
+  if (queryResult.error) throw queryResult.error;
+  if (queryResult.data?.viewer.__typename !== "User") throw notFound();
+  const userId = queryResult.data.viewer.id;
+  const minPasswordComplexity =
+    queryResult.data.siteConfig.minimumPasswordComplexity;
 
   const currentPasswordRef = useRef<HTMLInputElement>(null);
   const newPasswordRef = useRef<HTMLInputElement>(null);
@@ -262,6 +269,12 @@ function ChangePassword(): React.ReactNode {
               }
               onChange={(e) => setNewPassword(e.target.value)}
             />
+
+            <Form.ErrorMessage
+              match={() => passwordComplexity.score < minPasswordComplexity}
+            >
+              {t("frontend.password_strength.too_weak")}
+            </Form.ErrorMessage>
 
             <Progress
               size="sm"
