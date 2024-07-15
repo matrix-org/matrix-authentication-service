@@ -127,6 +127,50 @@
       },
       "title": "Change your password"
     },
+    "password_strength": {
+      "placeholder": "Password strength",
+      "score": {
+        "0": "Extremely weak password",
+        "1": "Very weak password",
+        "2": "Weak password",
+        "3": "Strong password",
+        "4": "Very strong password"
+      },
+      "suggestion": {
+        "all_uppercase": "Capitalise some, but not all letters.",
+        "another_word": "Add more words that are less common.",
+        "associated_years": "Avoid years that are associated with you.",
+        "capitalization": "Capitalise more than the first letter.",
+        "dates": "Avoid dates and years that are associated with you.",
+        "l33t": "Avoid predictable letter substitutions like '@' for 'a'.",
+        "longer_keyboard_pattern": "Use longer keyboard patterns and change typing direction multiple times.",
+        "no_need": "You can create strong passwords without using symbols, numbers, or uppercase letters.",
+        "pwned": "If you use this password elsewhere, you should change it.",
+        "recent_years": "Avoid recent years.",
+        "repeated": "Avoid repeated words and characters.",
+        "reverse_words": "Avoid reversed spellings of common words.",
+        "sequences": "Avoid common character sequences.",
+        "use_words": "Use multiple words, but avoid common phrases."
+      },
+      "warning": {
+        "common": "This is a commonly used password.",
+        "common_names": "Common names and surnames are easy to guess.",
+        "dates": "Dates are easy to guess.",
+        "extended_repeat": "Repeated character patterns like \"abcabcabc\" are easy to guess.",
+        "key_pattern": "Short keyboard patterns are easy to guess.",
+        "names_by_themselves": "Single names or surnames are easy to guess.",
+        "pwned": "Your password was exposed by a data breach on the Internet.",
+        "recent_years": "Recent years are easy to guess.",
+        "sequences": "Common character sequences like \"abc\" are easy to guess.",
+        "similar_to_common": "This is similar to a commonly used password.",
+        "simple_repeat": "Repeated characters like \"aaa\" are easy to guess.",
+        "straight_row": "Straight rows of keys on your keyboard are easy to guess.",
+        "top_hundred": "This is a frequently used password.",
+        "top_ten": "This is a heavily used password.",
+        "user_inputs": "There should not be any personal or page related data.",
+        "word_by_itself": "Single words are easy to guess."
+      }
+    },
     "reset_cross_signing": {
       "button": "Allow crypto identity reset",
       "description": "If you are not signed in anywhere else, and have forgotten or lost all recovery options you’ll need to reset your crypto identity. This means you will lose your existing message history, other users will see that you have reset your identity and you will need to verify your existing devices again.",
