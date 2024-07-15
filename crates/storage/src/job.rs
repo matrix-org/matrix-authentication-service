@@ -327,6 +327,9 @@ mod jobs {
     }
 
     /// A job to provision a device for a user on the homeserver.
+    ///
+    /// This job is deprecated, use the `SyncDevicesJob` instead. It is kept to
+    /// not break existing jobs in the database.
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct ProvisionDeviceJob {
         user_id: Ulid,
@@ -334,15 +337,6 @@ mod jobs {
     }
 
     impl ProvisionDeviceJob {
-        /// Create a new job to provision a device for a user on the homeserver.
-        #[must_use]
-        pub fn new(user: &User, device: &Device) -> Self {
-            Self {
-                user_id: user.id,
-                device_id: device.as_str().to_owned(),
-            }
-        }
-
         /// The ID of the user to provision the device for.
         #[must_use]
         pub fn user_id(&self) -> Ulid {
@@ -361,6 +355,9 @@ mod jobs {
     }
 
     /// A job to delete a device for a user on the homeserver.
+    ///
+    /// This job is deprecated, use the `SyncDevicesJob` instead. It is kept to
+    /// not break existing jobs in the database.
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct DeleteDeviceJob {
         user_id: Ulid,
