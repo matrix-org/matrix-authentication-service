@@ -50,7 +50,7 @@ exports[`<UnverifiedEmailAlert /> > renders a warning when there are unverified 
     </div>
     <button
       aria-label="Close"
-      class="_icon-button_rijzz_17"
+      class="_icon-button_bh2qc_17"
       role="button"
       style="--cpd-icon-button-size: 32px;"
       tabindex="0"
@@ -60,7 +60,6 @@ exports[`<UnverifiedEmailAlert /> > renders a warning when there are unverified 
         style="--cpd-icon-button-size: 100%;"
       >
         <svg
-          class="cpd-icon"
           fill="currentColor"
           height="1em"
           viewBox="0 0 24 24"
