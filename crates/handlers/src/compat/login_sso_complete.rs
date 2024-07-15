@@ -202,6 +202,9 @@ pub async fn post(
         redirect_uri
     };
 
+    // Lock the user sync to make sure we don't get into a race condition
+    repo.user().acquire_lock_for_sync(&session.user).await?;
+
     let device = Device::generate(&mut rng);
     let mxid = homeserver.mxid(&session.user.username);
     homeserver

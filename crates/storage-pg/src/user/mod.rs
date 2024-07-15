@@ -437,4 +437,38 @@ impl<'c> UserRepository for PgUserRepository<'c> {
             .try_into()
             .map_err(DatabaseError::to_invalid_operation)
     }
+
+    #[tracing::instrument(
+        name = "db.user.acquire_lock_for_sync",
+        skip_all,
+        fields(
+            db.statement,
+            user.id = %user.id,
+        ),
+        err,
+    )]
+    async fn acquire_lock_for_sync(&mut self, user: &User) -> Result<(), Self::Error> {
+        // XXX: this lock isn't stictly scoped to users, but as we don't use many
+        // postgres advisory locks, it's fine for now. Later on, we could use row-level
+        // locks to make sure we don't get into trouble
+
+        // Convert the user ID to a u128 and grab the lower 64 bits
+        // As this includes 64bit of the random part of the ULID, it should be random
+        // enough to not collide
+        let lock_id = (u128::from(user.id) & 0xffff_ffff_ffff_ffff) as i64;
+
+        // Use a PG advisory lock, which will be released when the transaction is
+        // committed or rolled back
+        sqlx::query!(
+            r#"
+                SELECT pg_advisory_xact_lock($1)
+            "#,
+            lock_id,
+        )
+        .traced()
+        .execute(&mut *self.conn)
+        .await?;
+
+        Ok(())
+    }
 }

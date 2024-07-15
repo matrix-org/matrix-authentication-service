@@ -419,6 +419,9 @@ async fn user_password_login(
             .await?;
     }
 
+    // Lock the user sync to make sure we don't get into a race condition
+    repo.user().acquire_lock_for_sync(&user).await?;
+
     // Now that the user credentials have been verified, start a new compat session
     let device = Device::generate(&mut rng);
     let mxid = homeserver.mxid(&user.username);

@@ -259,6 +259,19 @@ pub trait UserRepository: Send + Sync {
     ///
     /// Returns [`Self::Error`] if the underlying repository fails
     async fn count(&mut self, filter: UserFilter<'_>) -> Result<usize, Self::Error>;
+
+    /// Acquire a lock on the user to make sure device operations are done in a
+    /// sequential way. The lock is released when the repository is saved or
+    /// rolled back.
+    ///
+    /// # Parameters
+    ///
+    /// * `user`: The user to lock
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn acquire_lock_for_sync(&mut self, user: &User) -> Result<(), Self::Error>;
 }
 
 repository_impl!(UserRepository:
@@ -284,4 +297,5 @@ repository_impl!(UserRepository:
         pagination: Pagination,
     ) -> Result<Page<User>, Self::Error>;
     async fn count(&mut self, filter: UserFilter<'_>) -> Result<usize, Self::Error>;
+    async fn acquire_lock_for_sync(&mut self, user: &User) -> Result<(), Self::Error>;
 );

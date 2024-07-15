@@ -168,6 +168,9 @@ impl OAuth2SessionMutations {
             .add(&mut rng, &clock, &client, Some(&user), None, scope)
             .await?;
 
+        // Lock the user sync to make sure we don't get into a race condition
+        repo.user().acquire_lock_for_sync(&user).await?;
+
         // Look for devices to provision
         let mxid = homeserver.mxid(&user.username);
         for scope in &*session.scope {
