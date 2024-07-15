@@ -1,4 +1,4 @@
-// Copyright 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2023, 2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -88,8 +88,8 @@ async fn provision_user(
 }
 
 /// Job to provision a device on the Matrix homeserver.
-/// This works by doing a POST request to the
-/// /_synapse/admin/v2/users/{user_id}/devices endpoint.
+///
+/// This job is deprecated and therefore just schedules a [`SyncDevicesJob`]
 #[tracing::instrument(
     name = "job.provision_device"
     fields(
@@ -104,7 +104,6 @@ async fn provision_device(
     ctx: JobContext,
 ) -> Result<(), anyhow::Error> {
     let state = ctx.state();
-    let matrix = state.matrix_connection();
     let mut repo = state.repository().await?;
 
     let user = repo
@@ -113,17 +112,15 @@ async fn provision_device(
         .await?
         .context("User not found")?;
 
-    let mxid = matrix.mxid(&user.username);
-
-    matrix.create_device(&mxid, job.device_id()).await?;
-    info!(%user.id, %mxid, device.id = job.device_id(), "Device created");
+    // Schedule a device sync job
+    repo.job().schedule_job(SyncDevicesJob::new(&user)).await?;
 
     Ok(())
 }
 
 /// Job to delete a device from a user's account.
-/// This works by doing a DELETE request to the
-/// /_synapse/admin/v2/users/{user_id}/devices/{device_id} endpoint.
+///
+/// This job is deprecated and therefore just schedules a [`SyncDevicesJob`]
 #[tracing::instrument(
     name = "job.delete_device"
     fields(
@@ -138,7 +135,6 @@ async fn delete_device(
     ctx: JobContext,
 ) -> Result<(), anyhow::Error> {
     let state = ctx.state();
-    let matrix = state.matrix_connection();
     let mut repo = state.repository().await?;
 
     let user = repo
@@ -147,10 +143,8 @@ async fn delete_device(
         .await?
         .context("User not found")?;
 
-    let mxid = matrix.mxid(&user.username);
-
-    matrix.delete_device(&mxid, job.device_id()).await?;
-    info!(%user.id, %mxid, device.id = job.device_id(), "Device deleted");
+    // Schedule a device sync job
+    repo.job().schedule_job(SyncDevicesJob::new(&user)).await?;
 
     Ok(())
 }
