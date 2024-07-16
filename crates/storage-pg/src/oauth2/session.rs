@@ -207,6 +207,51 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.oauth2_session.finish_bulk",
+        skip_all,
+        fields(
+            db.statement,
+        ),
+        err,
+    )]
+    async fn finish_bulk(
+        &mut self,
+        clock: &dyn Clock,
+        filter: OAuth2SessionFilter<'_>,
+    ) -> Result<usize, Self::Error> {
+        let finished_at = clock.now();
+        let (sql, arguments) = Query::update()
+            .table(OAuth2Sessions::Table)
+            .value(OAuth2Sessions::FinishedAt, finished_at)
+            .and_where_option(filter.user().map(|user| {
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::UserId)).eq(Uuid::from(user.id))
+            }))
+            .and_where_option(filter.client().map(|client| {
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::OAuth2ClientId))
+                    .eq(Uuid::from(client.id))
+            }))
+            .and_where_option(filter.state().map(|state| {
+                if state.is_active() {
+                    Expr::col((OAuth2Sessions::Table, OAuth2Sessions::FinishedAt)).is_null()
+                } else {
+                    Expr::col((OAuth2Sessions::Table, OAuth2Sessions::FinishedAt)).is_not_null()
+                }
+            }))
+            .and_where_option(filter.scope().map(|scope| {
+                let scope: Vec<String> = scope.iter().map(|s| s.as_str().to_owned()).collect();
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::ScopeList)).contains(scope)
+            }))
+            .build_sqlx(PostgresQueryBuilder);
+
+        let res = sqlx::query_with(&sql, arguments)
+            .traced()
+            .execute(&mut *self.conn)
+            .await?;
+
+        Ok(res.rows_affected().try_into().unwrap_or(usize::MAX))
+    }
+
+    #[tracing::instrument(
         name = "db.oauth2_session.finish",
         skip_all,
         fields(
