@@ -65,11 +65,7 @@ impl EvaluationResult {
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub enum RegisterInput<'a> {
     #[serde(rename = "password")]
-    Password {
-        username: &'a str,
-        password: &'a str,
-        email: &'a str,
-    },
+    Password { username: &'a str, email: &'a str },
 
     #[serde(rename = "upstream-oauth2")]
     UpstreamOAuth2 {

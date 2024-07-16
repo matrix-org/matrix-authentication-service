@@ -546,11 +546,7 @@ impl UserMutations {
             return Err(async_graphql::Error::new("Unauthorized"));
         }
 
-        let mut policy = state.policy().await?;
-
-        let res = policy.evaluate_password(&input.new_password).await?;
-
-        if !res.valid() {
+        if input.new_password.is_empty() {
             // TODO Expose the reason for the policy violation
             // This involves redesigning the error handling
             // Idea would be to expose an errors array in the response,

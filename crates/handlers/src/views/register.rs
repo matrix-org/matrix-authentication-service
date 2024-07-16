@@ -214,7 +214,7 @@ pub(crate) async fn post(
         }
 
         let res = policy
-            .evaluate_register(&form.username, &form.password, &form.email)
+            .evaluate_register(&form.username, &form.email)
             .await?;
 
         for violation in res.violations {
