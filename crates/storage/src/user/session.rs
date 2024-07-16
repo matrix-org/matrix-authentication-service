@@ -148,6 +148,24 @@ pub trait BrowserSessionRepository: Send + Sync {
         user_session: BrowserSession,
     ) -> Result<BrowserSession, Self::Error>;
 
+    /// Mark all the [`BrowserSession`] matching the given filter as finished
+    ///
+    /// Returns the number of sessions affected
+    ///
+    /// # Parameters
+    ///
+    /// * `clock`: The clock used to generate timestamps
+    /// * `filter`: The filter parameters
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn finish_bulk(
+        &mut self,
+        clock: &dyn Clock,
+        filter: BrowserSessionFilter<'_>,
+    ) -> Result<usize, Self::Error>;
+
     /// List [`BrowserSession`] with the given filter and pagination
     ///
     /// # Parameters
@@ -261,6 +279,12 @@ repository_impl!(BrowserSessionRepository:
         clock: &dyn Clock,
         user_session: BrowserSession,
     ) -> Result<BrowserSession, Self::Error>;
+
+    async fn finish_bulk(
+        &mut self,
+        clock: &dyn Clock,
+        filter: BrowserSessionFilter<'_>,
+    ) -> Result<usize, Self::Error>;
 
     async fn list(
         &mut self,
