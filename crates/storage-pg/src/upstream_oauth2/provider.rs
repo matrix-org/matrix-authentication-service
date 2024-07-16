@@ -31,8 +31,11 @@ use ulid::Ulid;
 use uuid::Uuid;
 
 use crate::{
-    iden::UpstreamOAuthProviders, pagination::QueryBuilderExt, tracing::ExecuteExt, DatabaseError,
-    DatabaseInconsistencyError,
+    filter::{Filter, StatementExt},
+    iden::UpstreamOAuthProviders,
+    pagination::QueryBuilderExt,
+    tracing::ExecuteExt,
+    DatabaseError, DatabaseInconsistencyError,
 };
 
 /// An implementation of [`UpstreamOAuthProviderRepository`] for a PostgreSQL
@@ -171,6 +174,19 @@ impl TryFrom<ProviderLookup> for UpstreamOAuthProvider {
             pkce_mode,
             additional_authorization_parameters,
         })
+    }
+}
+
+impl Filter for UpstreamOAuthProviderFilter<'_> {
+    fn generate_condition(&self, _has_joins: bool) -> impl sea_query::IntoCondition {
+        sea_query::Condition::all().add_option(self.enabled().map(|enabled| {
+            Expr::col((
+                UpstreamOAuthProviders::Table,
+                UpstreamOAuthProviders::DisabledAt,
+            ))
+            .is_null()
+            .eq(enabled)
+        }))
     }
 }
 
@@ -429,7 +445,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                     created_at
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,
                           $10, $11, $12, $13, $14, $15, $16, $17)
-                ON CONFLICT (upstream_oauth_provider_id) 
+                ON CONFLICT (upstream_oauth_provider_id)
                     DO UPDATE
                     SET
                         issuer = EXCLUDED.issuer,
@@ -676,14 +692,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                 ProviderLookupIden::AdditionalParameters,
             )
             .from(UpstreamOAuthProviders::Table)
-            .and_where_option(filter.enabled().map(|enabled| {
-                Expr::col((
-                    UpstreamOAuthProviders::Table,
-                    UpstreamOAuthProviders::DisabledAt,
-                ))
-                .is_null()
-                .eq(enabled)
-            }))
+            .apply_filter(filter)
             .generate_pagination(
                 (
                     UpstreamOAuthProviders::Table,
@@ -726,14 +735,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                 .count(),
             )
             .from(UpstreamOAuthProviders::Table)
-            .and_where_option(filter.enabled().map(|enabled| {
-                Expr::col((
-                    UpstreamOAuthProviders::Table,
-                    UpstreamOAuthProviders::DisabledAt,
-                ))
-                .is_null()
-                .eq(enabled)
-            }))
+            .apply_filter(filter)
             .build_sqlx(PostgresQueryBuilder);
 
         let count: i64 = sqlx::query_scalar_with(&sql, arguments)
