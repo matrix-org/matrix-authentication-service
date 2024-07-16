@@ -260,6 +260,43 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.browser_session.finish_bulk",
+        skip_all,
+        fields(
+            db.statement,
+        ),
+        err,
+    )]
+    async fn finish_bulk(
+        &mut self,
+        clock: &dyn Clock,
+        filter: mas_storage::user::BrowserSessionFilter<'_>,
+    ) -> Result<usize, Self::Error> {
+        let finished_at = clock.now();
+        let (sql, arguments) = sea_query::Query::update()
+            .table(UserSessions::Table)
+            .value(UserSessions::FinishedAt, finished_at)
+            .and_where_option(filter.user().map(|user| {
+                Expr::col((UserSessions::Table, UserSessions::UserId)).eq(Uuid::from(user.id))
+            }))
+            .and_where_option(filter.state().map(|state| {
+                if state.is_active() {
+                    Expr::col((UserSessions::Table, UserSessions::FinishedAt)).is_null()
+                } else {
+                    Expr::col((UserSessions::Table, UserSessions::FinishedAt)).is_not_null()
+                }
+            }))
+            .build_sqlx(PostgresQueryBuilder);
+
+        let res = sqlx::query_with(&sql, arguments)
+            .traced()
+            .execute(&mut *self.conn)
+            .await?;
+
+        Ok(res.rows_affected().try_into().unwrap_or(usize::MAX))
+    }
+
+    #[tracing::instrument(
         name = "db.browser_session.list",
         skip_all,
         fields(
@@ -560,7 +597,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
                   , last_active_ip = COALESCE(t.last_active_ip, user_sessions.last_active_ip)
                 FROM (
                     SELECT *
-                    FROM UNNEST($1::uuid[], $2::timestamptz[], $3::inet[]) 
+                    FROM UNNEST($1::uuid[], $2::timestamptz[], $3::inet[])
                         AS t(user_session_id, last_active_at, last_active_ip)
                 ) AS t
                 WHERE user_sessions.user_session_id = t.user_session_id

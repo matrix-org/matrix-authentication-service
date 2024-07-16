@@ -534,19 +534,23 @@ async fn test_user_password_repo(pool: PgPool) {
 
 #[sqlx::test(migrator = "crate::MIGRATOR")]
 async fn test_user_session(pool: PgPool) {
-    const USERNAME: &str = "john";
-
     let mut repo = PgRepository::from_pool(&pool).await.unwrap();
     let mut rng = ChaChaRng::seed_from_u64(42);
     let clock = MockClock::default();
 
-    let user = repo
+    let alice = repo
         .user()
-        .add(&mut rng, &clock, USERNAME.to_owned())
+        .add(&mut rng, &clock, "alice".to_owned())
         .await
         .unwrap();
 
-    let all = BrowserSessionFilter::default().for_user(&user);
+    let bob = repo
+        .user()
+        .add(&mut rng, &clock, "bob".to_owned())
+        .await
+        .unwrap();
+
+    let all = BrowserSessionFilter::default();
     let active = all.active_only();
     let finished = all.finished_only();
 
@@ -556,10 +560,10 @@ async fn test_user_session(pool: PgPool) {
 
     let session = repo
         .browser_session()
-        .add(&mut rng, &clock, &user, None)
+        .add(&mut rng, &clock, &alice, None)
         .await
         .unwrap();
-    assert_eq!(session.user.id, user.id);
+    assert_eq!(session.user.id, alice.id);
     assert!(session.finished_at.is_none());
 
     assert_eq!(repo.browser_session().count(all).await.unwrap(), 1);
@@ -584,7 +588,7 @@ async fn test_user_session(pool: PgPool) {
         .expect("user session not found");
 
     assert_eq!(session_lookup.id, session.id);
-    assert_eq!(session_lookup.user.id, user.id);
+    assert_eq!(session_lookup.user.id, alice.id);
     assert!(session_lookup.finished_at.is_none());
 
     // Finish the session
@@ -616,9 +620,53 @@ async fn test_user_session(pool: PgPool) {
         .expect("user session not found");
 
     assert_eq!(session_lookup.id, session.id);
-    assert_eq!(session_lookup.user.id, user.id);
+    assert_eq!(session_lookup.user.id, alice.id);
     // This time the session is finished
     assert!(session_lookup.finished_at.is_some());
+
+    // Create a bunch of other sessions
+    for _ in 0..5 {
+        for user in &[&alice, &bob] {
+            repo.browser_session()
+                .add(&mut rng, &clock, user, None)
+                .await
+                .unwrap();
+        }
+    }
+
+    let all_alice = BrowserSessionFilter::new().for_user(&alice);
+    let active_alice = BrowserSessionFilter::new().for_user(&alice).active_only();
+    let all_bob = BrowserSessionFilter::new().for_user(&bob);
+    let active_bob = BrowserSessionFilter::new().for_user(&bob).active_only();
+    assert_eq!(repo.browser_session().count(all).await.unwrap(), 11);
+    assert_eq!(repo.browser_session().count(active).await.unwrap(), 10);
+    assert_eq!(repo.browser_session().count(finished).await.unwrap(), 1);
+    assert_eq!(repo.browser_session().count(all_alice).await.unwrap(), 6);
+    assert_eq!(repo.browser_session().count(active_alice).await.unwrap(), 5);
+    assert_eq!(repo.browser_session().count(all_bob).await.unwrap(), 5);
+    assert_eq!(repo.browser_session().count(active_bob).await.unwrap(), 5);
+
+    // Finish all the sessions for alice
+    let affected = repo
+        .browser_session()
+        .finish_bulk(&clock, active_alice)
+        .await
+        .unwrap();
+    assert_eq!(affected, 5);
+    assert_eq!(repo.browser_session().count(all_alice).await.unwrap(), 6);
+    assert_eq!(repo.browser_session().count(active_alice).await.unwrap(), 0);
+    assert_eq!(repo.browser_session().count(finished).await.unwrap(), 6);
+
+    // Finish all the sessions for bob
+    let affected = repo
+        .browser_session()
+        .finish_bulk(&clock, active_bob)
+        .await
+        .unwrap();
+    assert_eq!(affected, 5);
+    assert_eq!(repo.browser_session().count(all_bob).await.unwrap(), 5);
+    assert_eq!(repo.browser_session().count(active_bob).await.unwrap(), 0);
+    assert_eq!(repo.browser_session().count(finished).await.unwrap(), 11);
 }
 
 #[sqlx::test(migrator = "crate::MIGRATOR")]
