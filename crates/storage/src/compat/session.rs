@@ -66,6 +66,7 @@ impl CompatSessionType {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub struct CompatSessionFilter<'a> {
     user: Option<&'a User>,
+    browser_session: Option<&'a BrowserSession>,
     state: Option<CompatSessionState>,
     auth_type: Option<CompatSessionType>,
     device: Option<&'a Device>,
@@ -87,7 +88,7 @@ impl<'a> CompatSessionFilter<'a> {
 
     /// Get the user filter
     #[must_use]
-    pub fn user(&self) -> Option<&User> {
+    pub fn user(&self) -> Option<&'a User> {
         self.user
     }
 
@@ -100,8 +101,21 @@ impl<'a> CompatSessionFilter<'a> {
 
     /// Get the device filter
     #[must_use]
-    pub fn device(&self) -> Option<&Device> {
+    pub fn device(&self) -> Option<&'a Device> {
         self.device
+    }
+
+    /// Set the browser session filter
+    #[must_use]
+    pub fn for_browser_session(mut self, browser_session: &'a BrowserSession) -> Self {
+        self.browser_session = Some(browser_session);
+        self
+    }
+
+    /// Get the browser session filter
+    #[must_use]
+    pub fn browser_session(&self) -> Option<&'a BrowserSession> {
+        self.browser_session
     }
 
     /// Only return active compatibility sessions

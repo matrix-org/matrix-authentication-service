@@ -23,7 +23,7 @@ use mas_storage::{
 };
 use oauth2_types::scope::{Scope, ScopeToken};
 use rand::RngCore;
-use sea_query::{enum_def, extension::postgres::PgExpr, Expr, PostgresQueryBuilder, Query};
+use sea_query::{enum_def, extension::postgres::PgExpr, Expr, PgFunc, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use sqlx::PgConnection;
 use ulid::Ulid;
@@ -111,6 +111,16 @@ impl Filter for OAuth2SessionFilter<'_> {
             .add_option(self.client().map(|client| {
                 Expr::col((OAuth2Sessions::Table, OAuth2Sessions::OAuth2ClientId))
                     .eq(Uuid::from(client.id))
+            }))
+            .add_option(self.device().map(|device| {
+                Expr::val(device.to_scope_token().to_string()).eq(PgFunc::any(Expr::col((
+                    OAuth2Sessions::Table,
+                    OAuth2Sessions::ScopeList,
+                ))))
+            }))
+            .add_option(self.browser_session().map(|browser_session| {
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::UserSessionId))
+                    .eq(Uuid::from(browser_session.id))
             }))
             .add_option(self.state().map(|state| {
                 if state.is_active() {

@@ -210,6 +210,10 @@ impl Filter for CompatSessionFilter<'_> {
             .add_option(self.user().map(|user| {
                 Expr::col((CompatSessions::Table, CompatSessions::UserId)).eq(Uuid::from(user.id))
             }))
+            .add_option(self.browser_session().map(|browser_session| {
+                Expr::col((CompatSessions::Table, CompatSessions::UserSessionId))
+                    .eq(Uuid::from(browser_session.id))
+            }))
             .add_option(self.state().map(|state| {
                 if state.is_active() {
                     Expr::col((CompatSessions::Table, CompatSessions::FinishedAt)).is_null()
