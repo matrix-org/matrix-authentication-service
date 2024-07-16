@@ -27,6 +27,7 @@ use ulid::Ulid;
 use uuid::Uuid;
 
 use crate::{
+    filter::{Filter, StatementExt},
     iden::{UpstreamOAuthLinks, UpstreamOAuthProviders},
     pagination::QueryBuilderExt,
     tracing::ExecuteExt,
@@ -66,6 +67,46 @@ impl From<LinkLookup> for UpstreamOAuthLink {
             subject: value.subject,
             created_at: value.created_at,
         }
+    }
+}
+
+impl Filter for UpstreamOAuthLinkFilter<'_> {
+    fn generate_condition(&self, _has_joins: bool) -> impl sea_query::IntoCondition {
+        sea_query::Condition::all()
+            .add_option(self.user().map(|user| {
+                Expr::col((UpstreamOAuthLinks::Table, UpstreamOAuthLinks::UserId))
+                    .eq(Uuid::from(user.id))
+            }))
+            .add_option(self.provider().map(|provider| {
+                Expr::col((
+                    UpstreamOAuthLinks::Table,
+                    UpstreamOAuthLinks::UpstreamOAuthProviderId,
+                ))
+                .eq(Uuid::from(provider.id))
+            }))
+            .add_option(self.provider_enabled().map(|enabled| {
+                Expr::col((
+                    UpstreamOAuthLinks::Table,
+                    UpstreamOAuthLinks::UpstreamOAuthProviderId,
+                ))
+                .eq(Expr::any(
+                    Query::select()
+                        .expr(Expr::col((
+                            UpstreamOAuthProviders::Table,
+                            UpstreamOAuthProviders::UpstreamOAuthProviderId,
+                        )))
+                        .from(UpstreamOAuthProviders::Table)
+                        .and_where(
+                            Expr::col((
+                                UpstreamOAuthProviders::Table,
+                                UpstreamOAuthProviders::DisabledAt,
+                            ))
+                            .is_null()
+                            .eq(enabled),
+                        )
+                        .take(),
+                ))
+            }))
     }
 }
 
@@ -272,40 +313,7 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
                 LinkLookupIden::CreatedAt,
             )
             .from(UpstreamOAuthLinks::Table)
-            .and_where_option(filter.user().map(|user| {
-                Expr::col((UpstreamOAuthLinks::Table, UpstreamOAuthLinks::UserId))
-                    .eq(Uuid::from(user.id))
-            }))
-            .and_where_option(filter.provider().map(|provider| {
-                Expr::col((
-                    UpstreamOAuthLinks::Table,
-                    UpstreamOAuthLinks::UpstreamOAuthProviderId,
-                ))
-                .eq(Uuid::from(provider.id))
-            }))
-            .and_where_option(filter.provider_enabled().map(|enabled| {
-                Expr::col((
-                    UpstreamOAuthLinks::Table,
-                    UpstreamOAuthLinks::UpstreamOAuthProviderId,
-                ))
-                .eq(Expr::any(
-                    Query::select()
-                        .expr(Expr::col((
-                            UpstreamOAuthProviders::Table,
-                            UpstreamOAuthProviders::UpstreamOAuthProviderId,
-                        )))
-                        .from(UpstreamOAuthProviders::Table)
-                        .and_where(
-                            Expr::col((
-                                UpstreamOAuthProviders::Table,
-                                UpstreamOAuthProviders::DisabledAt,
-                            ))
-                            .is_null()
-                            .eq(enabled),
-                        )
-                        .take(),
-                ))
-            }))
+            .apply_filter(filter)
             .generate_pagination(
                 (
                     UpstreamOAuthLinks::Table,
@@ -343,40 +351,7 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
                 .count(),
             )
             .from(UpstreamOAuthLinks::Table)
-            .and_where_option(filter.user().map(|user| {
-                Expr::col((UpstreamOAuthLinks::Table, UpstreamOAuthLinks::UserId))
-                    .eq(Uuid::from(user.id))
-            }))
-            .and_where_option(filter.provider().map(|provider| {
-                Expr::col((
-                    UpstreamOAuthLinks::Table,
-                    UpstreamOAuthLinks::UpstreamOAuthProviderId,
-                ))
-                .eq(Uuid::from(provider.id))
-            }))
-            .and_where_option(filter.provider_enabled().map(|enabled| {
-                Expr::col((
-                    UpstreamOAuthLinks::Table,
-                    UpstreamOAuthLinks::UpstreamOAuthProviderId,
-                ))
-                .eq(Expr::any(
-                    Query::select()
-                        .expr(Expr::col((
-                            UpstreamOAuthProviders::Table,
-                            UpstreamOAuthProviders::UpstreamOAuthProviderId,
-                        )))
-                        .from(UpstreamOAuthProviders::Table)
-                        .and_where(
-                            Expr::col((
-                                UpstreamOAuthProviders::Table,
-                                UpstreamOAuthProviders::DisabledAt,
-                            ))
-                            .is_null()
-                            .eq(enabled),
-                        )
-                        .take(),
-                ))
-            }))
+            .apply_filter(filter)
             .build_sqlx(PostgresQueryBuilder);
 
         let count: i64 = sqlx::query_scalar_with(&sql, arguments)
