@@ -35,6 +35,10 @@ fn default_enabled() -> bool {
     true
 }
 
+fn default_minimum_complexity() -> u8 {
+    3
+}
+
 /// User password hashing config
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct PasswordsConfig {
@@ -44,6 +48,18 @@ pub struct PasswordsConfig {
 
     #[serde(default = "default_schemes")]
     schemes: Vec<HashingScheme>,
+
+    /// Score between 0 and 4 determining the minimum allowed password
+    /// complexity. Scores are based on the ESTIMATED number of guesses
+    /// needed to guess the password.
+    ///
+    /// - 0: less than 10^2 (100)
+    /// - 1: less than 10^4 (10'000)
+    /// - 2: less than 10^6 (1'000'000)
+    /// - 3: less than 10^8 (100'000'000)
+    /// - 4: any more than that
+    #[serde(default = "default_minimum_complexity")]
+    minimum_complexity: u8,
 }
 
 impl Default for PasswordsConfig {
@@ -51,6 +67,7 @@ impl Default for PasswordsConfig {
         Self {
             enabled: default_enabled(),
             schemes: default_schemes(),
+            minimum_complexity: default_minimum_complexity(),
         }
     }
 }
@@ -94,6 +111,13 @@ impl PasswordsConfig {
     #[must_use]
     pub fn enabled(&self) -> bool {
         self.enabled
+    }
+
+    /// Minimum complexity of passwords, from 0 to 4, according to the zxcvbn
+    /// scorer.
+    #[must_use]
+    pub fn minimum_complexity(&self) -> u8 {
+        self.minimum_complexity
     }
 
     /// Load the password hashing schemes defined by the config

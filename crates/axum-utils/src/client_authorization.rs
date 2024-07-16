@@ -16,14 +16,14 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 use axum::{
-    body::HttpBody,
     extract::{
-        rejection::{FailedToDeserializeForm, FormRejection, TypedHeaderRejectionReason},
-        Form, FromRequest, FromRequestParts, TypedHeader,
+        rejection::{FailedToDeserializeForm, FormRejection},
+        Form, FromRequest, FromRequestParts,
     },
     response::IntoResponse,
     BoxError, Json,
 };
+use axum_extra::typed_header::{TypedHeader, TypedHeaderRejectionReason};
 use headers::{authorization::Basic, Authorization};
 use http::{Request, StatusCode};
 use mas_data_model::{Client, JwksOrJwksUri};
@@ -337,18 +337,18 @@ impl IntoResponse for ClientAuthorizationError {
 }
 
 #[async_trait]
-impl<S, B, F> FromRequest<S, B> for ClientAuthorization<F>
+impl<S, F> FromRequest<S> for ClientAuthorization<F>
 where
     F: DeserializeOwned,
-    B: HttpBody + Send + 'static,
-    B::Data: Send,
-    B::Error: Into<BoxError>,
     S: Send + Sync,
 {
     type Rejection = ClientAuthorizationError;
 
     #[allow(clippy::too_many_lines)]
-    async fn from_request(req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
+    async fn from_request(
+        req: Request<axum::body::Body>,
+        state: &S,
+    ) -> Result<Self, Self::Rejection> {
         // Split the request into parts so we can extract some headers
         let (mut parts, body) = req.into_parts();
 
@@ -489,7 +489,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use axum::body::{Bytes, Full};
+    use axum::body::Body;
     use http::{Method, Request};
 
     use super::*;
@@ -502,7 +502,7 @@ mod tests {
                 http::header::CONTENT_TYPE,
                 mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
             )
-            .body(Full::<Bytes>::new("client_id=client-id&foo=bar".into()))
+            .body(Body::new("client_id=client-id&foo=bar".to_owned()))
             .unwrap();
 
         assert_eq!(
@@ -530,7 +530,7 @@ mod tests {
                 http::header::AUTHORIZATION,
                 "Basic Y2xpZW50LWlkOmNsaWVudC1zZWNyZXQ=",
             )
-            .body(Full::<Bytes>::new("foo=bar".into()))
+            .body(Body::new("foo=bar".to_owned()))
             .unwrap();
 
         assert_eq!(
@@ -557,7 +557,7 @@ mod tests {
                 http::header::AUTHORIZATION,
                 "Basic Y2xpZW50LWlkOmNsaWVudC1zZWNyZXQ=",
             )
-            .body(Full::<Bytes>::new("client_id=client-id&foo=bar".into()))
+            .body(Body::new("client_id=client-id&foo=bar".to_owned()))
             .unwrap();
 
         assert_eq!(
@@ -584,7 +584,7 @@ mod tests {
                 http::header::AUTHORIZATION,
                 "Basic Y2xpZW50LWlkOmNsaWVudC1zZWNyZXQ=",
             )
-            .body(Full::<Bytes>::new("client_id=mismatch-id&foo=bar".into()))
+            .body(Body::new("client_id=mismatch-id&foo=bar".to_owned()))
             .unwrap();
 
         assert!(matches!(
@@ -600,7 +600,7 @@ mod tests {
                 mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
             )
             .header(http::header::AUTHORIZATION, "Basic invalid")
-            .body(Full::<Bytes>::new("foo=bar".into()))
+            .body(Body::new("foo=bar".to_owned()))
             .unwrap();
 
         assert!(matches!(
@@ -617,8 +617,8 @@ mod tests {
                 http::header::CONTENT_TYPE,
                 mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
             )
-            .body(Full::<Bytes>::new(
-                "client_id=client-id&client_secret=client-secret&foo=bar".into(),
+            .body(Body::new(
+                "client_id=client-id&client_secret=client-secret&foo=bar".to_owned(),
             ))
             .unwrap();
 
@@ -640,7 +640,7 @@ mod tests {
     async fn client_assertion_test() {
         // Signed with client_secret = "client-secret"
         let jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjbGllbnQtaWQiLCJzdWIiOiJjbGllbnQtaWQiLCJhdWQiOiJodHRwczovL2V4YW1wbGUuY29tL29hdXRoMi9pbnRyb3NwZWN0IiwianRpIjoiYWFiYmNjIiwiZXhwIjoxNTE2MjM5MzIyLCJpYXQiOjE1MTYyMzkwMjJ9.XTaACG_Rww0GPecSZvkbem-AczNy9LLNBueCLCiQajU";
-        let body = Bytes::from(format!(
+        let body = Body::new(format!(
             "client_assertion_type={JWT_BEARER_CLIENT_ASSERTION}&client_assertion={jwt}&foo=bar",
         ));
 
@@ -650,7 +650,7 @@ mod tests {
                 http::header::CONTENT_TYPE,
                 mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
             )
-            .body(Full::new(body))
+            .body(body)
             .unwrap();
 
         let authz = ClientAuthorization::<serde_json::Value>::from_request(req, &())

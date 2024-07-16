@@ -16,6 +16,7 @@ use bytes::Bytes;
 use futures_util::future::BoxFuture;
 use http::{Request, Response};
 use http_body::Body;
+use http_body_util::BodyExt;
 use thiserror::Error;
 use tower::{Layer, Service};
 
@@ -82,7 +83,7 @@ where
             let response = inner.await.map_err(Error::service)?;
             let (parts, body) = response.into_parts();
 
-            let body = hyper::body::to_bytes(body).await.map_err(Error::body)?;
+            let body = body.collect().await.map_err(Error::body)?.to_bytes();
 
             let response = Response::from_parts(parts, body);
             Ok(response)

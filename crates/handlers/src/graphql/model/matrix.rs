@@ -1,4 +1,4 @@
-// Copyright 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2023, 2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,9 @@ pub struct MatrixUser {
 
     /// The avatar URL of the user, if any.
     avatar_url: Option<String>,
+
+    /// Whether the user is deactivated on the homeserver.
+    deactivated: bool,
 }
 
 impl MatrixUser {
@@ -40,6 +43,7 @@ impl MatrixUser {
             mxid,
             display_name: info.displayname,
             avatar_url: info.avatar_url,
+            deactivated: info.deactivated,
         })
     }
 }

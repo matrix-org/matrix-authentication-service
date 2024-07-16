@@ -131,7 +131,7 @@ export async function migrate(): Promise<void> {
   );
 
   // connect to synapse database
-  const synapse = connectToSynapseDatabase(synapseConfig);
+  const synapse = await connectToSynapseDatabase(synapseConfig);
 
   // load MAS config
   const masConfig = masConfigSchema.parse(
@@ -139,7 +139,7 @@ export async function migrate(): Promise<void> {
   );
 
   // connect to MAS database
-  const mas = connectToMASDatabase(masConfig);
+  const mas = await connectToMASDatabase(masConfig);
 
   const upstreamProviders = new Map<string, MUpstreamOauthProvider>();
 

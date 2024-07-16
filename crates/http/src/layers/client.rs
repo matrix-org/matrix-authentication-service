@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2022-2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,11 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::time::Duration;
-
 use headers::{ContentLength, HeaderMapExt, Host, UserAgent};
 use http::{header::USER_AGENT, HeaderValue, Request, Response};
-use hyper::client::connect::HttpInfo;
+use hyper_util::client::legacy::connect::HttpInfo;
 use mas_tower::{
     DurationRecorderLayer, DurationRecorderService, EnrichSpan, InFlightCounterLayer,
     InFlightCounterService, MakeSpan, MetricsAttributes, TraceContextLayer, TraceContextService,
@@ -35,7 +33,6 @@ use tower::{
 use tower_http::{
     follow_redirect::{FollowRedirect, FollowRedirectLayer},
     set_header::{SetRequestHeader, SetRequestHeaderLayer},
-    timeout::{Timeout, TimeoutLayer},
 };
 use tracing::Span;
 
@@ -45,7 +42,7 @@ pub type ClientService<S> = SetRequestHeader<
             ConcurrencyLimit<
                 FollowRedirect<
                     TraceService<
-                        TraceContextService<Timeout<S>>,
+                        TraceContextService<S>,
                         MakeSpanForRequest,
                         EnrichSpanOnResponse,
                         EnrichSpanOnError,
@@ -183,7 +180,6 @@ pub struct ClientLayer {
     follow_redirect_layer: FollowRedirectLayer,
     trace_layer: TraceLayer<MakeSpanForRequest, EnrichSpanOnResponse, EnrichSpanOnError>,
     trace_context_layer: TraceContextLayer,
-    timeout_layer: TimeoutLayer,
     duration_recorder_layer: DurationRecorderLayer<OnRequestLabels, OnResponseLabels, KeyValue>,
     in_flight_counter_layer: InFlightCounterLayer<OnRequestLabels>,
 }
@@ -208,7 +204,6 @@ impl ClientLayer {
                 .on_response(EnrichSpanOnResponse)
                 .on_error(EnrichSpanOnError),
             trace_context_layer: TraceContextLayer::new(),
-            timeout_layer: TimeoutLayer::new(Duration::from_secs(10)),
             duration_recorder_layer: DurationRecorderLayer::new("http.client.duration")
                 .on_request(OnRequestLabels::default())
                 .on_response(OnResponseLabels)
@@ -253,7 +248,6 @@ where
             &self.follow_redirect_layer,
             &self.trace_layer,
             &self.trace_context_layer,
-            &self.timeout_layer,
         )
             .layer(inner)
     }

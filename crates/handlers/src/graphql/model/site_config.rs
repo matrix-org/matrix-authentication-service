@@ -46,6 +46,11 @@ pub struct SiteConfig {
 
     /// Whether passwords are enabled and users can change their own passwords.
     password_change_allowed: bool,
+
+    /// Minimum password complexity, from 0 to 4, in terms of a zxcvbn score.
+    /// The exact scorer (including dictionaries and other data tables)
+    /// in use is <https://crates.io/crates/zxcvbn>.
+    minimum_password_complexity: u8,
 }
 
 #[ComplexObject]
@@ -69,6 +74,7 @@ impl SiteConfig {
             display_name_change_allowed: data_model.displayname_change_allowed,
             password_login_enabled: data_model.password_login_enabled,
             password_change_allowed: data_model.password_change_allowed,
+            minimum_password_complexity: data_model.minimum_password_complexity,
         }
     }
 }

@@ -18,6 +18,7 @@ use anyhow::{bail, Context};
 use bytes::{Buf, Bytes};
 use headers::{ContentType, HeaderMapExt};
 use http::{header::ACCEPT, HeaderValue, Request, Response, StatusCode};
+use http_body_util::{BodyExt, Empty};
 use mas_http::{
     BodyToBytesResponseLayer, BytesToBodyRequestLayer, CatchHttpCodesLayer,
     FormUrlencodedRequestLayer, JsonRequestLayer, JsonResponseLayer,
@@ -51,7 +52,7 @@ async fn test_http_errors() {
     );
     let svc = layer.layer(service_fn(handle));
 
-    let request = Request::new(hyper::Body::empty());
+    let request = Request::new(Empty::<Bytes>::new());
 
     let res = svc.oneshot(request).await;
     let err = res.expect_err("the request should fail");
@@ -60,7 +61,7 @@ async fn test_http_errors() {
 
 #[tokio::test]
 async fn test_json_request_body() {
-    async fn handle<B>(request: Request<B>) -> Result<Response<hyper::Body>, anyhow::Error>
+    async fn handle<B>(request: Request<B>) -> Result<Response<Empty<Bytes>>, anyhow::Error>
     where
         B: http_body::Body + Send,
         B::Error: std::error::Error + Send + Sync + 'static,
@@ -74,12 +75,12 @@ async fn test_json_request_body() {
             bail!("Content-Type header is not application/json")
         }
 
-        let bytes = hyper::body::to_bytes(request.into_body()).await?;
+        let bytes = request.into_body().collect().await?.to_bytes();
         if bytes.to_vec() != br#"{"hello":"world"}"#.to_vec() {
             bail!("Body mismatch")
         }
 
-        let res = Response::new(hyper::Body::empty());
+        let res = Response::new(Empty::new());
         Ok(res)
     }
 
@@ -111,7 +112,7 @@ async fn test_json_response_body() {
     let layer = (JsonResponseLayer::default(), BodyToBytesResponseLayer);
     let svc = layer.layer(service_fn(handle));
 
-    let request = Request::new(hyper::Body::empty());
+    let request = Request::new(Empty::<Bytes>::new());
 
     let res = svc.oneshot(request).await;
     let response = res.expect("the request to succeed");
@@ -121,7 +122,7 @@ async fn test_json_response_body() {
 
 #[tokio::test]
 async fn test_urlencoded_request_body() {
-    async fn handle<B>(request: Request<B>) -> Result<Response<hyper::Body>, anyhow::Error>
+    async fn handle<B>(request: Request<B>) -> Result<Response<Empty<Bytes>>, anyhow::Error>
     where
         B: http_body::Body + Send,
         B::Error: std::error::Error + Send + Sync + 'static,
@@ -135,10 +136,10 @@ async fn test_urlencoded_request_body() {
             bail!("Content-Type header is not application/x-form-urlencoded")
         }
 
-        let bytes = hyper::body::to_bytes(request.into_body()).await?;
+        let bytes = request.into_body().collect().await?.to_bytes();
         assert_eq!(bytes.to_vec(), br"hello=world".to_vec());
 
-        let res = Response::new(hyper::Body::empty());
+        let res = Response::new(Empty::new());
         Ok(res)
     }
 

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::process::ExitCode;
+
 use camino::Utf8PathBuf;
 use clap::Parser;
 use figment::{
@@ -67,18 +69,20 @@ pub struct Options {
 }
 
 impl Options {
-    pub async fn run(self, figment: &Figment) -> anyhow::Result<()> {
+    pub async fn run(self, figment: &Figment) -> anyhow::Result<ExitCode> {
         use Subcommand as S;
+        // We Box the futures for each subcommand so that we avoid this function being
+        // big on the stack all the time
         match self.subcommand {
-            Some(S::Config(c)) => c.run(figment).await,
-            Some(S::Database(c)) => c.run(figment).await,
-            Some(S::Server(c)) => c.run(figment).await,
-            Some(S::Worker(c)) => c.run(figment).await,
-            Some(S::Manage(c)) => c.run(figment).await,
-            Some(S::Templates(c)) => c.run(figment).await,
-            Some(S::Debug(c)) => c.run(figment).await,
-            Some(S::Doctor(c)) => c.run(figment).await,
-            None => self::server::Options::default().run(figment).await,
+            Some(S::Config(c)) => Box::pin(c.run(figment)).await,
+            Some(S::Database(c)) => Box::pin(c.run(figment)).await,
+            Some(S::Server(c)) => Box::pin(c.run(figment)).await,
+            Some(S::Worker(c)) => Box::pin(c.run(figment)).await,
+            Some(S::Manage(c)) => Box::pin(c.run(figment)).await,
+            Some(S::Templates(c)) => Box::pin(c.run(figment)).await,
+            Some(S::Debug(c)) => Box::pin(c.run(figment)).await,
+            Some(S::Doctor(c)) => Box::pin(c.run(figment)).await,
+            None => Box::pin(self::server::Options::default().run(figment)).await,
         }
     }
 

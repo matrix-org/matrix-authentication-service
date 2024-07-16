@@ -449,6 +449,8 @@ export type MatrixUser = {
   __typename?: 'MatrixUser';
   /** The avatar URL of the user, if any. */
   avatarUrl?: Maybe<Scalars['String']['output']>;
+  /** Whether the user is deactivated on the homeserver. */
+  deactivated: Scalars['Boolean']['output'];
   /** The display name of the user, if any. */
   displayName?: Maybe<Scalars['String']['output']>;
   /** The Matrix ID of the user. */
@@ -497,6 +499,8 @@ export type Mutation = {
   setPassword: SetPasswordPayload;
   /** Set an email address as primary */
   setPrimaryEmail: SetPrimaryEmailPayload;
+  /** Unlock a user. This is only available to administrators. */
+  unlockUser: UnlockUserPayload;
   /** Submit a verification code for an email address */
   verifyEmail: VerifyEmailPayload;
 };
@@ -583,6 +587,12 @@ export type MutationSetPasswordArgs = {
 /** The mutations root of the GraphQL interface. */
 export type MutationSetPrimaryEmailArgs = {
   input: SetPrimaryEmailInput;
+};
+
+
+/** The mutations root of the GraphQL interface. */
+export type MutationUnlockUserArgs = {
+  input: UnlockUserInput;
 };
 
 
@@ -733,6 +743,12 @@ export type Query = {
   userByUsername?: Maybe<User>;
   /** Fetch a user email by its ID. */
   userEmail?: Maybe<UserEmail>;
+  /**
+   * Get a list of users.
+   *
+   * This is only available to administrators.
+   */
+  users: UserConnection;
   /** Get the viewer */
   viewer: Viewer;
   /** Get the viewer's session */
@@ -813,6 +829,17 @@ export type QueryUserByUsernameArgs = {
 /** The query root of the GraphQL interface. */
 export type QueryUserEmailArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+/** The query root of the GraphQL interface. */
+export type QueryUsersArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  canRequestAdmin?: InputMaybe<Scalars['Boolean']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  state?: InputMaybe<UserState>;
 };
 
 /** The input for the `removeEmail` mutation */
@@ -1005,6 +1032,12 @@ export type SiteConfig = Node & {
   id: Scalars['ID']['output'];
   /** Imprint to show in the footer. */
   imprint?: Maybe<Scalars['String']['output']>;
+  /**
+   * Minimum password complexity, from 0 to 4, in terms of a zxcvbn score.
+   * The exact scorer (including dictionaries and other data tables)
+   * in use is <https://crates.io/crates/zxcvbn>.
+   */
+  minimumPasswordComplexity: Scalars['Int']['output'];
   /** Whether passwords are enabled and users can change their own passwords. */
   passwordChangeAllowed: Scalars['Boolean']['output'];
   /** Whether passwords are enabled for login. */
@@ -1016,6 +1049,29 @@ export type SiteConfig = Node & {
   /** The URL to the terms of service. */
   tosUri?: Maybe<Scalars['Url']['output']>;
 };
+
+/** The input for the `unlockUser` mutation. */
+export type UnlockUserInput = {
+  /** The ID of the user to unlock */
+  userId: Scalars['ID']['input'];
+};
+
+/** The payload for the `unlockUser` mutation. */
+export type UnlockUserPayload = {
+  __typename?: 'UnlockUserPayload';
+  /** Status of the operation */
+  status: UnlockUserStatus;
+  /** The user that was unlocked. */
+  user?: Maybe<User>;
+};
+
+/** The status of the `unlockUser` mutation. */
+export enum UnlockUserStatus {
+  /** The user was not found. */
+  NotFound = 'NOT_FOUND',
+  /** The user was unlocked. */
+  Unlocked = 'UNLOCKED'
+}
 
 export type UpstreamOAuth2Link = CreationEvent & Node & {
   __typename?: 'UpstreamOAuth2Link';
@@ -1212,6 +1268,27 @@ export type UserAgent = {
   version?: Maybe<Scalars['String']['output']>;
 };
 
+export type UserConnection = {
+  __typename?: 'UserConnection';
+  /** A list of edges. */
+  edges: Array<UserEdge>;
+  /** A list of nodes. */
+  nodes: Array<User>;
+  /** Information to aid in pagination. */
+  pageInfo: PageInfo;
+  /** Identifies the total count of items in the connection. */
+  totalCount: Scalars['Int']['output'];
+};
+
+/** An edge in a connection. */
+export type UserEdge = {
+  __typename?: 'UserEdge';
+  /** A cursor for use in pagination */
+  cursor: Scalars['String']['output'];
+  /** The item at the end of the edge */
+  node: User;
+};
+
 /** A user email address */
 export type UserEmail = CreationEvent & Node & {
   __typename?: 'UserEmail';
@@ -1255,6 +1332,14 @@ export enum UserEmailState {
   Confirmed = 'CONFIRMED',
   /** The email address is pending confirmation. */
   Pending = 'PENDING'
+}
+
+/** The state of a user. */
+export enum UserState {
+  /** The user is active. */
+  Active = 'ACTIVE',
+  /** The user is locked. */
+  Locked = 'LOCKED'
 }
 
 /** The input for the `verifyEmail` mutation */

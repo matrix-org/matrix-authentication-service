@@ -17,7 +17,7 @@ use mas_storage::{
     clock::MockClock,
     user::{
         BrowserSessionFilter, BrowserSessionRepository, UserEmailFilter, UserEmailRepository,
-        UserPasswordRepository, UserRepository,
+        UserFilter, UserPasswordRepository, UserRepository,
     },
     Pagination, Repository, RepositoryAccess,
 };
@@ -36,6 +36,12 @@ async fn test_user_repo(pool: PgPool) {
     let mut rng = ChaChaRng::seed_from_u64(42);
     let clock = MockClock::default();
 
+    let all = UserFilter::new();
+    let admin = all.can_request_admin_only();
+    let non_admin = all.cannot_request_admin_only();
+    let active = all.active_only();
+    let locked = all.locked_only();
+
     // Initially, the user shouldn't exist
     assert!(!repo.user().exists(USERNAME).await.unwrap());
     assert!(repo
@@ -44,6 +50,12 @@ async fn test_user_repo(pool: PgPool) {
         .await
         .unwrap()
         .is_none());
+
+    assert_eq!(repo.user().count(all).await.unwrap(), 0);
+    assert_eq!(repo.user().count(admin).await.unwrap(), 0);
+    assert_eq!(repo.user().count(non_admin).await.unwrap(), 0);
+    assert_eq!(repo.user().count(active).await.unwrap(), 0);
+    assert_eq!(repo.user().count(locked).await.unwrap(), 0);
 
     // Adding the user should work
     let user = repo
@@ -62,6 +74,12 @@ async fn test_user_repo(pool: PgPool) {
         .is_some());
     assert!(repo.user().lookup(user.id).await.unwrap().is_some());
 
+    assert_eq!(repo.user().count(all).await.unwrap(), 1);
+    assert_eq!(repo.user().count(admin).await.unwrap(), 0);
+    assert_eq!(repo.user().count(non_admin).await.unwrap(), 1);
+    assert_eq!(repo.user().count(active).await.unwrap(), 1);
+    assert_eq!(repo.user().count(locked).await.unwrap(), 0);
+
     // Adding a second time should give a conflict
     // It should not poison the transaction though
     assert!(repo
@@ -74,6 +92,12 @@ async fn test_user_repo(pool: PgPool) {
     assert!(user.is_valid());
     let user = repo.user().lock(&clock, user).await.unwrap();
     assert!(!user.is_valid());
+
+    assert_eq!(repo.user().count(all).await.unwrap(), 1);
+    assert_eq!(repo.user().count(admin).await.unwrap(), 0);
+    assert_eq!(repo.user().count(non_admin).await.unwrap(), 1);
+    assert_eq!(repo.user().count(active).await.unwrap(), 0);
+    assert_eq!(repo.user().count(locked).await.unwrap(), 1);
 
     // Check that the property is retrieved on lookup
     let user = repo.user().lookup(user.id).await.unwrap().unwrap();
@@ -99,6 +123,12 @@ async fn test_user_repo(pool: PgPool) {
     let user = repo.user().set_can_request_admin(user, true).await.unwrap();
     assert!(user.can_request_admin);
 
+    assert_eq!(repo.user().count(all).await.unwrap(), 1);
+    assert_eq!(repo.user().count(admin).await.unwrap(), 1);
+    assert_eq!(repo.user().count(non_admin).await.unwrap(), 0);
+    assert_eq!(repo.user().count(active).await.unwrap(), 1);
+    assert_eq!(repo.user().count(locked).await.unwrap(), 0);
+
     // Check that the property is retrieved on lookup
     let user = repo.user().lookup(user.id).await.unwrap().unwrap();
     assert!(user.can_request_admin);
@@ -114,6 +144,47 @@ async fn test_user_repo(pool: PgPool) {
     // Check that the property is retrieved on lookup
     let user = repo.user().lookup(user.id).await.unwrap().unwrap();
     assert!(!user.can_request_admin);
+
+    assert_eq!(repo.user().count(all).await.unwrap(), 1);
+    assert_eq!(repo.user().count(admin).await.unwrap(), 0);
+    assert_eq!(repo.user().count(non_admin).await.unwrap(), 1);
+    assert_eq!(repo.user().count(active).await.unwrap(), 1);
+    assert_eq!(repo.user().count(locked).await.unwrap(), 0);
+
+    // Check the list method
+    let list = repo.user().list(all, Pagination::first(10)).await.unwrap();
+    assert_eq!(list.edges.len(), 1);
+    assert_eq!(list.edges[0].id, user.id);
+
+    let list = repo
+        .user()
+        .list(admin, Pagination::first(10))
+        .await
+        .unwrap();
+    assert_eq!(list.edges.len(), 0);
+
+    let list = repo
+        .user()
+        .list(non_admin, Pagination::first(10))
+        .await
+        .unwrap();
+    assert_eq!(list.edges.len(), 1);
+    assert_eq!(list.edges[0].id, user.id);
+
+    let list = repo
+        .user()
+        .list(active, Pagination::first(10))
+        .await
+        .unwrap();
+    assert_eq!(list.edges.len(), 1);
+    assert_eq!(list.edges[0].id, user.id);
+
+    let list = repo
+        .user()
+        .list(locked, Pagination::first(10))
+        .await
+        .unwrap();
+    assert_eq!(list.edges.len(), 0);
 
     repo.save().await.unwrap();
 }

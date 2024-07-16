@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2021-2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,11 +15,14 @@
 use std::time::Duration;
 
 use anyhow::Context as _;
-use hyper::{header::CONTENT_TYPE, Body, Response};
+use bytes::Bytes;
+use http_body_util::Full;
+use hyper::{header::CONTENT_TYPE, Response};
 use mas_config::{
     MetricsConfig, MetricsExporterKind, Propagator, TelemetryConfig, TracingConfig,
     TracingExporterKind,
 };
+use mas_http::OtelClient;
 use opentelemetry::{
     global,
     propagation::{TextMapCompositePropagator, TextMapPropagator},
@@ -47,7 +50,16 @@ static METER_PROVIDER: OnceCell<SdkMeterProvider> = OnceCell::const_new();
 static PROMETHEUS_REGISTRY: OnceCell<Registry> = OnceCell::const_new();
 
 pub fn setup(config: &TelemetryConfig) -> anyhow::Result<Option<Tracer>> {
-    global::set_error_handler(|e| tracing::error!("{}", e))?;
+    global::set_error_handler(|e| {
+        // Don't log the propagation errors, else we'll log an error on each request if
+        // the propagation errors aren't there
+        if matches!(e, opentelemetry::global::Error::Propagation(_)) {
+            return;
+        }
+
+        tracing::error!(error = &e as &dyn std::error::Error);
+    })?;
+
     let propagator = propagator(&config.tracing.propagators);
 
     // The CORS filter needs to know what headers it should whitelist for
@@ -87,7 +99,7 @@ fn propagator(propagators: &[Propagator]) -> impl TextMapPropagator {
 
 fn http_client() -> impl opentelemetry_http::HttpClient + 'static {
     let client = mas_http::make_untraced_client();
-    opentelemetry_http::hyper::HyperClient::new_with_timeout(client, Duration::from_secs(30))
+    OtelClient::new(client)
 }
 
 fn stdout_tracer_provider() -> TracerProvider {
@@ -127,12 +139,12 @@ fn tracer(config: &TracingConfig) -> anyhow::Result<Option<Tracer>> {
         }
     };
 
-    let tracer = tracer_provider.versioned_tracer(
-        env!("CARGO_PKG_NAME"),
-        Some(env!("CARGO_PKG_VERSION")),
-        Some(semcov::SCHEMA_URL),
-        None,
-    );
+    let tracer = tracer_provider
+        .tracer_builder(env!("CARGO_PKG_NAME"))
+        .with_version(env!("CARGO_PKG_VERSION"))
+        .with_schema_url(semcov::SCHEMA_URL)
+        .build();
+
     global::set_tracer_provider(tracer_provider);
 
     Ok(Some(tracer))
@@ -161,14 +173,15 @@ fn stdout_metric_reader() -> PeriodicReader {
     PeriodicReader::builder(exporter, opentelemetry_sdk::runtime::Tokio).build()
 }
 
-type PromServiceFuture = std::future::Ready<Result<Response<Body>, std::convert::Infallible>>;
+type PromServiceFuture =
+    std::future::Ready<Result<Response<Full<Bytes>>, std::convert::Infallible>>;
 
 #[allow(clippy::needless_pass_by_value)]
 fn prometheus_service_fn<T>(_req: T) -> PromServiceFuture {
     use prometheus::{Encoder, TextEncoder};
 
     let response = if let Some(registry) = PROMETHEUS_REGISTRY.get() {
-        let mut buffer = vec![];
+        let mut buffer = Vec::new();
         let encoder = TextEncoder::new();
         let metric_families = registry.gather();
 
@@ -178,13 +191,15 @@ fn prometheus_service_fn<T>(_req: T) -> PromServiceFuture {
         Response::builder()
             .status(200)
             .header(CONTENT_TYPE, encoder.format_type())
-            .body(Body::from(buffer))
+            .body(Full::new(Bytes::from(buffer)))
             .unwrap()
     } else {
         Response::builder()
             .status(500)
             .header(CONTENT_TYPE, "text/plain")
-            .body(Body::from("Prometheus exporter was not enabled in config"))
+            .body(Full::new(Bytes::from_static(
+                b"Prometheus exporter was not enabled in config",
+            )))
             .unwrap()
     };
 
@@ -248,8 +263,8 @@ fn resource() -> Resource {
         Duration::from_secs(5),
         vec![
             Box::new(opentelemetry_sdk::resource::EnvResourceDetector::new()),
-            Box::new(opentelemetry_sdk::resource::OsResourceDetector),
-            Box::new(opentelemetry_sdk::resource::ProcessResourceDetector),
+            Box::new(opentelemetry_resource_detectors::OsResourceDetector),
+            Box::new(opentelemetry_resource_detectors::ProcessResourceDetector),
             Box::new(opentelemetry_sdk::resource::TelemetryResourceDetector),
         ],
     );

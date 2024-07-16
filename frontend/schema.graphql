@@ -698,6 +698,10 @@ type MatrixUser {
   The avatar URL of the user, if any.
   """
   avatarUrl: String
+  """
+  Whether the user is deactivated on the homeserver.
+  """
+  deactivated: Boolean!
 }
 
 """
@@ -734,6 +738,10 @@ type Mutation {
   Lock a user. This is only available to administrators.
   """
   lockUser(input: LockUserInput!): LockUserPayload!
+  """
+  Unlock a user. This is only available to administrators.
+  """
+  unlockUser(input: UnlockUserInput!): UnlockUserPayload!
   """
   Set whether a user can request admin. This is only available to
   administrators.
@@ -967,14 +975,6 @@ type Query {
   """
   oauth2Client(id: ID!): Oauth2Client
   """
-  Fetch a user by its ID.
-  """
-  user(id: ID!): User
-  """
-  Fetch a user by its username.
-  """
-  userByUsername(username: String!): User
-  """
   Fetch a browser session by its ID.
   """
   browserSession(id: ID!): BrowserSession
@@ -998,6 +998,45 @@ type Query {
   Get the current site configuration
   """
   siteConfig: SiteConfig!
+  """
+  Fetch a user by its ID.
+  """
+  user(id: ID!): User
+  """
+  Fetch a user by its username.
+  """
+  userByUsername(username: String!): User
+  """
+  Get a list of users.
+
+  This is only available to administrators.
+  """
+  users(
+    """
+    List only users with the given state.
+    """
+    state: UserState
+    """
+    List only users with the given 'canRequestAdmin' value
+    """
+    canRequestAdmin: Boolean
+    """
+    Returns the elements in the list that come after the cursor.
+    """
+    after: String
+    """
+    Returns the elements in the list that come before the cursor.
+    """
+    before: String
+    """
+    Returns the first *n* elements from the list.
+    """
+    first: Int
+    """
+    Returns the last *n* elements from the list.
+    """
+    last: Int
+  ): UserConnection!
   """
   Fetch an upstream OAuth 2.0 link by its ID.
   """
@@ -1357,9 +1396,53 @@ type SiteConfig implements Node {
   """
   passwordChangeAllowed: Boolean!
   """
+  Minimum password complexity, from 0 to 4, in terms of a zxcvbn score.
+  The exact scorer (including dictionaries and other data tables)
+  in use is <https://crates.io/crates/zxcvbn>.
+  """
+  minimumPasswordComplexity: Int!
+  """
   The ID of the site configuration.
   """
   id: ID!
+}
+
+"""
+The input for the `unlockUser` mutation.
+"""
+input UnlockUserInput {
+  """
+  The ID of the user to unlock
+  """
+  userId: ID!
+}
+
+"""
+The payload for the `unlockUser` mutation.
+"""
+type UnlockUserPayload {
+  """
+  Status of the operation
+  """
+  status: UnlockUserStatus!
+  """
+  The user that was unlocked.
+  """
+  user: User
+}
+
+"""
+The status of the `unlockUser` mutation.
+"""
+enum UnlockUserStatus {
+  """
+  The user was unlocked.
+  """
+  UNLOCKED
+  """
+  The user was not found.
+  """
+  NOT_FOUND
 }
 
 type UpstreamOAuth2Link implements Node & CreationEvent {
@@ -1727,6 +1810,39 @@ type UserAgent {
   deviceType: DeviceType!
 }
 
+type UserConnection {
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  A list of edges.
+  """
+  edges: [UserEdge!]!
+  """
+  A list of nodes.
+  """
+  nodes: [User!]!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+
+"""
+An edge in a connection.
+"""
+type UserEdge {
+  """
+  The item at the end of the edge
+  """
+  node: User!
+  """
+  A cursor for use in pagination
+  """
+  cursor: String!
+}
+
 """
 A user email address
 """
@@ -1798,6 +1914,20 @@ enum UserEmailState {
 }
 
 """
+The state of a user.
+"""
+enum UserState {
+  """
+  The user is active.
+  """
+  ACTIVE
+  """
+  The user is locked.
+  """
+  LOCKED
+}
+
+"""
 The input for the `verifyEmail` mutation
 """
 input VerifyEmailInput {
@@ -1857,6 +1987,12 @@ Represents the current viewer's session
 """
 union ViewerSession = BrowserSession | Oauth2Session | Anonymous
 
+directive @deprecated(
+  reason: String = "No longer supported"
+) on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | ENUM_VALUE
+directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+directive @specifiedBy(url: String!) on SCALAR
 schema {
   query: Query
   mutation: Mutation

@@ -461,6 +461,7 @@ mod tests {
     use hyper::{Request, StatusCode};
     use mas_data_model::{AccessToken, RefreshToken};
     use mas_iana::oauth::OAuthTokenTypeHint;
+    use mas_matrix::{HomeserverConnection, ProvisionRequest};
     use mas_router::{OAuth2Introspection, OAuth2RegistrationEndpoint, SimpleRoute};
     use mas_storage::Clock;
     use oauth2_types::{
@@ -474,12 +475,12 @@ mod tests {
 
     use crate::{
         oauth2::generate_token_pair,
-        test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState},
+        test_utils::{setup, RequestBuilderExt, ResponseExt, TestState},
     };
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_introspect_oauth_tokens(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Provision a client which will be used to do introspection requests
@@ -515,6 +516,13 @@ mod tests {
         let user = repo
             .user()
             .add(&mut state.rng(), &state.clock, "alice".to_owned())
+            .await
+            .unwrap();
+
+        let mxid = state.homeserver_connection.mxid(&user.username);
+        state
+            .homeserver_connection
+            .provision_user(&ProvisionRequest::new(mxid, &user.sub))
             .await
             .unwrap();
 
@@ -678,7 +686,7 @@ mod tests {
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_introspect_compat_tokens(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Provision a client which will be used to do introspection requests
@@ -700,6 +708,13 @@ mod tests {
         let user = repo
             .user()
             .add(&mut state.rng(), &state.clock, "alice".to_owned())
+            .await
+            .unwrap();
+
+        let mxid = state.homeserver_connection.mxid(&user.username);
+        state
+            .homeserver_connection
+            .provision_user(&ProvisionRequest::new(mxid, &user.sub))
             .await
             .unwrap();
 

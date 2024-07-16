@@ -1,4 +1,4 @@
-// Copyright 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2023, 2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ struct MockUser {
     devices: HashSet<String>,
     emails: Option<Vec<String>>,
     cross_signing_reset_allowed: bool,
+    deactivated: bool,
 }
 
 /// A mock implementation of a [`HomeserverConnection`], which never fails and
@@ -69,6 +70,7 @@ impl crate::HomeserverConnection for HomeserverConnection {
         Ok(MatrixUser {
             displayname: user.displayname.clone(),
             avatar_url: user.avatar_url.clone(),
+            deactivated: user.deactivated,
         })
     }
 
@@ -82,6 +84,7 @@ impl crate::HomeserverConnection for HomeserverConnection {
             devices: HashSet::new(),
             emails: None,
             cross_signing_reset_allowed: false,
+            deactivated: false,
         });
 
         anyhow::ensure!(
@@ -128,15 +131,31 @@ impl crate::HomeserverConnection for HomeserverConnection {
         Ok(())
     }
 
+    async fn sync_devices(&self, mxid: &str, devices: HashSet<String>) -> Result<(), Self::Error> {
+        let mut users = self.users.write().await;
+        let user = users.get_mut(mxid).context("User not found")?;
+        user.devices = devices;
+        Ok(())
+    }
+
     async fn delete_user(&self, mxid: &str, erase: bool) -> Result<(), Self::Error> {
         let mut users = self.users.write().await;
         let user = users.get_mut(mxid).context("User not found")?;
         user.devices.clear();
         user.emails = None;
+        user.deactivated = true;
         if erase {
             user.avatar_url = None;
             user.displayname = None;
         }
+
+        Ok(())
+    }
+
+    async fn reactivate_user(&self, mxid: &str) -> Result<(), Self::Error> {
+        let mut users = self.users.write().await;
+        let user = users.get_mut(mxid).context("User not found")?;
+        user.deactivated = false;
 
         Ok(())
     }

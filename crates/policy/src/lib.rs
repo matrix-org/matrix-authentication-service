@@ -16,10 +16,12 @@ pub mod model;
 
 use mas_data_model::{AuthorizationGrant, Client, DeviceCodeGrant, User};
 use oauth2_types::{registration::VerifiedClientMetadata, scope::Scope};
-use opa_wasm::Runtime;
+use opa_wasm::{
+    wasmtime::{Config, Engine, Module, OptLevel, Store},
+    Runtime,
+};
 use thiserror::Error;
 use tokio::io::{AsyncRead, AsyncReadExt};
-use wasmtime::{Config, Engine, Module, Store};
 
 use self::model::{AuthorizationGrantInput, ClientRegistrationInput, EmailInput, RegisterInput};
 pub use self::model::{EvaluationResult, Violation};
@@ -91,7 +93,7 @@ impl PolicyFactory {
     ) -> Result<Self, LoadError> {
         let mut config = Config::default();
         config.async_support(true);
-        config.cranelift_opt_level(wasmtime::OptLevel::SpeedAndSize);
+        config.cranelift_opt_level(OptLevel::SpeedAndSize);
 
         let engine = Engine::new(&config).map_err(LoadError::Engine)?;
 

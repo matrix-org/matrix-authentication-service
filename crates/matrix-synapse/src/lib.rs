@@ -1,4 +1,4 @@
-// Copyright 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2023, 2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@
 // limitations under the License.
 
 #![allow(clippy::blocks_in_conditions)]
+
+use std::collections::HashSet;
 
 use anyhow::{bail, Context};
 use http::{header::AUTHORIZATION, request::Builder, Method, Request, StatusCode};
@@ -129,11 +131,24 @@ struct SynapseUser {
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     external_ids: Option<Vec<ExternalID>>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    deactivated: Option<bool>,
+}
+
+#[derive(Deserialize)]
+struct SynapseDeviceListResponse {
+    devices: Vec<SynapseDevice>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct SynapseDevice {
+    device_id: String,
 }
 
 #[derive(Serialize)]
-struct SynapseDevice<'a> {
-    device_id: &'a str,
+struct SynapseDeleteDevicesRequest {
+    devices: Vec<String>,
 }
 
 #[derive(Serialize)]
@@ -202,6 +217,7 @@ impl HomeserverConnection for SynapseConnection {
         Ok(MatrixUser {
             displayname: body.display_name,
             avatar_url: body.avatar_url,
+            deactivated: body.deactivated.unwrap_or(false),
         })
     }
 
@@ -356,7 +372,9 @@ impl HomeserverConnection for SynapseConnection {
 
         let request = self
             .post(&format!("_synapse/admin/v2/users/{mxid}/devices"))
-            .body(SynapseDevice { device_id })?;
+            .body(SynapseDevice {
+                device_id: device_id.to_owned(),
+            })?;
 
         let response = client
             .ready()
@@ -412,6 +430,82 @@ impl HomeserverConnection for SynapseConnection {
     }
 
     #[tracing::instrument(
+        name = "homeserver.sync_devices",
+        skip_all,
+        fields(
+            matrix.homeserver = self.homeserver,
+            matrix.mxid = mxid,
+        ),
+        err(Debug),
+    )]
+    async fn sync_devices(&self, mxid: &str, devices: HashSet<String>) -> Result<(), Self::Error> {
+        // Get the list of current devices
+        let mxid_url = urlencoding::encode(mxid);
+        let mut client = self
+            .http_client_factory
+            .client("homeserver.sync_devices.query")
+            .response_body_to_bytes()
+            .catch_http_errors(catch_homeserver_error)
+            .json_response();
+
+        let request = self
+            .get(&format!("_synapse/admin/v2/users/{mxid_url}/devices"))
+            .body(EmptyBody::new())?;
+
+        let response = client
+            .ready()
+            .await?
+            .call(request)
+            .await
+            .context("Failed to query user from Synapse")?;
+
+        if response.status() != StatusCode::OK {
+            return Err(anyhow::anyhow!("Failed to query user devices from Synapse"));
+        }
+
+        let body: SynapseDeviceListResponse = response.into_body();
+
+        let existing_devices: HashSet<String> =
+            body.devices.into_iter().map(|d| d.device_id).collect();
+
+        // First, delete all the devices that are not needed anymore
+        let to_delete = existing_devices.difference(&devices).cloned().collect();
+
+        let mut client = self
+            .http_client_factory
+            .client("homeserver.sync_devices.delete")
+            .response_body_to_bytes()
+            .catch_http_errors(catch_homeserver_error)
+            .request_bytes_to_body()
+            .json_request();
+
+        let request = self
+            .post(&format!(
+                "_synapse/admin/v2/users/{mxid_url}/delete_devices"
+            ))
+            .body(SynapseDeleteDevicesRequest { devices: to_delete })?;
+
+        let response = client
+            .ready()
+            .await?
+            .call(request)
+            .await
+            .context("Failed to query user from Synapse")?;
+
+        if response.status() != StatusCode::OK {
+            return Err(anyhow::anyhow!("Failed to delete devices from Synapse"));
+        }
+
+        // Then, create the devices that are missing. There is no batching API to do
+        // this, so we do this sequentially, which is fine as the API is idempotent.
+        for device_id in devices.difference(&existing_devices) {
+            self.create_device(mxid, device_id).await?;
+        }
+
+        Ok(())
+    }
+
+    #[tracing::instrument(
         name = "homeserver.delete_user",
         skip_all,
         fields(
@@ -447,6 +541,50 @@ impl HomeserverConnection for SynapseConnection {
         }
 
         Ok(())
+    }
+
+    #[tracing::instrument(
+        name = "homeserver.reactivate_user",
+        skip_all,
+        fields(
+            matrix.homeserver = self.homeserver,
+            matrix.mxid = mxid,
+        ),
+        err(Debug),
+    )]
+    async fn reactivate_user(&self, mxid: &str) -> Result<(), anyhow::Error> {
+        let body = SynapseUser {
+            deactivated: Some(false),
+            ..SynapseUser::default()
+        };
+
+        let mut client = self
+            .http_client_factory
+            .client("homeserver.reactivate_user")
+            .request_bytes_to_body()
+            .json_request()
+            .response_body_to_bytes()
+            .catch_http_errors(catch_homeserver_error);
+
+        let mxid = urlencoding::encode(mxid);
+        let request = self
+            .put(&format!("_synapse/admin/v2/users/{mxid}"))
+            .body(body)?;
+
+        let response = client
+            .ready()
+            .await?
+            .call(request)
+            .await
+            .context("Failed to provision user in Synapse")?;
+
+        match response.status() {
+            StatusCode::CREATED | StatusCode::OK => Ok(()),
+            code => Err(anyhow::anyhow!(
+                "Failed to provision user in Synapse: {}",
+                code
+            )),
+        }
     }
 
     #[tracing::instrument(

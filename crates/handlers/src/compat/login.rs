@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{extract::State, response::IntoResponse, Json, TypedHeader};
+use axum::{extract::State, response::IntoResponse, Json};
+use axum_extra::typed_header::TypedHeader;
 use chrono::Duration;
 use hyper::StatusCode;
 use mas_axum_utils::sentry::SentryEventID;
@@ -25,7 +26,6 @@ use mas_storage::{
         CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository,
         CompatSsoLoginRepository,
     },
-    job::{JobRepositoryExt, ProvisionDeviceJob},
     user::{UserPasswordRepository, UserRepository},
     BoxClock, BoxRepository, BoxRng, Clock, RepositoryAccess,
 };
@@ -167,6 +167,9 @@ pub enum RouteError {
 
     #[error("invalid login token")]
     InvalidLoginToken,
+
+    #[error("failed to provision device")]
+    ProvisionDeviceFailed(#[source] anyhow::Error),
 }
 
 impl_from_error_for_route!(mas_storage::RepositoryError);
@@ -175,11 +178,13 @@ impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         let event_id = sentry::capture_error(&self);
         let response = match self {
-            Self::Internal(_) | Self::SessionNotFound => MatrixError {
-                errcode: "M_UNKNOWN",
-                error: "Internal server error",
-                status: StatusCode::INTERNAL_SERVER_ERROR,
-            },
+            Self::Internal(_) | Self::SessionNotFound | Self::ProvisionDeviceFailed(_) => {
+                MatrixError {
+                    errcode: "M_UNKNOWN",
+                    error: "Internal server error",
+                    status: StatusCode::INTERNAL_SERVER_ERROR,
+                }
+            }
             Self::Unsupported => MatrixError {
                 errcode: "M_UNRECOGNIZED",
                 error: "Invalid login type",
@@ -234,6 +239,7 @@ pub(crate) async fn post(
                 &clock,
                 &password_manager,
                 &mut repo,
+                &homeserver,
                 user,
                 password,
             )
@@ -367,6 +373,7 @@ async fn user_password_login(
     clock: &impl Clock,
     password_manager: &PasswordManager,
     repo: &mut BoxRepository,
+    homeserver: &BoxHomeserverConnection,
     username: String,
     password: String,
 ) -> Result<(CompatSession, User), RouteError> {
@@ -412,11 +419,16 @@ async fn user_password_login(
             .await?;
     }
 
+    // Lock the user sync to make sure we don't get into a race condition
+    repo.user().acquire_lock_for_sync(&user).await?;
+
     // Now that the user credentials have been verified, start a new compat session
     let device = Device::generate(&mut rng);
-    repo.job()
-        .schedule_job(ProvisionDeviceJob::new(&user, &device))
-        .await?;
+    let mxid = homeserver.mxid(&user.username);
+    homeserver
+        .create_device(&mxid, device.as_str())
+        .await
+        .map_err(RouteError::ProvisionDeviceFailed)?;
 
     let session = repo
         .compat_session()
@@ -429,16 +441,17 @@ async fn user_password_login(
 #[cfg(test)]
 mod tests {
     use hyper::Request;
+    use mas_matrix::{HomeserverConnection, ProvisionRequest};
     use rand::distributions::{Alphanumeric, DistString};
     use sqlx::PgPool;
 
     use super::*;
-    use crate::test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState};
+    use crate::test_utils::{setup, RequestBuilderExt, ResponseExt, TestState};
 
     /// Test that the server advertises the right login flows.
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_get_login(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Now let's get the login flows
@@ -470,7 +483,7 @@ mod tests {
     /// manager is disabled
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_password_disabled(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = {
             let mut state = TestState::from_pool(pool).await.unwrap();
             state.password_manager = PasswordManager::disabled();
@@ -518,7 +531,7 @@ mod tests {
     /// compatibility API.
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_user_password_login(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Let's provision a user and add a password to it. This part is hard to test
@@ -528,6 +541,13 @@ mod tests {
         let user = repo
             .user()
             .add(&mut state.rng(), &state.clock, "alice".to_owned())
+            .await
+            .unwrap();
+
+        let mxid = state.homeserver_connection.mxid(&user.username);
+        state
+            .homeserver_connection
+            .provision_user(&ProvisionRequest::new(mxid, &user.sub))
             .await
             .unwrap();
 
@@ -633,7 +653,7 @@ mod tests {
     /// Test the response of an unsupported login flow.
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_unsupported_login(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Try to login with an unsupported login flow.
@@ -650,7 +670,7 @@ mod tests {
     /// Test `m.login.token` login flow.
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_login_token_login(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Provision a user
@@ -662,6 +682,13 @@ mod tests {
             .await
             .unwrap();
         repo.save().await.unwrap();
+
+        let mxid = state.homeserver_connection.mxid(&user.username);
+        state
+            .homeserver_connection
+            .provision_user(&ProvisionRequest::new(mxid, &user.sub))
+            .await
+            .unwrap();
 
         // First try with an invalid token
         let request = Request::post("/_matrix/client/v3/login").json(serde_json::json!({

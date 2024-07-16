@@ -13,14 +13,13 @@ workspace = true
 
 [dependencies]
 anyhow.workspace = true
-opa-wasm = { git = "https://github.com/matrix-org/rust-opa-wasm.git" }
+opa-wasm = "0.1.0"
 serde.workspace = true
 serde_json.workspace = true
 schemars = { workspace = true, optional = true }
 thiserror.workspace = true
 tokio.workspace = true
 tracing.workspace = true
-wasmtime = { version = "20.0.2", default-features = false, features = ["async", "cranelift", "parallel-compilation"] }
 
 mas-data-model.workspace = true
 oauth2-types.workspace = true

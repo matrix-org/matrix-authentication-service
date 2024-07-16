@@ -1,4 +1,4 @@
-// Copyright 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2023, 2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 
 mod mock;
 
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 
 pub use self::mock::HomeserverConnection as MockHomeserverConnection;
 
@@ -26,6 +26,7 @@ pub type BoxHomeserverConnection<Error = anyhow::Error> =
 pub struct MatrixUser {
     pub displayname: Option<String>,
     pub avatar_url: Option<String>,
+    pub deactivated: bool,
 }
 
 #[derive(Debug, Default)]
@@ -262,6 +263,19 @@ pub trait HomeserverConnection: Send + Sync {
     /// not be deleted.
     async fn delete_device(&self, mxid: &str, device_id: &str) -> Result<(), Self::Error>;
 
+    /// Sync the list of devices of a user with the homeserver.
+    ///
+    /// # Parameters
+    ///
+    /// * `mxid` - The Matrix ID of the user to sync the devices for.
+    /// * `devices` - The list of devices to sync.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the homeserver is unreachable or the devices could
+    /// not be synced.
+    async fn sync_devices(&self, mxid: &str, devices: HashSet<String>) -> Result<(), Self::Error>;
+
     /// Delete a user on the homeserver.
     ///
     /// # Parameters
@@ -274,6 +288,18 @@ pub trait HomeserverConnection: Send + Sync {
     /// Returns an error if the homeserver is unreachable or the user could not
     /// be deleted.
     async fn delete_user(&self, mxid: &str, erase: bool) -> Result<(), Self::Error>;
+
+    /// Reactivate a user on the homeserver.
+    ///
+    /// # Parameters
+    ///
+    /// * `mxid` - The Matrix ID of the user to reactivate.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the homeserver is unreachable or the user could not
+    /// be reactivated.
+    async fn reactivate_user(&self, mxid: &str) -> Result<(), Self::Error>;
 
     /// Set the displayname of a user on the homeserver.
     ///
@@ -341,8 +367,16 @@ impl<T: HomeserverConnection + Send + Sync + ?Sized> HomeserverConnection for &T
         (**self).delete_device(mxid, device_id).await
     }
 
+    async fn sync_devices(&self, mxid: &str, devices: HashSet<String>) -> Result<(), Self::Error> {
+        (**self).sync_devices(mxid, devices).await
+    }
+
     async fn delete_user(&self, mxid: &str, erase: bool) -> Result<(), Self::Error> {
         (**self).delete_user(mxid, erase).await
+    }
+
+    async fn reactivate_user(&self, mxid: &str) -> Result<(), Self::Error> {
+        (**self).reactivate_user(mxid).await
     }
 
     async fn set_displayname(&self, mxid: &str, displayname: &str) -> Result<(), Self::Error> {
@@ -387,8 +421,16 @@ impl<T: HomeserverConnection + ?Sized> HomeserverConnection for Arc<T> {
         (**self).delete_device(mxid, device_id).await
     }
 
+    async fn sync_devices(&self, mxid: &str, devices: HashSet<String>) -> Result<(), Self::Error> {
+        (**self).sync_devices(mxid, devices).await
+    }
+
     async fn delete_user(&self, mxid: &str, erase: bool) -> Result<(), Self::Error> {
         (**self).delete_user(mxid, erase).await
+    }
+
+    async fn reactivate_user(&self, mxid: &str) -> Result<(), Self::Error> {
+        (**self).reactivate_user(mxid).await
     }
 
     async fn set_displayname(&self, mxid: &str, displayname: &str) -> Result<(), Self::Error> {

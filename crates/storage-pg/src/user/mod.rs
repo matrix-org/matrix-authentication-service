@@ -16,15 +16,16 @@
 //! repositories
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use mas_data_model::User;
 use mas_storage::{user::UserRepository, Clock};
 use rand::RngCore;
+use sea_query::{Expr, PostgresQueryBuilder, Query};
+use sea_query_binder::SqlxBinder;
 use sqlx::PgConnection;
 use ulid::Ulid;
 use uuid::Uuid;
 
-use crate::{tracing::ExecuteExt, DatabaseError};
+use crate::{iden::Users, pagination::QueryBuilderExt, tracing::ExecuteExt, DatabaseError};
 
 mod email;
 mod password;
@@ -53,15 +54,28 @@ impl<'c> PgUserRepository<'c> {
     }
 }
 
-#[derive(Debug, Clone)]
-struct UserLookup {
-    user_id: Uuid,
-    username: String,
-    primary_user_email_id: Option<Uuid>,
-    created_at: DateTime<Utc>,
-    locked_at: Option<DateTime<Utc>>,
-    can_request_admin: bool,
+mod priv_ {
+    // The enum_def macro generates a public enum, which we don't want, because it
+    // triggers the missing docs warning
+    #![allow(missing_docs)]
+
+    use chrono::{DateTime, Utc};
+    use sea_query::enum_def;
+    use uuid::Uuid;
+
+    #[derive(Debug, Clone, sqlx::FromRow)]
+    #[enum_def]
+    pub(super) struct UserLookup {
+        pub(super) user_id: Uuid,
+        pub(super) username: String,
+        pub(super) primary_user_email_id: Option<Uuid>,
+        pub(super) created_at: DateTime<Utc>,
+        pub(super) locked_at: Option<DateTime<Utc>>,
+        pub(super) can_request_admin: bool,
+    }
 }
+
+use priv_::{UserLookup, UserLookupIden};
 
 impl From<UserLookup> for User {
     fn from(value: UserLookup) -> Self {
@@ -323,5 +337,138 @@ impl<'c> UserRepository for PgUserRepository<'c> {
         user.can_request_admin = can_request_admin;
 
         Ok(user)
+    }
+
+    #[tracing::instrument(
+        name = "db.user.list",
+        skip_all,
+        fields(
+            db.statement,
+        ),
+        err,
+    )]
+    async fn list(
+        &mut self,
+        filter: mas_storage::user::UserFilter<'_>,
+        pagination: mas_storage::Pagination,
+    ) -> Result<mas_storage::Page<User>, Self::Error> {
+        let (sql, arguments) = Query::select()
+            .expr_as(
+                Expr::col((Users::Table, Users::UserId)),
+                UserLookupIden::UserId,
+            )
+            .expr_as(
+                Expr::col((Users::Table, Users::Username)),
+                UserLookupIden::Username,
+            )
+            .expr_as(
+                Expr::col((Users::Table, Users::PrimaryUserEmailId)),
+                UserLookupIden::PrimaryUserEmailId,
+            )
+            .expr_as(
+                Expr::col((Users::Table, Users::CreatedAt)),
+                UserLookupIden::CreatedAt,
+            )
+            .expr_as(
+                Expr::col((Users::Table, Users::LockedAt)),
+                UserLookupIden::LockedAt,
+            )
+            .expr_as(
+                Expr::col((Users::Table, Users::CanRequestAdmin)),
+                UserLookupIden::CanRequestAdmin,
+            )
+            .from(Users::Table)
+            .and_where_option(filter.state().map(|state| {
+                if state.is_locked() {
+                    Expr::col((Users::Table, Users::LockedAt)).is_not_null()
+                } else {
+                    Expr::col((Users::Table, Users::LockedAt)).is_null()
+                }
+            }))
+            .and_where_option(filter.can_request_admin().map(|can_request_admin| {
+                Expr::col((Users::Table, Users::CanRequestAdmin)).eq(can_request_admin)
+            }))
+            .generate_pagination((Users::Table, Users::UserId), pagination)
+            .build_sqlx(PostgresQueryBuilder);
+
+        let edges: Vec<UserLookup> = sqlx::query_as_with(&sql, arguments)
+            .traced()
+            .fetch_all(&mut *self.conn)
+            .await?;
+
+        let page = pagination.process(edges).map(User::from);
+
+        Ok(page)
+    }
+
+    #[tracing::instrument(
+        name = "db.user.count",
+        skip_all,
+        fields(
+            db.statement,
+        ),
+        err,
+    )]
+    async fn count(
+        &mut self,
+        filter: mas_storage::user::UserFilter<'_>,
+    ) -> Result<usize, Self::Error> {
+        let (sql, arguments) = Query::select()
+            .expr(Expr::col((Users::Table, Users::UserId)).count())
+            .from(Users::Table)
+            .and_where_option(filter.state().map(|state| {
+                if state.is_locked() {
+                    Expr::col((Users::Table, Users::LockedAt)).is_not_null()
+                } else {
+                    Expr::col((Users::Table, Users::LockedAt)).is_null()
+                }
+            }))
+            .and_where_option(filter.can_request_admin().map(|can_request_admin| {
+                Expr::col((Users::Table, Users::CanRequestAdmin)).eq(can_request_admin)
+            }))
+            .build_sqlx(PostgresQueryBuilder);
+
+        let count: i64 = sqlx::query_scalar_with(&sql, arguments)
+            .traced()
+            .fetch_one(&mut *self.conn)
+            .await?;
+
+        count
+            .try_into()
+            .map_err(DatabaseError::to_invalid_operation)
+    }
+
+    #[tracing::instrument(
+        name = "db.user.acquire_lock_for_sync",
+        skip_all,
+        fields(
+            db.statement,
+            user.id = %user.id,
+        ),
+        err,
+    )]
+    async fn acquire_lock_for_sync(&mut self, user: &User) -> Result<(), Self::Error> {
+        // XXX: this lock isn't stictly scoped to users, but as we don't use many
+        // postgres advisory locks, it's fine for now. Later on, we could use row-level
+        // locks to make sure we don't get into trouble
+
+        // Convert the user ID to a u128 and grab the lower 64 bits
+        // As this includes 64bit of the random part of the ULID, it should be random
+        // enough to not collide
+        let lock_id = (u128::from(user.id) & 0xffff_ffff_ffff_ffff) as i64;
+
+        // Use a PG advisory lock, which will be released when the transaction is
+        // committed or rolled back
+        sqlx::query!(
+            r#"
+                SELECT pg_advisory_xact_lock($1)
+            "#,
+            lock_id,
+        )
+        .traced()
+        .execute(&mut *self.conn)
+        .await?;
+
+        Ok(())
     }
 }

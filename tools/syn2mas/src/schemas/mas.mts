@@ -14,19 +14,48 @@
 
 import * as z from "zod";
 
-const uriDatabaseConfig = z.object({
-  uri: z.string(),
-});
+const ssl = z
+  .object({
+    ssl_ca: z.string().optional(),
+    ssl_ca_file: z.string().optional(),
+    ssl_certificate: z.string().optional(),
+    ssl_certificate_file: z.string().optional(),
+    ssl_key: z.string().optional(),
+    ssl_key_file: z.string().optional(),
+  })
+  .refine((ssl) => {
+    if (ssl.ssl_ca && ssl.ssl_ca_file) {
+      throw new Error("Cannot specify both ssl_ca and ssl_ca_file");
+    }
+
+    if (ssl.ssl_certificate && ssl.ssl_certificate_file) {
+      throw new Error("Cannot specify both ssl_cert and ssl_cert_file");
+    }
+
+    if (ssl.ssl_key && ssl.ssl_key_file) {
+      throw new Error("Cannot specify both ssl_key and ssl_key_file");
+    }
+
+    return true;
+  });
+
+const uriDatabaseConfig = z
+  .object({
+    uri: z.string(),
+  })
+  .and(ssl);
 
 export type URIDatabaseConfig = z.infer<typeof uriDatabaseConfig>;
 
-const objectDatabaseConfig = z.object({
-  host: z.string().optional(),
-  port: z.number().optional(),
-  username: z.string().optional(),
-  password: z.string().optional(),
-  database: z.string().optional(),
-});
+const objectDatabaseConfig = z
+  .object({
+    host: z.string().optional(),
+    port: z.number().optional(),
+    username: z.string().optional(),
+    password: z.string().optional(),
+    database: z.string().optional(),
+  })
+  .and(ssl);
 
 const databaseConfig = z.union([uriDatabaseConfig, objectDatabaseConfig]);
 

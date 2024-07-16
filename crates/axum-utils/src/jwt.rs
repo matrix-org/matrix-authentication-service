@@ -12,10 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{
-    response::{IntoResponse, Response},
-    TypedHeader,
-};
+use axum::response::{IntoResponse, Response};
+use axum_extra::typed_header::TypedHeader;
 use headers::ContentType;
 use mas_jose::jwt::Jwt;
 use mime::Mime;

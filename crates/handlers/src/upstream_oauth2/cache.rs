@@ -293,11 +293,11 @@ mod tests {
     use ulid::Ulid;
 
     use super::*;
-    use crate::test_utils::init_tracing;
+    use crate::test_utils::setup;
 
     #[tokio::test]
     async fn test_metadata_cache() {
-        init_tracing();
+        setup();
         let calls = Arc::new(AtomicUsize::new(0));
         let closure_calls = Arc::clone(&calls);
         let handler = move |req: Request<Bytes>| {
@@ -418,7 +418,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_lazy_provider_infos() {
-        init_tracing();
+        setup();
         let calls = Arc::new(AtomicUsize::new(0));
         let closure_calls = Arc::clone(&calls);
         let handler = move |req: Request<Bytes>| {

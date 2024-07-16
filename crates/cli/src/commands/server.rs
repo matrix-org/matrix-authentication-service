@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{collections::BTreeSet, sync::Arc, time::Duration};
+use std::{collections::BTreeSet, process::ExitCode, sync::Arc, time::Duration};
 
 use anyhow::Context;
 use clap::Parser;
@@ -65,7 +65,7 @@ pub(super) struct Options {
 
 impl Options {
     #[allow(clippy::too_many_lines)]
-    pub async fn run(self, figment: &Figment) -> anyhow::Result<()> {
+    pub async fn run(self, figment: &Figment) -> anyhow::Result<ExitCode> {
         let span = info_span!("cli.run.init").entered();
         let config = AppConfig::extract(figment)?;
 
@@ -309,6 +309,6 @@ impl Options {
 
         state.activity_tracker.shutdown().await;
 
-        Ok(())
+        Ok(ExitCode::SUCCESS)
     }
 }

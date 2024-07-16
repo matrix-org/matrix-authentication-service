@@ -13,7 +13,8 @@ workspace = true
 
 [dependencies]
 anyhow.workspace = true
-axum = "0.6.20"
+axum.workspace = true
+bytes.workspace = true
 camino.workspace = true
 clap.workspace = true
 console = "0.15.8"
@@ -21,9 +22,12 @@ dialoguer = { version = "0.11.0", features = ["fuzzy-select"] }
 dotenvy = "0.15.7"
 figment.workspace = true
 httpdate = "1.0.3"
+http.workspace = true
+http-body.workspace = true
+http-body-util.workspace = true
 hyper.workspace = true
 ipnetwork = "0.20.0"
-itertools = "0.12.1"
+itertools = "0.13.0"
 listenfd = "1.0.1"
 rand.workspace = true
 rand_chacha = "0.3.1"
@@ -33,9 +37,9 @@ serde_yaml = "0.9.34"
 sqlx.workspace = true
 tokio.workspace = true
 tower.workspace = true
-tower-http = { version = "0.4.4", features = ["fs"] }
+tower-http.workspace = true
 url.workspace = true
-zeroize = "1.7.0"
+zeroize = "1.8.1"
 
 tracing.workspace = true
 tracing-appender = "0.2.3"
@@ -43,16 +47,17 @@ tracing-subscriber = { workspace = true, features = ["env-filter"] }
 tracing-opentelemetry.workspace = true
 opentelemetry.workspace = true
 opentelemetry-http.workspace = true
-opentelemetry-jaeger-propagator = "0.1.0"
-opentelemetry-otlp = { version = "0.15.0", default-features = false, features = ["trace", "metrics", "http-proto"] }
-opentelemetry-prometheus = "0.15.0"
+opentelemetry-jaeger-propagator = "0.2.0"
+opentelemetry-otlp = { version = "0.16.0", default-features = false, features = ["trace", "metrics", "http-proto"] }
+opentelemetry-prometheus = "0.16.0"
+opentelemetry-resource-detectors = "0.2.0"
 opentelemetry-semantic-conventions.workspace = true
-opentelemetry-stdout = { version = "0.3.0", features = ["trace", "metrics"] }
-opentelemetry_sdk = { version = "0.22.1", features = ["trace", "metrics", "rt-tokio"] }
+opentelemetry-stdout = { version = "0.4.0", features = ["trace", "metrics"] }
+opentelemetry_sdk = { version = "0.23.0", features = ["trace", "metrics", "rt-tokio"] }
 prometheus = "0.13.4"
-sentry = { version = "0.31.8", default-features = false, features = ["backtrace", "contexts", "panic", "tower"] }
-sentry-tracing = "0.31.8"
-sentry-tower = { version = "0.31.8", features = ["http"] }
+sentry.workspace = true
+sentry-tracing.workspace = true
+sentry-tower.workspace = true
 
 mas-config.workspace = true
 mas-data-model.workspace = true

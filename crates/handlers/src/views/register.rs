@@ -17,8 +17,8 @@ use std::str::FromStr;
 use axum::{
     extract::{Form, Query, State},
     response::{Html, IntoResponse, Response},
-    TypedHeader,
 };
+use axum_extra::typed_header::TypedHeader;
 use hyper::StatusCode;
 use lettre::Address;
 use mas_axum_utils::{
@@ -198,6 +198,16 @@ pub(crate) async fn post(
             );
         }
 
+        if !password_manager.is_password_complex_enough(&form.password)? {
+            // TODO localise this error
+            state.add_error_on_field(
+                RegisterFormField::Password,
+                FieldError::Policy {
+                    message: "Password is too weak".to_owned(),
+                },
+            );
+        }
+
         // If the site has terms of service, the user must accept them
         if site_config.tos_uri.is_some() && form.accept_terms != "on" {
             state.add_error_on_field(RegisterFormField::AcceptTerms, FieldError::Required);
@@ -335,14 +345,14 @@ mod tests {
 
     use crate::{
         test_utils::{
-            init_tracing, test_site_config, CookieHelper, RequestBuilderExt, ResponseExt, TestState,
+            setup, test_site_config, CookieHelper, RequestBuilderExt, ResponseExt, TestState,
         },
         SiteConfig,
     };
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_password_disabled(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool_with_site_config(
             pool,
             SiteConfig {
@@ -375,7 +385,7 @@ mod tests {
     /// Test the registration happy path
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_register(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
         let cookies = CookieHelper::new();
 
@@ -402,8 +412,8 @@ mod tests {
                 "csrf": csrf_token,
                 "username": "john",
                 "email": "john@example.com",
-                "password": "hunter2",
-                "password_confirm": "hunter2",
+                "password": "correcthorsebatterystaple",
+                "password_confirm": "correcthorsebatterystaple",
                 "accept_terms": "on",
             }),
         );
@@ -425,7 +435,7 @@ mod tests {
     /// When the two password fields mismatch, it should give an error
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_register_password_mismatch(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
         let cookies = CookieHelper::new();
 
@@ -466,7 +476,7 @@ mod tests {
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_register_username_too_short(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
         let cookies = CookieHelper::new();
 
@@ -508,7 +518,7 @@ mod tests {
     /// When the user already exists in the database, it should give an error
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_register_user_exists(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
         let mut rng = state.rng();
         let cookies = CookieHelper::new();
@@ -560,7 +570,7 @@ mod tests {
     /// an error
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_register_user_reserved(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
         let cookies = CookieHelper::new();
 

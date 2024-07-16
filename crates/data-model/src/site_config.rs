@@ -78,4 +78,8 @@ pub struct SiteConfig {
 
     /// Captcha configuration
     pub captcha: Option<CaptchaConfig>,
+
+    /// Minimum password complexity, between 0 and 4.
+    /// This is a score from zxcvbn.
+    pub minimum_password_complexity: u8,
 }

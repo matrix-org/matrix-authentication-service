@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{extract::State, response::IntoResponse, Json, TypedHeader};
+use axum::{extract::State, response::IntoResponse, Json};
+use axum_extra::typed_header::TypedHeader;
 use chrono::Duration;
 use headers::{CacheControl, HeaderMap, HeaderMapExt, Pragma};
 use hyper::StatusCode;
@@ -25,11 +26,11 @@ use mas_data_model::{
     AuthorizationGrantStage, Client, Device, DeviceCodeGrantState, SiteConfig, TokenType, UserAgent,
 };
 use mas_keystore::{Encrypter, Keystore};
+use mas_matrix::BoxHomeserverConnection;
 use mas_oidc_client::types::scope::ScopeToken;
 use mas_policy::Policy;
 use mas_router::UrlBuilder;
 use mas_storage::{
-    job::{JobRepositoryExt, ProvisionDeviceJob},
     oauth2::{
         OAuth2AccessTokenRepository, OAuth2AuthorizationGrantRepository,
         OAuth2RefreshTokenRepository, OAuth2SessionRepository,
@@ -117,6 +118,9 @@ pub(crate) enum RouteError {
 
     #[error("device code grant was already exchanged")]
     DeviceCodeExchanged,
+
+    #[error("failed to provision device")]
+    ProvisionDeviceFailed(#[source] anyhow::Error),
 }
 
 impl IntoResponse for RouteError {
@@ -124,7 +128,10 @@ impl IntoResponse for RouteError {
         let event_id = sentry::capture_error(&self);
 
         let response = match self {
-            Self::Internal(_) | Self::NoSuchBrowserSession | Self::NoSuchOAuthSession => (
+            Self::Internal(_)
+            | Self::NoSuchBrowserSession
+            | Self::NoSuchOAuthSession
+            | Self::ProvisionDeviceFailed(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ClientError::from(ClientErrorCode::ServerError)),
             ),
@@ -209,6 +216,7 @@ pub(crate) async fn post(
     State(url_builder): State<UrlBuilder>,
     activity_tracker: BoundActivityTracker,
     mut repo: BoxRepository,
+    State(homeserver): State<BoxHomeserverConnection>,
     State(site_config): State<SiteConfig>,
     State(encrypter): State<Encrypter>,
     policy: Policy,
@@ -246,6 +254,7 @@ pub(crate) async fn post(
                 &url_builder,
                 &site_config,
                 repo,
+                &homeserver,
                 user_agent,
             )
             .await?
@@ -288,6 +297,7 @@ pub(crate) async fn post(
                 &url_builder,
                 &site_config,
                 repo,
+                &homeserver,
                 user_agent,
             )
             .await?
@@ -317,6 +327,7 @@ async fn authorization_code_grant(
     url_builder: &UrlBuilder,
     site_config: &SiteConfig,
     mut repo: BoxRepository,
+    homeserver: &BoxHomeserverConnection,
     user_agent: Option<UserAgent>,
 ) -> Result<(AccessTokenResponse, BoxRepository), RouteError> {
     // Check that the client is allowed to use this grant type
@@ -450,17 +461,19 @@ async fn authorization_code_grant(
         params = params.with_id_token(id_token);
     }
 
+    // Lock the user sync to make sure we don't get into a race condition
+    repo.user()
+        .acquire_lock_for_sync(&browser_session.user)
+        .await?;
+
     // Look for device to provision
+    let mxid = homeserver.mxid(&browser_session.user.username);
     for scope in &*session.scope {
         if let Some(device) = Device::from_scope_token(scope) {
-            // Note that we're not waiting for the job to finish, we just schedule it. We
-            // might get in a situation where the provisioning job is not finished when the
-            // client does its first request to the Homeserver. This is fine for now, since
-            // Synapse still provision devices on-the-fly if it doesn't find them in the
-            // database.
-            repo.job()
-                .schedule_job(ProvisionDeviceJob::new(&browser_session.user, &device))
-                .await?;
+            homeserver
+                .create_device(&mxid, device.as_str())
+                .await
+                .map_err(RouteError::ProvisionDeviceFailed)?;
         }
     }
 
@@ -638,6 +651,7 @@ async fn device_code_grant(
     url_builder: &UrlBuilder,
     site_config: &SiteConfig,
     mut repo: BoxRepository,
+    homeserver: &BoxHomeserverConnection,
     user_agent: Option<UserAgent>,
 ) -> Result<(AccessTokenResponse, BoxRepository), RouteError> {
     // Check that the client is allowed to use this grant type
@@ -739,17 +753,19 @@ async fn device_code_grant(
         params = params.with_id_token(id_token);
     }
 
+    // Lock the user sync to make sure we don't get into a race condition
+    repo.user()
+        .acquire_lock_for_sync(&browser_session.user)
+        .await?;
+
     // Look for device to provision
+    let mxid = homeserver.mxid(&browser_session.user.username);
     for scope in &*session.scope {
         if let Some(device) = Device::from_scope_token(scope) {
-            // Note that we're not waiting for the job to finish, we just schedule it. We
-            // might get in a situation where the provisioning job is not finished when the
-            // client does its first request to the Homeserver. This is fine for now, since
-            // Synapse still provision devices on-the-fly if it doesn't find them in the
-            // database.
-            repo.job()
-                .schedule_job(ProvisionDeviceJob::new(&browser_session.user, &device))
-                .await?;
+            homeserver
+                .create_device(&mxid, device.as_str())
+                .await
+                .map_err(RouteError::ProvisionDeviceFailed)?;
         }
     }
 
@@ -781,11 +797,11 @@ mod tests {
     use sqlx::PgPool;
 
     use super::*;
-    use crate::test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState};
+    use crate::test_utils::{setup, RequestBuilderExt, ResponseExt, TestState};
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_auth_code_grant(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Provision a client
@@ -995,7 +1011,7 @@ mod tests {
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_refresh_token_grant(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Provision a client
@@ -1118,7 +1134,7 @@ mod tests {
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_client_credentials(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Provision a client
@@ -1245,7 +1261,7 @@ mod tests {
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_device_code_grant(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Provision a client
@@ -1431,7 +1447,7 @@ mod tests {
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_unsupported_grant(pool: PgPool) {
-        init_tracing();
+        setup();
         let state = TestState::from_pool(pool).await.unwrap();
 
         // Provision a client

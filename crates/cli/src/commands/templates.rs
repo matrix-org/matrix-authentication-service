@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::process::ExitCode;
+
 use clap::Parser;
 use figment::Figment;
 use mas_config::{
@@ -37,7 +39,7 @@ enum Subcommand {
 }
 
 impl Options {
-    pub async fn run(self, figment: &Figment) -> anyhow::Result<()> {
+    pub async fn run(self, figment: &Figment) -> anyhow::Result<ExitCode> {
         use Subcommand as SC;
         match self.subcommand {
             SC::Check => {
@@ -66,7 +68,7 @@ impl Options {
                     templates_from_config(&template_config, &site_config, &url_builder).await?;
                 templates.check_render(clock.now(), &mut rng)?;
 
-                Ok(())
+                Ok(ExitCode::SUCCESS)
             }
         }
     }

@@ -12,21 +12,12 @@ repository.workspace = true
 workspace = true
 
 [features]
-default = ["hyper", "keystore"]
-hyper = [
-    "dep:http-body",
-    "dep:hyper",
-    "dep:hyper-rustls",
-    "dep:rustls",
-    "dep:rustls-platform-verifier",
-    "dep:tower-http",
-    "tower/limit",
-]
+default = ["keystore"]
 keystore = ["dep:mas-keystore"]
 
 [dependencies]
 base64ct = { version = "1.6.0", features = ["std"] }
-bytes = "1.6.0"
+bytes.workspace = true
 chrono.workspace = true
 form_urlencoded = "1.2.1"
 futures-util = "0.3.30"
@@ -38,7 +29,7 @@ rand.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 serde_urlencoded = "0.7.1"
-serde_with = "3.8.1"
+serde_with = "3.8.3"
 thiserror.workspace = true
 tower.workspace = true
 tracing.workspace = true
@@ -50,22 +41,14 @@ mas-jose.workspace = true
 mas-keystore = { workspace = true, optional = true }
 oauth2-types.workspace = true
 
-# Default http service
-http-body = { workspace = true, optional = true }
-hyper = { workspace = true, optional = true }
-hyper-rustls = { workspace = true, optional = true }
-rustls = { workspace = true, optional = true }
-rustls-platform-verifier = { workspace = true, optional = true }
-
-[dependencies.tower-http]
-version = "0.4.4"
-features = ["follow-redirect", "set-header", "timeout", "map-request-body", "util"]
-optional = true
-
 [dev-dependencies]
 assert_matches = "1.5.0"
-bitflags = "2.5.0"
+bitflags = "2.6.0"
 mas-keystore.workspace = true
 rand_chacha = "0.3.1"
 tokio.workspace = true
 wiremock = "0.6.0"
+http-body-util.workspace = true
+rustls.workspace = true
+
+mas-http = { workspace = true, features = ["client"] }

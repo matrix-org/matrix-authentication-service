@@ -13,20 +13,23 @@ workspace = true
 
 [dependencies]
 async-trait.workspace = true
-axum = { version = "0.6.20", features = ["headers"] }
-axum-extra = { version = "0.8.0", features = ["cookie-private", "cookie-key-expansion"] }
+axum.workspace = true
+axum-extra.workspace = true
+bytes.workspace = true
 chrono.workspace = true
 data-encoding = "2.6.0"
 futures-util = "0.3.30"
 headers.workspace = true
 http.workspace = true
 http-body.workspace = true
+http-body-util.workspace = true
+hyper-util.workspace = true
 icu_locid = "1.4.0"
 mime = "0.3.17"
 rand.workspace = true
-sentry = { version = "0.31.8", default-features = false }
+sentry.workspace = true
 serde.workspace = true
-serde_with = "3.8.1"
+serde_with = "3.8.3"
 serde_urlencoded = "0.7.1"
 serde_json.workspace = true
 thiserror.workspace = true

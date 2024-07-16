@@ -25,15 +25,16 @@ opentelemetry-semantic-conventions.workspace = true
 # Error management
 thiserror.workspace = true
 anyhow.workspace = true
-sentry = { version = "0.31.8", default-features = false }
+sentry.workspace = true
 
 # Web server
 hyper.workspace = true
 tower.workspace = true
-tower-http = { version = "0.4.4", features = ["cors"] }
-axum = "0.6.20"
-axum-macros = "0.3.8"
-axum-extra = { version = "0.8.0", features = ["cookie-private"] }
+tower-http.workspace = true
+axum.workspace = true
+axum-macros = "0.4.1"
+axum-extra.workspace = true
+rustls.workspace = true
 
 async-graphql.workspace = true
 
@@ -45,21 +46,26 @@ sqlx.workspace = true
 
 # Various structure (de)serialization
 serde.workspace = true
-serde_with = { version = "3.8.1", features = ["hex", "chrono"] }
+serde_with = { version = "3.8.3", features = ["hex", "chrono"] }
 serde_json.workspace = true
 serde_urlencoded = "0.7.1"
 
 # Password hashing
 argon2 = { version = "0.5.3", features = ["password-hash", "std"] }
 bcrypt = "0.15.1"
-pbkdf2 = { version = "0.12.2", features = ["password-hash", "std", "simple", "parallel"] }
-zeroize = "1.7.0"
+pbkdf2 = { version = "0.12.2", features = [
+    "password-hash",
+    "std",
+    "simple",
+    "parallel",
+] }
+zeroize = "1.8.1"
 
 # Various data types and utilities
 base64ct = "1.6.0"
 camino.workspace = true
 chrono.workspace = true
-psl = "2.1.48"
+psl = "2.1.50"
 time = "0.3.36"
 url.workspace = true
 mime = "0.3.17"
@@ -85,9 +91,10 @@ mas-storage.workspace = true
 mas-storage-pg.workspace = true
 mas-templates.workspace = true
 oauth2-types.workspace = true
+zxcvbn = "3.0.1"
 
 [dev-dependencies]
-insta = "1.38.0"
+insta = "1.39.0"
 tracing-subscriber.workspace = true
 cookie_store = "0.21.0"
 sqlx.workspace = true
