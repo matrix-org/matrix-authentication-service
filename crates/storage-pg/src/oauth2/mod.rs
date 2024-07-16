@@ -709,6 +709,37 @@ mod tests {
         assert_eq!(list.edges.len(), 1);
         assert_eq!(list.edges[0], session11);
         assert_eq!(repo.oauth2_session().count(filter).await.unwrap(), 1);
+
+        // Finish all sessions of a client in batch
+        let affected = repo
+            .oauth2_session()
+            .finish_bulk(
+                &clock,
+                OAuth2SessionFilter::new()
+                    .for_client(&client1)
+                    .active_only(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(affected, 1);
+
+        // We should have 3 finished sessions
+        assert_eq!(
+            repo.oauth2_session()
+                .count(OAuth2SessionFilter::new().finished_only())
+                .await
+                .unwrap(),
+            3
+        );
+
+        // We should have 1 active sessions
+        assert_eq!(
+            repo.oauth2_session()
+                .count(OAuth2SessionFilter::new().active_only())
+                .await
+                .unwrap(),
+            1
+        );
     }
 
     /// Test the [`OAuth2DeviceCodeGrantRepository`] implementation

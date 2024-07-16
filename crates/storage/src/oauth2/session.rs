@@ -1,4 +1,4 @@
-// Copyright 2022, 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2022-2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -245,6 +245,24 @@ pub trait OAuth2SessionRepository: Send + Sync {
     async fn finish(&mut self, clock: &dyn Clock, session: Session)
         -> Result<Session, Self::Error>;
 
+    /// Mark all the [`Session`] matching the given filter as finished
+    ///
+    /// Returns the number of sessions affected
+    ///
+    /// # Parameters
+    ///
+    /// * `clock`: The clock used to generate timestamps
+    /// * `filter`: The filter parameters
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn finish_bulk(
+        &mut self,
+        clock: &dyn Clock,
+        filter: OAuth2SessionFilter<'_>,
+    ) -> Result<usize, Self::Error>;
+
     /// List [`Session`]s matching the given filter and pagination parameters
     ///
     /// # Parameters
@@ -332,6 +350,12 @@ repository_impl!(OAuth2SessionRepository:
 
     async fn finish(&mut self, clock: &dyn Clock, session: Session)
         -> Result<Session, Self::Error>;
+
+    async fn finish_bulk(
+        &mut self,
+        clock: &dyn Clock,
+        filter: OAuth2SessionFilter<'_>,
+    ) -> Result<usize, Self::Error>;
 
     async fn list(
         &mut self,
