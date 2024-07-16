@@ -15,8 +15,10 @@
 use anyhow::Context;
 use apalis_core::{context::JobContext, executor::TokioExecutor, monitor::Monitor};
 use mas_storage::{
+    compat::CompatSessionFilter,
     job::{DeactivateUserJob, JobWithSpanContext, ReactivateUserJob},
-    user::UserRepository,
+    oauth2::OAuth2SessionFilter,
+    user::{BrowserSessionFilter, UserRepository},
     RepositoryAccess,
 };
 use tracing::info;
@@ -52,7 +54,33 @@ async fn deactivate_user(
         .await
         .context("Failed to lock user")?;
 
-    // TODO: delete the sessions & access tokens
+    // Kill all sessions for the user
+    let n = repo
+        .browser_session()
+        .finish_bulk(
+            &clock,
+            BrowserSessionFilter::new().for_user(&user).active_only(),
+        )
+        .await?;
+    info!(affected = n, "Killed all browser sessions for user");
+
+    let n = repo
+        .oauth2_session()
+        .finish_bulk(
+            &clock,
+            OAuth2SessionFilter::new().for_user(&user).active_only(),
+        )
+        .await?;
+    info!(affected = n, "Killed all OAuth 2.0 sessions for user");
+
+    let n = repo
+        .compat_session()
+        .finish_bulk(
+            &clock,
+            CompatSessionFilter::new().for_user(&user).active_only(),
+        )
+        .await?;
+    info!(affected = n, "Killed all compatibility sessions for user");
 
     // Before calling back to the homeserver, commit the changes to the database, as
     // we want the user to be locked out as soon as possible
