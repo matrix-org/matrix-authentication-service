@@ -16,7 +16,7 @@ use std::net::IpAddr;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use mas_data_model::{BrowserSession, Client, Session, User, UserAgent};
+use mas_data_model::{BrowserSession, Client, Device, Session, User, UserAgent};
 use oauth2_types::scope::Scope;
 use rand_core::RngCore;
 use ulid::Ulid;
@@ -43,6 +43,8 @@ impl OAuth2SessionState {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub struct OAuth2SessionFilter<'a> {
     user: Option<&'a User>,
+    browser_session: Option<&'a BrowserSession>,
+    device: Option<&'a Device>,
     client: Option<&'a Client>,
     state: Option<OAuth2SessionState>,
     scope: Option<&'a Scope>,
@@ -66,8 +68,23 @@ impl<'a> OAuth2SessionFilter<'a> {
     ///
     /// Returns [`None`] if no user filter was set
     #[must_use]
-    pub fn user(&self) -> Option<&User> {
+    pub fn user(&self) -> Option<&'a User> {
         self.user
+    }
+
+    /// List sessions started by a specific browser session
+    #[must_use]
+    pub fn for_browser_session(mut self, browser_session: &'a BrowserSession) -> Self {
+        self.browser_session = Some(browser_session);
+        self
+    }
+
+    /// Get the browser session filter
+    ///
+    /// Returns [`None`] if no browser session filter was set
+    #[must_use]
+    pub fn browser_session(&self) -> Option<&'a BrowserSession> {
+        self.browser_session
     }
 
     /// List sessions for a specific client
@@ -81,7 +98,7 @@ impl<'a> OAuth2SessionFilter<'a> {
     ///
     /// Returns [`None`] if no client filter was set
     #[must_use]
-    pub fn client(&self) -> Option<&Client> {
+    pub fn client(&self) -> Option<&'a Client> {
         self.client
     }
 
@@ -118,8 +135,23 @@ impl<'a> OAuth2SessionFilter<'a> {
     ///
     /// Returns [`None`] if no scope filter was set
     #[must_use]
-    pub fn scope(&self) -> Option<&Scope> {
+    pub fn scope(&self) -> Option<&'a Scope> {
         self.scope
+    }
+
+    /// Only return sessions that have the given device in their scope
+    #[must_use]
+    pub fn for_device(mut self, device: &'a Device) -> Self {
+        self.device = Some(device);
+        self
+    }
+
+    /// Get the device filter
+    ///
+    /// Returns [`None`] if no device filter was set
+    #[must_use]
+    pub fn device(&self) -> Option<&'a Device> {
+        self.device
     }
 }
 

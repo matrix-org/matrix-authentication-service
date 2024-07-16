@@ -77,7 +77,7 @@ impl<'a> AppSessionFilter<'a> {
 
     /// Get the user filter
     #[must_use]
-    pub fn user(&self) -> Option<&User> {
+    pub fn user(&self) -> Option<&'a User> {
         self.user
     }
 
@@ -90,7 +90,7 @@ impl<'a> AppSessionFilter<'a> {
 
     /// Get the browser session filter
     #[must_use]
-    pub fn browser_session(&self) -> Option<&BrowserSession> {
+    pub fn browser_session(&self) -> Option<&'a BrowserSession> {
         self.browser_session
     }
 
