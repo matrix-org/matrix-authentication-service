@@ -29,8 +29,11 @@ use ulid::Ulid;
 use uuid::Uuid;
 
 use crate::{
-    iden::UserEmails, pagination::QueryBuilderExt, tracing::ExecuteExt, DatabaseError,
-    DatabaseInconsistencyError,
+    filter::{Filter, StatementExt},
+    iden::UserEmails,
+    pagination::QueryBuilderExt,
+    tracing::ExecuteExt,
+    DatabaseError, DatabaseInconsistencyError,
 };
 
 /// An implementation of [`UserEmailRepository`] for a PostgreSQL connection
@@ -97,6 +100,26 @@ impl UserEmailConfirmationCodeLookup {
             state,
             created_at: self.created_at,
         }
+    }
+}
+
+impl Filter for UserEmailFilter<'_> {
+    fn generate_condition(&self, _has_joins: bool) -> impl sea_query::IntoCondition {
+        sea_query::Condition::all()
+            .add_option(self.user().map(|user| {
+                Expr::col((UserEmails::Table, UserEmails::UserId)).eq(Uuid::from(user.id))
+            }))
+            .add_option(
+                self.email()
+                    .map(|email| Expr::col((UserEmails::Table, UserEmails::Email)).eq(email)),
+            )
+            .add_option(self.state().map(|state| {
+                if state.is_verified() {
+                    Expr::col((UserEmails::Table, UserEmails::ConfirmedAt)).is_not_null()
+                } else {
+                    Expr::col((UserEmails::Table, UserEmails::ConfirmedAt)).is_null()
+                }
+            }))
     }
 }
 
@@ -267,21 +290,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
                 UserEmailLookupIden::ConfirmedAt,
             )
             .from(UserEmails::Table)
-            .and_where_option(filter.user().map(|user| {
-                Expr::col((UserEmails::Table, UserEmails::UserId)).eq(Uuid::from(user.id))
-            }))
-            .and_where_option(
-                filter
-                    .email()
-                    .map(|email| Expr::col((UserEmails::Table, UserEmails::Email)).eq(email)),
-            )
-            .and_where_option(filter.state().map(|state| {
-                if state.is_verified() {
-                    Expr::col((UserEmails::Table, UserEmails::ConfirmedAt)).is_not_null()
-                } else {
-                    Expr::col((UserEmails::Table, UserEmails::ConfirmedAt)).is_null()
-                }
-            }))
+            .apply_filter(filter)
             .generate_pagination((UserEmails::Table, UserEmails::UserEmailId), pagination)
             .build_sqlx(PostgresQueryBuilder);
 
@@ -307,21 +316,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
         let (sql, arguments) = Query::select()
             .expr(Expr::col((UserEmails::Table, UserEmails::UserEmailId)).count())
             .from(UserEmails::Table)
-            .and_where_option(filter.user().map(|user| {
-                Expr::col((UserEmails::Table, UserEmails::UserId)).eq(Uuid::from(user.id))
-            }))
-            .and_where_option(
-                filter
-                    .email()
-                    .map(|email| Expr::col((UserEmails::Table, UserEmails::Email)).eq(email)),
-            )
-            .and_where_option(filter.state().map(|state| {
-                if state.is_verified() {
-                    Expr::col((UserEmails::Table, UserEmails::ConfirmedAt)).is_not_null()
-                } else {
-                    Expr::col((UserEmails::Table, UserEmails::ConfirmedAt)).is_null()
-                }
-            }))
+            .apply_filter(filter)
             .build_sqlx(PostgresQueryBuilder);
 
         let count: i64 = sqlx::query_scalar_with(&sql, arguments)
