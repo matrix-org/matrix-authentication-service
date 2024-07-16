@@ -17,7 +17,10 @@
 
 use async_trait::async_trait;
 use mas_data_model::User;
-use mas_storage::{user::UserRepository, Clock};
+use mas_storage::{
+    user::{UserFilter, UserRepository},
+    Clock,
+};
 use rand::RngCore;
 use sea_query::{Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
@@ -25,7 +28,13 @@ use sqlx::PgConnection;
 use ulid::Ulid;
 use uuid::Uuid;
 
-use crate::{iden::Users, pagination::QueryBuilderExt, tracing::ExecuteExt, DatabaseError};
+use crate::{
+    filter::{Filter, StatementExt},
+    iden::Users,
+    pagination::QueryBuilderExt,
+    tracing::ExecuteExt,
+    DatabaseError,
+};
 
 mod email;
 mod password;
@@ -89,6 +98,22 @@ impl From<UserLookup> for User {
             locked_at: value.locked_at,
             can_request_admin: value.can_request_admin,
         }
+    }
+}
+
+impl Filter for UserFilter<'_> {
+    fn generate_condition(&self, _has_joins: bool) -> impl sea_query::IntoCondition {
+        sea_query::Condition::all()
+            .add_option(self.state().map(|state| {
+                if state.is_locked() {
+                    Expr::col((Users::Table, Users::LockedAt)).is_not_null()
+                } else {
+                    Expr::col((Users::Table, Users::LockedAt)).is_null()
+                }
+            }))
+            .add_option(self.can_request_admin().map(|can_request_admin| {
+                Expr::col((Users::Table, Users::CanRequestAdmin)).eq(can_request_admin)
+            }))
     }
 }
 
@@ -349,7 +374,7 @@ impl<'c> UserRepository for PgUserRepository<'c> {
     )]
     async fn list(
         &mut self,
-        filter: mas_storage::user::UserFilter<'_>,
+        filter: UserFilter<'_>,
         pagination: mas_storage::Pagination,
     ) -> Result<mas_storage::Page<User>, Self::Error> {
         let (sql, arguments) = Query::select()
@@ -378,16 +403,7 @@ impl<'c> UserRepository for PgUserRepository<'c> {
                 UserLookupIden::CanRequestAdmin,
             )
             .from(Users::Table)
-            .and_where_option(filter.state().map(|state| {
-                if state.is_locked() {
-                    Expr::col((Users::Table, Users::LockedAt)).is_not_null()
-                } else {
-                    Expr::col((Users::Table, Users::LockedAt)).is_null()
-                }
-            }))
-            .and_where_option(filter.can_request_admin().map(|can_request_admin| {
-                Expr::col((Users::Table, Users::CanRequestAdmin)).eq(can_request_admin)
-            }))
+            .apply_filter(filter)
             .generate_pagination((Users::Table, Users::UserId), pagination)
             .build_sqlx(PostgresQueryBuilder);
 
@@ -409,23 +425,11 @@ impl<'c> UserRepository for PgUserRepository<'c> {
         ),
         err,
     )]
-    async fn count(
-        &mut self,
-        filter: mas_storage::user::UserFilter<'_>,
-    ) -> Result<usize, Self::Error> {
+    async fn count(&mut self, filter: UserFilter<'_>) -> Result<usize, Self::Error> {
         let (sql, arguments) = Query::select()
             .expr(Expr::col((Users::Table, Users::UserId)).count())
             .from(Users::Table)
-            .and_where_option(filter.state().map(|state| {
-                if state.is_locked() {
-                    Expr::col((Users::Table, Users::LockedAt)).is_not_null()
-                } else {
-                    Expr::col((Users::Table, Users::LockedAt)).is_null()
-                }
-            }))
-            .and_where_option(filter.can_request_admin().map(|can_request_admin| {
-                Expr::col((Users::Table, Users::CanRequestAdmin)).eq(can_request_admin)
-            }))
+            .apply_filter(filter)
             .build_sqlx(PostgresQueryBuilder);
 
         let count: i64 = sqlx::query_scalar_with(&sql, arguments)
