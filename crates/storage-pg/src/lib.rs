@@ -1,4 +1,4 @@
-// Copyright 2021-2023 The Matrix.org Foundation C.I.C.
+// Copyright 2021-2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -177,6 +177,7 @@ pub mod upstream_oauth2;
 pub mod user;
 
 mod errors;
+pub(crate) mod filter;
 pub(crate) mod iden;
 pub(crate) mod pagination;
 pub(crate) mod repository;
