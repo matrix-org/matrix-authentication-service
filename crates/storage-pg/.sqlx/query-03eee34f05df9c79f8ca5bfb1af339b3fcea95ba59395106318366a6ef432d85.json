@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                UPDATE user_sessions\n                SET last_active_at = GREATEST(t.last_active_at, user_sessions.last_active_at)\n                  , last_active_ip = COALESCE(t.last_active_ip, user_sessions.last_active_ip)\n                FROM (\n                    SELECT *\n                    FROM UNNEST($1::uuid[], $2::timestamptz[], $3::inet[])\n                        AS t(user_session_id, last_active_at, last_active_ip)\n                ) AS t\n                WHERE user_sessions.user_session_id = t.user_session_id\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "TimestamptzArray",
+        "InetArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "03eee34f05df9c79f8ca5bfb1af339b3fcea95ba59395106318366a6ef432d85"
+}
