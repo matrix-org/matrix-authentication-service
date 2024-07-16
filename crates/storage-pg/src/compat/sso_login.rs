@@ -28,6 +28,7 @@ use url::Url;
 use uuid::Uuid;
 
 use crate::{
+    filter::{Filter, StatementExt},
     iden::{CompatSessions, CompatSsoLogins},
     pagination::QueryBuilderExt,
     tracing::ExecuteExt,
@@ -95,6 +96,42 @@ impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin {
             created_at: res.created_at,
             state,
         })
+    }
+}
+
+impl Filter for CompatSsoLoginFilter<'_> {
+    fn generate_condition(&self, _has_joins: bool) -> impl sea_query::IntoCondition {
+        sea_query::Condition::all()
+            .add_option(self.user().map(|user| {
+                Expr::exists(
+                    Query::select()
+                        .expr(Expr::cust("1"))
+                        .from(CompatSessions::Table)
+                        .and_where(
+                            Expr::col((CompatSessions::Table, CompatSessions::UserId))
+                                .eq(Uuid::from(user.id)),
+                        )
+                        .and_where(
+                            Expr::col((CompatSsoLogins::Table, CompatSsoLogins::CompatSessionId))
+                                .equals((CompatSessions::Table, CompatSessions::CompatSessionId)),
+                        )
+                        .take(),
+                )
+            }))
+            .add_option(self.state().map(|state| {
+                if state.is_exchanged() {
+                    Expr::col((CompatSsoLogins::Table, CompatSsoLogins::ExchangedAt)).is_not_null()
+                } else if state.is_fulfilled() {
+                    Expr::col((CompatSsoLogins::Table, CompatSsoLogins::FulfilledAt))
+                        .is_not_null()
+                        .and(
+                            Expr::col((CompatSsoLogins::Table, CompatSsoLogins::ExchangedAt))
+                                .is_null(),
+                        )
+                } else {
+                    Expr::col((CompatSsoLogins::Table, CompatSsoLogins::FulfilledAt)).is_null()
+                }
+            }))
     }
 }
 
@@ -384,36 +421,7 @@ impl<'c> CompatSsoLoginRepository for PgCompatSsoLoginRepository<'c> {
                 CompatSsoLoginLookupIden::ExchangedAt,
             )
             .from(CompatSsoLogins::Table)
-            .and_where_option(filter.user().map(|user| {
-                Expr::exists(
-                    Query::select()
-                        .expr(Expr::cust("1"))
-                        .from(CompatSessions::Table)
-                        .and_where(
-                            Expr::col((CompatSessions::Table, CompatSessions::UserId))
-                                .eq(Uuid::from(user.id)),
-                        )
-                        .and_where(
-                            Expr::col((CompatSsoLogins::Table, CompatSsoLogins::CompatSessionId))
-                                .equals((CompatSessions::Table, CompatSessions::CompatSessionId)),
-                        )
-                        .take(),
-                )
-            }))
-            .and_where_option(filter.state().map(|state| {
-                if state.is_exchanged() {
-                    Expr::col((CompatSsoLogins::Table, CompatSsoLogins::ExchangedAt)).is_not_null()
-                } else if state.is_fulfilled() {
-                    Expr::col((CompatSsoLogins::Table, CompatSsoLogins::FulfilledAt))
-                        .is_not_null()
-                        .and(
-                            Expr::col((CompatSsoLogins::Table, CompatSsoLogins::ExchangedAt))
-                                .is_null(),
-                        )
-                } else {
-                    Expr::col((CompatSsoLogins::Table, CompatSsoLogins::FulfilledAt)).is_null()
-                }
-            }))
+            .apply_filter(filter)
             .generate_pagination(
                 (CompatSsoLogins::Table, CompatSsoLogins::CompatSsoLoginId),
                 pagination,
@@ -442,36 +450,7 @@ impl<'c> CompatSsoLoginRepository for PgCompatSsoLoginRepository<'c> {
         let (sql, arguments) = Query::select()
             .expr(Expr::col((CompatSsoLogins::Table, CompatSsoLogins::CompatSsoLoginId)).count())
             .from(CompatSsoLogins::Table)
-            .and_where_option(filter.user().map(|user| {
-                Expr::exists(
-                    Query::select()
-                        .expr(Expr::cust("1"))
-                        .from(CompatSessions::Table)
-                        .and_where(
-                            Expr::col((CompatSessions::Table, CompatSessions::UserId))
-                                .eq(Uuid::from(user.id)),
-                        )
-                        .and_where(
-                            Expr::col((CompatSsoLogins::Table, CompatSsoLogins::CompatSessionId))
-                                .equals((CompatSessions::Table, CompatSessions::CompatSessionId)),
-                        )
-                        .take(),
-                )
-            }))
-            .and_where_option(filter.state().map(|state| {
-                if state.is_exchanged() {
-                    Expr::col((CompatSsoLogins::Table, CompatSsoLogins::ExchangedAt)).is_not_null()
-                } else if state.is_fulfilled() {
-                    Expr::col((CompatSsoLogins::Table, CompatSsoLogins::FulfilledAt))
-                        .is_not_null()
-                        .and(
-                            Expr::col((CompatSsoLogins::Table, CompatSsoLogins::ExchangedAt))
-                                .is_null(),
-                        )
-                } else {
-                    Expr::col((CompatSsoLogins::Table, CompatSsoLogins::FulfilledAt)).is_null()
-                }
-            }))
+            .apply_filter(filter)
             .build_sqlx(PostgresQueryBuilder);
 
         let count: i64 = sqlx::query_scalar_with(&sql, arguments)
