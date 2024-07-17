@@ -53,7 +53,9 @@ const ClientsIdRoute = ClientsIdImport.update({
 const PasswordChangeIndexRoute = PasswordChangeIndexImport.update({
   path: '/password/change/',
   getParentRoute: () => rootRoute,
-} as any)
+} as any).lazy(() =>
+  import('./routes/password.change.index.lazy').then((d) => d.Route),
+)
 
 const AccountSessionsIndexRoute = AccountSessionsIndexImport.update({
   path: '/sessions/',
