@@ -1,4 +1,4 @@
-// Copyright 2022, 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2022-2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -132,6 +132,14 @@ impl Filter for OAuth2SessionFilter<'_> {
             .add_option(self.scope().map(|scope| {
                 let scope: Vec<String> = scope.iter().map(|s| s.as_str().to_owned()).collect();
                 Expr::col((OAuth2Sessions::Table, OAuth2Sessions::ScopeList)).contains(scope)
+            }))
+            .add_option(self.last_active_after().map(|last_active_after| {
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::LastActiveAt))
+                    .gt(last_active_after)
+            }))
+            .add_option(self.last_active_before().map(|last_active_before| {
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::LastActiveAt))
+                    .lt(last_active_before)
             }))
     }
 }
