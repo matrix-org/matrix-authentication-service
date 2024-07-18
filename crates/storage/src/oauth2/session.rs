@@ -48,6 +48,8 @@ pub struct OAuth2SessionFilter<'a> {
     client: Option<&'a Client>,
     state: Option<OAuth2SessionState>,
     scope: Option<&'a Scope>,
+    last_active_before: Option<DateTime<Utc>>,
+    last_active_after: Option<DateTime<Utc>>,
 }
 
 impl<'a> OAuth2SessionFilter<'a> {
@@ -100,6 +102,36 @@ impl<'a> OAuth2SessionFilter<'a> {
     #[must_use]
     pub fn client(&self) -> Option<&'a Client> {
         self.client
+    }
+
+    /// Only return sessions with a last active time before the given time
+    #[must_use]
+    pub fn with_last_active_before(mut self, last_active_before: DateTime<Utc>) -> Self {
+        self.last_active_before = Some(last_active_before);
+        self
+    }
+
+    /// Only return sessions with a last active time after the given time
+    #[must_use]
+    pub fn with_last_active_after(mut self, last_active_after: DateTime<Utc>) -> Self {
+        self.last_active_after = Some(last_active_after);
+        self
+    }
+
+    /// Get the last active before filter
+    ///
+    /// Returns [`None`] if no client filter was set
+    #[must_use]
+    pub fn last_active_before(&self) -> Option<DateTime<Utc>> {
+        self.last_active_before
+    }
+
+    /// Get the last active after filter
+    ///
+    /// Returns [`None`] if no client filter was set
+    #[must_use]
+    pub fn last_active_after(&self) -> Option<DateTime<Utc>> {
+        self.last_active_after
     }
 
     /// Only return active sessions
