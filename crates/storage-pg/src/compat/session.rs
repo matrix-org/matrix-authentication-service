@@ -1,4 +1,4 @@
-// Copyright 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2023, 2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -252,6 +252,14 @@ impl Filter for CompatSessionFilter<'_> {
                             .ne(Expr::all(compat_sso_logins))
                     }
                 }
+            }))
+            .add_option(self.last_active_after().map(|last_active_after| {
+                Expr::col((CompatSessions::Table, CompatSessions::LastActiveAt))
+                    .gt(last_active_after)
+            }))
+            .add_option(self.last_active_before().map(|last_active_before| {
+                Expr::col((CompatSessions::Table, CompatSessions::LastActiveAt))
+                    .lt(last_active_before)
             }))
             .add_option(self.device().map(|device| {
                 Expr::col((CompatSessions::Table, CompatSessions::DeviceId)).eq(device.as_str())
