@@ -1,0 +1,59 @@
+/* Copyright 2024 The Matrix.org Foundation C.I.C.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.filter {
+  display: flex;
+  align-items: center;
+  gap: var(--cpd-space-2x);
+  font: var(--cpd-font-body-xs-regular);
+  letter-spacing: var(--cpd-font-letter-spacing-body-xs);
+  padding: var(--cpd-space-2x) var(--cpd-space-3x);
+  border-radius: var(--cpd-radius-pill-effect);
+}
+
+.enabled-filter {
+  background: var(--cpd-color-bg-action-primary-rest);
+  color: var(--cpd-color-text-on-solid-primary);
+
+  & > .close-icon {
+    height: var(--cpd-space-4x);
+    width: var(--cpd-space-4x);
+    opacity: 0.5;
+  }
+
+  &:hover {
+    background: var(--cpd-color-bg-action-primary-hovered);
+    & > .close-icon {
+      opacity: 1;
+    }
+  }
+
+  &:active {
+    background: var(--cpd-color-bg-action-primary-rest);
+    & > .close-icon {
+      opacity: 1;
+    }
+  }
+}
+
+.disabled-filter {
+  color: var(--cpd-color-text-action-primary);
+  background: var(--cpd-color-bg-canvas-default);
+  outline: 1px solid var(--cpd-color-border-interactive-secondary);
+
+  &:hover {
+    background: var(--cpd-color-bg-subtle-secondary);
+  }
+}

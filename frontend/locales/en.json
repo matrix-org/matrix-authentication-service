@@ -54,6 +54,10 @@
       "body:one": "{{count}} active session",
       "body:other": "{{count}} active sessions",
       "heading": "Browsers",
+      "no_active_sessions": {
+        "default": "You are not signed in to any web browsers.",
+        "inactive_90_days": "All your sessions have been active in the last 90 days."
+      },
       "view_all_button": "View all"
     },
     "compat_session_detail": {
@@ -230,9 +234,11 @@
       "no_primary_email_alert": "No primary email address"
     },
     "user_sessions_overview": {
-      "active_sessions:one": "{{count}} active session",
-      "active_sessions:other": "{{count}} active sessions",
-      "heading": "Where you're signed in"
+      "heading": "Where you're signed in",
+      "no_active_sessions": {
+        "default": "You are not signed in to any application.",
+        "inactive_90_days": "All your sessions have been active in the last 90 days."
+      }
     },
     "verify_email": {
       "code_field_error": "Code not recognised",

@@ -13,19 +13,28 @@
 // limitations under the License.
 
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { H3, H5 } from "@vector-im/compound-web";
+import { H3, Separator } from "@vector-im/compound-web";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "urql";
+import * as z from "zod";
 
 import BlockList from "../components/BlockList";
 import { ButtonLink } from "../components/ButtonLink";
 import CompatSession from "../components/CompatSession";
+import EmptyState from "../components/EmptyState";
+import Filter from "../components/Filter";
 import OAuth2Session from "../components/OAuth2Session";
 import BrowserSessionsOverview from "../components/UserSessionsOverview/BrowserSessionsOverview";
 import { graphql } from "../gql";
-import { Pagination, paginationSchema, usePages } from "../pagination";
+import {
+  BackwardPagination,
+  Pagination,
+  paginationSchema,
+  usePages,
+} from "../pagination";
 
 const PAGE_SIZE = 6;
+const DEFAULT_PAGE: BackwardPagination = { last: PAGE_SIZE };
 
 const QUERY = graphql(/* GraphQL */ `
   query SessionsOverviewQuery {
@@ -46,6 +55,7 @@ const LIST_QUERY = graphql(/* GraphQL */ `
     $after: String
     $first: Int
     $last: Int
+    $lastActive: DateFilter
   ) {
     viewer {
       __typename
@@ -57,6 +67,7 @@ const LIST_QUERY = graphql(/* GraphQL */ `
           after: $after
           first: $first
           last: $last
+          lastActive: $lastActive
           state: ACTIVE
         ) {
           edges {
@@ -86,16 +97,39 @@ const unknownSessionType = (type: never): never => {
   throw new Error(`Unknown session type: ${type}`);
 };
 
+const searchSchema = z.object({
+  inactive: z.literal(true).optional().catch(undefined),
+});
+
+type Search = z.infer<typeof searchSchema>;
+
+const getNintyDaysAgo = (): string => {
+  const date = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+  // Round down to the start of the day to avoid rerendering/requerying
+  date.setHours(0, 0, 0, 0);
+  return date.toISOString();
+};
+
 export const Route = createFileRoute("/_account/sessions/")({
   // We paginate backwards, so we need to validate the `last` parameter by default
-  validateSearch: paginationSchema.catch({ last: PAGE_SIZE }),
+  validateSearch: paginationSchema.catch(DEFAULT_PAGE).and(searchSchema),
 
-  loaderDeps: ({ search }): Pagination => paginationSchema.parse(search),
+  loaderDeps: ({ search }): Pagination & Search =>
+    paginationSchema.and(searchSchema).parse(search),
 
-  async loader({ context, deps: pagination, abortController: { signal } }) {
+  async loader({
+    context,
+    deps: { inactive, ...pagination },
+    abortController: { signal },
+  }) {
+    const variables = {
+      lastActive: inactive ? { before: getNintyDaysAgo() } : undefined,
+      ...pagination,
+    };
+
     const [overview, list] = await Promise.all([
       context.client.query(QUERY, {}, { fetchOptions: { signal } }),
-      context.client.query(LIST_QUERY, pagination, {
+      context.client.query(LIST_QUERY, variables, {
         fetchOptions: { signal },
       }),
     ]);
@@ -111,14 +145,19 @@ export const Route = createFileRoute("/_account/sessions/")({
 
 function Sessions(): React.ReactElement {
   const { t } = useTranslation();
-  const pagination = Route.useLoaderDeps();
+  const { inactive, ...pagination } = Route.useLoaderDeps();
   const [overview] = useQuery({ query: QUERY });
   if (overview.error) throw overview.error;
   const user =
     overview.data?.viewer.__typename === "User" ? overview.data.viewer : null;
   if (user === null) throw notFound();
 
-  const [list] = useQuery({ query: LIST_QUERY, variables: pagination });
+  const variables = {
+    lastActive: inactive ? { before: getNintyDaysAgo() } : undefined,
+    ...pagination,
+  };
+
+  const [list] = useQuery({ query: LIST_QUERY, variables });
   if (list.error) throw list.error;
   const appSessions =
     list.data?.viewer.__typename === "User"
@@ -139,13 +178,16 @@ function Sessions(): React.ReactElement {
     <BlockList>
       <H3>{t("frontend.user_sessions_overview.heading")}</H3>
       <BrowserSessionsOverview user={user} />
-
-      <H5>
-        {t("frontend.user_sessions_overview.active_sessions", {
-          count: appSessions.totalCount,
-        })}
-      </H5>
-
+      <Separator />
+      <div className="flex gap-2 justify-start items-center">
+        <Filter
+          to={Route.fullPath}
+          enabled={inactive}
+          search={{ ...DEFAULT_PAGE, inactive: inactive ? undefined : true }}
+        >
+          {t("frontend.last_active.inactive_90_days")}
+        </Filter>
+      </div>
       {edges.map((session) => {
         const type = session.node.__typename;
         switch (type) {
@@ -162,30 +204,43 @@ function Sessions(): React.ReactElement {
         }
       })}
 
-      <div className="flex *:flex-1">
-        <ButtonLink
-          kind="secondary"
-          size="sm"
-          disabled={!forwardPage}
-          to={Route.fullPath}
-          search={forwardPage || pagination}
-        >
-          {t("common.previous")}
-        </ButtonLink>
+      {appSessions.totalCount === 0 && (
+        <EmptyState>
+          {inactive
+            ? t(
+                "frontend.user_sessions_overview.no_active_sessions.inactive_90_days",
+              )
+            : t("frontend.user_sessions_overview.no_active_sessions.default")}
+        </EmptyState>
+      )}
 
-        {/* Spacer */}
-        <div />
+      {/* Only show the pagination buttons if there are pages to go to */}
+      {(forwardPage || backwardPage) && (
+        <div className="flex *:flex-1">
+          <ButtonLink
+            kind="secondary"
+            size="sm"
+            disabled={!forwardPage}
+            to={Route.fullPath}
+            search={{ inactive, ...(forwardPage || pagination) }}
+          >
+            {t("common.previous")}
+          </ButtonLink>
 
-        <ButtonLink
-          kind="secondary"
-          size="sm"
-          disabled={!backwardPage}
-          to={Route.fullPath}
-          search={backwardPage || pagination}
-        >
-          {t("common.next")}
-        </ButtonLink>
-      </div>
+          {/* Spacer */}
+          <div />
+
+          <ButtonLink
+            kind="secondary"
+            size="sm"
+            disabled={!backwardPage}
+            to={Route.fullPath}
+            search={{ inactive, ...(backwardPage || pagination) }}
+          >
+            {t("common.next")}
+          </ButtonLink>
+        </div>
+      )}
     </BlockList>
   );
 }

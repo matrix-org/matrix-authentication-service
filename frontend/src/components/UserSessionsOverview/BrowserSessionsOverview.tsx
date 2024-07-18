@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Body, H5 } from "@vector-im/compound-web";
+import { Text, H5 } from "@vector-im/compound-web";
 import { useTranslation } from "react-i18next";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
-import Block from "../Block";
 import { Link } from "../Link";
 
 import styles from "./BrowserSessionsOverview.module.css";
@@ -38,19 +37,19 @@ const BrowserSessionsOverview: React.FC<{
   const { t } = useTranslation();
 
   return (
-    <Block className={styles.sessionListBlock}>
-      <div className={styles.sessionListBlockInfo}>
+    <div className={styles.browserSessionsOverview}>
+      <div className="flex flex-1 flex-col">
         <H5>{t("frontend.browser_sessions_overview.heading")}</H5>
-        <Body>
+        <Text>
           {t("frontend.browser_sessions_overview.body", {
             count: data.browserSessions.totalCount,
           })}
-        </Body>
+        </Text>
       </div>
       <Link to="/sessions/browsers" search={{ first: 6 }}>
         {t("frontend.browser_sessions_overview.view_all_button")}
       </Link>
-    </Block>
+    </div>
   );
 };
 

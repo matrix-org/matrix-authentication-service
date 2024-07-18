@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-.browser-sessions-overview {
+.empty-state {
   display: flex;
-  align-items: center;
-  gap: var(--cpd-space-4x);
+  flex-direction: column;
+  gap: var(--cpd-space-2x);
   padding: var(--cpd-space-4x);
-  border-radius: var(--cpd-space-3x);
-  background-color: var(--cpd-color-bg-canvas-default);
-  outline: 1px solid var(--cpd-color-gray-400);
-  outline-offset: -1px;
+  background: var(--cpd-color-gray-200);
+  color: var(--cpd-color-text-secondary);
+  font: var(--cpd-font-body-sm-regular);
+  letter-spacing: var(--cpd-font-letter-spacing-body-sm);
 }
