@@ -14,17 +14,23 @@
 
 use anyhow::Context as _;
 use async_graphql::{Context, Description, Enum, InputObject, Object, ID};
+use mas_data_model::SiteConfig;
 use mas_storage::{
     job::{DeactivateUserJob, JobRepositoryExt, ProvisionUserJob},
     user::UserRepository,
+    BoxClock, BoxRepository, Clock,
 };
 use tracing::{info, warn};
+use ulid::Ulid;
 use zeroize::Zeroizing;
 
-use crate::graphql::{
-    model::{NodeType, User},
-    state::ContextExt,
-    Requester, UserId,
+use crate::{
+    graphql::{
+        model::{NodeType, User},
+        state::ContextExt,
+        Requester, UserId,
+    },
+    passwords::PasswordManager,
 };
 
 #[derive(Default)]
@@ -600,112 +606,50 @@ impl UserMutations {
         };
 
         if is_anonymous {
-            // If the user is anonymous, we:
-            // - check that account recovery is enabled
-            // - check that they have a valid recovery ticket
-
-            if !state.site_config().account_recovery_allowed {
-                return Ok(SetPasswordPayload {
-                    status: SetPasswordStatus::PasswordChangesDisabled,
-                });
-            }
-
             let Some(recovery_ticket) = &input.recovery_ticket else {
                 return Err(async_graphql::Error::new(
                     "You must supply `recoveryTicket` to change your own password (by performing an account recovery) if you are not logged in"
                 ));
             };
 
-            let Some(ticket) = repo.user_recovery().find_ticket(recovery_ticket).await? else {
-                return Ok(SetPasswordPayload {
-                    status: SetPasswordStatus::NoSuchRecoveryTicket,
-                });
-            };
-
-            let session = repo
-                .user_recovery()
-                .lookup_session(ticket.user_recovery_session_id)
-                .await?
-                .context("Unknown session")?;
-
-            if session.consumed_at.is_some() {
-                return Ok(SetPasswordPayload {
-                    status: SetPasswordStatus::RecoveryTicketAlreadyUsed,
-                });
-            }
-
-            if !ticket.active(state.clock().now()) {
-                return Ok(SetPasswordPayload {
-                    status: SetPasswordStatus::ExpiredRecoveryTicket,
-                });
-            }
-
-            let user_email = repo
-                .user_email()
-                .lookup(ticket.user_email_id)
-                .await?
-                // Only allow confirmed email addresses
-                .filter(|email| email.confirmed_at.is_some())
-                .context("Unknown email address")?;
-
-            let ticket_user = repo
-                .user()
-                .lookup(user_email.user_id)
-                .await?
-                .context("Invalid user")?;
-
-            if ticket_user.id != user_id {
-                // This ticket is for someone else
-                return Err(async_graphql::Error::new("Unauthorized"));
-            }
-
-            if !ticket_user.is_valid() {
-                return Ok(SetPasswordPayload {
-                    status: SetPasswordStatus::AccountLocked,
-                });
-            }
-
-            repo.user_recovery()
-                .consume_ticket(&state.clock(), ticket, session)
-                .await?;
-        } else if !requester.is_admin() {
-            // If the user isn't an admin, we:
-            // - check that password changes are enabled
-            // - check that they know their current password
-
-            if !state.site_config().password_change_allowed {
-                return Ok(SetPasswordPayload {
-                    status: SetPasswordStatus::PasswordChangesDisabled,
-                });
-            }
-
-            let Some(active_password) = repo.user_password().active(&user).await? else {
-                // The user has no current password, so can't verify against one.
-                // In the future, it may be desirable to let the user set a password without any
-                // other verification instead.
-
-                return Ok(SetPasswordPayload {
-                    status: SetPasswordStatus::NoCurrentPassword,
-                });
-            };
-
-            let Some(current_password_attempt) = input.current_password else {
-                return Err(async_graphql::Error::new(
-                    "You must supply `currentPassword` to change your own password if you are not an administrator"
-                ));
-            };
-
-            if let Err(_err) = password_manager
-                .verify(
-                    active_password.version,
-                    Zeroizing::new(current_password_attempt.into_bytes()),
-                    active_password.hashed_password,
-                )
-                .await
+            match check_and_consume_recovery_ticket(
+                &mut repo,
+                &state.clock(),
+                state.site_config(),
+                recovery_ticket,
+                user_id,
+            )
+            .await
             {
-                return Ok(SetPasswordPayload {
-                    status: SetPasswordStatus::WrongPassword,
-                });
+                Ok(SetPasswordStatus::Allowed) => {
+                    // nop
+                }
+                Ok(status) => {
+                    return Ok(SetPasswordPayload { status });
+                }
+                Err(err) => {
+                    return Err(err);
+                }
+            }
+        } else if !requester.is_admin() {
+            match check_unprivileged_user_self_change_password(
+                &mut repo,
+                state.site_config(),
+                &password_manager,
+                &user,
+                input.current_password,
+            )
+            .await
+            {
+                Ok(SetPasswordStatus::Allowed) => {
+                    // nop
+                }
+                Ok(status) => {
+                    return Ok(SetPasswordPayload { status });
+                }
+                Err(err) => {
+                    return Err(err);
+                }
             }
         }
 
@@ -730,4 +674,143 @@ impl UserMutations {
             status: SetPasswordStatus::Allowed,
         })
     }
+}
+
+/// As part of the [`UserMutation::set_password`] mutations, check the provided
+/// recovery ticket and consume it.
+///
+/// # Postconditions
+///
+/// - `repo` will not be saved. The caller should call `repo.save()` afterwards
+///   to actually make the consumption of the ticket take effect.
+/// - `user_id` is the correct ID of the user for whom `recovery_ticket`
+///   belongs.
+///
+/// # Arguments
+///
+/// - `repo`, `clock`, `site_config`: MAS' repo, clock and site config
+/// - `recovery_ticket`: the recovery ticket provided by the user
+/// - `user_id`: the ID of the user that the recovery ticket is *supposedly*
+///   for, according to the user
+async fn check_and_consume_recovery_ticket(
+    repo: &mut BoxRepository,
+    clock: &BoxClock,
+    site_config: &SiteConfig,
+    recovery_ticket: &str,
+    user_id: Ulid,
+) -> Result<SetPasswordStatus, async_graphql::Error> {
+    // Check that account recovery is enabled
+    if !site_config.account_recovery_allowed {
+        return Ok(SetPasswordStatus::PasswordChangesDisabled);
+    }
+
+    // Check that they have a valid recovery ticket
+    let Some(ticket) = repo.user_recovery().find_ticket(recovery_ticket).await? else {
+        return Ok(SetPasswordStatus::NoSuchRecoveryTicket);
+    };
+
+    let session = repo
+        .user_recovery()
+        .lookup_session(ticket.user_recovery_session_id)
+        .await?
+        .context("Unknown session")?;
+
+    if session.consumed_at.is_some() {
+        return Ok(SetPasswordStatus::RecoveryTicketAlreadyUsed);
+    }
+
+    if !ticket.active(clock.now()) {
+        return Ok(SetPasswordStatus::ExpiredRecoveryTicket);
+    }
+
+    let user_email = repo
+        .user_email()
+        .lookup(ticket.user_email_id)
+        .await?
+        // Only allow confirmed email addresses
+        .filter(|email| email.confirmed_at.is_some())
+        .context("Unknown email address")?;
+
+    let ticket_user = repo
+        .user()
+        .lookup(user_email.user_id)
+        .await?
+        .context("Invalid user")?;
+
+    // Check the recovery ticket belongs to the user whose password is changing
+    if ticket_user.id != user_id {
+        // This ticket is for someone else
+        return Err(async_graphql::Error::new("Unauthorized"));
+    }
+
+    if !ticket_user.is_valid() {
+        return Ok(SetPasswordStatus::AccountLocked);
+    }
+
+    // Consume the ticket as long as the caller saves afterwards
+    repo.user_recovery()
+        .consume_ticket(clock, ticket, session)
+        .await?;
+
+    Ok(SetPasswordStatus::Allowed)
+}
+
+/// As part of the [`UserMutation::set_password`] mutations, check the
+/// provided current password and ensure the user is allowed to change
+/// their own password based on their inputs.
+///
+/// # Postconditions
+///
+/// - password changes are enabled
+/// - the user is allowed to change their own password (but the new password has
+///   not had any checks applied)
+/// - the user's password has been checked and therefore we can assume that it
+///   is truly the user themselves making the request
+///
+/// # Arguments
+///
+/// - `repo`, `site_config`, `password_manager`: MAS' repo, site config and
+///   password manager
+/// - `user`: the supposed user that is trying to change their password
+/// - `claimed_current_password`: the claimed password of the user
+async fn check_unprivileged_user_self_change_password(
+    repo: &mut BoxRepository,
+    site_config: &SiteConfig,
+    password_manager: &PasswordManager,
+    user: &mas_data_model::User,
+    claimed_current_password: Option<String>,
+) -> Result<SetPasswordStatus, async_graphql::Error> {
+    // If the user isn't an admin, we:
+    // - check that password changes are enabled
+    // - check that they know their current password
+
+    if !site_config.password_change_allowed {
+        return Ok(SetPasswordStatus::PasswordChangesDisabled);
+    }
+
+    let Some(active_password) = repo.user_password().active(user).await? else {
+        // The user has no current password, so can't verify against one.
+        // In the future, it may be desirable to let the user set a password without any
+        // other verification instead.
+
+        return Ok(SetPasswordStatus::NoCurrentPassword);
+    };
+
+    let Some(current_password_attempt) = claimed_current_password else {
+        return Err(async_graphql::Error::new(
+            "You must supply `currentPassword` to change your own password if you are not an administrator"
+        ));
+    };
+
+    if let Err(_err) = password_manager
+        .verify(
+            active_password.version,
+            Zeroizing::new(current_password_attempt.into_bytes()),
+            active_password.hashed_password,
+        )
+        .await
+    {
+        return Ok(SetPasswordStatus::WrongPassword);
+    }
+    Ok(SetPasswordStatus::Allowed)
 }
