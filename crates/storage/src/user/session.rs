@@ -1,4 +1,4 @@
-// Copyright 2022, 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2022-2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,6 +45,8 @@ impl BrowserSessionState {
 pub struct BrowserSessionFilter<'a> {
     user: Option<&'a User>,
     state: Option<BrowserSessionState>,
+    last_active_before: Option<DateTime<Utc>>,
+    last_active_after: Option<DateTime<Utc>>,
 }
 
 impl<'a> BrowserSessionFilter<'a> {
@@ -65,6 +67,36 @@ impl<'a> BrowserSessionFilter<'a> {
     #[must_use]
     pub fn user(&self) -> Option<&User> {
         self.user
+    }
+
+    /// Only return sessions with a last active time before the given time
+    #[must_use]
+    pub fn with_last_active_before(mut self, last_active_before: DateTime<Utc>) -> Self {
+        self.last_active_before = Some(last_active_before);
+        self
+    }
+
+    /// Only return sessions with a last active time after the given time
+    #[must_use]
+    pub fn with_last_active_after(mut self, last_active_after: DateTime<Utc>) -> Self {
+        self.last_active_after = Some(last_active_after);
+        self
+    }
+
+    /// Get the last active before filter
+    ///
+    /// Returns [`None`] if no client filter was set
+    #[must_use]
+    pub fn last_active_before(&self) -> Option<DateTime<Utc>> {
+        self.last_active_before
+    }
+
+    /// Get the last active after filter
+    ///
+    /// Returns [`None`] if no client filter was set
+    #[must_use]
+    pub fn last_active_after(&self) -> Option<DateTime<Utc>> {
+        self.last_active_after
     }
 
     /// Only return active browser sessions

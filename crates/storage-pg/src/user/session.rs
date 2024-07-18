@@ -1,4 +1,4 @@
-// Copyright 2022, 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2022-2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -146,6 +146,12 @@ impl crate::filter::Filter for BrowserSessionFilter<'_> {
                 } else {
                     Expr::col((UserSessions::Table, UserSessions::FinishedAt)).is_not_null()
                 }
+            }))
+            .add_option(self.last_active_after().map(|last_active_after| {
+                Expr::col((UserSessions::Table, UserSessions::LastActiveAt)).gt(last_active_after)
+            }))
+            .add_option(self.last_active_before().map(|last_active_before| {
+                Expr::col((UserSessions::Table, UserSessions::LastActiveAt)).lt(last_active_before)
             }))
     }
 }
