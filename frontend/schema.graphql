@@ -510,6 +510,20 @@ interface CreationEvent {
 }
 
 """
+A filter for dates, with a lower bound and an upper bound
+"""
+input DateFilter {
+  """
+  The lower bound of the date range
+  """
+  after: DateTime
+  """
+  The upper bound of the date range
+  """
+  before: DateTime
+}
+
+"""
 Implement the DateTime<Utc> scalar
 
 The input/output is a string in RFC3339 format.
@@ -1624,6 +1638,10 @@ type User implements Node {
     """
     type: CompatSessionType
     """
+    List only sessions with a last active time is between the given bounds.
+    """
+    lastActive: DateFilter
+    """
     Returns the elements in the list that come after the cursor.
     """
     after: String
@@ -1648,6 +1666,10 @@ type User implements Node {
     List only sessions in the given state.
     """
     state: SessionState
+    """
+    List only sessions with a last active time is between the given bounds.
+    """
+    lastActive: DateFilter
     """
     Returns the elements in the list that come after the cursor.
     """
@@ -1703,6 +1725,10 @@ type User implements Node {
     """
     client: ID
     """
+    List only sessions with a last active time is between the given bounds.
+    """
+    lastActive: DateFilter
+    """
     Returns the elements in the list that come after the cursor.
     """
     after: String
@@ -1753,6 +1779,10 @@ type User implements Node {
     List only sessions for the given device.
     """
     device: String
+    """
+    List only sessions with a last active time is between the given bounds.
+    """
+    lastActive: DateFilter
     """
     List only sessions for the given session.
     """

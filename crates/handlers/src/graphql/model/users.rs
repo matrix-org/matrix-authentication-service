@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2022-2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ use super::{
     BrowserSession, CompatSession, Cursor, NodeCursor, NodeType, OAuth2Session,
     PreloadedTotalCount, SessionState, UpstreamOAuth2Link,
 };
-use crate::graphql::state::ContextExt;
+use crate::graphql::{state::ContextExt, DateFilter};
 
 #[derive(Description)]
 /// A user is an individual's account.
@@ -171,6 +171,12 @@ impl User {
         #[graphql(name = "type", desc = "List only sessions with the given type.")]
         type_param: Option<CompatSessionType>,
 
+        #[graphql(
+            name = "lastActive",
+            desc = "List only sessions with a last active time is between the given bounds."
+        )]
+        last_active: Option<DateFilter>,
+
         #[graphql(desc = "Returns the elements in the list that come after the cursor.")]
         after: Option<String>,
         #[graphql(desc = "Returns the elements in the list that come before the cursor.")]
@@ -180,6 +186,7 @@ impl User {
     ) -> Result<Connection<Cursor, CompatSession, PreloadedTotalCount>, async_graphql::Error> {
         let state = ctx.state();
         let mut repo = state.repository().await?;
+        let last_active = last_active.unwrap_or_default();
 
         query(
             after,
@@ -205,6 +212,15 @@ impl User {
                 let filter = match type_param {
                     Some(CompatSessionType::SsoLogin) => filter.sso_login_only(),
                     Some(CompatSessionType::Unknown) => filter.unknown_only(),
+                    None => filter,
+                };
+
+                let filter = match last_active.after {
+                    Some(after) => filter.with_last_active_after(after),
+                    None => filter,
+                };
+                let filter = match last_active.before {
+                    Some(before) => filter.with_last_active_before(before),
                     None => filter,
                 };
 
@@ -247,6 +263,12 @@ impl User {
         #[graphql(name = "state", desc = "List only sessions in the given state.")]
         state_param: Option<SessionState>,
 
+        #[graphql(
+            name = "lastActive",
+            desc = "List only sessions with a last active time is between the given bounds."
+        )]
+        last_active: Option<DateFilter>,
+
         #[graphql(desc = "Returns the elements in the list that come after the cursor.")]
         after: Option<String>,
         #[graphql(desc = "Returns the elements in the list that come before the cursor.")]
@@ -256,6 +278,7 @@ impl User {
     ) -> Result<Connection<Cursor, BrowserSession, PreloadedTotalCount>, async_graphql::Error> {
         let state = ctx.state();
         let mut repo = state.repository().await?;
+        let last_active = last_active.unwrap_or_default();
 
         query(
             after,
@@ -275,6 +298,15 @@ impl User {
                 let filter = match state_param {
                     Some(SessionState::Active) => filter.active_only(),
                     Some(SessionState::Finished) => filter.finished_only(),
+                    None => filter,
+                };
+
+                let filter = match last_active.after {
+                    Some(after) => filter.with_last_active_after(after),
+                    None => filter,
+                };
+                let filter = match last_active.before {
+                    Some(before) => filter.with_last_active_before(before),
                     None => filter,
                 };
 
@@ -387,6 +419,12 @@ impl User {
 
         #[graphql(desc = "List only sessions for the given client.")] client: Option<ID>,
 
+        #[graphql(
+            name = "lastActive",
+            desc = "List only sessions with a last active time is between the given bounds."
+        )]
+        last_active: Option<DateFilter>,
+
         #[graphql(desc = "Returns the elements in the list that come after the cursor.")]
         after: Option<String>,
         #[graphql(desc = "Returns the elements in the list that come before the cursor.")]
@@ -396,6 +434,7 @@ impl User {
     ) -> Result<Connection<Cursor, OAuth2Session, PreloadedTotalCount>, async_graphql::Error> {
         let state = ctx.state();
         let mut repo = state.repository().await?;
+        let last_active = last_active.unwrap_or_default();
 
         query(
             after,
@@ -435,6 +474,15 @@ impl User {
 
                 let filter = match client.as_ref() {
                     Some(client) => filter.for_client(client),
+                    None => filter,
+                };
+
+                let filter = match last_active.after {
+                    Some(after) => filter.with_last_active_after(after),
+                    None => filter,
+                };
+                let filter = match last_active.before {
+                    Some(before) => filter.with_last_active_before(before),
                     None => filter,
                 };
 
@@ -548,6 +596,12 @@ impl User {
         device_param: Option<String>,
 
         #[graphql(
+            name = "lastActive",
+            desc = "List only sessions with a last active time is between the given bounds."
+        )]
+        last_active: Option<DateFilter>,
+
+        #[graphql(
             name = "browserSession",
             desc = "List only sessions for the given session."
         )]
@@ -563,6 +617,7 @@ impl User {
         let state = ctx.state();
         let requester = ctx.requester();
         let mut repo = state.repository().await?;
+        let last_active = last_active.unwrap_or_default();
 
         query(
             after,
@@ -626,6 +681,15 @@ impl User {
 
                 let filter = match maybe_session {
                     Some(ref session) => filter.for_browser_session(session),
+                    None => filter,
+                };
+
+                let filter = match last_active.after {
+                    Some(after) => filter.with_last_active_after(after),
+                    None => filter,
+                };
+                let filter = match last_active.before {
+                    Some(before) => filter.with_last_active_before(before),
                     None => filter,
                 };
 
