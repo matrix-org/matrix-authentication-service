@@ -64,6 +64,7 @@ export default defineConfig((env) => ({
     rollupOptions: {
       input: [
         resolve(__dirname, "src/main.tsx"),
+        resolve(__dirname, "src/recovery.tsx"),
         resolve(__dirname, "src/shared.css"),
         resolve(__dirname, "src/templates.css"),
       ],
