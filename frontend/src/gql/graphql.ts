@@ -342,6 +342,14 @@ export type CreationEvent = {
   createdAt: Scalars['DateTime']['output'];
 };
 
+/** A filter for dates, with a lower bound and an upper bound */
+export type DateFilter = {
+  /** The lower bound of the date range */
+  after?: InputMaybe<Scalars['DateTime']['input']>;
+  /** The upper bound of the date range */
+  before?: InputMaybe<Scalars['DateTime']['input']>;
+};
+
 /** The type of a user agent */
 export enum DeviceType {
   /** A mobile phone. Can also sometimes be a tablet. */
@@ -1186,6 +1194,7 @@ export type UserAppSessionsArgs = {
   device?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  lastActive?: InputMaybe<DateFilter>;
   state?: InputMaybe<SessionState>;
 };
 
@@ -1196,6 +1205,7 @@ export type UserBrowserSessionsArgs = {
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  lastActive?: InputMaybe<DateFilter>;
   state?: InputMaybe<SessionState>;
 };
 
@@ -1206,6 +1216,7 @@ export type UserCompatSessionsArgs = {
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  lastActive?: InputMaybe<DateFilter>;
   state?: InputMaybe<SessionState>;
   type?: InputMaybe<CompatSessionType>;
 };
@@ -1237,6 +1248,7 @@ export type UserOauth2SessionsArgs = {
   client?: InputMaybe<Scalars['ID']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  lastActive?: InputMaybe<DateFilter>;
   state?: InputMaybe<SessionState>;
 };
 

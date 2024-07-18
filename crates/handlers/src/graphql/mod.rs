@@ -19,7 +19,7 @@ use std::sync::Arc;
 use async_graphql::{
     extensions::Tracing,
     http::{playground_source, GraphQLPlaygroundConfig, MultipartOptions},
-    EmptySubscription,
+    EmptySubscription, InputObject,
 };
 use axum::{
     async_trait,
@@ -30,6 +30,7 @@ use axum::{
     Json,
 };
 use axum_extra::typed_header::TypedHeader;
+use chrono::{DateTime, Utc};
 use futures_util::TryStreamExt;
 use headers::{authorization::Bearer, Authorization, ContentType, HeaderValue};
 use hyper::header::CACHE_CONTROL;
@@ -500,4 +501,14 @@ where
     fn from(session: Option<T>) -> Self {
         session.map(Into::into).unwrap_or_default()
     }
+}
+
+/// A filter for dates, with a lower bound and an upper bound
+#[derive(InputObject, Default, Clone, Copy)]
+pub struct DateFilter {
+    /// The lower bound of the date range
+    after: Option<DateTime<Utc>>,
+
+    /// The upper bound of the date range
+    before: Option<DateTime<Utc>>,
 }

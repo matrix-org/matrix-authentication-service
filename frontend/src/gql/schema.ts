@@ -3063,6 +3063,13 @@ export default {
                 }
               },
               {
+                "name": "lastActive",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Any"
+                }
+              },
+              {
                 "name": "state",
                 "type": {
                   "kind": "SCALAR",
@@ -3105,6 +3112,13 @@ export default {
               },
               {
                 "name": "last",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Any"
+                }
+              },
+              {
+                "name": "lastActive",
                 "type": {
                   "kind": "SCALAR",
                   "name": "Any"
@@ -3164,6 +3178,13 @@ export default {
               },
               {
                 "name": "last",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Any"
+                }
+              },
+              {
+                "name": "lastActive",
                 "type": {
                   "kind": "SCALAR",
                   "name": "Any"
@@ -3357,6 +3378,13 @@ export default {
               },
               {
                 "name": "last",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Any"
+                }
+              },
+              {
+                "name": "lastActive",
                 "type": {
                   "kind": "SCALAR",
                   "name": "Any"
