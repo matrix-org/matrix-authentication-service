@@ -24,7 +24,7 @@ use zeroize::Zeroizing;
 use crate::graphql::{
     model::{NodeType, User},
     state::ContextExt,
-    UserId,
+    Requester, UserId,
 };
 
 #[derive(Default)]
@@ -255,8 +255,14 @@ struct SetPasswordInput {
     user_id: ID,
 
     /// The current password of the user.
-    /// Required if you are not a server administrator.
+    /// Required if you are not a server administrator, unless you have provided
+    /// a `recovery_ticket`.
     current_password: Option<String>,
+
+    /// A recovery ticket for the user, used for performing an account recovery
+    /// (forgotten password reset). Required if you don't have your password
+    /// and are not a server administrator.
+    recovery_ticket: Option<String>,
 
     /// The new password for the user.
     new_password: String,
@@ -296,6 +302,19 @@ enum SetPasswordStatus {
     /// This usually means that login is handled by an upstream identity
     /// provider.
     PasswordChangesDisabled,
+
+    /// The specified recovery ticket does not exist.
+    NoSuchRecoveryTicket,
+
+    /// The specified recovery ticket has already been used and cannot be used
+    /// again.
+    RecoveryTicketAlreadyUsed,
+
+    /// The specified recovery ticket has expired.
+    ExpiredRecoveryTicket,
+
+    /// Your account is locked and you can't change its password.
+    AccountLocked,
 }
 
 #[Object(use_type_description)]
@@ -542,7 +561,10 @@ impl UserMutations {
         let user_id = NodeType::User.extract_ulid(&input.user_id)?;
         let requester = ctx.requester();
 
-        if !requester.is_owner_or_admin(&UserId(user_id)) {
+        // Accept anonymous requests as long as they are for account recovery
+        let is_anonymous = matches!(requester, Requester::Anonymous);
+
+        if !(requester.is_owner_or_admin(&UserId(user_id)) || is_anonymous) {
             return Err(async_graphql::Error::new("Unauthorized"));
         }
 
@@ -577,7 +599,76 @@ impl UserMutations {
             });
         };
 
-        if !requester.is_admin() {
+        if is_anonymous {
+            // If the user is anonymous, we:
+            // - check that account recovery is enabled
+            // - check that they have a valid recovery ticket
+
+            if !state.site_config().account_recovery_allowed {
+                return Ok(SetPasswordPayload {
+                    status: SetPasswordStatus::PasswordChangesDisabled,
+                });
+            }
+
+            let Some(recovery_ticket) = &input.recovery_ticket else {
+                return Err(async_graphql::Error::new(
+                    "You must supply `recoveryTicket` to change your own password (by performing an account recovery) if you are not logged in"
+                ));
+            };
+
+            let Some(ticket) = repo.user_recovery().find_ticket(recovery_ticket).await? else {
+                return Ok(SetPasswordPayload {
+                    status: SetPasswordStatus::NoSuchRecoveryTicket,
+                });
+            };
+
+            let session = repo
+                .user_recovery()
+                .lookup_session(ticket.user_recovery_session_id)
+                .await?
+                .context("Unknown session")?;
+
+            if session.consumed_at.is_some() {
+                return Ok(SetPasswordPayload {
+                    status: SetPasswordStatus::RecoveryTicketAlreadyUsed,
+                });
+            }
+
+            if !ticket.active(state.clock().now()) {
+                return Ok(SetPasswordPayload {
+                    status: SetPasswordStatus::ExpiredRecoveryTicket,
+                });
+            }
+
+            let user_email = repo
+                .user_email()
+                .lookup(ticket.user_email_id)
+                .await?
+                // Only allow confirmed email addresses
+                .filter(|email| email.confirmed_at.is_some())
+                .context("Unknown email address")?;
+
+            let ticket_user = repo
+                .user()
+                .lookup(user_email.user_id)
+                .await?
+                .context("Invalid user")?;
+
+            if ticket_user.id != user_id {
+                // This ticket is for someone else
+                return Err(async_graphql::Error::new("Unauthorized"));
+            }
+
+            if !ticket_user.is_valid() {
+                return Ok(SetPasswordPayload {
+                    status: SetPasswordStatus::AccountLocked,
+                });
+            }
+
+            repo.user_recovery()
+                .consume_ticket(&state.clock(), ticket, session)
+                .await?;
+        } else if !requester.is_admin() {
             // If the user isn't an admin, we:
             // - check that password changes are enabled
             // - check that they know their current password

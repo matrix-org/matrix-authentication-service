@@ -1265,9 +1265,16 @@ input SetPasswordInput {
   userId: ID!
   """
   The current password of the user.
-  Required if you are not a server administrator.
+  Required if you are not a server administrator, unless you have provided
+  a `recovery_ticket`.
   """
   currentPassword: String
+  """
+  A recovery ticket for the user, used for performing an account recovery
+  (forgotten password reset). Required if you don't have your password
+  and are not a server administrator.
+  """
+  recoveryTicket: String
   """
   The new password for the user.
   """
@@ -1321,6 +1328,23 @@ enum SetPasswordStatus {
   provider.
   """
   PASSWORD_CHANGES_DISABLED
+  """
+  The specified recovery ticket does not exist.
+  """
+  NO_SUCH_RECOVERY_TICKET
+  """
+  The specified recovery ticket has already been used and cannot be used
+  again.
+  """
+  RECOVERY_TICKET_ALREADY_USED
+  """
+  The specified recovery ticket has expired.
+  """
+  EXPIRED_RECOVERY_TICKET
+  """
+  Your account is locked and you can't change its password.
+  """
+  ACCOUNT_LOCKED
 }
 
 """

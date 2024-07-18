@@ -949,11 +949,18 @@ export enum SetDisplayNameStatus {
 export type SetPasswordInput = {
   /**
    * The current password of the user.
-   * Required if you are not a server administrator.
+   * Required if you are not a server administrator, unless you have provided
+   * a `recovery_ticket`.
    */
   currentPassword?: InputMaybe<Scalars['String']['input']>;
   /** The new password for the user. */
   newPassword: Scalars['String']['input'];
+  /**
+   * A recovery ticket for the user, used for performing an account recovery
+   * (forgotten password reset). Required if you don't have your password
+   * and are not a server administrator.
+   */
+  recoveryTicket?: InputMaybe<Scalars['String']['input']>;
   /**
    * The ID of the user to set the password for.
    * If you are not a server administrator then this must be your own user
@@ -971,8 +978,12 @@ export type SetPasswordPayload = {
 
 /** The status of the `setPassword` mutation. */
 export enum SetPasswordStatus {
+  /** Your account is locked and you can't change its password. */
+  AccountLocked = 'ACCOUNT_LOCKED',
   /** The password was updated. */
   Allowed = 'ALLOWED',
+  /** The specified recovery ticket has expired. */
+  ExpiredRecoveryTicket = 'EXPIRED_RECOVERY_TICKET',
   /**
    * The new password is invalid. For example, it may not meet configured
    * security requirements.
@@ -988,12 +999,19 @@ export enum SetPasswordStatus {
   NotFound = 'NOT_FOUND',
   /** The user doesn't have a current password to attempt to match against. */
   NoCurrentPassword = 'NO_CURRENT_PASSWORD',
+  /** The specified recovery ticket does not exist. */
+  NoSuchRecoveryTicket = 'NO_SUCH_RECOVERY_TICKET',
   /**
    * Password support has been disabled.
    * This usually means that login is handled by an upstream identity
    * provider.
    */
   PasswordChangesDisabled = 'PASSWORD_CHANGES_DISABLED',
+  /**
+   * The specified recovery ticket has already been used and cannot be used
+   * again.
+   */
+  RecoveryTicketAlreadyUsed = 'RECOVERY_TICKET_ALREADY_USED',
   /** The supplied current password was wrong. */
   WrongPassword = 'WRONG_PASSWORD'
 }
