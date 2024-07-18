@@ -239,6 +239,16 @@ fn split_filter(
         oauth2_filter = oauth2_filter.for_browser_session(browser_session);
     }
 
+    if let Some(last_active_before) = filter.last_active_before() {
+        compat_filter = compat_filter.with_last_active_before(last_active_before);
+        oauth2_filter = oauth2_filter.with_last_active_before(last_active_before);
+    }
+
+    if let Some(last_active_after) = filter.last_active_after() {
+        compat_filter = compat_filter.with_last_active_after(last_active_after);
+        oauth2_filter = oauth2_filter.with_last_active_after(last_active_after);
+    }
+
     (compat_filter, oauth2_filter)
 }
 
