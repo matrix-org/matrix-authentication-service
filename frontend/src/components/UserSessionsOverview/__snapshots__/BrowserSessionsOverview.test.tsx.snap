@@ -3,10 +3,10 @@
 exports[`BrowserSessionsOverview > renders with no browser sessions 1`] = `
 <div>
   <div
-    class="_block_17898c _sessionListBlock_c5c17e"
+    class="_browserSessionsOverview_c5c17e"
   >
     <div
-      class="_sessionListBlockInfo_c5c17e"
+      class="flex flex-1 flex-col"
     >
       <h5
         class="_typography_yh5dq_162 _font-body-lg-semibold_yh5dq_83"
@@ -34,10 +34,10 @@ exports[`BrowserSessionsOverview > renders with no browser sessions 1`] = `
 exports[`BrowserSessionsOverview > renders with sessions 1`] = `
 <div>
   <div
-    class="_block_17898c _sessionListBlock_c5c17e"
+    class="_browserSessionsOverview_c5c17e"
   >
     <div
-      class="_sessionListBlockInfo_c5c17e"
+      class="flex flex-1 flex-col"
     >
       <h5
         class="_typography_yh5dq_162 _font-body-lg-semibold_yh5dq_83"

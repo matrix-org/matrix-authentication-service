@@ -19,7 +19,6 @@ import {
   createRoute,
   createRouter,
 } from "@tanstack/react-router";
-import { beforeAll } from "vitest";
 
 const rootRoute = createRootRoute();
 const index = createRoute({ getParentRoute: () => rootRoute, path: "/" });
@@ -31,8 +30,13 @@ const router = createRouter({
 });
 
 const routerReady = router.load();
-// Make sure the router is ready before running any tests
-beforeAll(async () => await routerReady);
+// Because we also use this in the stories, we need to make sure we call this only in tests
+if (import.meta.vitest) {
+  // Make sure the router is ready before running any tests
+  import("vitest").then(({ beforeAll }) =>
+    beforeAll(async () => await routerReady),
+  );
+}
 
 export const DummyRouter: React.FC<React.PropsWithChildren> = ({
   children,
