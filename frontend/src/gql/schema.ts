@@ -1457,6 +1457,29 @@ export default {
             ]
           },
           {
+            "name": "setPasswordByRecovery",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "SetPasswordPayload",
+                "ofType": null
+              }
+            },
+            "args": [
+              {
+                "name": "input",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Any"
+                  }
+                }
+              }
+            ]
+          },
+          {
             "name": "setPrimaryEmail",
             "type": {
               "kind": "NON_NULL",
