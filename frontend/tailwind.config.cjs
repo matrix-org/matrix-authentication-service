@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2022-2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,8 +18,7 @@
 
 module.exports = {
   mode: "jit",
-  content: ["./src/**/*.tsx", "./index.html"],
-  darkMode: ["class", ".cpd-theme-dark"],
+  content: ["./src/**/*.tsx", "./index.html", "../templates/**/*.html"],
   theme: {
     colors: {
       white: "#FFFFFF",

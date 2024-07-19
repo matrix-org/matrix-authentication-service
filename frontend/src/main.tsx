@@ -25,7 +25,7 @@ import config from "./config";
 import { client } from "./graphql";
 import i18n from "./i18n";
 import { routeTree } from "./routeTree.gen";
-import "./main.css";
+import "./shared.css";
 
 // Create a new router instance
 const router = createRouter({

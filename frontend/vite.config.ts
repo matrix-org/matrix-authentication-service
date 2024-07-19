@@ -59,14 +59,12 @@ export default defineConfig((env) => ({
     sourcemap: true,
     modulePreload: false,
     target: browserslistToEsbuild(),
-
-    // We don't exactly handle CSS code splitting well if we're lazy loading components.
-    // We disabled lazy loading for now, but we should fix this at some point.
     cssCodeSplit: true,
 
     rollupOptions: {
       input: [
         resolve(__dirname, "src/main.tsx"),
+        resolve(__dirname, "src/shared.css"),
         resolve(__dirname, "src/templates.css"),
       ],
     },

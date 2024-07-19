@@ -23,27 +23,14 @@ limitations under the License.
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ _("app.name") }}</title>
+    {% set config = {
+      'graphqlEndpoint': app_config.graphqlEndpoint,
+      'root': app_config.root,
+    } -%}
     <script>
-      {% set config = {
-        'graphqlEndpoint': app_config.graphqlEndpoint,
-        'root': app_config.root,
-      } -%}
       window.APP_CONFIG = JSON.parse("{{ config | tojson | add_slashes | safe }}");
-      (function () {
-        const query = window.matchMedia("(prefers-color-scheme: dark)");
-        function handleChange(list) {
-          if (list.matches) {
-            document.documentElement.classList.add("cpd-theme-dark");
-          } else {
-            document.documentElement.classList.remove("cpd-theme-dark");
-          }
-        }
-
-        query.addEventListener("change", handleChange);
-        handleChange(query);
-      })();
     </script>
-    {{ include_asset('src/main.tsx', preload=true) | indent(4) | safe }}
+    {{ include_asset('src/main.tsx') | indent(4) | safe }}
   </head>
 
   <body>

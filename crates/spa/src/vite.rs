@@ -1,4 +1,4 @@
-// Copyright 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2023, 2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ pub struct ManifestEntry {
 
     imports: Option<Vec<Utf8PathBuf>>,
 
+    #[allow(dead_code)]
     dynamic_imports: Option<Vec<Utf8PathBuf>>,
 
     integrity: Option<String>,
@@ -191,35 +192,24 @@ impl<'a> Asset<'a> {
 impl Manifest {
     /// Find all assets which should be loaded for a given entrypoint
     ///
+    /// Returns the main asset and all the assets it imports
+    ///
     /// # Errors
     ///
     /// Returns an error if the entrypoint is invalid for this manifest
-    pub fn assets_for<'a>(
+    pub fn find_assets<'a>(
         &'a self,
         entrypoint: &'a Utf8Path,
-    ) -> Result<BTreeSet<Asset<'a>>, InvalidManifest<'a>> {
+    ) -> Result<(Asset<'a>, BTreeSet<Asset<'a>>), InvalidManifest<'a>> {
         let entry = self.lookup_by_name(entrypoint)?;
-        let main_asset = Asset::new(entry)?;
-        entry
-            .css
-            .iter()
-            .flatten()
-            .map(|name| self.lookup_by_file(name).and_then(Asset::new))
-            .chain(std::iter::once(Ok(main_asset)))
-            .collect()
-    }
+        let mut entries = BTreeSet::new();
+        let main_asset = self.find_imported_chunks(entry, &mut entries)?;
 
-    /// Find all assets which should be preloaded for a given entrypoint
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the entrypoint is invalid for this manifest
-    pub fn preload_for<'a>(
-        &'a self,
-        entrypoint: &'a Utf8Path,
-    ) -> Result<BTreeSet<Asset<'a>>, InvalidManifest<'a>> {
-        let entry = self.lookup_by_name(entrypoint)?;
-        self.find_preload(entry)
+        // Remove the main asset from the set of imported entries. We had it mainly to
+        // deduplicate the list of assets, but we don't want to include it twice
+        entries.remove(&main_asset);
+
+        Ok((main_asset, entries))
     }
 
     /// Lookup an entry in the manifest by its original name
@@ -243,41 +233,38 @@ impl Manifest {
             .ok_or(InvalidManifest::CantFindAssetByFile { file })
     }
 
-    /// Recursively find all the assets that should be preloaded
-    fn find_preload<'a>(
-        &'a self,
-        entry: &'a ManifestEntry,
-    ) -> Result<BTreeSet<Asset<'a>>, InvalidManifest<'a>> {
-        let mut entries = BTreeSet::new();
-        self.find_preload_rec(entry, &mut entries)?;
-        Ok(entries)
-    }
-
-    fn find_preload_rec<'a>(
+    fn find_imported_chunks<'a>(
         &'a self,
         current_entry: &'a ManifestEntry,
         entries: &mut BTreeSet<Asset<'a>>,
-    ) -> Result<(), InvalidManifest<'a>> {
+    ) -> Result<Asset, InvalidManifest<'a>> {
         let asset = Asset::new(current_entry)?;
         let inserted = entries.insert(asset);
 
         // If we inserted the entry, we need to find its dependencies
         if inserted {
-            let css = current_entry.css.iter().flatten();
-            let assets = current_entry.assets.iter().flatten();
-            for name in css.chain(assets) {
-                let entry = self.lookup_by_file(name)?;
-                self.find_preload_rec(entry, entries)?;
+            if let Some(css) = &current_entry.css {
+                for file in css {
+                    let entry = self.lookup_by_file(file)?;
+                    self.find_imported_chunks(entry, entries)?;
+                }
             }
 
-            let dynamic_imports = current_entry.dynamic_imports.iter().flatten();
-            let imports = current_entry.imports.iter().flatten();
-            for import in dynamic_imports.chain(imports) {
-                let entry = self.lookup_by_name(import)?;
-                self.find_preload_rec(entry, entries)?;
+            if let Some(assets) = &current_entry.assets {
+                for file in assets {
+                    let entry = self.lookup_by_file(file)?;
+                    self.find_imported_chunks(entry, entries)?;
+                }
+            }
+
+            if let Some(imports) = &current_entry.imports {
+                for import in imports {
+                    let entry = self.lookup_by_name(import)?;
+                    self.find_imported_chunks(entry, entries)?;
+                }
             }
         }
 
-        Ok(())
+        Ok(asset)
     }
 }
