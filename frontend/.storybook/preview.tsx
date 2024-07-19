@@ -15,7 +15,7 @@
 import { ArgTypes, Decorator, Parameters, Preview } from "@storybook/react";
 import { useLayoutEffect } from "react";
 
-import "../src/main.css";
+import "../src/shared.css";
 import i18n from "../src/i18n";
 
 import localazyMetadata from "./locales";

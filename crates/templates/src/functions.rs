@@ -18,7 +18,7 @@
 //! Additional functions, tests and filters used in templates
 
 use std::{
-    collections::{BTreeSet, HashMap},
+    collections::HashMap,
     fmt::Formatter,
     str::FromStr,
     sync::{atomic::AtomicUsize, Arc},
@@ -441,40 +441,25 @@ impl std::fmt::Display for IncludeAsset {
 
 impl Object for IncludeAsset {
     fn call(self: &Arc<Self>, _state: &State, args: &[Value]) -> Result<Value, Error> {
-        let (path, kwargs): (&str, Kwargs) = from_args(args)?;
-
-        let preload = kwargs.get("preload").unwrap_or(false);
-        kwargs.assert_all_used()?;
+        let (path,): (&str,) = from_args(args)?;
 
         let path: &Utf8Path = path.into();
 
-        let assets = self.vite_manifest.assets_for(path).map_err(|_e| {
+        let (main, imported) = self.vite_manifest.find_assets(path).map_err(|_e| {
             Error::new(
                 ErrorKind::InvalidOperation,
                 "Invalid assets manifest while calling function `include_asset`",
             )
         })?;
 
-        let preloads = if preload {
-            self.vite_manifest.preload_for(path).map_err(|_e| {
-                Error::new(
-                    ErrorKind::InvalidOperation,
-                    "Invalid assets manifest while calling function `include_asset`",
-                )
-            })?
-        } else {
-            BTreeSet::new()
-        };
-
-        let preloads = preloads
-            .iter()
-            // Only preload scripts and stylesheets for now
-            .filter(|asset| asset.is_script() || asset.is_stylesheet())
-            .map(|asset| asset.preload_tag(self.url_builder.assets_base().into()));
-
-        let assets = assets
-            .iter()
+        let assets = std::iter::once(main)
+            .chain(imported.iter().filter(|a| a.is_stylesheet()).copied())
             .filter_map(|asset| asset.include_tag(self.url_builder.assets_base().into()));
+
+        let preloads = imported
+            .iter()
+            .filter(|a| a.is_script())
+            .map(|asset| asset.preload_tag(self.url_builder.assets_base().into()));
 
         let tags: Vec<String> = preloads.chain(assets).collect();
 

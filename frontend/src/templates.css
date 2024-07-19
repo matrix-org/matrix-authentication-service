@@ -13,15 +13,6 @@
  * limitations under the License.
  */
 
-@import url("@fontsource/inter/400.css");
-@import url("@fontsource/inter/500.css");
-@import url("@fontsource/inter/600.css");
-@import url("@fontsource/inter/700.css");
-@import url("@fontsource/inconsolata/400.css");
-@import url("@fontsource/inconsolata/700.css");
-@import url("@vector-im/compound-design-tokens/assets/web/css/compound-design-tokens.css");
-@import url("@vector-im/compound-web/dist/style.css");
-
 @import url("./styles/cpd-button.css");
 @import url("./styles/cpd-form.css");
 @import url("./styles/cpd-link.css");
@@ -34,12 +25,6 @@
 @import url("./components/Layout/Layout.module.css");
 @import url("./components/Footer/Footer.module.css");
 @import url("./components/PageHeading/PageHeading.module.css");
-
-@config "../tailwind.templates.config.cjs";
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 .cpd-text-body-lg-regular {
   font: var(--cpd-font-body-lg-regular);
