@@ -16,13 +16,9 @@ use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 
 /// A simple wrapper around an error that implements [`IntoResponse`].
-pub struct ErrorWrapper<T>(pub T);
-
-impl<T> From<T> for ErrorWrapper<T> {
-    fn from(input: T) -> Self {
-        Self(input)
-    }
-}
+#[derive(Debug, thiserror::Error)]
+#[error(transparent)]
+pub struct ErrorWrapper<T>(#[from] pub T);
 
 impl<T> IntoResponse for ErrorWrapper<T>
 where
