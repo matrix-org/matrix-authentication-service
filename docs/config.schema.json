@@ -789,6 +789,21 @@
           }
         },
         {
+          "description": "Admin API, served at `/api/admin/v1`",
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "enum": [
+                "adminapi"
+              ]
+            }
+          }
+        },
+        {
           "description": "Mount a \"/connection-info\" handler which helps debugging informations on the upstream connection",
           "type": "object",
           "required": [

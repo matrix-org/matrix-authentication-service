@@ -312,6 +312,9 @@ pub enum Resource {
         path: Utf8PathBuf,
     },
 
+    /// Admin API, served at `/api/admin/v1`
+    AdminApi,
+
     /// Mount a "/connection-info" handler which helps debugging informations on
     /// the upstream connection
     #[serde(rename = "connection-info")]
