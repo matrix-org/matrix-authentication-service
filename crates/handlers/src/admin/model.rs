@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use chrono::{DateTime, Utc};
+use schemars::JsonSchema;
+use serde::Serialize;
 use ulid::Ulid;
 
 /// A resource, with a type and an ID
-#[allow(dead_code)]
 pub trait Resource {
     /// The type of the resource
     const KIND: &'static str;
@@ -31,5 +33,74 @@ pub trait Resource {
     /// This is the concatenation of the canonical path prefix and the ID
     fn path(&self) -> String {
         format!("{}/{}", Self::PATH, self.id())
+    }
+}
+
+/// A user
+#[derive(Serialize, JsonSchema)]
+pub struct User {
+    #[serde(skip)]
+    id: Ulid,
+
+    /// The username (localpart) of the user
+    username: String,
+
+    /// When the user was created
+    created_at: DateTime<Utc>,
+
+    /// When the user was locked. If null, the user is not locked.
+    locked_at: Option<DateTime<Utc>>,
+
+    /// Whether the user can request admin privileges.
+    can_request_admin: bool,
+}
+
+impl User {
+    /// Samples of users with different properties for examples in the schema
+    pub fn samples() -> [Self; 3] {
+        [
+            Self {
+                id: Ulid::from_bytes([0x01; 16]),
+                username: "alice".to_owned(),
+                created_at: DateTime::default(),
+                locked_at: None,
+                can_request_admin: false,
+            },
+            Self {
+                id: Ulid::from_bytes([0x02; 16]),
+                username: "bob".to_owned(),
+                created_at: DateTime::default(),
+                locked_at: None,
+                can_request_admin: true,
+            },
+            Self {
+                id: Ulid::from_bytes([0x03; 16]),
+                username: "charlie".to_owned(),
+                created_at: DateTime::default(),
+                locked_at: Some(DateTime::default()),
+                can_request_admin: false,
+            },
+        ]
+    }
+}
+
+impl From<mas_data_model::User> for User {
+    fn from(user: mas_data_model::User) -> Self {
+        Self {
+            id: user.id,
+            username: user.username,
+            created_at: user.created_at,
+            locked_at: user.locked_at,
+            can_request_admin: user.can_request_admin,
+        }
+    }
+}
+
+impl Resource for User {
+    const KIND: &'static str = "user";
+    const PATH: &'static str = "/api/admin/v1/users";
+
+    fn id(&self) -> Ulid {
+        self.id
     }
 }
