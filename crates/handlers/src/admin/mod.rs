@@ -24,6 +24,7 @@ use mas_router::{OAuth2AuthorizationEndpoint, OAuth2TokenEndpoint, SimpleRoute};
 use tower_http::cors::{Any, CorsLayer};
 
 mod call_context;
+mod model;
 mod response;
 
 use self::call_context::CallContext;
