@@ -228,6 +228,10 @@ pub fn build_router(
             mas_config::HttpResource::Compat => {
                 router.merge(mas_handlers::compat_router::<AppState>())
             }
+            mas_config::HttpResource::AdminApi => {
+                let (_, api_router) = mas_handlers::admin_api_router::<AppState>();
+                router.merge(api_router)
+            }
             // TODO: do a better handler here
             mas_config::HttpResource::ConnectionInfo => router.route(
                 "/connection-info",
