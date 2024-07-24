@@ -15,7 +15,7 @@
 use std::{collections::HashMap, net::IpAddr};
 
 use chrono::{DateTime, Utc};
-use mas_storage::{user::BrowserSessionRepository, Repository, RepositoryAccess};
+use mas_storage::{user::BrowserSessionRepository, RepositoryAccess};
 use opentelemetry::{
     metrics::{Counter, Histogram},
     Key,

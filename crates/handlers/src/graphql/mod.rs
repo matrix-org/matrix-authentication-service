@@ -40,9 +40,7 @@ use mas_axum_utils::{
 use mas_data_model::{BrowserSession, Session, SiteConfig, User};
 use mas_matrix::HomeserverConnection;
 use mas_policy::{InstantiateError, Policy, PolicyFactory};
-use mas_storage::{
-    BoxClock, BoxRepository, BoxRng, Clock, Repository, RepositoryError, SystemClock,
-};
+use mas_storage::{BoxClock, BoxRepository, BoxRng, Clock, RepositoryError, SystemClock};
 use mas_storage_pg::PgRepository;
 use opentelemetry_semantic_conventions::trace::{GRAPHQL_DOCUMENT, GRAPHQL_OPERATION_NAME};
 use rand::{thread_rng, SeedableRng};
@@ -82,7 +80,7 @@ impl state::State for GraphQLState {
             .await
             .map_err(RepositoryError::from_error)?;
 
-        Ok(repo.map_err(RepositoryError::from_error).boxed())
+        Ok(repo.boxed())
     }
 
     async fn policy(&self) -> Result<Policy, InstantiateError> {

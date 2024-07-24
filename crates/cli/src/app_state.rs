@@ -30,7 +30,7 @@ use mas_matrix::BoxHomeserverConnection;
 use mas_matrix_synapse::SynapseConnection;
 use mas_policy::{Policy, PolicyFactory};
 use mas_router::UrlBuilder;
-use mas_storage::{BoxClock, BoxRepository, BoxRng, Repository, SystemClock};
+use mas_storage::{BoxClock, BoxRepository, BoxRng, SystemClock};
 use mas_storage_pg::PgRepository;
 use mas_templates::Templates;
 use opentelemetry::{
@@ -351,8 +351,6 @@ impl FromRequestParts<AppState> for BoxRepository {
             histogram.record(duration_ms, &[]);
         }
 
-        Ok(repo
-            .map_err(mas_storage::RepositoryError::from_error)
-            .boxed())
+        Ok(repo.boxed())
     }
 }

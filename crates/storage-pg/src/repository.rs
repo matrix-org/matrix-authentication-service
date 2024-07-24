@@ -31,7 +31,7 @@ use mas_storage::{
         UpstreamOAuthSessionRepository,
     },
     user::{BrowserSessionRepository, UserEmailRepository, UserPasswordRepository, UserRepository},
-    Repository, RepositoryAccess, RepositoryTransaction,
+    BoxRepository, MapErr, Repository, RepositoryAccess, RepositoryError, RepositoryTransaction,
 };
 use sqlx::{PgConnection, PgPool, Postgres, Transaction};
 use tracing::Instrument;
@@ -75,6 +75,11 @@ impl PgRepository {
     pub async fn from_pool(pool: &PgPool) -> Result<Self, DatabaseError> {
         let txn = pool.begin().await?;
         Ok(Self::from_conn(txn))
+    }
+
+    /// Transform the repository into a type-erased [`BoxRepository`]
+    pub fn boxed(self) -> BoxRepository {
+        Box::new(MapErr::new(self, RepositoryError::from_error))
     }
 }
 

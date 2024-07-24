@@ -104,10 +104,24 @@ impl Pagination {
         self
     }
 
+    /// Clear the before cursor
+    #[must_use]
+    pub const fn clear_before(mut self) -> Self {
+        self.before = None;
+        self
+    }
+
     /// Get items after the given cursor
     #[must_use]
     pub const fn after(mut self, id: Ulid) -> Self {
         self.after = Some(id);
+        self
+    }
+
+    /// Clear the after cursor
+    #[must_use]
+    pub const fn clear_after(mut self) -> Self {
+        self.after = None;
         self
     }
 

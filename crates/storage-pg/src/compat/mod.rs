@@ -36,7 +36,7 @@ mod tests {
             CompatSessionRepository, CompatSsoLoginFilter,
         },
         user::UserRepository,
-        Clock, Pagination, Repository, RepositoryAccess,
+        Clock, Pagination, RepositoryAccess,
     };
     use rand::SeedableRng;
     use rand_chacha::ChaChaRng;
