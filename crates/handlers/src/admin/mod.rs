@@ -25,7 +25,9 @@ use tower_http::cors::{Any, CorsLayer};
 
 mod call_context;
 mod model;
+mod params;
 mod response;
+mod v1;
 
 use self::call_context::CallContext;
 
@@ -36,7 +38,7 @@ where
 {
     let mut api = OpenApi::default();
     let router = ApiRouter::<S>::new()
-        // TODO: add routes
+        .nest("/api/admin/v1", self::v1::router())
         .finish_api_with(&mut api, |t| {
             t.title("Matrix Authentication Service admin API")
                 .security_scheme(
