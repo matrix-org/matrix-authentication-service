@@ -153,7 +153,7 @@ impl<'c> OAuth2DeviceCodeGrantRepository for PgOAuth2DeviceCodeGrantRepository<'
         name = "db.oauth2_device_code_grant.add",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             oauth2_device_code.id,
             oauth2_device_code.scope = %params.scope,
             oauth2_client.id = %params.client.id,
@@ -176,7 +176,7 @@ impl<'c> OAuth2DeviceCodeGrantRepository for PgOAuth2DeviceCodeGrantRepository<'
 
         sqlx::query!(
             r#"
-                INSERT INTO "oauth2_device_code_grant" 
+                INSERT INTO "oauth2_device_code_grant"
                     ( oauth2_device_code_grant_id
                     , oauth2_client_id
                     , scope
@@ -222,7 +222,7 @@ impl<'c> OAuth2DeviceCodeGrantRepository for PgOAuth2DeviceCodeGrantRepository<'
         name = "db.oauth2_device_code_grant.lookup",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             oauth2_device_code.id = %id,
         ),
         err,
@@ -245,7 +245,7 @@ impl<'c> OAuth2DeviceCodeGrantRepository for PgOAuth2DeviceCodeGrantRepository<'
                      , oauth2_session_id
                      , ip_address as "ip_address: IpAddr"
                      , user_agent
-                FROM 
+                FROM
                     oauth2_device_code_grant
 
                 WHERE oauth2_device_code_grant_id = $1
@@ -265,7 +265,7 @@ impl<'c> OAuth2DeviceCodeGrantRepository for PgOAuth2DeviceCodeGrantRepository<'
         name = "db.oauth2_device_code_grant.find_by_user_code",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             oauth2_device_code.user_code = %user_code,
         ),
         err,
@@ -291,7 +291,7 @@ impl<'c> OAuth2DeviceCodeGrantRepository for PgOAuth2DeviceCodeGrantRepository<'
                      , oauth2_session_id
                      , ip_address as "ip_address: IpAddr"
                      , user_agent
-                FROM 
+                FROM
                     oauth2_device_code_grant
 
                 WHERE user_code = $1
@@ -311,7 +311,7 @@ impl<'c> OAuth2DeviceCodeGrantRepository for PgOAuth2DeviceCodeGrantRepository<'
         name = "db.oauth2_device_code_grant.find_by_device_code",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             oauth2_device_code.device_code = %device_code,
         ),
         err,
@@ -337,7 +337,7 @@ impl<'c> OAuth2DeviceCodeGrantRepository for PgOAuth2DeviceCodeGrantRepository<'
                      , oauth2_session_id
                      , ip_address as "ip_address: IpAddr"
                      , user_agent
-                FROM 
+                FROM
                     oauth2_device_code_grant
 
                 WHERE device_code = $1
@@ -357,7 +357,7 @@ impl<'c> OAuth2DeviceCodeGrantRepository for PgOAuth2DeviceCodeGrantRepository<'
         name = "db.oauth2_device_code_grant.fulfill",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             oauth2_device_code.id = %device_code_grant.id,
             oauth2_client.id = %device_code_grant.client_id,
             browser_session.id = %browser_session.id,
@@ -400,7 +400,7 @@ impl<'c> OAuth2DeviceCodeGrantRepository for PgOAuth2DeviceCodeGrantRepository<'
         name = "db.oauth2_device_code_grant.reject",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             oauth2_device_code.id = %device_code_grant.id,
             oauth2_client.id = %device_code_grant.client_id,
             browser_session.id = %browser_session.id,
@@ -443,7 +443,7 @@ impl<'c> OAuth2DeviceCodeGrantRepository for PgOAuth2DeviceCodeGrantRepository<'
         name = "db.oauth2_device_code_grant.exchange",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             oauth2_device_code.id = %device_code_grant.id,
             oauth2_client.id = %device_code_grant.client_id,
             oauth2_session.id = %session.id,

@@ -72,7 +72,7 @@ impl<'c> OAuth2RefreshTokenRepository for PgOAuth2RefreshTokenRepository<'c> {
         name = "db.oauth2_refresh_token.lookup",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             refresh_token.id = %id,
         ),
         err,
@@ -105,7 +105,7 @@ impl<'c> OAuth2RefreshTokenRepository for PgOAuth2RefreshTokenRepository<'c> {
         name = "db.oauth2_refresh_token.find_by_token",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -141,7 +141,7 @@ impl<'c> OAuth2RefreshTokenRepository for PgOAuth2RefreshTokenRepository<'c> {
         name = "db.oauth2_refresh_token.add",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %session.id,
             client.id = %session.client_id,
             refresh_token.id,
@@ -192,7 +192,7 @@ impl<'c> OAuth2RefreshTokenRepository for PgOAuth2RefreshTokenRepository<'c> {
         name = "db.oauth2_refresh_token.consume",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %refresh_token.id,
             session.id = %refresh_token.session_id,
         ),

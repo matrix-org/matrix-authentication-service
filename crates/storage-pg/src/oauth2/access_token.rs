@@ -97,7 +97,7 @@ impl<'c> OAuth2AccessTokenRepository for PgOAuth2AccessTokenRepository<'c> {
         name = "db.oauth2_access_token.find_by_token",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -133,7 +133,7 @@ impl<'c> OAuth2AccessTokenRepository for PgOAuth2AccessTokenRepository<'c> {
         name = "db.oauth2_access_token.add",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %session.id,
             client.id = %session.client_id,
             access_token.id,

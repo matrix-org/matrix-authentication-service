@@ -65,7 +65,7 @@ impl<'c> CompatAccessTokenRepository for PgCompatAccessTokenRepository<'c> {
         name = "db.compat_access_token.lookup",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             compat_session.id = %id,
         ),
         err,
@@ -99,7 +99,7 @@ impl<'c> CompatAccessTokenRepository for PgCompatAccessTokenRepository<'c> {
         name = "db.compat_access_token.find_by_token",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -135,7 +135,7 @@ impl<'c> CompatAccessTokenRepository for PgCompatAccessTokenRepository<'c> {
         name = "db.compat_access_token.add",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             compat_access_token.id,
             %compat_session.id,
             user.id = %compat_session.user_id,
@@ -185,7 +185,7 @@ impl<'c> CompatAccessTokenRepository for PgCompatAccessTokenRepository<'c> {
         name = "db.compat_access_token.expire",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %compat_access_token.id,
             compat_session.id = %compat_access_token.session_id,
         ),

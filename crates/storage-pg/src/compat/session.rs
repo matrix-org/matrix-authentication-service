@@ -275,7 +275,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
         name = "db.compat_session.lookup",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             compat_session.id = %id,
         ),
         err,
@@ -312,7 +312,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
         name = "db.compat_session.add",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             compat_session.id,
             %user.id,
             %user.username,
@@ -369,7 +369,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
         name = "db.compat_session.finish",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %compat_session.id,
             user.id = %compat_session.user_id,
             compat_session.device.id = compat_session.device.as_str(),
@@ -408,7 +408,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
     #[tracing::instrument(
         name = "db.compat_session.finish_bulk",
         skip_all,
-        fields(db.statement),
+        fields(db.query.text),
         err,
     )]
     async fn finish_bulk(
@@ -435,7 +435,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
         name = "db.compat_session.list",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -536,7 +536,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
         name = "db.compat_session.count",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -561,7 +561,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
         name = "db.compat_session.record_batch_activity",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -608,7 +608,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
         name = "db.compat_session.record_user_agent",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %compat_session.id,
         ),
         err,

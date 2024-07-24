@@ -23,7 +23,6 @@ hyper.workspace = true
 hyper-util.workspace = true
 hyper-rustls = { workspace = true, optional = true }
 opentelemetry.workspace = true
-opentelemetry-http = { workspace = true, optional = true }
 opentelemetry-semantic-conventions.workspace = true
 rustls = { workspace = true, optional = true }
 rustls-platform-verifier = { workspace = true, optional = true }
@@ -37,9 +36,6 @@ tower-http.workspace = true
 tracing.workspace = true
 tracing-opentelemetry.workspace = true
 
-# opentelemetry-http still requires http 0.2, and we need to convert types
-http02 = { package = "http", version = "0.2.12", optional = true }
-
 mas-tower = { workspace = true, optional = true }
 
 [dev-dependencies]
@@ -52,8 +48,6 @@ client = [
     "dep:rustls",
     "dep:hyper-rustls",
     "dep:rustls-platform-verifier",
-    "dep:http02",
-    "dep:opentelemetry-http",
     "tower/limit",
     "tower-http/timeout",
     "tower-http/follow-redirect",

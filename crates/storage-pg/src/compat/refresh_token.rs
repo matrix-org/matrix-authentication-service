@@ -74,7 +74,7 @@ impl<'c> CompatRefreshTokenRepository for PgCompatRefreshTokenRepository<'c> {
         name = "db.compat_refresh_token.lookup",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             compat_refresh_token.id = %id,
         ),
         err,
@@ -109,7 +109,7 @@ impl<'c> CompatRefreshTokenRepository for PgCompatRefreshTokenRepository<'c> {
         name = "db.compat_refresh_token.find_by_token",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -146,7 +146,7 @@ impl<'c> CompatRefreshTokenRepository for PgCompatRefreshTokenRepository<'c> {
         name = "db.compat_refresh_token.add",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             compat_refresh_token.id,
             %compat_session.id,
             user.id = %compat_session.user_id,
@@ -196,7 +196,7 @@ impl<'c> CompatRefreshTokenRepository for PgCompatRefreshTokenRepository<'c> {
         name = "db.compat_refresh_token.consume",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %compat_refresh_token.id,
             compat_session.id = %compat_refresh_token.session_id,
         ),

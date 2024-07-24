@@ -52,7 +52,7 @@ impl<'c> UserPasswordRepository for PgUserPasswordRepository<'c> {
         name = "db.user_password.active",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %user.id,
             %user.username,
         ),
@@ -106,7 +106,7 @@ impl<'c> UserPasswordRepository for PgUserPasswordRepository<'c> {
         name = "db.user_password.add",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %user.id,
             %user.username,
             user_password.id,

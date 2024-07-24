@@ -19,7 +19,7 @@ use mas_storage::{
     user::{UserEmailFilter, UserEmailRepository},
     Clock, Page, Pagination,
 };
-use opentelemetry_semantic_conventions::trace::DB_STATEMENT;
+use opentelemetry_semantic_conventions::attribute::DB_QUERY_TEXT;
 use rand::RngCore;
 use sea_query::{enum_def, Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
@@ -131,7 +131,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
         name = "db.user_email.lookup",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             user_email.id = %id,
         ),
         err,
@@ -166,7 +166,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
         name = "db.user_email.find",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %user.id,
             user_email.email = email,
         ),
@@ -203,7 +203,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
         name = "db.user_email.get_primary",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %user.id,
         ),
         err,
@@ -226,7 +226,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
         name = "db.user_email.all",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %user.id,
         ),
         err,
@@ -259,7 +259,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
         name = "db.user_email.list",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -308,7 +308,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
         name = "db.user_email.count",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -333,7 +333,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
         name = "db.user_email.add",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %user.id,
             user_email.id,
             user_email.email = email,
@@ -378,7 +378,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
         name = "db.user_email.remove",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             user.id = %user_email.user_id,
             %user_email.id,
             %user_email.email,
@@ -388,7 +388,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
     async fn remove(&mut self, user_email: UserEmail) -> Result<(), Self::Error> {
         let span = info_span!(
             "db.user_email.remove.codes",
-            { DB_STATEMENT } = tracing::field::Empty
+            { DB_QUERY_TEXT } = tracing::field::Empty
         );
         sqlx::query!(
             r#"
@@ -461,7 +461,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
         name = "db.user_email.add_verification_code",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %user_email.id,
             %user_email.email,
             user_email_verification.id,
@@ -513,7 +513,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
         name = "db.user_email.find_verification_code",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %user_email.id,
             user.id = %user_email.user_id,
         ),
@@ -554,7 +554,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
         name = "db.user_email.consume_verification_code",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %user_email_verification.id,
             user_email.id = %user_email_verification.user_email_id,
         ),

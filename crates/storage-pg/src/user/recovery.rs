@@ -92,7 +92,7 @@ impl<'c> UserRecoveryRepository for PgUserRecoveryRepository<'c> {
         name = "db.user_recovery.lookup_session",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             user_recovery_session.id = %id,
         ),
         err,
@@ -132,7 +132,7 @@ impl<'c> UserRecoveryRepository for PgUserRecoveryRepository<'c> {
         name = "db.user_recovery.add_session",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             user_recovery_session.id,
             user_recovery_session.email = email,
             user_recovery_session.user_agent = &*user_agent,
@@ -191,7 +191,7 @@ impl<'c> UserRecoveryRepository for PgUserRecoveryRepository<'c> {
         name = "db.user_recovery.find_ticket",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             user_recovery_ticket.id = ticket,
         ),
         err,
@@ -230,7 +230,7 @@ impl<'c> UserRecoveryRepository for PgUserRecoveryRepository<'c> {
         name = "db.user_recovery.add_ticket",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             user_recovery_ticket.id,
             user_recovery_ticket.id = ticket,
             %user_recovery_session.id,
@@ -291,7 +291,7 @@ impl<'c> UserRecoveryRepository for PgUserRecoveryRepository<'c> {
         name = "db.user_recovery.consume_ticket",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %user_recovery_ticket.id,
             user_email.id = %user_recovery_ticket.user_email_id,
             %user_recovery_session.id,

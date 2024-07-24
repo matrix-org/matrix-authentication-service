@@ -14,10 +14,7 @@
 
 use std::future::Future;
 
-use opentelemetry::{
-    metrics::{Unit, UpDownCounter},
-    KeyValue,
-};
+use opentelemetry::{metrics::UpDownCounter, KeyValue};
 use pin_project_lite::pin_project;
 use tower::{Layer, Service};
 
@@ -40,7 +37,7 @@ impl InFlightCounterLayer {
     pub fn new(name: &'static str) -> Self {
         let counter = crate::meter()
             .i64_up_down_counter(name)
-            .with_unit(Unit::new("{request}"))
+            .with_unit("{request}")
             .with_description("The number of in-flight requests")
             .init();
 

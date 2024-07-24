@@ -107,7 +107,7 @@ impl<'c> UpstreamOAuthSessionRepository for PgUpstreamOAuthSessionRepository<'c>
         name = "db.upstream_oauth_authorization_session.lookup",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             upstream_oauth_provider.id = %id,
         ),
         err,
@@ -148,7 +148,7 @@ impl<'c> UpstreamOAuthSessionRepository for PgUpstreamOAuthSessionRepository<'c>
         name = "db.upstream_oauth_authorization_session.add",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %upstream_oauth_provider.id,
             %upstream_oauth_provider.issuer,
             %upstream_oauth_provider.client_id,
@@ -212,7 +212,7 @@ impl<'c> UpstreamOAuthSessionRepository for PgUpstreamOAuthSessionRepository<'c>
         name = "db.upstream_oauth_authorization_session.complete_with_link",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %upstream_oauth_authorization_session.id,
             %upstream_oauth_link.id,
         ),
@@ -256,7 +256,7 @@ impl<'c> UpstreamOAuthSessionRepository for PgUpstreamOAuthSessionRepository<'c>
         name = "db.upstream_oauth_authorization_session.consume",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %upstream_oauth_authorization_session.id,
         ),
         err,

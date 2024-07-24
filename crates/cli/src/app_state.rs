@@ -34,7 +34,7 @@ use mas_storage::{BoxClock, BoxRepository, BoxRng, Repository, SystemClock};
 use mas_storage_pg::PgRepository;
 use mas_templates::Templates;
 use opentelemetry::{
-    metrics::{Histogram, MetricsError, Unit},
+    metrics::{Histogram, MetricsError},
     KeyValue,
 };
 use rand::SeedableRng;
@@ -78,13 +78,13 @@ impl AppState {
         let usage = meter
             .i64_observable_up_down_counter("db.connections.usage")
             .with_description("The number of connections that are currently in `state` described by the state attribute.")
-            .with_unit(Unit::new("{connection}"))
+            .with_unit("{connection}")
             .init();
 
         let max = meter
             .i64_observable_up_down_counter("db.connections.max")
             .with_description("The maximum number of open connections allowed.")
-            .with_unit(Unit::new("{connection}"))
+            .with_unit("{connection}")
             .init();
 
         // Observe the number of active and idle connections in the pool
@@ -101,7 +101,7 @@ impl AppState {
         let histogram = meter
             .u64_histogram("db.client.connections.create_time")
             .with_description("The time it took to create a new connection.")
-            .with_unit(Unit::new("ms"))
+            .with_unit("ms")
             .init();
         self.conn_acquisition_histogram = Some(histogram);
 

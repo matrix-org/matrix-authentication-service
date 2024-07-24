@@ -86,7 +86,7 @@
 //!         name = "db.fake_data.lookup",
 //!         skip_all,
 //!         fields(
-//!             db.statement,
+//!             db.query.text,
 //!             fake_data.id = %id,
 //!         ),
 //!         err,
@@ -115,7 +115,7 @@
 //!         name = "db.fake_data.add",
 //!         skip_all,
 //!         fields(
-//!             db.statement,
+//!             db.query.text,
 //!             fake_data.id,
 //!         ),
 //!         err,
@@ -152,8 +152,9 @@
 //! A few things to note with the implementation:
 //!
 //!  - All methods are traced, with an explicit, somewhat consistent name.
-//!  - The SQL statement is included as attribute, by declaring a `db.statement`
-//!    attribute on the tracing span, and then calling [`ExecuteExt::traced`].
+//!  - The SQL statement is included as attribute, by declaring a
+//!    `db.query.text` attribute on the tracing span, and then calling
+//!    [`ExecuteExt::traced`].
 //!  - The IDs are all [`Ulid`], and generated from the clock and the random
 //!    number generated passed as parameters. The generated IDs are recorded in
 //!    the span.

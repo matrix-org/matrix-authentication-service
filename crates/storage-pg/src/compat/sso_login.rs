@@ -143,7 +143,7 @@ impl<'c> CompatSsoLoginRepository for PgCompatSsoLoginRepository<'c> {
         name = "db.compat_sso_login.lookup",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             compat_sso_login.id = %id,
         ),
         err,
@@ -178,7 +178,7 @@ impl<'c> CompatSsoLoginRepository for PgCompatSsoLoginRepository<'c> {
         name = "db.compat_sso_login.find_for_session",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %compat_session.id,
         ),
         err,
@@ -216,7 +216,7 @@ impl<'c> CompatSsoLoginRepository for PgCompatSsoLoginRepository<'c> {
         name = "db.compat_sso_login.find_by_token",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -253,7 +253,7 @@ impl<'c> CompatSsoLoginRepository for PgCompatSsoLoginRepository<'c> {
         name = "db.compat_sso_login.add",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             compat_sso_login.id,
             compat_sso_login.redirect_uri = %redirect_uri,
         ),
@@ -298,7 +298,7 @@ impl<'c> CompatSsoLoginRepository for PgCompatSsoLoginRepository<'c> {
         name = "db.compat_sso_login.fulfill",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %compat_sso_login.id,
             %compat_session.id,
             compat_session.device.id = compat_session.device.as_str(),
@@ -343,7 +343,7 @@ impl<'c> CompatSsoLoginRepository for PgCompatSsoLoginRepository<'c> {
         name = "db.compat_sso_login.exchange",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %compat_sso_login.id,
         ),
         err,
@@ -382,7 +382,7 @@ impl<'c> CompatSsoLoginRepository for PgCompatSsoLoginRepository<'c> {
         name = "db.compat_sso_login.list",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err
     )]
@@ -442,7 +442,7 @@ impl<'c> CompatSsoLoginRepository for PgCompatSsoLoginRepository<'c> {
         name = "db.compat_sso_login.count",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err
     )]

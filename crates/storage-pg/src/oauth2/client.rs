@@ -31,7 +31,7 @@ use oauth2_types::{
     requests::GrantType,
     scope::{Scope, ScopeToken},
 };
-use opentelemetry_semantic_conventions::trace::DB_STATEMENT;
+use opentelemetry_semantic_conventions::attribute::DB_QUERY_TEXT;
 use rand::RngCore;
 use sqlx::PgConnection;
 use tracing::{info_span, Instrument};
@@ -288,7 +288,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
         name = "db.oauth2_client.lookup",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             oauth2_client.id = %id,
         ),
         err,
@@ -337,7 +337,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
         name = "db.oauth2_client.load_batch",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -393,7 +393,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
         name = "db.oauth2_client.add",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             client.id,
             client.name = client_name
         ),
@@ -531,7 +531,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
         name = "db.oauth2_client.upsert_static",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             client.id = %client_id,
         ),
         err,
@@ -640,7 +640,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
         name = "db.oauth2_client.all_static",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -686,7 +686,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
         name = "db.oauth2_client.get_consent_for_user",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %user.id,
             %client.id,
         ),
@@ -727,7 +727,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
         name = "db.oauth2_client.give_consent_for_user",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %user.id,
             %client.id,
             %scope,
@@ -777,7 +777,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
         name = "db.oauth2_client.delete_by_id",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             client.id = %id,
         ),
         err,
@@ -787,7 +787,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
         {
             let span = info_span!(
                 "db.oauth2_client.delete_by_id.authorization_grants",
-                { DB_STATEMENT } = tracing::field::Empty,
+                { DB_QUERY_TEXT } = tracing::field::Empty,
             );
 
             sqlx::query!(
@@ -807,7 +807,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
         {
             let span = info_span!(
                 "db.oauth2_client.delete_by_id.consents",
-                { DB_STATEMENT } = tracing::field::Empty,
+                { DB_QUERY_TEXT } = tracing::field::Empty,
             );
 
             sqlx::query!(
@@ -827,7 +827,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
         {
             let span = info_span!(
                 "db.oauth2_client.delete_by_id.access_tokens",
-                { DB_STATEMENT } = tracing::field::Empty,
+                { DB_QUERY_TEXT } = tracing::field::Empty,
             );
 
             sqlx::query!(
@@ -850,7 +850,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
         {
             let span = info_span!(
                 "db.oauth2_client.delete_by_id.refresh_tokens",
-                { DB_STATEMENT } = tracing::field::Empty,
+                { DB_QUERY_TEXT } = tracing::field::Empty,
             );
 
             sqlx::query!(
@@ -873,7 +873,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
         {
             let span = info_span!(
                 "db.oauth2_client.delete_by_id.sessions",
-                { DB_STATEMENT } = tracing::field::Empty,
+                { DB_QUERY_TEXT } = tracing::field::Empty,
             );
 
             sqlx::query!(
