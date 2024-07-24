@@ -16,16 +16,22 @@ use aide::{
     axum::ApiRouter,
     openapi::{OAuth2Flow, OAuth2Flows, OpenApi, SecurityScheme, Server, ServerVariable},
 };
-use axum::{Json, Router};
+use axum::{extract::FromRequestParts, Json, Router};
 use hyper::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE};
 use indexmap::IndexMap;
 use mas_http::CorsLayerExt;
 use mas_router::{OAuth2AuthorizationEndpoint, OAuth2TokenEndpoint, SimpleRoute};
 use tower_http::cors::{Any, CorsLayer};
 
+mod call_context;
+mod response;
+
+use self::call_context::CallContext;
+
 pub fn router<S>() -> (OpenApi, Router<S>)
 where
     S: Clone + Send + Sync + 'static,
+    CallContext: FromRequestParts<S>,
 {
     let mut api = OpenApi::default();
     let router = ApiRouter::<S>::new()
