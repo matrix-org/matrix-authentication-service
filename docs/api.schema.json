@@ -1,0 +1,50 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Matrix Authentication Service admin API",
+    "version": ""
+  },
+  "servers": [
+    {
+      "url": "{base}",
+      "variables": {
+        "base": {
+          "default": "/",
+          "description": null
+        }
+      }
+    }
+  ],
+  "paths": {},
+  "components": {
+    "securitySchemes": {
+      "oauth2": {
+        "type": "oauth2",
+        "flows": {
+          "clientCredentials": {
+            "refreshUrl": "/oauth2/token",
+            "tokenUrl": "/oauth2/token",
+            "scopes": {
+              "urn:mas:admin": "Grant access to the admin API"
+            }
+          },
+          "authorizationCode": {
+            "authorizationUrl": "/authorize",
+            "tokenUrl": "/oauth2/token",
+            "refreshUrl": "/oauth2/token",
+            "scopes": {
+              "urn:mas:admin": "Grant access to the admin API"
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "oauth2": [
+        "urn:mas:admin"
+      ]
+    }
+  ]
+}
