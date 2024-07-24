@@ -164,7 +164,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
         name = "db.browser_session.lookup",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             user_session.id = %id,
         ),
         err,
@@ -205,7 +205,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
         name = "db.browser_session.add",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %user.id,
             user_session.id,
         ),
@@ -254,7 +254,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
         name = "db.browser_session.finish",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %user_session.id,
         ),
         err,
@@ -289,7 +289,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
         name = "db.browser_session.finish_bulk",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -317,7 +317,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
         name = "db.browser_session.list",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -404,7 +404,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
         name = "db.browser_session.count",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -429,7 +429,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
         name = "db.browser_session.authenticate_with_password",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %user_session.id,
             %user_password.id,
             user_session_authentication.id,
@@ -478,7 +478,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
         name = "db.browser_session.authenticate_with_upstream",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %user_session.id,
             %upstream_oauth_session.id,
             user_session_authentication.id,
@@ -527,7 +527,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
         name = "db.browser_session.get_last_authentication",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %user_session.id,
         ),
         err,
@@ -566,7 +566,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
         name = "db.browser_session.record_batch_activity",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]

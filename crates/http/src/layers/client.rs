@@ -21,10 +21,13 @@ use mas_tower::{
     TraceLayer, TraceService,
 };
 use opentelemetry::KeyValue;
-use opentelemetry_semantic_conventions::trace::{
-    CLIENT_ADDRESS, CLIENT_PORT, HTTP_REQUEST_BODY_SIZE, HTTP_REQUEST_METHOD,
-    HTTP_RESPONSE_BODY_SIZE, HTTP_RESPONSE_STATUS_CODE, NETWORK_PROTOCOL_NAME, NETWORK_TRANSPORT,
-    NETWORK_TYPE, SERVER_ADDRESS, SERVER_PORT, URL_FULL, USER_AGENT_ORIGINAL,
+use opentelemetry_semantic_conventions::{
+    attribute::{HTTP_REQUEST_BODY_SIZE, HTTP_RESPONSE_BODY_SIZE},
+    trace::{
+        CLIENT_ADDRESS, CLIENT_PORT, HTTP_REQUEST_METHOD, HTTP_RESPONSE_STATUS_CODE,
+        NETWORK_PROTOCOL_NAME, NETWORK_TRANSPORT, NETWORK_TYPE, SERVER_ADDRESS, SERVER_PORT,
+        URL_FULL, USER_AGENT_ORIGINAL,
+    },
 };
 use tower::{
     limit::{ConcurrencyLimit, GlobalConcurrencyLimitLayer},

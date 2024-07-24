@@ -205,7 +205,7 @@ impl<'c> OAuth2AuthorizationGrantRepository for PgOAuth2AuthorizationGrantReposi
         name = "db.oauth2_authorization_grant.add",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             grant.id,
             grant.scope = %scope,
             %client.id,
@@ -306,7 +306,7 @@ impl<'c> OAuth2AuthorizationGrantRepository for PgOAuth2AuthorizationGrantReposi
         name = "db.oauth2_authorization_grant.lookup",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             grant.id = %id,
         ),
         err,
@@ -354,7 +354,7 @@ impl<'c> OAuth2AuthorizationGrantRepository for PgOAuth2AuthorizationGrantReposi
         name = "db.oauth2_authorization_grant.find_by_code",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -404,7 +404,7 @@ impl<'c> OAuth2AuthorizationGrantRepository for PgOAuth2AuthorizationGrantReposi
         name = "db.oauth2_authorization_grant.fulfill",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %grant.id,
             client.id = %grant.client_id,
             %session.id,
@@ -447,7 +447,7 @@ impl<'c> OAuth2AuthorizationGrantRepository for PgOAuth2AuthorizationGrantReposi
         name = "db.oauth2_authorization_grant.exchange",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %grant.id,
             client.id = %grant.client_id,
         ),
@@ -485,7 +485,7 @@ impl<'c> OAuth2AuthorizationGrantRepository for PgOAuth2AuthorizationGrantReposi
         name = "db.oauth2_authorization_grant.give_consent",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %grant.id,
             client.id = %grant.client_id,
         ),

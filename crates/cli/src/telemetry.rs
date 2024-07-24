@@ -22,7 +22,6 @@ use mas_config::{
     MetricsConfig, MetricsExporterKind, Propagator, TelemetryConfig, TracingConfig,
     TracingExporterKind,
 };
-use mas_http::OtelClient;
 use opentelemetry::{
     global,
     propagation::{TextMapCompositePropagator, TextMapPropagator},
@@ -99,7 +98,7 @@ fn propagator(propagators: &[Propagator]) -> impl TextMapPropagator {
 
 fn http_client() -> impl opentelemetry_http::HttpClient + 'static {
     let client = mas_http::make_untraced_client();
-    OtelClient::new(client)
+    opentelemetry_http::hyper::HyperClient::new_with_timeout(client, Duration::from_secs(30))
 }
 
 fn stdout_tracer_provider() -> TracerProvider {
@@ -109,7 +108,7 @@ fn stdout_tracer_provider() -> TracerProvider {
         .build()
 }
 
-fn otlp_tracer(endpoint: Option<&Url>) -> anyhow::Result<Tracer> {
+fn otlp_tracer_provider(endpoint: Option<&Url>) -> anyhow::Result<TracerProvider> {
     use opentelemetry_otlp::WithExportConfig;
 
     let mut exporter = opentelemetry_otlp::new_exporter()
@@ -133,10 +132,7 @@ fn tracer(config: &TracingConfig) -> anyhow::Result<Option<Tracer>> {
     let tracer_provider = match config.exporter {
         TracingExporterKind::None => return Ok(None),
         TracingExporterKind::Stdout => stdout_tracer_provider(),
-        TracingExporterKind::Otlp => {
-            // The OTLP exporter already creates a tracer and installs it
-            return Ok(Some(otlp_tracer(config.endpoint.as_ref())?));
-        }
+        TracingExporterKind::Otlp => otlp_tracer_provider(config.endpoint.as_ref())?,
     };
 
     let tracer = tracer_provider
@@ -248,7 +244,7 @@ fn init_meter(config: &MetricsConfig) -> anyhow::Result<()> {
 }
 
 fn trace_config() -> opentelemetry_sdk::trace::Config {
-    opentelemetry_sdk::trace::config()
+    opentelemetry_sdk::trace::Config::default()
         .with_resource(resource())
         .with_sampler(Sampler::AlwaysOn)
 }

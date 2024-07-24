@@ -260,7 +260,7 @@ impl<'c> AppSessionRepository for PgAppSessionRepository<'c> {
     #[tracing::instrument(
         name = "db.app_session.list",
         fields(
-            db.statement,
+            db.query.text,
         ),
         skip_all,
         err,
@@ -408,7 +408,7 @@ impl<'c> AppSessionRepository for PgAppSessionRepository<'c> {
     #[tracing::instrument(
         name = "db.app_session.count",
         fields(
-            db.statement,
+            db.query.text,
         ),
         skip_all,
         err,

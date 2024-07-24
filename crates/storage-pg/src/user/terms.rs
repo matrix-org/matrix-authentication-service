@@ -44,7 +44,7 @@ impl<'c> UserTermsRepository for PgUserTermsRepository<'c> {
         name = "db.user_terms.accept_terms",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %user.id,
             user_terms.id,
             %user_terms.url = terms_url.as_str(),

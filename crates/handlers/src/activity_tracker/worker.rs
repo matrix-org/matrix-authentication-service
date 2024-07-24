@@ -65,7 +65,7 @@ impl Worker {
         let message_counter = meter
             .u64_counter("mas.activity_tracker.messages")
             .with_description("The number of messages received by the activity tracker")
-            .with_unit(opentelemetry::metrics::Unit::new("{messages}"))
+            .with_unit("{messages}")
             .init();
 
         // Record stuff on the counter so that the metrics are initialized
@@ -85,7 +85,7 @@ impl Worker {
         let flush_time_histogram = meter
             .u64_histogram("mas.activity_tracker.flush_time")
             .with_description("The time it took to flush the activity tracker")
-            .with_unit(opentelemetry::metrics::Unit::new("ms"))
+            .with_unit("ms")
             .init();
 
         Self {

@@ -21,7 +21,7 @@ use mas_storage::{
     },
     Clock, Page, Pagination,
 };
-use opentelemetry_semantic_conventions::trace::DB_STATEMENT;
+use opentelemetry_semantic_conventions::attribute::DB_QUERY_TEXT;
 use rand::RngCore;
 use sea_query::{enum_def, Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
@@ -198,7 +198,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
         name = "db.upstream_oauth_provider.lookup",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             upstream_oauth_provider.id = %id,
         ),
         err,
@@ -247,7 +247,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
         name = "db.upstream_oauth_provider.add",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             upstream_oauth_provider.id,
             upstream_oauth_provider.issuer = %params.issuer,
             upstream_oauth_provider.client_id = %params.client_id,
@@ -342,7 +342,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
         name = "db.upstream_oauth_provider.delete_by_id",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             upstream_oauth_provider.id = %id,
         ),
         err,
@@ -354,7 +354,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
             let span = info_span!(
                 "db.oauth2_client.delete_by_id.authorization_sessions",
                 upstream_oauth_provider.id = %id,
-                { DB_STATEMENT } = tracing::field::Empty,
+                { DB_QUERY_TEXT } = tracing::field::Empty,
             );
             sqlx::query!(
                 r#"
@@ -375,7 +375,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
             let span = info_span!(
                 "db.oauth2_client.delete_by_id.links",
                 upstream_oauth_provider.id = %id,
-                { DB_STATEMENT } = tracing::field::Empty,
+                { DB_QUERY_TEXT } = tracing::field::Empty,
             );
             sqlx::query!(
                 r#"
@@ -408,7 +408,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
         name = "db.upstream_oauth_provider.add",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             upstream_oauth_provider.id = %id,
             upstream_oauth_provider.issuer = %params.issuer,
             upstream_oauth_provider.client_id = %params.client_id,
@@ -523,7 +523,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
         name = "db.upstream_oauth_provider.disable",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %upstream_oauth_provider.id,
         ),
         err,
@@ -558,7 +558,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
         name = "db.upstream_oauth_provider.list",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -718,7 +718,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
         name = "db.upstream_oauth_provider.count",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -752,7 +752,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
         name = "db.upstream_oauth_provider.all_enabled",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]

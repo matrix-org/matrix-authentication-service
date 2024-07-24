@@ -152,7 +152,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
         name = "db.oauth2_session.lookup",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             session.id = %id,
         ),
         err,
@@ -190,7 +190,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
         name = "db.oauth2_session.add",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %client.id,
             session.id,
             session.scope = %scope,
@@ -253,7 +253,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
         name = "db.oauth2_session.finish_bulk",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -281,7 +281,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
         name = "db.oauth2_session.finish",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %session.id,
             %session.scope,
             client.id = %session.client_id,
@@ -318,7 +318,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
         name = "db.oauth2_session.list",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -390,7 +390,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
         name = "db.oauth2_session.count",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -415,7 +415,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
         name = "db.oauth2_session.record_batch_activity",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -462,7 +462,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
         name = "db.oauth2_session.record_user_agent",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %session.id,
             %session.scope,
             client.id = %session.client_id,

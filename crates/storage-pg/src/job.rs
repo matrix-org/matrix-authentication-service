@@ -41,7 +41,7 @@ impl<'c> JobRepository for PgJobRepository<'c> {
         name = "db.job.schedule_submission",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             job.id,
             job.name = submission.name(),
         ),

@@ -125,7 +125,7 @@ impl<'c> UserRepository for PgUserRepository<'c> {
         name = "db.user.lookup",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             user.id = %id,
         ),
         err,
@@ -158,7 +158,7 @@ impl<'c> UserRepository for PgUserRepository<'c> {
         name = "db.user.find_by_username",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             user.username = username,
         ),
         err,
@@ -191,7 +191,7 @@ impl<'c> UserRepository for PgUserRepository<'c> {
         name = "db.user.add",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             user.username = username,
             user.id,
         ),
@@ -240,7 +240,7 @@ impl<'c> UserRepository for PgUserRepository<'c> {
         name = "db.user.exists",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             user.username = username,
         ),
         err,
@@ -265,7 +265,7 @@ impl<'c> UserRepository for PgUserRepository<'c> {
         name = "db.user.lock",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %user.id,
         ),
         err,
@@ -300,7 +300,7 @@ impl<'c> UserRepository for PgUserRepository<'c> {
         name = "db.user.unlock",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %user.id,
         ),
         err,
@@ -333,7 +333,7 @@ impl<'c> UserRepository for PgUserRepository<'c> {
         name = "db.user.set_can_request_admin",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %user.id,
             user.can_request_admin = can_request_admin,
         ),
@@ -368,7 +368,7 @@ impl<'c> UserRepository for PgUserRepository<'c> {
         name = "db.user.list",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -421,7 +421,7 @@ impl<'c> UserRepository for PgUserRepository<'c> {
         name = "db.user.count",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -446,7 +446,7 @@ impl<'c> UserRepository for PgUserRepository<'c> {
         name = "db.user.acquire_lock_for_sync",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             user.id = %user.id,
         ),
         err,

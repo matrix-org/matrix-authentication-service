@@ -79,7 +79,7 @@ features = ["cookie-private", "cookie-key-expansion", "typed-header"]
 
 # Bytes
 [workspace.dependencies.bytes]
-version = "1.6.0"
+version = "1.6.1"
 
 # UTF-8 paths
 [workspace.dependencies.camino]
@@ -241,14 +241,15 @@ version = "0.3.18"
 
 # OpenTelemetry
 [workspace.dependencies.opentelemetry]
-version = "0.23.0"
+version = "0.24.0"
 features = ["trace", "metrics"]
 [workspace.dependencies.opentelemetry-http]
-version = "0.12.0"
+version = "0.13.0"
+features = ["hyper"]
 [workspace.dependencies.opentelemetry-semantic-conventions]
-version = "0.15.0"
+version = "0.16.0"
 [workspace.dependencies.tracing-opentelemetry]
-version = "0.24.0"
+version = "0.25.0"
 default-features = false
 
 # URL manipulation

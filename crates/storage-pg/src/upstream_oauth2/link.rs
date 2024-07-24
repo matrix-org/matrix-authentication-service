@@ -118,7 +118,7 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
         name = "db.upstream_oauth_link.lookup",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             upstream_oauth_link.id = %id,
         ),
         err,
@@ -150,7 +150,7 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
         name = "db.upstream_oauth_link.find_by_subject",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             upstream_oauth_link.subject = subject,
             %upstream_oauth_provider.id,
             %upstream_oauth_provider.issuer,
@@ -191,7 +191,7 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
         name = "db.upstream_oauth_link.add",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             upstream_oauth_link.id,
             upstream_oauth_link.subject = subject,
             %upstream_oauth_provider.id,
@@ -243,7 +243,7 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
         name = "db.upstream_oauth_link.associate_to_user",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
             %upstream_oauth_link.id,
             %upstream_oauth_link.subject,
             %user.id,
@@ -276,7 +276,7 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
         name = "db.upstream_oauth_link.list",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]
@@ -337,7 +337,7 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
         name = "db.upstream_oauth_link.count",
         skip_all,
         fields(
-            db.statement,
+            db.query.text,
         ),
         err,
     )]

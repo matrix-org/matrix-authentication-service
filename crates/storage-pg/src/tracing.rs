@@ -12,19 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use opentelemetry_semantic_conventions::trace::DB_STATEMENT;
+use opentelemetry_semantic_conventions::attribute::DB_QUERY_TEXT;
 use tracing::Span;
 
 /// An extension trait for [`sqlx::Execute`] that records the SQL statement as
-/// `db.statement` in a tracing span
+/// `db.query.text` in a tracing span
 pub trait ExecuteExt<'q, DB>: Sized {
-    /// Records the statement as `db.statement` in the current span
+    /// Records the statement as `db.query.text` in the current span
     #[must_use]
     fn traced(self) -> Self {
         self.record(&Span::current())
     }
 
-    /// Records the statement as `db.statement` in the given span
+    /// Records the statement as `db.query.text` in the given span
     #[must_use]
     fn record(self, span: &Span) -> Self;
 }
@@ -35,7 +35,7 @@ where
     DB: sqlx::Database,
 {
     fn record(self, span: &Span) -> Self {
-        span.record(DB_STATEMENT, self.sql());
+        span.record(DB_QUERY_TEXT, self.sql());
         self
     }
 }
