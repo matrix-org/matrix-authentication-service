@@ -505,6 +505,8 @@ export type Mutation = {
    * current password.
    */
   setPassword: SetPasswordPayload;
+  /** Set the password for yourself, using a recovery ticket sent by e-mail. */
+  setPasswordByRecovery: SetPasswordPayload;
   /** Set an email address as primary */
   setPrimaryEmail: SetPrimaryEmailPayload;
   /** Unlock a user. This is only available to administrators. */
@@ -589,6 +591,12 @@ export type MutationSetDisplayNameArgs = {
 /** The mutations root of the GraphQL interface. */
 export type MutationSetPasswordArgs = {
   input: SetPasswordInput;
+};
+
+
+/** The mutations root of the GraphQL interface. */
+export type MutationSetPasswordByRecoveryArgs = {
+  input: SetPasswordByRecoveryInput;
 };
 
 
@@ -953,6 +961,18 @@ export enum SetDisplayNameStatus {
   Set = 'SET'
 }
 
+/** The input for the `setPasswordByRecovery` mutation. */
+export type SetPasswordByRecoveryInput = {
+  /** The new password for the user. */
+  newPassword: Scalars['String']['input'];
+  /**
+   * The recovery ticket to use.
+   * This identifies the user as well as proving authorisation to perform the
+   * recovery operation.
+   */
+  ticket: Scalars['String']['input'];
+};
+
 /** The input for the `setPassword` mutation. */
 export type SetPasswordInput = {
   /**
@@ -979,8 +999,12 @@ export type SetPasswordPayload = {
 
 /** The status of the `setPassword` mutation. */
 export enum SetPasswordStatus {
+  /** Your account is locked and you can't change its password. */
+  AccountLocked = 'ACCOUNT_LOCKED',
   /** The password was updated. */
   Allowed = 'ALLOWED',
+  /** The specified recovery ticket has expired. */
+  ExpiredRecoveryTicket = 'EXPIRED_RECOVERY_TICKET',
   /**
    * The new password is invalid. For example, it may not meet configured
    * security requirements.
@@ -996,12 +1020,19 @@ export enum SetPasswordStatus {
   NotFound = 'NOT_FOUND',
   /** The user doesn't have a current password to attempt to match against. */
   NoCurrentPassword = 'NO_CURRENT_PASSWORD',
+  /** The specified recovery ticket does not exist. */
+  NoSuchRecoveryTicket = 'NO_SUCH_RECOVERY_TICKET',
   /**
    * Password support has been disabled.
    * This usually means that login is handled by an upstream identity
    * provider.
    */
   PasswordChangesDisabled = 'PASSWORD_CHANGES_DISABLED',
+  /**
+   * The specified recovery ticket has already been used and cannot be used
+   * again.
+   */
+  RecoveryTicketAlreadyUsed = 'RECOVERY_TICKET_ALREADY_USED',
   /** The supplied current password was wrong. */
   WrongPassword = 'WRONG_PASSWORD'
 }

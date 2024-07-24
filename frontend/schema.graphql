@@ -779,6 +779,10 @@ type Mutation {
   """
   setPassword(input: SetPasswordInput!): SetPasswordPayload!
   """
+  Set the password for yourself, using a recovery ticket sent by e-mail.
+  """
+  setPasswordByRecovery(input: SetPasswordByRecoveryInput!): SetPasswordPayload!
+  """
   Create a new arbitrary OAuth 2.0 Session.
 
   Only available for administrators.
@@ -1268,6 +1272,22 @@ enum SetDisplayNameStatus {
 }
 
 """
+The input for the `setPasswordByRecovery` mutation.
+"""
+input SetPasswordByRecoveryInput {
+  """
+  The recovery ticket to use.
+  This identifies the user as well as proving authorisation to perform the
+  recovery operation.
+  """
+  ticket: String!
+  """
+  The new password for the user.
+  """
+  newPassword: String!
+}
+
+"""
 The input for the `setPassword` mutation.
 """
 input SetPasswordInput {
@@ -1335,6 +1355,23 @@ enum SetPasswordStatus {
   provider.
   """
   PASSWORD_CHANGES_DISABLED
+  """
+  The specified recovery ticket does not exist.
+  """
+  NO_SUCH_RECOVERY_TICKET
+  """
+  The specified recovery ticket has already been used and cannot be used
+  again.
+  """
+  RECOVERY_TICKET_ALREADY_USED
+  """
+  The specified recovery ticket has expired.
+  """
+  EXPIRED_RECOVERY_TICKET
+  """
+  Your account is locked and you can't change its password.
+  """
+  ACCOUNT_LOCKED
 }
 
 """

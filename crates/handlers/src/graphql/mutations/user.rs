@@ -24,7 +24,7 @@ use zeroize::Zeroizing;
 use crate::graphql::{
     model::{NodeType, User},
     state::ContextExt,
-    UserId,
+    Requester, UserId,
 };
 
 #[derive(Default)]
@@ -262,6 +262,18 @@ struct SetPasswordInput {
     new_password: String,
 }
 
+/// The input for the `setPasswordByRecovery` mutation.
+#[derive(InputObject)]
+struct SetPasswordByRecoveryInput {
+    /// The recovery ticket to use.
+    /// This identifies the user as well as proving authorisation to perform the
+    /// recovery operation.
+    ticket: String,
+
+    /// The new password for the user.
+    new_password: String,
+}
+
 /// The return type for the `setPassword` mutation.
 #[derive(Description)]
 struct SetPasswordPayload {
@@ -296,6 +308,19 @@ enum SetPasswordStatus {
     /// This usually means that login is handled by an upstream identity
     /// provider.
     PasswordChangesDisabled,
+
+    /// The specified recovery ticket does not exist.
+    NoSuchRecoveryTicket,
+
+    /// The specified recovery ticket has already been used and cannot be used
+    /// again.
+    RecoveryTicketAlreadyUsed,
+
+    /// The specified recovery ticket has expired.
+    ExpiredRecoveryTicket,
+
+    /// Your account is locked and you can't change its password.
+    AccountLocked,
 }
 
 #[Object(use_type_description)]
@@ -631,6 +656,108 @@ impl UserMutations {
                 new_password_hash,
                 None,
             )
+            .await?;
+
+        repo.save().await?;
+
+        Ok(SetPasswordPayload {
+            status: SetPasswordStatus::Allowed,
+        })
+    }
+
+    /// Set the password for yourself, using a recovery ticket sent by e-mail.
+    async fn set_password_by_recovery(
+        &self,
+        ctx: &Context<'_>,
+        input: SetPasswordByRecoveryInput,
+    ) -> Result<SetPasswordPayload, async_graphql::Error> {
+        let state = ctx.state();
+        let requester = ctx.requester();
+        let clock = state.clock();
+        if !matches!(requester, Requester::Anonymous) {
+            return Err(async_graphql::Error::new(
+                "Account recovery is only for anonymous users.",
+            ));
+        }
+
+        let password_manager = state.password_manager();
+
+        if !password_manager.is_enabled() || !state.site_config().account_recovery_allowed {
+            return Ok(SetPasswordPayload {
+                status: SetPasswordStatus::PasswordChangesDisabled,
+            });
+        }
+
+        if !password_manager.is_password_complex_enough(&input.new_password)? {
+            return Ok(SetPasswordPayload {
+                status: SetPasswordStatus::InvalidNewPassword,
+            });
+        }
+
+        let mut repo = state.repository().await?;
+
+        let ticket = repo
+            .user_recovery()
+            .find_ticket(&input.ticket)
+            .await?
+            .context("Unknown ticket")?;
+
+        let session = repo
+            .user_recovery()
+            .lookup_session(ticket.user_recovery_session_id)
+            .await?
+            .context("Unknown session")?;
+
+        if session.consumed_at.is_some() {
+            return Ok(SetPasswordPayload {
+                status: SetPasswordStatus::RecoveryTicketAlreadyUsed,
+            });
+        }
+
+        if !ticket.active(clock.now()) {
+            return Ok(SetPasswordPayload {
+                status: SetPasswordStatus::ExpiredRecoveryTicket,
+            });
+        }
+
+        let user_email = repo
+            .user_email()
+            .lookup(ticket.user_email_id)
+            .await?
+            // Only allow confirmed email addresses
+            .filter(|email| email.confirmed_at.is_some())
+            .context("Unknown email address")?;
+
+        let user = repo
+            .user()
+            .lookup(user_email.user_id)
+            .await?
+            .context("Invalid user")?;
+
+        if !user.is_valid() {
+            return Ok(SetPasswordPayload {
+                status: SetPasswordStatus::AccountLocked,
+            });
+        }
+
+        let (new_password_version, new_password_hash) = password_manager
+            .hash(state.rng(), Zeroizing::new(input.new_password.into_bytes()))
+            .await?;
+
+        repo.user_password()
+            .add(
+                &mut state.rng(),
+                &state.clock(),
+                &user,
+                new_password_version,
+                new_password_hash,
+                None,
+            )
+            .await?;
+
+        // Mark the session as consumed
+        repo.user_recovery()
+            .consume_ticket(&clock, ticket, session)
             .await?;
 
         repo.save().await?;
