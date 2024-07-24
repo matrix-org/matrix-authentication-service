@@ -36,7 +36,9 @@ axum-macros = "0.4.1"
 axum-extra.workspace = true
 rustls.workspace = true
 
+aide.workspace = true
 async-graphql.workspace = true
+schemars.workspace = true
 
 # Emails
 lettre.workspace = true
@@ -65,6 +67,7 @@ zeroize = "1.8.1"
 base64ct = "1.6.0"
 camino.workspace = true
 chrono.workspace = true
+indexmap = "2.2.6"
 psl = "2.1.55"
 time = "0.3.36"
 url.workspace = true
