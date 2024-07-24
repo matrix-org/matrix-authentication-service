@@ -26,8 +26,7 @@ const QUERY = graphql(/* GraphQL */ `
     }
 
     siteConfig {
-      id
-      minimumPasswordComplexity
+      ...PasswordCreationDoubleInput_siteConfig
     }
   }
 `);
