@@ -26,7 +26,10 @@ pub struct MapErr<R, F> {
 }
 
 impl<R, F> MapErr<R, F> {
-    pub(crate) fn new(inner: R, mapper: F) -> Self {
+    /// Create a new [`MapErr`] wrapper from an inner repository and a mapper
+    /// function
+    #[must_use]
+    pub fn new(inner: R, mapper: F) -> Self {
         Self {
             inner,
             mapper,

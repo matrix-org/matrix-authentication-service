@@ -34,7 +34,6 @@ use crate::{
         BrowserSessionRepository, UserEmailRepository, UserPasswordRepository,
         UserRecoveryRepository, UserRepository, UserTermsRepository,
     },
-    MapErr,
 };
 
 /// A [`Repository`] helps interacting with the underlying storage backend.
@@ -43,21 +42,6 @@ pub trait Repository<E>:
 where
     E: std::error::Error + Send + Sync + 'static,
 {
-    /// Construct a (boxed) typed-erased repository
-    fn boxed(self) -> BoxRepository<E>
-    where
-        Self: Sync + Sized + 'static,
-    {
-        Box::new(self)
-    }
-
-    /// Map the error type of all the methods of a [`Repository`]
-    fn map_err<Mapper>(self, mapper: Mapper) -> MapErr<Self, Mapper>
-    where
-        Self: Sized,
-    {
-        MapErr::new(self, mapper)
-    }
 }
 
 /// An opaque, type-erased error
@@ -80,7 +64,7 @@ impl RepositoryError {
 }
 
 /// A type-erased [`Repository`]
-pub type BoxRepository<E = RepositoryError> = Box<dyn Repository<E> + Send + Sync + 'static>;
+pub type BoxRepository = Box<dyn Repository<RepositoryError> + Send + Sync + 'static>;
 
 /// A [`RepositoryTransaction`] can be saved or cancelled, after a series
 /// of operations.
@@ -113,7 +97,7 @@ pub trait RepositoryTransaction {
 /// repository is used at a time.
 ///
 /// When adding a new repository, you should add a new method to this trait, and
-/// update the implementations for [`MapErr`] and [`Box<R>`] below.
+/// update the implementations for [`crate::MapErr`] and [`Box<R>`] below.
 ///
 /// Note: this used to have generic associated types to avoid boxing all the
 /// repository traits, but that was removed because it made almost impossible to
@@ -218,7 +202,7 @@ pub trait RepositoryAccess: Send {
 }
 
 /// Implementations of the [`RepositoryAccess`], [`RepositoryTransaction`] and
-/// [`Repository`] for the [`MapErr`] wrapper and [`Box<R>`]
+/// [`Repository`] for the [`crate::MapErr`] wrapper and [`Box<R>`]
 mod impls {
     use futures_util::{future::BoxFuture, FutureExt, TryFutureExt};
 

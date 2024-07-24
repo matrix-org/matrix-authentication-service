@@ -19,7 +19,7 @@ use mas_storage::{
         BrowserSessionFilter, BrowserSessionRepository, UserEmailFilter, UserEmailRepository,
         UserFilter, UserPasswordRepository, UserRepository,
     },
-    Pagination, Repository, RepositoryAccess,
+    Pagination, RepositoryAccess,
 };
 use rand::SeedableRng;
 use rand_chacha::ChaChaRng;

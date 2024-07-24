@@ -18,7 +18,7 @@ use apalis_core::{executor::TokioExecutor, layers::extensions::Extension, monito
 use mas_email::Mailer;
 use mas_matrix::HomeserverConnection;
 use mas_router::UrlBuilder;
-use mas_storage::{BoxClock, BoxRepository, Repository, SystemClock};
+use mas_storage::{BoxClock, BoxRepository, SystemClock};
 use mas_storage_pg::{DatabaseError, PgRepository};
 use rand::SeedableRng;
 use sqlx::{Pool, Postgres};
@@ -83,10 +83,7 @@ impl State {
     }
 
     pub async fn repository(&self) -> Result<BoxRepository, DatabaseError> {
-        let repo = PgRepository::from_pool(self.pool())
-            .await?
-            .map_err(mas_storage::RepositoryError::from_error)
-            .boxed();
+        let repo = PgRepository::from_pool(self.pool()).await?.boxed();
 
         Ok(repo)
     }

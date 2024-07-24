@@ -36,7 +36,7 @@ mod tests {
     use mas_storage::{
         clock::MockClock,
         oauth2::{OAuth2DeviceCodeGrantParams, OAuth2SessionFilter, OAuth2SessionRepository},
-        Clock, Pagination, Repository,
+        Clock, Pagination,
     };
     use oauth2_types::{
         requests::{GrantType, ResponseMode},

@@ -43,7 +43,7 @@ use mas_keystore::{Encrypter, JsonWebKey, JsonWebKeySet, Keystore, PrivateKey};
 use mas_matrix::{BoxHomeserverConnection, HomeserverConnection, MockHomeserverConnection};
 use mas_policy::{InstantiateError, Policy, PolicyFactory};
 use mas_router::{SimpleRoute, UrlBuilder};
-use mas_storage::{clock::MockClock, BoxClock, BoxRepository, BoxRng, Repository};
+use mas_storage::{clock::MockClock, BoxClock, BoxRepository, BoxRng};
 use mas_storage_pg::{DatabaseError, PgRepository};
 use mas_templates::{SiteConfigExt, Templates};
 use rand::SeedableRng;
@@ -272,9 +272,7 @@ impl TestState {
 
     pub async fn repository(&self) -> Result<BoxRepository, DatabaseError> {
         let repo = PgRepository::from_pool(&self.pool).await?;
-        Ok(repo
-            .map_err(mas_storage::RepositoryError::from_error)
-            .boxed())
+        Ok(repo.boxed())
     }
 
     /// Returns a new random number generator.
@@ -330,9 +328,7 @@ impl graphql::State for TestGraphQLState {
             .await
             .map_err(mas_storage::RepositoryError::from_error)?;
 
-        Ok(repo
-            .map_err(mas_storage::RepositoryError::from_error)
-            .boxed())
+        Ok(repo.boxed())
     }
 
     async fn policy(&self) -> Result<Policy, InstantiateError> {
@@ -500,9 +496,7 @@ impl FromRequestParts<TestState> for BoxRepository {
         state: &TestState,
     ) -> Result<Self, Self::Rejection> {
         let repo = PgRepository::from_pool(&state.pool).await?;
-        Ok(repo
-            .map_err(mas_storage::RepositoryError::from_error)
-            .boxed())
+        Ok(repo.boxed())
     }
 }
 
