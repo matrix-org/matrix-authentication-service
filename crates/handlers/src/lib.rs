@@ -53,6 +53,7 @@ use sqlx::PgPool;
 use tower::util::AndThenLayer;
 use tower_http::cors::{Any, CorsLayer};
 
+mod admin;
 mod compat;
 mod graphql;
 mod health;
@@ -89,6 +90,7 @@ pub use mas_axum_utils::{
 
 pub use self::{
     activity_tracker::{ActivityTracker, Bound as BoundActivityTracker},
+    admin::router as admin_api_router,
     graphql::{
         schema as graphql_schema, schema_builder as graphql_schema_builder, Schema as GraphQLSchema,
     },

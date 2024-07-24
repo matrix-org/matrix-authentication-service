@@ -85,6 +85,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "aide"
+version = "0.13.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b0e3b97a21e41ec5c19bfd9b4fc1f7086be104f8b988681230247ffc91cc8ed"
+dependencies = [
+ "aide-macros",
+ "axum",
+ "axum-extra",
+ "bytes",
+ "cfg-if",
+ "http",
+ "indexmap 2.2.6",
+ "schemars",
+ "serde",
+ "serde_json",
+ "serde_qs",
+ "thiserror",
+ "tower-layer",
+ "tower-service",
+ "tracing",
+]
+
+[[package]]
+name = "aide-macros"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0487f8598afe49e6bc950a613a678bd962c4a6f431022ded62643c8b990301a"
+dependencies = [
+ "darling 0.20.9",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.68",
+]
+
+[[package]]
 name = "allocator-api2"
 version = "0.2.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3283,6 +3318,7 @@ dependencies = [
 name = "mas-handlers"
 version = "0.9.0"
 dependencies = [
+ "aide",
  "anyhow",
  "argon2",
  "async-graphql",
@@ -3298,6 +3334,7 @@ dependencies = [
  "futures-util",
  "headers",
  "hyper",
+ "indexmap 2.2.6",
  "insta",
  "lettre",
  "mas-axum-utils",
@@ -3325,6 +3362,7 @@ dependencies = [
  "rand",
  "rand_chacha",
  "rustls 0.23.12",
+ "schemars",
  "sentry",
  "serde",
  "serde_json",
@@ -5249,6 +5287,7 @@ dependencies = [
  "chrono",
  "dyn-clone",
  "indexmap 1.9.3",
+ "indexmap 2.2.6",
  "schemars_derive",
  "serde",
  "serde_json",
@@ -5551,6 +5590,19 @@ checksum = "af99884400da37c88f5e9146b7f1fd0fbcae8f6eec4e9da38b67d05486f814a6"
 dependencies = [
  "itoa",
  "serde",
+]
+
+[[package]]
+name = "serde_qs"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd34f36fe4c5ba9654417139a9b3a20d2e1de6012ee678ad14d240c22c78d8d6"
+dependencies = [
+ "axum",
+ "futures",
+ "percent-encoding",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]
