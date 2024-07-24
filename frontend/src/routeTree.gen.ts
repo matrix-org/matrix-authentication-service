@@ -16,6 +16,7 @@ import { Route as AccountImport } from './routes/_account'
 import { Route as AccountIndexImport } from './routes/_account.index'
 import { Route as DevicesSplatImport } from './routes/devices.$'
 import { Route as ClientsIdImport } from './routes/clients.$id'
+import { Route as PasswordRecoveryIndexImport } from './routes/password.recovery.index'
 import { Route as PasswordChangeIndexImport } from './routes/password.change.index'
 import { Route as AccountSessionsIndexImport } from './routes/_account.sessions.index'
 import { Route as PasswordChangeSuccessImport } from './routes/password.change.success'
@@ -49,6 +50,13 @@ const ClientsIdRoute = ClientsIdImport.update({
   path: '/clients/$id',
   getParentRoute: () => rootRoute,
 } as any)
+
+const PasswordRecoveryIndexRoute = PasswordRecoveryIndexImport.update({
+  path: '/password/recovery/',
+  getParentRoute: () => rootRoute,
+} as any).lazy(() =>
+  import('./routes/password.recovery.index.lazy').then((d) => d.Route),
+)
 
 const PasswordChangeIndexRoute = PasswordChangeIndexImport.update({
   path: '/password/change/',
@@ -163,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PasswordChangeIndexImport
       parentRoute: typeof rootRoute
     }
+    '/password/recovery/': {
+      id: '/password/recovery/'
+      path: '/password/recovery'
+      fullPath: '/password/recovery'
+      preLoaderRoute: typeof PasswordRecoveryIndexImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -181,6 +196,7 @@ export const routeTree = rootRoute.addChildren({
   EmailsIdVerifyRoute,
   PasswordChangeSuccessRoute,
   PasswordChangeIndexRoute,
+  PasswordRecoveryIndexRoute,
 })
 
 /* prettier-ignore-end */
@@ -197,7 +213,8 @@ export const routeTree = rootRoute.addChildren({
         "/devices/$",
         "/emails/$id/verify",
         "/password/change/success",
-        "/password/change/"
+        "/password/change/",
+        "/password/recovery/"
       ]
     },
     "/_account": {
@@ -242,6 +259,9 @@ export const routeTree = rootRoute.addChildren({
     },
     "/password/change/": {
       "filePath": "password.change.index.tsx"
+    },
+    "/password/recovery/": {
+      "filePath": "password.recovery.index.tsx"
     }
   }
 }

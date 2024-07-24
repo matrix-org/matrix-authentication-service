@@ -6,7 +6,8 @@
     "close": "Close",
     "continue": "Continue",
     "edit": "Edit",
-    "save": "Save"
+    "save": "Save",
+    "save_and_continue": "Save and continue"
   },
   "branding": {
     "privacy_policy": {
@@ -134,6 +135,9 @@
         "title": "Password updated"
       },
       "title": "Change your password"
+    },
+    "password_reset": {
+      "title": "Reset your password"
     },
     "password_strength": {
       "placeholder": "Password strength",
