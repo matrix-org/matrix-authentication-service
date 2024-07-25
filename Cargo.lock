@@ -961,8 +961,10 @@ checksum = "a21f936df1771bf62b77f047b726c4625ff2e8aa607c01ec06e5a05bd8463401"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
+ "js-sys",
  "num-traits",
  "serde",
+ "wasm-bindgen",
  "windows-targets 0.52.5",
 ]
 
@@ -7467,13 +7469,13 @@ dependencies = [
 
 [[package]]
 name = "zxcvbn"
-version = "3.0.1"
+version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "579b1d84df61d9d04cd250035843fee2f86a4b4bb176f102fec20779fd0bd38b"
+checksum = "ad76e35b00ad53688d6b90c431cabe3cbf51f7a4a154739e04b63004ab1c736c"
 dependencies = [
+ "chrono",
  "derive_builder",
  "fancy-regex",
- "getrandom",
  "itertools 0.13.0",
  "lazy_static",
  "regex",

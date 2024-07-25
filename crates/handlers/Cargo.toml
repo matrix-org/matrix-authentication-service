@@ -91,7 +91,7 @@ mas-storage.workspace = true
 mas-storage-pg.workspace = true
 mas-templates.workspace = true
 oauth2-types.workspace = true
-zxcvbn = "3.0.1"
+zxcvbn = "3.1.0"
 
 [dev-dependencies]
 insta = "1.39.0"
