@@ -106,6 +106,10 @@ features = ["derive"]
 version = "0.10.19"
 features = ["env", "yaml", "test"]
 
+# Rate-limiting
+[workspace.dependencies.governor]
+version = "0.6.3"
+
 # HTTP headers
 [workspace.dependencies.headers]
 version = "0.4.0"
@@ -163,6 +167,10 @@ features = [
 # Templates
 [workspace.dependencies.minijinja]
 version = "2.1.0"
+
+# Utilities to deal with non-zero values
+[workspace.dependencies.nonzero_ext]
+version = "0.3.0"
 
 # Random values
 [workspace.dependencies.rand]

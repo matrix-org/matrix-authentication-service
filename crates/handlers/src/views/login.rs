@@ -39,7 +39,10 @@ use serde::{Deserialize, Serialize};
 use zeroize::Zeroizing;
 
 use super::shared::OptionalPostAuthAction;
-use crate::{passwords::PasswordManager, BoundActivityTracker, PreferredLanguage, SiteConfig};
+use crate::{
+    passwords::PasswordManager, BoundActivityTracker, Limiter, PreferredLanguage,
+    RequesterFingerprint, SiteConfig,
+};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct LoginForm {
@@ -116,8 +119,10 @@ pub(crate) async fn post(
     State(site_config): State<SiteConfig>,
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
+    State(limiter): State<Limiter>,
     mut repo: BoxRepository,
     activity_tracker: BoundActivityTracker,
+    requester: RequesterFingerprint,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: CookieJar,
     user_agent: Option<TypedHeader<headers::UserAgent>>,
@@ -170,6 +175,8 @@ pub(crate) async fn post(
         &mut repo,
         rng,
         &clock,
+        limiter,
+        requester,
         &form.username,
         &form.password,
         user_agent,
@@ -211,6 +218,8 @@ async fn login(
     repo: &mut impl RepositoryAccess,
     mut rng: impl Rng + CryptoRng + Send,
     clock: &impl Clock,
+    limiter: Limiter,
+    requester: RequesterFingerprint,
     username: &str,
     password: &str,
     user_agent: Option<UserAgent>,
@@ -224,6 +233,12 @@ async fn login(
         .map_err(|_e| FormError::Internal)?
         .filter(mas_data_model::User::is_valid)
         .ok_or(FormError::InvalidCredentials)?;
+
+    // Check the rate limit
+    limiter.check_password(requester, &user).map_err(|e| {
+        tracing::warn!(error = &e as &dyn std::error::Error);
+        FormError::RateLimitExceeded
+    })?;
 
     // And its password
     let user_password = repo
@@ -490,5 +505,74 @@ mod test {
         response.assert_status(StatusCode::OK);
         response.assert_header_value(CONTENT_TYPE, "text/html; charset=utf-8");
         assert!(response.body().contains("john"));
+    }
+
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_password_login_rate_limit(pool: PgPool) {
+        setup();
+        let state = TestState::from_pool(pool).await.unwrap();
+        let mut rng = state.rng();
+        let cookies = CookieHelper::new();
+
+        // Provision a user without a password.
+        // We don't give that user a password, so that we skip hashing it in this test.
+        // It will still be rate-limited
+        let mut repo = state.repository().await.unwrap();
+        repo.user()
+            .add(&mut rng, &state.clock, "john".to_owned())
+            .await
+            .unwrap();
+        repo.save().await.unwrap();
+
+        // Render the login page to get a CSRF token
+        let request = Request::get("/login").empty();
+        let request = cookies.with_cookies(request);
+        let response = state.request(request).await;
+        cookies.save_cookies(&response);
+        response.assert_status(StatusCode::OK);
+        response.assert_header_value(CONTENT_TYPE, "text/html; charset=utf-8");
+        // Extract the CSRF token from the response body
+        let csrf_token = response
+            .body()
+            .split("name=\"csrf\" value=\"")
+            .nth(1)
+            .unwrap()
+            .split('\"')
+            .next()
+            .unwrap();
+
+        // Submit the login form
+        let request = Request::post("/login").form(serde_json::json!({
+            "csrf": csrf_token,
+            "username": "john",
+            "password": "hunter2",
+        }));
+        let request = cookies.with_cookies(request);
+
+        // First three attempts should just tell about the invalid credentials
+        let response = state.request(request.clone()).await;
+        response.assert_status(StatusCode::OK);
+        let body = response.body();
+        assert!(body.contains("Invalid credentials"));
+        assert!(!body.contains("too many requests"));
+
+        let response = state.request(request.clone()).await;
+        response.assert_status(StatusCode::OK);
+        let body = response.body();
+        assert!(body.contains("Invalid credentials"));
+        assert!(!body.contains("too many requests"));
+
+        let response = state.request(request.clone()).await;
+        response.assert_status(StatusCode::OK);
+        let body = response.body();
+        assert!(body.contains("Invalid credentials"));
+        assert!(!body.contains("too many requests"));
+
+        // The fourth attempt should be rate-limited
+        let response = state.request(request.clone()).await;
+        response.assert_status(StatusCode::OK);
+        let body = response.body();
+        assert!(!body.contains("Invalid credentials"));
+        assert!(body.contains("too many requests"));
     }
 }

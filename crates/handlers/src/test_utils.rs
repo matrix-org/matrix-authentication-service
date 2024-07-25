@@ -57,7 +57,7 @@ use crate::{
     graphql,
     passwords::{Hasher, PasswordManager},
     upstream_oauth2::cache::MetadataCache,
-    ActivityTracker, BoundActivityTracker,
+    ActivityTracker, BoundActivityTracker, Limiter, RequesterFingerprint,
 };
 
 /// Setup rustcrypto and tracing for tests.
@@ -108,6 +108,7 @@ pub(crate) struct TestState {
     pub password_manager: PasswordManager,
     pub site_config: SiteConfig,
     pub activity_tracker: ActivityTracker,
+    pub limiter: Limiter,
     pub clock: Arc<MockClock>,
     pub rng: Arc<Mutex<ChaChaRng>>,
 }
@@ -212,6 +213,8 @@ impl TestState {
         let activity_tracker =
             ActivityTracker::new(pool.clone(), std::time::Duration::from_secs(1));
 
+        let limiter = Limiter::default();
+
         Ok(Self {
             pool,
             templates,
@@ -227,6 +230,7 @@ impl TestState {
             password_manager,
             site_config,
             activity_tracker,
+            limiter,
             clock,
             rng,
         })
@@ -436,6 +440,12 @@ impl FromRef<TestState> for BoxHomeserverConnection {
     }
 }
 
+impl FromRef<TestState> for Limiter {
+    fn from_ref(input: &TestState) -> Self {
+        input.limiter.clone()
+    }
+}
+
 #[async_trait]
 impl FromRequestParts<TestState> for ActivityTracker {
     type Rejection = Infallible;
@@ -458,6 +468,18 @@ impl FromRequestParts<TestState> for BoundActivityTracker {
     ) -> Result<Self, Self::Rejection> {
         let ip = None;
         Ok(state.activity_tracker.clone().bind(ip))
+    }
+}
+
+#[async_trait]
+impl FromRequestParts<TestState> for RequesterFingerprint {
+    type Rejection = Infallible;
+
+    async fn from_request_parts(
+        _parts: &mut axum::http::request::Parts,
+        _state: &TestState,
+    ) -> Result<Self, Self::Rejection> {
+        Ok(RequesterFingerprint::EMPTY)
     }
 }
 

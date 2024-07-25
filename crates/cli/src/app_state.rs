@@ -22,7 +22,7 @@ use ipnetwork::IpNetwork;
 use mas_data_model::SiteConfig;
 use mas_handlers::{
     passwords::PasswordManager, ActivityTracker, BoundActivityTracker, CookieManager, ErrorWrapper,
-    GraphQLSchema, HttpClientFactory, MetadataCache,
+    GraphQLSchema, HttpClientFactory, Limiter, MetadataCache, RequesterFingerprint,
 };
 use mas_i18n::Translator;
 use mas_keystore::{Encrypter, Keystore};
@@ -57,6 +57,7 @@ pub struct AppState {
     pub site_config: SiteConfig,
     pub activity_tracker: ActivityTracker,
     pub trusted_proxies: Vec<IpNetwork>,
+    pub limiter: Limiter,
     pub conn_acquisition_histogram: Option<Histogram<u64>>,
 }
 
@@ -210,6 +211,12 @@ impl FromRef<AppState> for SiteConfig {
     }
 }
 
+impl FromRef<AppState> for Limiter {
+    fn from_ref(input: &AppState) -> Self {
+        input.limiter.clone()
+    }
+}
+
 impl FromRef<AppState> for BoxHomeserverConnection {
     fn from_ref(input: &AppState) -> Self {
         Box::new(input.homeserver_connection.clone())
@@ -326,9 +333,32 @@ impl FromRequestParts<AppState> for BoundActivityTracker {
         parts: &mut axum::http::request::Parts,
         state: &AppState,
     ) -> Result<Self, Self::Rejection> {
+        // TODO: we may infer the IP twice, for the activity tracker and the limiter
         let ip = infer_client_ip(parts, &state.trusted_proxies);
         tracing::debug!(ip = ?ip, "Inferred client IP address");
         Ok(state.activity_tracker.clone().bind(ip))
+    }
+}
+
+#[async_trait]
+impl FromRequestParts<AppState> for RequesterFingerprint {
+    type Rejection = Infallible;
+
+    async fn from_request_parts(
+        parts: &mut axum::http::request::Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        // TODO: we may infer the IP twice, for the activity tracker and the limiter
+        let ip = infer_client_ip(parts, &state.trusted_proxies);
+
+        if let Some(ip) = ip {
+            Ok(RequesterFingerprint::new(ip))
+        } else {
+            // If we can't infer the IP address, we'll just use an empty fingerprint and
+            // warn about it
+            tracing::warn!("Could not infer client IP address for an operation which rate-limits based on IP addresses");
+            Ok(RequesterFingerprint::EMPTY)
+        }
     }
 }
 

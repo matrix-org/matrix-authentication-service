@@ -62,6 +62,9 @@ pub enum FormError {
     /// There was an internal error
     Internal,
 
+    /// Rate limit exceeded
+    RateLimitExceeded,
+
     /// Denied by the policy
     Policy {
         /// Message for this policy violation

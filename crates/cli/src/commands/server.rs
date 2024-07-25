@@ -19,7 +19,7 @@ use clap::Parser;
 use figment::Figment;
 use itertools::Itertools;
 use mas_config::{AppConfig, ClientsConfig, ConfigurationSection, UpstreamOAuth2Config};
-use mas_handlers::{ActivityTracker, CookieManager, HttpClientFactory, MetadataCache};
+use mas_handlers::{ActivityTracker, CookieManager, HttpClientFactory, Limiter, MetadataCache};
 use mas_listener::{server::Server, shutdown::ShutdownStream};
 use mas_matrix_synapse::SynapseConnection;
 use mas_router::UrlBuilder;
@@ -200,6 +200,8 @@ impl Options {
         // Listen for SIGHUP
         register_sighup(&templates, &activity_tracker)?;
 
+        let limiter = Limiter::default();
+
         let graphql_schema = mas_handlers::graphql_schema(
             &pool,
             &policy_factory,
@@ -213,7 +215,6 @@ impl Options {
                 pool,
                 templates,
                 key_store,
-                metadata_cache,
                 cookie_manager,
                 encrypter,
                 url_builder,
@@ -222,9 +223,11 @@ impl Options {
                 graphql_schema,
                 http_client_factory,
                 password_manager,
+                metadata_cache,
                 site_config,
                 activity_tracker,
                 trusted_proxies,
+                limiter,
                 conn_acquisition_histogram: None,
             };
             s.init_metrics()?;
