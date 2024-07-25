@@ -36,7 +36,10 @@ use thiserror::Error;
 use zeroize::Zeroizing;
 
 use super::MatrixError;
-use crate::{impl_from_error_for_route, passwords::PasswordManager, BoundActivityTracker};
+use crate::{
+    impl_from_error_for_route, passwords::PasswordManager, rate_limit::PasswordCheckLimitedError,
+    BoundActivityTracker, Limiter, RequesterFingerprint,
+};
 
 #[derive(Debug, Serialize)]
 #[serde(tag = "type")]
@@ -162,6 +165,9 @@ pub enum RouteError {
     #[error("password verification failed")]
     PasswordVerificationFailed(#[source] anyhow::Error),
 
+    #[error("request rate limited")]
+    RateLimited(#[from] PasswordCheckLimitedError),
+
     #[error("login took too long")]
     LoginTookTooLong,
 
@@ -185,6 +191,11 @@ impl IntoResponse for RouteError {
                     status: StatusCode::INTERNAL_SERVER_ERROR,
                 }
             }
+            Self::RateLimited(_) => MatrixError {
+                errcode: "M_LIMIT_EXCEEDED",
+                error: "Too many login attempts",
+                status: StatusCode::TOO_MANY_REQUESTS,
+            },
             Self::Unsupported => MatrixError {
                 errcode: "M_UNRECOGNIZED",
                 error: "Invalid login type",
@@ -192,18 +203,18 @@ impl IntoResponse for RouteError {
             },
             Self::UserNotFound | Self::NoPassword | Self::PasswordVerificationFailed(_) => {
                 MatrixError {
-                    errcode: "M_UNAUTHORIZED",
+                    errcode: "M_FORBIDDEN",
                     error: "Invalid username/password",
                     status: StatusCode::FORBIDDEN,
                 }
             }
             Self::LoginTookTooLong => MatrixError {
-                errcode: "M_UNAUTHORIZED",
+                errcode: "M_FORBIDDEN",
                 error: "Login token expired",
                 status: StatusCode::FORBIDDEN,
             },
             Self::InvalidLoginToken => MatrixError {
-                errcode: "M_UNAUTHORIZED",
+                errcode: "M_FORBIDDEN",
                 error: "Invalid login token",
                 status: StatusCode::FORBIDDEN,
             },
@@ -222,6 +233,8 @@ pub(crate) async fn post(
     activity_tracker: BoundActivityTracker,
     State(homeserver): State<BoxHomeserverConnection>,
     State(site_config): State<SiteConfig>,
+    State(limiter): State<Limiter>,
+    requester: RequesterFingerprint,
     user_agent: Option<TypedHeader<headers::UserAgent>>,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
@@ -238,6 +251,8 @@ pub(crate) async fn post(
                 &mut rng,
                 &clock,
                 &password_manager,
+                &limiter,
+                requester,
                 &mut repo,
                 &homeserver,
                 user,
@@ -372,6 +387,8 @@ async fn user_password_login(
     mut rng: &mut (impl RngCore + CryptoRng + Send),
     clock: &impl Clock,
     password_manager: &PasswordManager,
+    limiter: &Limiter,
+    requester: RequesterFingerprint,
     repo: &mut BoxRepository,
     homeserver: &BoxHomeserverConnection,
     username: String,
@@ -384,6 +401,9 @@ async fn user_password_login(
         .await?
         .filter(mas_data_model::User::is_valid)
         .ok_or(RouteError::UserNotFound)?;
+
+    // Check the rate limit
+    limiter.check_password(requester, &user)?;
 
     // Lookup its password
     let user_password = repo
@@ -628,7 +648,7 @@ mod tests {
         let response = state.request(request).await;
         response.assert_status(StatusCode::FORBIDDEN);
         let body: serde_json::Value = response.json();
-        assert_eq!(body["errcode"], "M_UNAUTHORIZED");
+        assert_eq!(body["errcode"], "M_FORBIDDEN");
 
         // Try to login with a wrong username.
         let request = Request::post("/_matrix/client/v3/login").json(serde_json::json!({
@@ -648,6 +668,57 @@ mod tests {
         // The response should be the same as the previous one, so that we don't leak if
         // it's the user that is invalid or the password.
         assert_eq!(body, old_body);
+    }
+
+    /// Test that password logins are rate limited.
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_password_login_rate_limit(pool: PgPool) {
+        setup();
+        let state = TestState::from_pool(pool).await.unwrap();
+
+        // Let's provision a user without a password. This should be enough to trigger
+        // the rate limit.
+        let mut repo = state.repository().await.unwrap();
+
+        let user = repo
+            .user()
+            .add(&mut state.rng(), &state.clock, "alice".to_owned())
+            .await
+            .unwrap();
+
+        let mxid = state.homeserver_connection.mxid(&user.username);
+        state
+            .homeserver_connection
+            .provision_user(&ProvisionRequest::new(mxid, &user.sub))
+            .await
+            .unwrap();
+
+        repo.save().await.unwrap();
+
+        // Now let's try to login with the password, without asking for a refresh token.
+        let request = Request::post("/_matrix/client/v3/login").json(serde_json::json!({
+            "type": "m.login.password",
+            "identifier": {
+                "type": "m.id.user",
+                "user": "alice",
+            },
+            "password": "password",
+        }));
+
+        // First three attempts should just tell about the invalid credentials
+        let response = state.request(request.clone()).await;
+        response.assert_status(StatusCode::FORBIDDEN);
+        let response = state.request(request.clone()).await;
+        response.assert_status(StatusCode::FORBIDDEN);
+        let response = state.request(request.clone()).await;
+        response.assert_status(StatusCode::FORBIDDEN);
+
+        // The fourth attempt should be rate limited
+        let response = state.request(request.clone()).await;
+        response.assert_status(StatusCode::TOO_MANY_REQUESTS);
+        let body: serde_json::Value = response.json();
+        assert_eq!(body["errcode"], "M_LIMIT_EXCEEDED");
+        assert_eq!(body["error"], "Too many login attempts");
     }
 
     /// Test the response of an unsupported login flow.
@@ -699,7 +770,7 @@ mod tests {
         let response = state.request(request).await;
         response.assert_status(StatusCode::FORBIDDEN);
         let body: serde_json::Value = response.json();
-        assert_eq!(body["errcode"], "M_UNAUTHORIZED");
+        assert_eq!(body["errcode"], "M_FORBIDDEN");
 
         let (device, token) = get_login_token(&state, &user).await;
 
@@ -726,7 +797,7 @@ mod tests {
         let response = state.request(request).await;
         response.assert_status(StatusCode::FORBIDDEN);
         let body: serde_json::Value = response.json();
-        assert_eq!(body["errcode"], "M_UNAUTHORIZED");
+        assert_eq!(body["errcode"], "M_FORBIDDEN");
 
         // Try to login, but wait too long before sending the request.
         let (_device, token) = get_login_token(&state, &user).await;
@@ -743,7 +814,7 @@ mod tests {
         let response = state.request(request).await;
         response.assert_status(StatusCode::FORBIDDEN);
         let body: serde_json::Value = response.json();
-        assert_eq!(body["errcode"], "M_UNAUTHORIZED");
+        assert_eq!(body["errcode"], "M_FORBIDDEN");
     }
 
     /// Get a login token for a user.

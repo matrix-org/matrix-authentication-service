@@ -65,6 +65,7 @@ mod views;
 mod activity_tracker;
 mod captcha;
 mod preferred_language;
+mod rate_limit;
 #[cfg(test)]
 mod test_utils;
 
@@ -95,6 +96,7 @@ pub use self::{
         schema as graphql_schema, schema_builder as graphql_schema_builder, Schema as GraphQLSchema,
     },
     preferred_language::PreferredLanguage,
+    rate_limit::{Limiter, RequesterFingerprint},
     upstream_oauth2::cache::MetadataCache,
 };
 
@@ -246,7 +248,9 @@ where
     SiteConfig: FromRef<S>,
     BoxHomeserverConnection: FromRef<S>,
     PasswordManager: FromRef<S>,
+    Limiter: FromRef<S>,
     BoundActivityTracker: FromRequestParts<S>,
+    RequesterFingerprint: FromRequestParts<S>,
     BoxRepository: FromRequestParts<S>,
     BoxClock: FromRequestParts<S>,
     BoxRng: FromRequestParts<S>,
@@ -301,6 +305,7 @@ where
     BoxRepository: FromRequestParts<S>,
     CookieJar: FromRequestParts<S>,
     BoundActivityTracker: FromRequestParts<S>,
+    RequesterFingerprint: FromRequestParts<S>,
     Encrypter: FromRef<S>,
     Templates: FromRef<S>,
     Keystore: FromRef<S>,
@@ -308,6 +313,7 @@ where
     PasswordManager: FromRef<S>,
     MetadataCache: FromRef<S>,
     SiteConfig: FromRef<S>,
+    Limiter: FromRef<S>,
     BoxHomeserverConnection: FromRef<S>,
     BoxClock: FromRequestParts<S>,
     BoxRng: FromRequestParts<S>,

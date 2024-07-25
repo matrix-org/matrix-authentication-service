@@ -276,11 +276,11 @@
     "errors": {
       "captcha": "CAPTCHA verification failed, please try again",
       "@captcha": {
-        "context": "components/errors.html:25:7-30"
+        "context": "components/errors.html:27:7-30"
       },
       "denied_policy": "Denied by policy: %(policy)s",
       "@denied_policy": {
-        "context": "components/errors.html:23:7-58, components/field.html:72:17-68"
+        "context": "components/errors.html:25:7-58, components/field.html:72:17-68"
       },
       "field_required": "This field is required",
       "@field_required": {
@@ -293,6 +293,10 @@
       "password_mismatch": "Password fields don't match",
       "@password_mismatch": {
         "context": "components/errors.html:21:7-40, components/field.html:74:17-50"
+      },
+      "rate_limit_exceeded": "You've made too many requests in a short period. Please wait a few minutes and try again.",
+      "@rate_limit_exceeded": {
+        "context": "components/errors.html:23:7-42"
       },
       "username_taken": "This username is already taken",
       "@username_taken": {

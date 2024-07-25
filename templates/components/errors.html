@@ -19,6 +19,8 @@ limitations under the License.
     {{ _("mas.errors.invalid_credentials") }}
   {% elif error.kind == "password_mismatch" %}
     {{ _("mas.errors.password_mismatch") }}
+  {% elif error.kind == "rate_limit_exceeded" %}
+    {{ _("mas.errors.rate_limit_exceeded") }}
   {% elif error.kind == "policy" %}
     {{ _("mas.errors.denied_policy", policy=error.message) }}
   {% elif error.kind == "captcha" %}
