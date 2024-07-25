@@ -38,6 +38,7 @@ use mas_tower::{
     KV,
 };
 use opentelemetry::{Key, KeyValue};
+use opentelemetry_http::HeaderExtractor;
 use opentelemetry_semantic_conventions::trace::{
     HTTP_REQUEST_METHOD, HTTP_RESPONSE_STATUS_CODE, HTTP_ROUTE, NETWORK_PROTOCOL_NAME,
     NETWORK_PROTOCOL_VERSION, URL_PATH, URL_QUERY, URL_SCHEME, USER_AGENT_ORIGINAL,
@@ -52,22 +53,6 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 use crate::app_state::AppState;
 
 const MAS_LISTENER_NAME: Key = Key::from_static_str("mas.listener.name");
-
-/// Same as the extractor from opentelemetry-http, but using http@1
-struct HeaderExtractor<'a>(pub &'a http::HeaderMap);
-
-impl<'a> opentelemetry::propagation::Extractor for HeaderExtractor<'a> {
-    fn get(&self, key: &str) -> Option<&str> {
-        self.0.get(key).and_then(|value| value.to_str().ok())
-    }
-
-    fn keys(&self) -> Vec<&str> {
-        self.0
-            .keys()
-            .map(http::HeaderName::as_str)
-            .collect::<Vec<_>>()
-    }
-}
 
 #[inline]
 fn otel_http_method<B>(request: &Request<B>) -> &'static str {
