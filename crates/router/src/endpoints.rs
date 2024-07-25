@@ -808,7 +808,8 @@ impl Route for AccountRecoveryProgress {
     }
 }
 
-/// `GET|POST /recover/complete?ticket=:ticket`
+/// `GET /account/password/recovery?ticket=:ticket`
+/// Rendered by the React frontend
 #[derive(Default, Serialize, Deserialize, Debug, Clone)]
 pub struct AccountRecoveryFinish {
     ticket: String,
@@ -825,7 +826,7 @@ impl Route for AccountRecoveryFinish {
     type Query = AccountRecoveryFinish;
 
     fn route() -> &'static str {
-        "/recover/complete"
+        "/account/password/recovery"
     }
 
     fn query(&self) -> Option<&Self::Query> {

@@ -58,3 +58,18 @@ pub async fn get(
 
     Ok((cookie_jar, Html(content)).into_response())
 }
+
+/// Like `get`, but allow anonymous access.
+/// Used for a subset of the account management paths.
+/// Needed for e.g. account recovery.
+#[tracing::instrument(name = "handlers.views.app.get_anonymous", skip_all, err)]
+pub async fn get_anonymous(
+    PreferredLanguage(locale): PreferredLanguage,
+    State(templates): State<Templates>,
+    State(url_builder): State<UrlBuilder>,
+) -> Result<impl IntoResponse, FancyError> {
+    let ctx = AppContext::from_url_builder(&url_builder).with_language(locale);
+    let content = templates.render_app(&ctx)?;
+
+    Ok(Html(content).into_response())
+}

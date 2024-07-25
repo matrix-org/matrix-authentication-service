@@ -335,6 +335,10 @@ where
             get(self::views::app::get),
         )
         .route(
+            mas_router::AccountRecoveryFinish::route(),
+            get(self::views::app::get_anonymous),
+        )
+        .route(
             mas_router::ChangePasswordDiscovery::route(),
             get(|State(url_builder): State<UrlBuilder>| async move {
                 url_builder.redirect(&mas_router::AccountPasswordChange)
@@ -371,10 +375,6 @@ where
         .route(
             mas_router::AccountRecoveryProgress::route(),
             get(self::views::recovery::progress::get).post(self::views::recovery::progress::post),
-        )
-        .route(
-            mas_router::AccountRecoveryFinish::route(),
-            get(self::views::recovery::finish::get).post(self::views::recovery::finish::post),
         )
         .route(
             mas_router::OAuth2AuthorizationEndpoint::route(),
