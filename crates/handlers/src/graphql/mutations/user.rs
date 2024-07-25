@@ -696,11 +696,11 @@ impl UserMutations {
 
         let mut repo = state.repository().await?;
 
-        let ticket = repo
-            .user_recovery()
-            .find_ticket(&input.ticket)
-            .await?
-            .context("Unknown ticket")?;
+        let Some(ticket) = repo.user_recovery().find_ticket(&input.ticket).await? else {
+            return Ok(SetPasswordPayload {
+                status: SetPasswordStatus::NoSuchRecoveryTicket,
+            });
+        };
 
         let session = repo
             .user_recovery()
