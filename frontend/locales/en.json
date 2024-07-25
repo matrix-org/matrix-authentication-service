@@ -112,9 +112,13 @@
       "current_password_label": "Current password",
       "failure": {
         "description": {
+          "account_locked": "Your account is locked and can not be recovered at this time. If this is not expected, please contact your server administrator.",
+          "expired_recovery_ticket": "The recovery link has expired. Please start the account recovery process again from the start.",
           "invalid_new_password": "The new password you chose is invalid; it may not meet the configured security policy.",
           "no_current_password": "You don't have a current password.",
+          "no_such_recovery_ticket": "The recovery link is invalid. If you copied the link from the recovery e-mail, please check the full link was copied.",
           "password_changes_disabled": "Password changes are disabled.",
+          "recovery_ticket_already_used": "The recovery link has already been used. It cannot be used again.",
           "unspecified": "This might be a temporary problem, so please try again later. If the problem persists, please contact your server administrator.",
           "wrong_password": "The password you supplied as your current password is incorrect. Please try again."
         },

@@ -31,6 +31,7 @@ import PageHeading from "../components/PageHeading";
 import PasswordCreationDoubleInput from "../components/PasswordCreationDoubleInput";
 import { graphql } from "../gql";
 import { SetPasswordStatus } from "../gql/graphql";
+import { translateSetPasswordError } from "../i18n/password_changes";
 
 const QUERY = graphql(/* GraphQL */ `
   query PasswordChangeQuery {
@@ -105,32 +106,10 @@ function ChangePassword(): React.ReactNode {
 
   const unhandleableError = result.error !== undefined;
 
-  const errorMsg: string | undefined = ((): string | undefined => {
-    switch (result.data?.setPassword.status) {
-      case SetPasswordStatus.NoCurrentPassword:
-        return t(
-          "frontend.password_change.failure.description.no_current_password",
-        );
-      case SetPasswordStatus.PasswordChangesDisabled:
-        return t(
-          "frontend.password_change.failure.description.password_changes_disabled",
-        );
-
-      case SetPasswordStatus.WrongPassword:
-      case SetPasswordStatus.InvalidNewPassword:
-        // These cases are shown as inline errors in the form itself.
-        return undefined;
-
-      case SetPasswordStatus.Allowed:
-      case undefined:
-        return undefined;
-
-      default:
-        throw new Error(
-          `unexpected error when changing password: ${result.data!.setPassword.status}`,
-        );
-    }
-  })();
+  const errorMsg: string | undefined = translateSetPasswordError(
+    t,
+    result.data?.setPassword.status,
+  );
 
   return (
     <Layout>
