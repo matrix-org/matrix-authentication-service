@@ -16,11 +16,16 @@ use aide::{
     axum::ApiRouter,
     openapi::{OAuth2Flow, OAuth2Flows, OpenApi, SecurityScheme, Server, ServerVariable},
 };
-use axum::{extract::FromRequestParts, Json, Router};
+use axum::{
+    extract::{FromRef, FromRequestParts},
+    Json, Router,
+};
 use hyper::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE};
 use indexmap::IndexMap;
 use mas_http::CorsLayerExt;
+use mas_matrix::BoxHomeserverConnection;
 use mas_router::{OAuth2AuthorizationEndpoint, OAuth2TokenEndpoint, SimpleRoute};
+use mas_storage::BoxRng;
 use tower_http::cors::{Any, CorsLayer};
 
 mod call_context;
@@ -34,6 +39,8 @@ use self::call_context::CallContext;
 pub fn router<S>() -> (OpenApi, Router<S>)
 where
     S: Clone + Send + Sync + 'static,
+    BoxHomeserverConnection: FromRef<S>,
+    BoxRng: FromRequestParts<S>,
     CallContext: FromRequestParts<S>,
 {
     let mut api = OpenApi::default();

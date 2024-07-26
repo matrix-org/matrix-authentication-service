@@ -57,7 +57,9 @@ macro_rules! impl_from_ref {
 
 impl_from_request_parts!(mas_storage::BoxRepository);
 impl_from_request_parts!(mas_storage::BoxClock);
+impl_from_request_parts!(mas_storage::BoxRng);
 impl_from_request_parts!(mas_handlers::BoundActivityTracker);
+impl_from_ref!(mas_matrix::BoxHomeserverConnection);
 impl_from_ref!(mas_keystore::Keystore);
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

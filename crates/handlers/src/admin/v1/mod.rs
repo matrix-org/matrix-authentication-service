@@ -13,7 +13,9 @@
 // limitations under the License.
 
 use aide::axum::{routing::get_with, ApiRouter};
-use axum::extract::FromRequestParts;
+use axum::extract::{FromRef, FromRequestParts};
+use mas_matrix::BoxHomeserverConnection;
+use mas_storage::BoxRng;
 
 use super::call_context::CallContext;
 
@@ -22,10 +24,16 @@ mod users;
 pub fn router<S>() -> ApiRouter<S>
 where
     S: Clone + Send + Sync + 'static,
+    BoxHomeserverConnection: FromRef<S>,
+    BoxRng: FromRequestParts<S>,
     CallContext: FromRequestParts<S>,
 {
     ApiRouter::<S>::new()
-        .api_route("/users", get_with(self::users::list, self::users::list_doc))
+        .api_route(
+            "/users",
+            get_with(self::users::list, self::users::list_doc)
+                .post_with(self::users::add, self::users::add_doc),
+        )
         .api_route(
             "/users/:id",
             get_with(self::users::get, self::users::get_doc),
