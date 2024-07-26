@@ -5,7 +5,7 @@ set -eu
 export SQLX_OFFLINE=1
 BASE_DIR="$(dirname "$0")/.."
 CONFIG_SCHEMA="${BASE_DIR}/docs/config.schema.json"
-API_SCHEMA="${BASE_DIR}/docs/api.schema.json"
+API_SCHEMA="${BASE_DIR}/docs/api/spec.json"
 GRAPHQL_SCHEMA="${BASE_DIR}/frontend/schema.graphql"
 POLICIES_SCHEMA="${BASE_DIR}/policies/schema/"
 
