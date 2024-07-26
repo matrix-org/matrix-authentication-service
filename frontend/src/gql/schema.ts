@@ -531,6 +531,46 @@ export default {
       },
       {
         "kind": "OBJECT",
+        "name": "CaptchaConfig",
+        "fields": [
+          {
+            "name": "id",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Any"
+              }
+            },
+            "args": []
+          },
+          {
+            "name": "service",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Any"
+              }
+            },
+            "args": []
+          },
+          {
+            "name": "siteKey",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Any"
+              }
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
         "name": "CompatSession",
         "fields": [
           {
@@ -2571,6 +2611,15 @@ export default {
         "name": "SiteConfig",
         "fields": [
           {
+            "name": "captchaConfig",
+            "type": {
+              "kind": "OBJECT",
+              "name": "CaptchaConfig",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
             "name": "displayNameChangeAllowed",
             "type": {
               "kind": "NON_NULL",
@@ -2635,6 +2684,17 @@ export default {
           },
           {
             "name": "passwordLoginEnabled",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Any"
+              }
+            },
+            "args": []
+          },
+          {
+            "name": "passwordRegistrationEnabled",
             "type": {
               "kind": "NON_NULL",
               "ofType": {

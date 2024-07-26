@@ -212,6 +212,22 @@ export type BrowserSessionEdge = {
   node: BrowserSession;
 };
 
+export type CaptchaConfig = {
+  __typename?: 'CaptchaConfig';
+  id: Scalars['ID']['output'];
+  /** Which Captcha service is being used */
+  service: CaptchaService;
+  /** The site key used by the instance */
+  siteKey: Scalars['String']['output'];
+};
+
+/** Which Captcha service is being used */
+export enum CaptchaService {
+  CloudflareTurnstile = 'CLOUDFLARE_TURNSTILE',
+  HCaptcha = 'H_CAPTCHA',
+  RecaptchaV2 = 'RECAPTCHA_V2'
+}
+
 /**
  * A compat session represents a client session which used the legacy Matrix
  * login API.
@@ -1063,6 +1079,8 @@ export enum SetPrimaryEmailStatus {
 
 export type SiteConfig = Node & {
   __typename?: 'SiteConfig';
+  /** The configuration of CAPTCHA provider. */
+  captchaConfig?: Maybe<CaptchaConfig>;
   /** Whether users can change their display name. */
   displayNameChangeAllowed: Scalars['Boolean']['output'];
   /** Whether users can change their email. */
@@ -1081,6 +1099,8 @@ export type SiteConfig = Node & {
   passwordChangeAllowed: Scalars['Boolean']['output'];
   /** Whether passwords are enabled for login. */
   passwordLoginEnabled: Scalars['Boolean']['output'];
+  /** Whether passwords are enabled and users can register using a password. */
+  passwordRegistrationEnabled: Scalars['Boolean']['output'];
   /** The URL to the privacy policy. */
   policyUri?: Maybe<Scalars['Url']['output']>;
   /** The server name of the homeserver. */
