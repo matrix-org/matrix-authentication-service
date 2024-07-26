@@ -202,6 +202,8 @@ impl Options {
 
         let limiter = Limiter::default();
 
+        limiter.start();
+
         let graphql_schema = mas_handlers::graphql_schema(
             &pool,
             &policy_factory,

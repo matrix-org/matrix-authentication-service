@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{net::IpAddr, sync::Arc};
+use std::{net::IpAddr, sync::Arc, time::Duration};
 
 use governor::{clock::QuantaClock, state::keyed::DashMapStateStore, Quota, RateLimiter};
 use mas_data_model::User;
@@ -83,6 +83,28 @@ impl Default for LimiterInner {
 }
 
 impl Limiter {
+    /// Start the rate limiter housekeeping task
+    ///
+    /// This task will periodically remove old entries from the rate limiters,
+    /// to make sure we don't build up a huge number of entries in memory.
+    pub fn start(&self) {
+        // Spawn a task that will periodically clean the rate limiters
+        let this = self.clone();
+        tokio::spawn(async move {
+            // Run the task every minute
+            let mut interval = tokio::time::interval(Duration::from_secs(60));
+            interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+
+            loop {
+                // Call the retain_recent method on each rate limiter
+                this.inner.password_check_for_requester.retain_recent();
+                this.inner.password_check_for_user.retain_recent();
+
+                interval.tick().await;
+            }
+        });
+    }
+
     /// Check if a password check can be performed
     ///
     /// # Errors
