@@ -159,6 +159,86 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Create a new user",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddUserParams"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "User was created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SingleResponse_for_User"
+                },
+                "example": {
+                  "data": {
+                    "type": "user",
+                    "id": "01040G2081040G2081040G2081",
+                    "attributes": {
+                      "username": "alice",
+                      "created_at": "1970-01-01T00:00:00Z",
+                      "locked_at": null,
+                      "can_request_admin": false
+                    },
+                    "links": {
+                      "self": "/api/admin/v1/users/01040G2081040G2081040G2081"
+                    }
+                  },
+                  "links": {
+                    "self": "/api/admin/v1/users/01040G2081040G2081040G2081"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Username is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "errors": [
+                    {
+                      "title": "Username is not valid"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Username is reserved by the homeserver",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "errors": [
+                    {
+                      "title": "Username is reserved by the homeserver"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/admin/v1/users/{id}": {
@@ -557,15 +637,20 @@
           }
         }
       },
-      "UlidInPath": {
+      "AddUserParams": {
         "type": "object",
         "required": [
-          "id"
+          "username"
         ],
         "properties": {
-          "id": {
-            "title": "The ID of the resource",
-            "$ref": "#/components/schemas/ULID"
+          "username": {
+            "description": "The username of the user to add.",
+            "type": "string"
+          },
+          "skip_homeserver_check": {
+            "description": "Skip checking with the homeserver whether the username is available.\n\nUse this with caution! The main reason to use this, is when a user used by an application service needs to exist in MAS to craft special tokens (like with admin access) for them",
+            "default": false,
+            "type": "boolean"
           }
         }
       },
@@ -582,6 +667,18 @@
           },
           "links": {
             "$ref": "#/components/schemas/SelfLinks"
+          }
+        }
+      },
+      "UlidInPath": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "title": "The ID of the resource",
+            "$ref": "#/components/schemas/ULID"
           }
         }
       },

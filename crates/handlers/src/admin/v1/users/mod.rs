@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+mod add;
 mod by_username;
 mod get;
 mod list;
 
 pub use self::{
+    add::{doc as add_doc, handler as add},
     by_username::{doc as by_username_doc, handler as by_username},
     get::{doc as get_doc, handler as get},
     list::{doc as list_doc, handler as list},

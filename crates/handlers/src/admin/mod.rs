@@ -26,10 +26,12 @@ use hyper::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE};
 use indexmap::IndexMap;
 use mas_axum_utils::FancyError;
 use mas_http::CorsLayerExt;
+use mas_matrix::BoxHomeserverConnection;
 use mas_router::{
     ApiDoc, ApiDocCallback, OAuth2AuthorizationEndpoint, OAuth2TokenEndpoint, Route, SimpleRoute,
     UrlBuilder,
 };
+use mas_storage::BoxRng;
 use mas_templates::{ApiDocContext, Templates};
 use tower_http::cors::{Any, CorsLayer};
 
@@ -45,6 +47,8 @@ use self::call_context::CallContext;
 pub fn router<S>() -> (OpenApi, Router<S>)
 where
     S: Clone + Send + Sync + 'static,
+    BoxHomeserverConnection: FromRef<S>,
+    BoxRng: FromRequestParts<S>,
     CallContext: FromRequestParts<S>,
     Templates: FromRef<S>,
     UrlBuilder: FromRef<S>,
