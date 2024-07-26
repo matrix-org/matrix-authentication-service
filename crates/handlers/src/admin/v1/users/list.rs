@@ -100,7 +100,8 @@ impl IntoResponse for RouteError {
 
 pub fn doc(operation: TransformOperation) -> TransformOperation {
     operation
-        .description("List users")
+        .summary("List users")
+        .tag("user")
         .response_with::<200, Json<PaginatedResponse<User>>, _>(|t| {
             let users = User::samples();
             let pagination = mas_storage::Pagination::first(users.len());

@@ -14,7 +14,7 @@
 
 use aide::{
     axum::ApiRouter,
-    openapi::{OAuth2Flow, OAuth2Flows, OpenApi, SecurityScheme, Server},
+    openapi::{OAuth2Flow, OAuth2Flows, OpenApi, SecurityScheme, Server, Tag},
 };
 use axum::{
     extract::{FromRef, FromRequestParts, State},
@@ -53,6 +53,11 @@ where
         .nest("/api/admin/v1", self::v1::router())
         .finish_api_with(&mut api, |t| {
             t.title("Matrix Authentication Service admin API")
+                .tag(Tag {
+                    name: "user".to_owned(),
+                    description: Some("Manage users".to_owned()),
+                    ..Tag::default()
+                })
                 .security_scheme(
                     "oauth2",
                     SecurityScheme::OAuth2 {

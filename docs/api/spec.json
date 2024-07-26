@@ -18,7 +18,10 @@
   "paths": {
     "/api/admin/v1/users": {
       "get": {
-        "description": "List users",
+        "tags": [
+          "user"
+        ],
+        "summary": "List users",
         "parameters": [
           {
             "in": "query",
@@ -171,7 +174,10 @@
     },
     "/api/admin/v1/users/{id}": {
       "get": {
-        "description": "Get a user",
+        "tags": [
+          "user"
+        ],
+        "summary": "Get a user",
         "parameters": [
           {
             "in": "path",
@@ -238,7 +244,10 @@
     },
     "/api/admin/v1/users/by-username/{username}": {
       "get": {
-        "description": "Get a user by its username (localpart)",
+        "tags": [
+          "user"
+        ],
+        "summary": "Get a user by its username (localpart)",
         "parameters": [
           {
             "in": "path",
@@ -630,6 +639,12 @@
       "oauth2": [
         "urn:mas:admin"
       ]
+    }
+  ],
+  "tags": [
+    {
+      "name": "user",
+      "description": "Manage users"
     }
   ]
 }
