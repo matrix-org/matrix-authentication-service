@@ -42,16 +42,16 @@ mod macros;
 
 pub use self::{
     context::{
-        AppContext, CompatSsoContext, ConsentContext, DeviceConsentContext, DeviceLinkContext,
-        DeviceLinkFormField, EmailAddContext, EmailRecoveryContext, EmailVerificationContext,
-        EmailVerificationPageContext, EmptyContext, ErrorContext, FormPostContext, IndexContext,
-        LoginContext, LoginFormField, NotFoundContext, PolicyViolationContext, PostAuthContext,
-        PostAuthContextInner, ReauthContext, ReauthFormField, RecoveryExpiredContext,
-        RecoveryFinishContext, RecoveryFinishFormField, RecoveryProgressContext,
-        RecoveryStartContext, RecoveryStartFormField, RegisterContext, RegisterFormField,
-        SiteBranding, SiteConfigExt, SiteFeatures, TemplateContext, UpstreamExistingLinkContext,
-        UpstreamRegister, UpstreamRegisterFormField, UpstreamSuggestLink, WithCaptcha, WithCsrf,
-        WithLanguage, WithOptionalSession, WithSession,
+        ApiDocContext, AppContext, CompatSsoContext, ConsentContext, DeviceConsentContext,
+        DeviceLinkContext, DeviceLinkFormField, EmailAddContext, EmailRecoveryContext,
+        EmailVerificationContext, EmailVerificationPageContext, EmptyContext, ErrorContext,
+        FormPostContext, IndexContext, LoginContext, LoginFormField, NotFoundContext,
+        PolicyViolationContext, PostAuthContext, PostAuthContextInner, ReauthContext,
+        ReauthFormField, RecoveryExpiredContext, RecoveryFinishContext, RecoveryFinishFormField,
+        RecoveryProgressContext, RecoveryStartContext, RecoveryStartFormField, RegisterContext,
+        RegisterFormField, SiteBranding, SiteConfigExt, SiteFeatures, TemplateContext,
+        UpstreamExistingLinkContext, UpstreamRegister, UpstreamRegisterFormField,
+        UpstreamSuggestLink, WithCaptcha, WithCsrf, WithLanguage, WithOptionalSession, WithSession,
     },
     forms::{FieldError, FormError, FormField, FormState, ToFormState},
 };
@@ -324,6 +324,12 @@ register_templates! {
     /// Render the frontend app
     pub fn render_app(WithLanguage<AppContext>) { "app.html" }
 
+    /// Render the Swagger API reference
+    pub fn render_swagger(ApiDocContext) { "swagger/doc.html" }
+
+    /// Render the Swagger OAuth2 callback page
+    pub fn render_swagger_callback(ApiDocContext) { "swagger/oauth2-redirect.html" }
+
     /// Render the login page
     pub fn render_login(WithLanguage<WithCsrf<LoginContext>>) { "pages/login.html" }
 
@@ -423,6 +429,8 @@ impl Templates {
     ) -> anyhow::Result<()> {
         check::render_not_found(self, now, rng)?;
         check::render_app(self, now, rng)?;
+        check::render_swagger(self, now, rng)?;
+        check::render_swagger_callback(self, now, rng)?;
         check::render_login(self, now, rng)?;
         check::render_register(self, now, rng)?;
         check::render_consent(self, now, rng)?;
