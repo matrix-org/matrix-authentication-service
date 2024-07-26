@@ -349,7 +349,7 @@ fn username_valid(username: &str) -> bool {
     }
 
     // Should not start with an underscore
-    if username.get(0..1) == Some("_") {
+    if username.starts_with('_') {
         return false;
     }
 
