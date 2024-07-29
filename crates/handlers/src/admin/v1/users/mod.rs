@@ -16,10 +16,12 @@ mod add;
 mod by_username;
 mod get;
 mod list;
+mod lock;
 
 pub use self::{
     add::{doc as add_doc, handler as add},
     by_username::{doc as by_username_doc, handler as by_username},
     get::{doc as get_doc, handler as get},
     list::{doc as list_doc, handler as list},
+    lock::{doc as lock_doc, handler as lock},
 };
