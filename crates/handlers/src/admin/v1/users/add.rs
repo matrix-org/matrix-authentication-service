@@ -179,3 +179,145 @@ pub async fn handler(
 
     Ok(Json(SingleResponse::new_canonical(User::from(user))))
 }
+
+#[cfg(test)]
+mod tests {
+    use hyper::{Request, StatusCode};
+    use mas_storage::{user::UserRepository, RepositoryAccess};
+    use sqlx::PgPool;
+
+    use crate::test_utils::{setup, RequestBuilderExt, ResponseExt, TestState};
+
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_add_user(pool: PgPool) {
+        setup();
+        let mut state = TestState::from_pool(pool).await.unwrap();
+        let token = state.token_with_scope("urn:mas:admin").await;
+
+        let request = Request::post("/api/admin/v1/users")
+            .bearer(&token)
+            .json(serde_json::json!({
+                "username": "alice",
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+
+        let body: serde_json::Value = response.json();
+        assert_eq!(body["data"]["type"], "user");
+        let id = body["data"]["id"].as_str().unwrap();
+        assert_eq!(body["data"]["attributes"]["username"], "alice");
+
+        // Check that the user was created in the database
+        let mut repo = state.repository().await.unwrap();
+        let user = repo
+            .user()
+            .lookup(id.parse().unwrap())
+            .await
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(user.username, "alice");
+    }
+
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_add_user_invalid_username(pool: PgPool) {
+        setup();
+        let mut state = TestState::from_pool(pool).await.unwrap();
+        let token = state.token_with_scope("urn:mas:admin").await;
+
+        let request = Request::post("/api/admin/v1/users")
+            .bearer(&token)
+            .json(serde_json::json!({
+                "username": "this is invalid",
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::BAD_REQUEST);
+
+        let body: serde_json::Value = response.json();
+        assert_eq!(body["errors"][0]["title"], "Username is not valid");
+    }
+
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_add_user_exists(pool: PgPool) {
+        setup();
+        let mut state = TestState::from_pool(pool).await.unwrap();
+        let token = state.token_with_scope("urn:mas:admin").await;
+
+        let request = Request::post("/api/admin/v1/users")
+            .bearer(&token)
+            .json(serde_json::json!({
+                "username": "alice",
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+
+        let body: serde_json::Value = response.json();
+        assert_eq!(body["data"]["type"], "user");
+        assert_eq!(body["data"]["attributes"]["username"], "alice");
+
+        let request = Request::post("/api/admin/v1/users")
+            .bearer(&token)
+            .json(serde_json::json!({
+                "username": "alice",
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::CONFLICT);
+
+        let body: serde_json::Value = response.json();
+        assert_eq!(body["errors"][0]["title"], "User already exists");
+    }
+
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_add_user_reserved(pool: PgPool) {
+        setup();
+        let mut state = TestState::from_pool(pool).await.unwrap();
+        let token = state.token_with_scope("urn:mas:admin").await;
+
+        // Reserve a username on the homeserver and try to add it
+        state.homeserver_connection.reserve_localpart("bob").await;
+
+        let request = Request::post("/api/admin/v1/users")
+            .bearer(&token)
+            .json(serde_json::json!({
+                "username": "bob",
+            }));
+
+        let response = state.request(request).await;
+
+        let body: serde_json::Value = response.json();
+        assert_eq!(
+            body["errors"][0]["title"],
+            "Username is reserved by the homeserver"
+        );
+
+        // But we can force it with the skip_homeserver_check flag
+        let request = Request::post("/api/admin/v1/users")
+            .bearer(&token)
+            .json(serde_json::json!({
+                "username": "bob",
+                "skip_homeserver_check": true,
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+
+        let body: serde_json::Value = response.json();
+        let id = body["data"]["id"].as_str().unwrap();
+        assert_eq!(body["data"]["attributes"]["username"], "bob");
+
+        // Check that the user was created in the database
+        let mut repo = state.repository().await.unwrap();
+        let user = repo
+            .user()
+            .lookup(id.parse().unwrap())
+            .await
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(user.username, "bob");
+    }
+}
