@@ -21,6 +21,7 @@ use mas_matrix::BoxHomeserverConnection;
 use mas_storage::BoxRng;
 
 use super::call_context::CallContext;
+use crate::passwords::PasswordManager;
 
 mod users;
 
@@ -28,6 +29,7 @@ pub fn router<S>() -> ApiRouter<S>
 where
     S: Clone + Send + Sync + 'static,
     BoxHomeserverConnection: FromRef<S>,
+    PasswordManager: FromRef<S>,
     BoxRng: FromRequestParts<S>,
     CallContext: FromRequestParts<S>,
 {
@@ -40,6 +42,10 @@ where
         .api_route(
             "/users/:id",
             get_with(self::users::get, self::users::get_doc),
+        )
+        .api_route(
+            "/users/:id/set-password",
+            post_with(self::users::set_password, self::users::set_password_doc),
         )
         .api_route(
             "/users/by-username/:username",

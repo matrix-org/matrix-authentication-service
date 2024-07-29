@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2024 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -66,6 +66,7 @@ impl_from_ref!(mas_router::UrlBuilder);
 impl_from_ref!(mas_templates::Templates);
 impl_from_ref!(mas_matrix::BoxHomeserverConnection);
 impl_from_ref!(mas_keystore::Keystore);
+impl_from_ref!(mas_handlers::passwords::PasswordManager);
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (mut api, _) = mas_handlers::admin_api_router::<DummyState>();

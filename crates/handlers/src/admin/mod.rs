@@ -43,11 +43,13 @@ mod schema;
 mod v1;
 
 use self::call_context::CallContext;
+use crate::passwords::PasswordManager;
 
 pub fn router<S>() -> (OpenApi, Router<S>)
 where
     S: Clone + Send + Sync + 'static,
     BoxHomeserverConnection: FromRef<S>,
+    PasswordManager: FromRef<S>,
     BoxRng: FromRequestParts<S>,
     CallContext: FromRequestParts<S>,
     Templates: FromRef<S>,

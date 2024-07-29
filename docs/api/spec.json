@@ -310,6 +310,66 @@
         }
       }
     },
+    "/api/admin/v1/users/{id}/set-password": {
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Set the password for a user",
+        "operationId": "setUserPassword",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "title": "The ID of the resource",
+              "$ref": "#/components/schemas/ULID"
+            },
+            "style": "simple"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetUserPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User was not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "errors": [
+                    {
+                      "title": "User ID 00000000000000000000000000 not found"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/v1/users/by-username/{username}": {
       "get": {
         "tags": [
@@ -887,6 +947,22 @@
           "id": {
             "title": "The ID of the resource",
             "$ref": "#/components/schemas/ULID"
+          }
+        }
+      },
+      "SetUserPasswordRequest": {
+        "title": "JSON payload for the `POST /api/admin/v1/users/:id/set-password` endpoint",
+        "type": "object",
+        "required": [
+          "password"
+        ],
+        "properties": {
+          "password": {
+            "description": "The password to set for the user",
+            "examples": [
+              "hunter2"
+            ],
+            "type": "string"
           }
         }
       },
