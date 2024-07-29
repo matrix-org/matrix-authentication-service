@@ -169,7 +169,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AddUserParams"
+                "$ref": "#/components/schemas/AddUserRequest"
               }
             }
           },
@@ -637,7 +637,8 @@
           }
         }
       },
-      "AddUserParams": {
+      "AddUserRequest": {
+        "title": "JSON payload for the `POST /api/admin/v1/users` endpoint",
         "type": "object",
         "required": [
           "username"
