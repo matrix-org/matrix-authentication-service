@@ -17,6 +17,7 @@ mod by_username;
 mod deactivate;
 mod get;
 mod list;
+mod lock;
 mod unlock;
 
 pub use self::{
@@ -25,5 +26,6 @@ pub use self::{
     deactivate::{doc as deactivate_doc, handler as deactivate},
     get::{doc as get_doc, handler as get},
     list::{doc as list_doc, handler as list},
+    lock::{doc as lock_doc, handler as lock},
     unlock::{doc as unlock_doc, handler as unlock},
 };
