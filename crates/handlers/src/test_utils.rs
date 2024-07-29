@@ -46,6 +46,7 @@ use mas_router::{SimpleRoute, UrlBuilder};
 use mas_storage::{clock::MockClock, BoxClock, BoxRepository, BoxRng};
 use mas_storage_pg::{DatabaseError, PgRepository};
 use mas_templates::{SiteConfigExt, Templates};
+use oauth2_types::{registration::ClientRegistrationResponse, requests::AccessTokenResponse};
 use rand::SeedableRng;
 use rand_chacha::ChaChaRng;
 use serde::{de::DeserializeOwned, Serialize};
@@ -249,6 +250,7 @@ impl TestState {
             .merge(crate::compat_router())
             .merge(crate::human_router(self.templates.clone()))
             .merge(crate::graphql_router(false))
+            .merge(crate::admin_api_router().1)
             .with_state(self.clone())
             .into_service();
 
@@ -272,6 +274,49 @@ impl TestState {
             .to_owned();
 
         Response::from_parts(parts, body)
+    }
+
+    /// Get a token with the given scope
+    pub async fn token_with_scope(&mut self, scope: &str) -> String {
+        // Provision a client
+        let request =
+            Request::post(mas_router::OAuth2RegistrationEndpoint::PATH).json(serde_json::json!({
+                "client_uri": "https://example.com/",
+                "contacts": ["contact@example.com"],
+                "token_endpoint_auth_method": "client_secret_post",
+                "grant_types": ["client_credentials"],
+            }));
+        let response = self.request(request).await;
+        response.assert_status(StatusCode::CREATED);
+        let response: ClientRegistrationResponse = response.json();
+        let client_id = response.client_id;
+        let client_secret = response.client_secret.expect("to have a client secret");
+
+        // Make the client admin
+        let state = {
+            let mut state = self.clone();
+            state.policy_factory = policy_factory(serde_json::json!({
+                "admin_clients": [client_id],
+            }))
+            .await
+            .unwrap();
+            state
+        };
+
+        // Ask for a token with the admin scope
+        let request =
+            Request::post(mas_router::OAuth2TokenEndpoint::PATH).form(serde_json::json!({
+                "grant_type": "client_credentials",
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "scope": scope,
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        let AccessTokenResponse { access_token, .. } = response.json();
+
+        access_token
     }
 
     pub async fn repository(&self) -> Result<BoxRepository, DatabaseError> {
