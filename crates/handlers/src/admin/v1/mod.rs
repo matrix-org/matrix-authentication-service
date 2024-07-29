@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use aide::axum::{routing::get_with, ApiRouter};
+use aide::axum::{
+    routing::{get_with, post_with},
+    ApiRouter,
+};
 use axum::extract::{FromRef, FromRequestParts};
 use mas_matrix::BoxHomeserverConnection;
 use mas_storage::BoxRng;
@@ -41,5 +44,9 @@ where
         .api_route(
             "/users/by-username/:username",
             get_with(self::users::by_username, self::users::by_username_doc),
+        )
+        .api_route(
+            "/users/:id/unlock",
+            post_with(self::users::unlock, self::users::unlock_doc),
         )
 }
