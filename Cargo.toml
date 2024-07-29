@@ -183,7 +183,7 @@ version = "0.23.12"
 
 # Use platform-specific verifier for TLS
 [workspace.dependencies.rustls-platform-verifier]
-version = "0.3.2"
+version = "0.3.3"
 
 # JSON Schema generation
 [workspace.dependencies.schemars]
