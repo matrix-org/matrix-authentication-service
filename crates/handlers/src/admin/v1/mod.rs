@@ -49,4 +49,8 @@ where
             "/users/:id/deactivate",
             post_with(self::users::deactivate, self::users::deactivate_doc),
         )
+        .api_route(
+            "/users/:id/unlock",
+            post_with(self::users::unlock, self::users::unlock_doc),
+        )
 }
