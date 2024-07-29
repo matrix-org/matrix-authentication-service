@@ -96,8 +96,10 @@ impl IntoResponse for RouteError {
     }
 }
 
+/// # JSON payload for the `POST /api/admin/v1/users` endpoint
 #[derive(Deserialize, JsonSchema)]
-pub struct AddUserParams {
+#[schemars(rename = "AddUserPayload")]
+pub struct Payload {
     /// The username of the user to add.
     username: String,
 
@@ -141,7 +143,7 @@ pub async fn handler(
     }: CallContext,
     NoApi(mut rng): NoApi<BoxRng>,
     State(homeserver): State<BoxHomeserverConnection>,
-    Json(params): Json<AddUserParams>,
+    Json(params): Json<Payload>,
 ) -> Result<Json<SingleResponse<User>>, RouteError> {
     if repo.user().exists(&params.username).await? {
         return Err(RouteError::UserAlreadyExists);
