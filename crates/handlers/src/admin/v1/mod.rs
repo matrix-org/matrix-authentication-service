@@ -50,6 +50,10 @@ where
             post_with(self::users::deactivate, self::users::deactivate_doc),
         )
         .api_route(
+            "/users/:id/lock",
+            post_with(self::users::lock, self::users::lock_doc),
+        )
+        .api_route(
             "/users/:id/unlock",
             post_with(self::users::unlock, self::users::unlock_doc),
         )
