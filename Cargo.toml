@@ -16,8 +16,9 @@ package.repository = "https://github.com/matrix-org/matrix-authentication-servic
 unsafe_code = "forbid"
 
 [workspace.lints.clippy]
-all = "deny"
-pedantic = "warn"
+# We use groups as good defaults, but with a lower priority so that we can override them
+all = { level = "deny", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
 
 str_to_string = "deny"
 
