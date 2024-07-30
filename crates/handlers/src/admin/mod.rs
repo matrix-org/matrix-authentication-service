@@ -65,6 +65,11 @@ where
         .finish_api_with(&mut api, |t| {
             t.title("Matrix Authentication Service admin API")
                 .tag(Tag {
+                    name: "oauth2-session".to_owned(),
+                    description: Some("Manage OAuth2 sessions".to_owned()),
+                    ..Tag::default()
+                })
+                .tag(Tag {
                     name: "user".to_owned(),
                     description: Some("Manage users".to_owned()),
                     ..Tag::default()

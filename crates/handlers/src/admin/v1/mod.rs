@@ -23,6 +23,7 @@ use mas_storage::BoxRng;
 use super::call_context::CallContext;
 use crate::passwords::PasswordManager;
 
+mod oauth2_sessions;
 mod users;
 
 pub fn router<S>() -> ApiRouter<S>
@@ -34,6 +35,14 @@ where
     CallContext: FromRequestParts<S>,
 {
     ApiRouter::<S>::new()
+        .api_route(
+            "/oauth2-sessions",
+            get_with(self::oauth2_sessions::list, self::oauth2_sessions::list_doc),
+        )
+        .api_route(
+            "/oauth2-sessions/:id",
+            get_with(self::oauth2_sessions::get, self::oauth2_sessions::get_doc),
+        )
         .api_route(
             "/users",
             get_with(self::users::list, self::users::list_doc)
