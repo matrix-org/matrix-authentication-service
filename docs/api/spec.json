@@ -515,6 +515,75 @@
           }
         }
       }
+    },
+    "/api/admin/v1/users/{id}/deactivate": {
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Deactivate a user",
+        "description": "Calling this endpoint will lock and deactivate the user, preventing them from doing any action.\nThis invalidates any existing session, and will ask the homeserver to make them leave all rooms.",
+        "operationId": "deactivateUser",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "title": "The ID of the resource",
+              "$ref": "#/components/schemas/ULID"
+            },
+            "style": "simple"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User was deactivated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SingleResponse_for_User"
+                },
+                "example": {
+                  "data": {
+                    "type": "user",
+                    "id": "030C1G60R30C1G60R30C1G60R3",
+                    "attributes": {
+                      "username": "charlie",
+                      "created_at": "1970-01-01T00:00:00Z",
+                      "locked_at": "1970-01-01T00:00:00Z",
+                      "can_request_admin": false
+                    },
+                    "links": {
+                      "self": "/api/admin/v1/users/030C1G60R30C1G60R30C1G60R3"
+                    }
+                  },
+                  "links": {
+                    "self": "/api/admin/v1/users/030C1G60R30C1G60R30C1G60R3/deactivate"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User ID not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "errors": [
+                    {
+                      "title": "User ID 00000000000000000000000000 not found"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
