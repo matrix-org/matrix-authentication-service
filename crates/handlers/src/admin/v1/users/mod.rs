@@ -17,6 +17,7 @@ mod by_username;
 mod get;
 mod list;
 mod lock;
+mod unlock;
 
 pub use self::{
     add::{doc as add_doc, handler as add},
@@ -24,4 +25,5 @@ pub use self::{
     get::{doc as get_doc, handler as get},
     list::{doc as list_doc, handler as list},
     lock::{doc as lock_doc, handler as lock},
+    unlock::{doc as unlock_doc, handler as unlock},
 };
