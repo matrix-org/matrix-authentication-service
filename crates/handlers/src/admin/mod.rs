@@ -37,6 +37,7 @@ mod call_context;
 mod model;
 mod params;
 mod response;
+mod schema;
 mod v1;
 
 use self::call_context::CallContext;
@@ -48,6 +49,10 @@ where
     Templates: FromRef<S>,
     UrlBuilder: FromRef<S>,
 {
+    aide::gen::in_context(|ctx| {
+        ctx.schema = schemars::gen::SchemaGenerator::new(schemars::gen::SchemaSettings::openapi3());
+    });
+
     let mut api = OpenApi::default();
     let router = ApiRouter::<S>::new()
         .nest("/api/admin/v1", self::v1::router())

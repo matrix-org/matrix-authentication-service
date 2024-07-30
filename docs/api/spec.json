@@ -29,10 +29,8 @@
             "description": "Retrieve the items before the given ID",
             "schema": {
               "description": "Retrieve the items before the given ID",
-              "type": [
-                "string",
-                "null"
-              ]
+              "$ref": "#/components/schemas/ULID",
+              "nullable": true
             },
             "style": "form"
           },
@@ -42,10 +40,8 @@
             "description": "Retrieve the items after the given ID",
             "schema": {
               "description": "Retrieve the items after the given ID",
-              "type": [
-                "string",
-                "null"
-              ]
+              "$ref": "#/components/schemas/ULID",
+              "nullable": true
             },
             "style": "form"
           },
@@ -55,12 +51,10 @@
             "description": "Retrieve the first N items",
             "schema": {
               "description": "Retrieve the first N items",
-              "type": [
-                "integer",
-                "null"
-              ],
+              "type": "integer",
               "format": "uint",
-              "minimum": 1.0
+              "minimum": 1.0,
+              "nullable": true
             },
             "style": "form"
           },
@@ -70,12 +64,10 @@
             "description": "Retrieve the last N items",
             "schema": {
               "description": "Retrieve the last N items",
-              "type": [
-                "integer",
-                "null"
-              ],
+              "type": "integer",
               "format": "uint",
-              "minimum": 1.0
+              "minimum": 1.0,
+              "nullable": true
             },
             "style": "form"
           },
@@ -83,10 +75,8 @@
             "in": "query",
             "name": "filter[can_request_admin]",
             "schema": {
-              "type": [
-                "boolean",
-                "null"
-              ]
+              "type": "boolean",
+              "nullable": true
             },
             "style": "form"
           },
@@ -94,14 +84,8 @@
             "in": "query",
             "name": "filter[status]",
             "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/UserStatus"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "$ref": "#/components/schemas/UserStatus",
+              "nullable": true
             },
             "style": "form"
           }
@@ -182,13 +166,10 @@
           {
             "in": "path",
             "name": "id",
-            "description": "A ULID as per https://github.com/ulid/spec",
             "required": true,
             "schema": {
-              "title": "ULID",
-              "description": "A ULID as per https://github.com/ulid/spec",
-              "type": "string",
-              "pattern": "^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{26}$"
+              "title": "The ID of the resource",
+              "$ref": "#/components/schemas/ULID"
             },
             "style": "simple"
           }
@@ -340,56 +321,50 @@
         "properties": {
           "page[before]": {
             "description": "Retrieve the items before the given ID",
-            "type": [
-              "string",
-              "null"
-            ]
+            "$ref": "#/components/schemas/ULID",
+            "nullable": true
           },
           "page[after]": {
             "description": "Retrieve the items after the given ID",
-            "type": [
-              "string",
-              "null"
-            ]
+            "$ref": "#/components/schemas/ULID",
+            "nullable": true
           },
           "page[first]": {
             "description": "Retrieve the first N items",
-            "type": [
-              "integer",
-              "null"
-            ],
+            "type": "integer",
             "format": "uint",
-            "minimum": 1.0
+            "minimum": 1.0,
+            "nullable": true
           },
           "page[last]": {
             "description": "Retrieve the last N items",
-            "type": [
-              "integer",
-              "null"
-            ],
+            "type": "integer",
             "format": "uint",
-            "minimum": 1.0
+            "minimum": 1.0,
+            "nullable": true
           }
         }
+      },
+      "ULID": {
+        "title": "ULID",
+        "description": "A ULID as per https://github.com/ulid/spec",
+        "examples": [
+          "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+          "01J41912SC8VGAQDD50F6APK91"
+        ],
+        "type": "string",
+        "pattern": "^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{26}$"
       },
       "FilterParams": {
         "type": "object",
         "properties": {
           "filter[can_request_admin]": {
-            "type": [
-              "boolean",
-              "null"
-            ]
+            "type": "boolean",
+            "nullable": true
           },
           "filter[status]": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/UserStatus"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/UserStatus",
+            "nullable": true
           }
         }
       },
@@ -467,7 +442,7 @@
           },
           "id": {
             "description": "The ID of the resource",
-            "type": "string"
+            "$ref": "#/components/schemas/ULID"
           },
           "attributes": {
             "description": "The attributes of the resource",
@@ -499,11 +474,9 @@
           },
           "locked_at": {
             "description": "When the user was locked. If null, the user is not locked.",
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "date-time"
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           },
           "can_request_admin": {
             "description": "Whether the user can request admin privileges.",
@@ -547,17 +520,13 @@
           },
           "next": {
             "description": "The link to the next page of results\n\nOnly present if there is a next page",
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": "string",
+            "nullable": true
           },
           "prev": {
             "description": "The link to the previous page of results\n\nOnly present if there is a previous page",
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -597,10 +566,8 @@
         ],
         "properties": {
           "id": {
-            "title": "ULID",
-            "description": "A ULID as per https://github.com/ulid/spec",
-            "type": "string",
-            "pattern": "^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{26}$"
+            "title": "The ID of the resource",
+            "$ref": "#/components/schemas/ULID"
           }
         }
       },
