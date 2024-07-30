@@ -61,7 +61,7 @@
     "@types/react-dom": "^18.3.0",
     "@types/react-test-renderer": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
-    "@vitest/coverage-v8": "^1.6.0",
+    "@vitest/coverage-v8": "^2.0.4",
     "autoprefixer": "^10.4.19",
     "browserslist-to-esbuild": "^2.1.1",
     "eslint": "^8.57.0",
@@ -86,7 +86,7 @@
     "vite-plugin-compression": "^0.5.1",
     "vite-plugin-graphql-codegen": "^3.3.8",
     "vite-plugin-manifest-sri": "^0.2.0",
-    "vitest": "^1.4.0"
+    "vitest": "^2.0.4"
   },
   "packageManager": "pnpm@8.6.10+sha1.98fe2755061026799bfa30e7dc8d6d48e9c3edf0"
 }
