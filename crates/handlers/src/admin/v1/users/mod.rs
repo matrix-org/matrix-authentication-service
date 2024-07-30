@@ -14,12 +14,14 @@
 
 mod add;
 mod by_username;
+mod deactivate;
 mod get;
 mod list;
 
 pub use self::{
     add::{doc as add_doc, handler as add},
     by_username::{doc as by_username_doc, handler as by_username},
+    deactivate::{doc as deactivate_doc, handler as deactivate},
     get::{doc as get_doc, handler as get},
     list::{doc as list_doc, handler as list},
 };
