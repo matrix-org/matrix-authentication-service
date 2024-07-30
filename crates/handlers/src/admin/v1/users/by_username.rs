@@ -58,7 +58,9 @@ pub struct UsernamePathParam {
 
 pub fn doc(operation: TransformOperation) -> TransformOperation {
     operation
-        .description("Get a user by its username (localpart)")
+        .id("getUserByUsername")
+        .summary("Get a user by its username (localpart)")
+        .tag("user")
         .response_with::<200, Json<SingleResponse<User>>, _>(|t| {
             let [sample, ..] = User::samples();
             let response =

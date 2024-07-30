@@ -52,7 +52,9 @@ impl IntoResponse for RouteError {
 
 pub fn doc(operation: TransformOperation) -> TransformOperation {
     operation
-        .description("Get a user")
+        .id("getUser")
+        .summary("Get a user")
+        .tag("user")
         .response_with::<200, Json<SingleResponse<User>>, _>(|t| {
             let [sample, ..] = User::samples();
             let response = SingleResponse::new_canonical(sample);

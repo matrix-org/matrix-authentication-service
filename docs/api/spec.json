@@ -18,7 +18,11 @@
   "paths": {
     "/api/admin/v1/users": {
       "get": {
-        "description": "List users",
+        "tags": [
+          "user"
+        ],
+        "summary": "List users",
+        "operationId": "listUsers",
         "parameters": [
           {
             "in": "query",
@@ -26,10 +30,8 @@
             "description": "Retrieve the items before the given ID",
             "schema": {
               "description": "Retrieve the items before the given ID",
-              "type": [
-                "string",
-                "null"
-              ]
+              "$ref": "#/components/schemas/ULID",
+              "nullable": true
             },
             "style": "form"
           },
@@ -39,10 +41,8 @@
             "description": "Retrieve the items after the given ID",
             "schema": {
               "description": "Retrieve the items after the given ID",
-              "type": [
-                "string",
-                "null"
-              ]
+              "$ref": "#/components/schemas/ULID",
+              "nullable": true
             },
             "style": "form"
           },
@@ -52,12 +52,10 @@
             "description": "Retrieve the first N items",
             "schema": {
               "description": "Retrieve the first N items",
-              "type": [
-                "integer",
-                "null"
-              ],
+              "type": "integer",
               "format": "uint",
-              "minimum": 1.0
+              "minimum": 1.0,
+              "nullable": true
             },
             "style": "form"
           },
@@ -67,38 +65,32 @@
             "description": "Retrieve the last N items",
             "schema": {
               "description": "Retrieve the last N items",
-              "type": [
-                "integer",
-                "null"
-              ],
+              "type": "integer",
               "format": "uint",
-              "minimum": 1.0
+              "minimum": 1.0,
+              "nullable": true
             },
             "style": "form"
           },
           {
             "in": "query",
             "name": "filter[can_request_admin]",
+            "description": "Retrieve users with (or without) the `can_request_admin` flag set",
             "schema": {
-              "type": [
-                "boolean",
-                "null"
-              ]
+              "description": "Retrieve users with (or without) the `can_request_admin` flag set",
+              "type": "boolean",
+              "nullable": true
             },
             "style": "form"
           },
           {
             "in": "query",
             "name": "filter[status]",
+            "description": "Retrieve the items with the given status\n\nDefaults to retrieve all users, including locked ones.\n\n* `active`: Only retrieve active users\n\n* `locked`: Only retrieve locked users",
             "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/UserStatus"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "description": "Retrieve the items with the given status\n\nDefaults to retrieve all users, including locked ones.\n\n* `active`: Only retrieve active users\n\n* `locked`: Only retrieve locked users",
+              "$ref": "#/components/schemas/UserStatus",
+              "nullable": true
             },
             "style": "form"
           }
@@ -167,22 +159,104 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Create a new user",
+        "operationId": "createUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddUserPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "User was created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SingleResponse_for_User"
+                },
+                "example": {
+                  "data": {
+                    "type": "user",
+                    "id": "01040G2081040G2081040G2081",
+                    "attributes": {
+                      "username": "alice",
+                      "created_at": "1970-01-01T00:00:00Z",
+                      "locked_at": null,
+                      "can_request_admin": false
+                    },
+                    "links": {
+                      "self": "/api/admin/v1/users/01040G2081040G2081040G2081"
+                    }
+                  },
+                  "links": {
+                    "self": "/api/admin/v1/users/01040G2081040G2081040G2081"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Username is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "errors": [
+                    {
+                      "title": "Username is not valid"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Username is reserved by the homeserver",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "errors": [
+                    {
+                      "title": "Username is reserved by the homeserver"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/admin/v1/users/{id}": {
       "get": {
-        "description": "Get a user",
+        "tags": [
+          "user"
+        ],
+        "summary": "Get a user",
+        "operationId": "getUser",
         "parameters": [
           {
             "in": "path",
             "name": "id",
-            "description": "A ULID as per https://github.com/ulid/spec",
             "required": true,
             "schema": {
-              "title": "ULID",
-              "description": "A ULID as per https://github.com/ulid/spec",
-              "type": "string",
-              "pattern": "^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{26}$"
+              "title": "The ID of the resource",
+              "$ref": "#/components/schemas/ULID"
             },
             "style": "simple"
           }
@@ -238,7 +312,11 @@
     },
     "/api/admin/v1/users/by-username/{username}": {
       "get": {
-        "description": "Get a user by its username (localpart)",
+        "tags": [
+          "user"
+        ],
+        "summary": "Get a user by its username (localpart)",
+        "operationId": "getUserByUsername",
         "parameters": [
           {
             "in": "path",
@@ -331,75 +409,60 @@
         "properties": {
           "page[before]": {
             "description": "Retrieve the items before the given ID",
-            "type": [
-              "string",
-              "null"
-            ]
+            "$ref": "#/components/schemas/ULID",
+            "nullable": true
           },
           "page[after]": {
             "description": "Retrieve the items after the given ID",
-            "type": [
-              "string",
-              "null"
-            ]
+            "$ref": "#/components/schemas/ULID",
+            "nullable": true
           },
           "page[first]": {
             "description": "Retrieve the first N items",
-            "type": [
-              "integer",
-              "null"
-            ],
+            "type": "integer",
             "format": "uint",
-            "minimum": 1.0
+            "minimum": 1.0,
+            "nullable": true
           },
           "page[last]": {
             "description": "Retrieve the last N items",
-            "type": [
-              "integer",
-              "null"
-            ],
+            "type": "integer",
             "format": "uint",
-            "minimum": 1.0
+            "minimum": 1.0,
+            "nullable": true
           }
         }
       },
-      "FilterParams": {
+      "ULID": {
+        "title": "ULID",
+        "description": "A ULID as per https://github.com/ulid/spec",
+        "examples": [
+          "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+          "01J41912SC8VGAQDD50F6APK91"
+        ],
+        "type": "string",
+        "pattern": "^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{26}$"
+      },
+      "UserFilter": {
         "type": "object",
         "properties": {
           "filter[can_request_admin]": {
-            "type": [
-              "boolean",
-              "null"
-            ]
+            "description": "Retrieve users with (or without) the `can_request_admin` flag set",
+            "type": "boolean",
+            "nullable": true
           },
           "filter[status]": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/UserStatus"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "description": "Retrieve the items with the given status\n\nDefaults to retrieve all users, including locked ones.\n\n* `active`: Only retrieve active users\n\n* `locked`: Only retrieve locked users",
+            "$ref": "#/components/schemas/UserStatus",
+            "nullable": true
           }
         }
       },
       "UserStatus": {
-        "oneOf": [
-          {
-            "description": "The user is active",
-            "type": "string",
-            "enum": [
-              "active"
-            ]
-          },
-          {
-            "description": "The user is locked",
-            "type": "string",
-            "enum": [
-              "locked"
-            ]
-          }
+        "type": "string",
+        "enum": [
+          "active",
+          "locked"
         ]
       },
       "PaginatedResponse_for_User": {
@@ -458,7 +521,7 @@
           },
           "id": {
             "description": "The ID of the resource",
-            "type": "string"
+            "$ref": "#/components/schemas/ULID"
           },
           "attributes": {
             "description": "The attributes of the resource",
@@ -490,11 +553,9 @@
           },
           "locked_at": {
             "description": "When the user was locked. If null, the user is not locked.",
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "date-time"
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           },
           "can_request_admin": {
             "description": "Whether the user can request admin privileges.",
@@ -538,17 +599,13 @@
           },
           "next": {
             "description": "The link to the next page of results\n\nOnly present if there is a next page",
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": "string",
+            "nullable": true
           },
           "prev": {
             "description": "The link to the previous page of results\n\nOnly present if there is a previous page",
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -581,17 +638,21 @@
           }
         }
       },
-      "UlidInPath": {
+      "AddUserPayload": {
+        "title": "JSON payload for the `POST /api/admin/v1/users` endpoint",
         "type": "object",
         "required": [
-          "id"
+          "username"
         ],
         "properties": {
-          "id": {
-            "title": "ULID",
-            "description": "A ULID as per https://github.com/ulid/spec",
-            "type": "string",
-            "pattern": "^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{26}$"
+          "username": {
+            "description": "The username of the user to add.",
+            "type": "string"
+          },
+          "skip_homeserver_check": {
+            "description": "Skip checking with the homeserver whether the username is valid.\n\nUse this with caution! The main reason to use this, is when a user used by an application service needs to exist in MAS to craft special tokens (like with admin access) for them",
+            "default": false,
+            "type": "boolean"
           }
         }
       },
@@ -608,6 +669,18 @@
           },
           "links": {
             "$ref": "#/components/schemas/SelfLinks"
+          }
+        }
+      },
+      "UlidInPath": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "title": "The ID of the resource",
+            "$ref": "#/components/schemas/ULID"
           }
         }
       },
@@ -630,6 +703,12 @@
       "oauth2": [
         "urn:mas:admin"
       ]
+    }
+  ],
+  "tags": [
+    {
+      "name": "user",
+      "description": "Manage users"
     }
   ]
 }

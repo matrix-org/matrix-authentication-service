@@ -143,7 +143,7 @@ struct SingleResource<T> {
     type_: &'static str,
 
     /// The ID of the resource
-    #[schemars(with = "String")]
+    #[schemars(with = "super::schema::Ulid")]
     id: Ulid,
 
     /// The attributes of the resource

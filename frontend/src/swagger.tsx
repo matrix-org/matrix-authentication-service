@@ -12,14 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod add;
-mod by_username;
-mod get;
-mod list;
+import { createRoot } from "react-dom/client";
+import SwaggerUI from "swagger-ui-react";
+import "swagger-ui-react/swagger-ui.css";
 
-pub use self::{
-    add::{doc as add_doc, handler as add},
-    by_username::{doc as by_username_doc, handler as by_username},
-    get::{doc as get_doc, handler as get},
-    list::{doc as list_doc, handler as list},
+type ApiConfig = {
+  openapiUrl: string;
+  callbackUrl: string;
 };
+
+interface IWindow {
+  API_CONFIG?: ApiConfig;
+}
+
+const config = typeof window !== "undefined" && (window as IWindow).API_CONFIG;
+if (!config) {
+  throw new Error("API_CONFIG is not defined");
+}
+
+createRoot(document.getElementById("root") as HTMLElement).render(
+  <SwaggerUI url={config.openapiUrl} oauth2RedirectUrl={config.callbackUrl} />,
+);

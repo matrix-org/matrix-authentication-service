@@ -23,6 +23,9 @@
 
 use std::io::Write;
 
+use aide::openapi::{Server, ServerVariable};
+use indexmap::IndexMap;
+
 /// This is a dummy state, it should never be used.
 ///
 /// We use it to generate the API schema, which doesn't execute any request.
@@ -57,11 +60,29 @@ macro_rules! impl_from_ref {
 
 impl_from_request_parts!(mas_storage::BoxRepository);
 impl_from_request_parts!(mas_storage::BoxClock);
+impl_from_request_parts!(mas_storage::BoxRng);
 impl_from_request_parts!(mas_handlers::BoundActivityTracker);
+impl_from_ref!(mas_router::UrlBuilder);
+impl_from_ref!(mas_templates::Templates);
+impl_from_ref!(mas_matrix::BoxHomeserverConnection);
 impl_from_ref!(mas_keystore::Keystore);
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let (api, _) = mas_handlers::admin_api_router::<DummyState>();
+    let (mut api, _) = mas_handlers::admin_api_router::<DummyState>();
+
+    // Set the server list to a configurable base URL
+    api.servers = vec![Server {
+        url: "{base}".to_owned(),
+        variables: IndexMap::from([(
+            "base".to_owned(),
+            ServerVariable {
+                default: "/".to_owned(),
+                ..ServerVariable::default()
+            },
+        )]),
+        ..Server::default()
+    }];
+
     let mut stdout = std::io::stdout();
     serde_json::to_writer_pretty(&mut stdout, &api)?;
 

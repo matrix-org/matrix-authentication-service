@@ -337,6 +337,35 @@ impl TemplateContext for AppContext {
     }
 }
 
+/// Context used by the `swagger/doc.html` template
+#[derive(Serialize)]
+pub struct ApiDocContext {
+    openapi_url: Url,
+    callback_url: Url,
+}
+
+impl ApiDocContext {
+    /// Constructs a context for the API documentation page giben the
+    /// [`UrlBuilder`]
+    #[must_use]
+    pub fn from_url_builder(url_builder: &UrlBuilder) -> Self {
+        Self {
+            openapi_url: url_builder.absolute_url_for(&mas_router::ApiSpec),
+            callback_url: url_builder.absolute_url_for(&mas_router::ApiDocCallback),
+        }
+    }
+}
+
+impl TemplateContext for ApiDocContext {
+    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        let url_builder = UrlBuilder::new("https://example.com/".parse().unwrap(), None, None);
+        vec![Self::from_url_builder(&url_builder)]
+    }
+}
+
 /// Fields of the login form
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]

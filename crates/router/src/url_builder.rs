@@ -28,7 +28,9 @@ pub struct UrlBuilder {
 }
 
 impl UrlBuilder {
-    fn absolute_url_for<U>(&self, destination: &U) -> Url
+    /// Create an absolute URL for a route
+    #[must_use]
+    pub fn absolute_url_for<U>(&self, destination: &U) -> Url
     where
         U: Route,
     {

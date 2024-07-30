@@ -870,3 +870,24 @@ pub struct GraphQLPlayground;
 impl SimpleRoute for GraphQLPlayground {
     const PATH: &'static str = "/graphql/playground";
 }
+
+/// `GET /api/spec.json`
+pub struct ApiSpec;
+
+impl SimpleRoute for ApiSpec {
+    const PATH: &'static str = "/api/spec.json";
+}
+
+/// `GET /api/doc/`
+pub struct ApiDoc;
+
+impl SimpleRoute for ApiDoc {
+    const PATH: &'static str = "/api/doc/";
+}
+
+/// `GET /api/doc/oauth2-callback`
+pub struct ApiDocCallback;
+
+impl SimpleRoute for ApiDocCallback {
+    const PATH: &'static str = "/api/doc/oauth2-callback";
+}

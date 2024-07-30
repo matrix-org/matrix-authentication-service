@@ -52,12 +52,8 @@ impl IntoResponse for UlidPathParamRejection {
 
 #[derive(JsonSchema, Debug, Clone, Copy, Deserialize)]
 struct UlidInPath {
-    #[schemars(
-        with = "String",
-        title = "ULID",
-        description = "A ULID as per https://github.com/ulid/spec",
-        regex(pattern = r"^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{26}$")
-    )]
+    /// # The ID of the resource
+    #[schemars(with = "super::schema::Ulid")]
     id: Ulid,
 }
 
@@ -81,12 +77,12 @@ const DEFAULT_PAGE_SIZE: usize = 10;
 struct PaginationParams {
     /// Retrieve the items before the given ID
     #[serde(rename = "page[before]")]
-    #[schemars(with = "Option<String>")]
+    #[schemars(with = "Option<super::schema::Ulid>")]
     before: Option<Ulid>,
 
     /// Retrieve the items after the given ID
     #[serde(rename = "page[after]")]
-    #[schemars(with = "Option<String>")]
+    #[schemars(with = "Option<super::schema::Ulid>")]
     after: Option<Ulid>,
 
     /// Retrieve the first N items

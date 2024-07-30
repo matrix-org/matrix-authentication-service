@@ -14,19 +14,32 @@
 
 use aide::{
     axum::ApiRouter,
-    openapi::{OAuth2Flow, OAuth2Flows, OpenApi, SecurityScheme, Server, ServerVariable},
+    openapi::{OAuth2Flow, OAuth2Flows, OpenApi, SecurityScheme, Server, Tag},
 };
-use axum::{extract::FromRequestParts, Json, Router};
+use axum::{
+    extract::{FromRef, FromRequestParts, State},
+    http::HeaderName,
+    response::Html,
+    Json, Router,
+};
 use hyper::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE};
 use indexmap::IndexMap;
+use mas_axum_utils::FancyError;
 use mas_http::CorsLayerExt;
-use mas_router::{OAuth2AuthorizationEndpoint, OAuth2TokenEndpoint, SimpleRoute};
+use mas_matrix::BoxHomeserverConnection;
+use mas_router::{
+    ApiDoc, ApiDocCallback, OAuth2AuthorizationEndpoint, OAuth2TokenEndpoint, Route, SimpleRoute,
+    UrlBuilder,
+};
+use mas_storage::BoxRng;
+use mas_templates::{ApiDocContext, Templates};
 use tower_http::cors::{Any, CorsLayer};
 
 mod call_context;
 mod model;
 mod params;
 mod response;
+mod schema;
 mod v1;
 
 use self::call_context::CallContext;
@@ -34,13 +47,26 @@ use self::call_context::CallContext;
 pub fn router<S>() -> (OpenApi, Router<S>)
 where
     S: Clone + Send + Sync + 'static,
+    BoxHomeserverConnection: FromRef<S>,
+    BoxRng: FromRequestParts<S>,
     CallContext: FromRequestParts<S>,
+    Templates: FromRef<S>,
+    UrlBuilder: FromRef<S>,
 {
+    aide::gen::in_context(|ctx| {
+        ctx.schema = schemars::gen::SchemaGenerator::new(schemars::gen::SchemaSettings::openapi3());
+    });
+
     let mut api = OpenApi::default();
     let router = ApiRouter::<S>::new()
         .nest("/api/admin/v1", self::v1::router())
         .finish_api_with(&mut api, |t| {
             t.title("Matrix Authentication Service admin API")
+                .tag(Tag {
+                    name: "user".to_owned(),
+                    description: Some("Manage users".to_owned()),
+                    ..Tag::default()
+                })
                 .security_scheme(
                     "oauth2",
                     SecurityScheme::OAuth2 {
@@ -70,17 +96,6 @@ where
                     },
                 )
                 .security_requirement_scopes("oauth2", ["urn:mas:admin"])
-                .server(Server {
-                    url: "{base}".to_owned(),
-                    variables: IndexMap::from([(
-                        "base".to_owned(),
-                        ServerVariable {
-                            default: "/".to_owned(),
-                            ..ServerVariable::default()
-                        },
-                    )]),
-                    ..Server::default()
-                })
         });
 
     let router = router
@@ -88,16 +103,55 @@ where
         .route(
             "/api/spec.json",
             axum::routing::get({
-                let res = Json(api.clone());
-                move || std::future::ready(res.clone())
+                let api = api.clone();
+                move |State(url_builder): State<UrlBuilder>| {
+                    // Let's set the servers to the HTTP base URL
+                    let mut api = api.clone();
+                    api.servers = vec![Server {
+                        url: url_builder.http_base().to_string(),
+                        ..Server::default()
+                    }];
+
+                    std::future::ready(Json(api))
+                }
             }),
+        )
+        // Serve the Swagger API reference
+        .route(ApiDoc::route(), axum::routing::get(swagger))
+        .route(
+            ApiDocCallback::route(),
+            axum::routing::get(swagger_callback),
         )
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
                 .allow_methods(Any)
-                .allow_otel_headers([AUTHORIZATION, ACCEPT, CONTENT_TYPE]),
+                .allow_otel_headers([
+                    AUTHORIZATION,
+                    ACCEPT,
+                    CONTENT_TYPE,
+                    // Swagger will send this header, so we have to allow it to avoid CORS errors
+                    HeaderName::from_static("x-requested-with"),
+                ]),
         );
 
     (api, router)
+}
+
+async fn swagger(
+    State(url_builder): State<UrlBuilder>,
+    State(templates): State<Templates>,
+) -> Result<Html<String>, FancyError> {
+    let ctx = ApiDocContext::from_url_builder(&url_builder);
+    let res = templates.render_swagger(&ctx)?;
+    Ok(Html(res))
+}
+
+async fn swagger_callback(
+    State(url_builder): State<UrlBuilder>,
+    State(templates): State<Templates>,
+) -> Result<Html<String>, FancyError> {
+    let ctx = ApiDocContext::from_url_builder(&url_builder);
+    let res = templates.render_swagger_callback(&ctx)?;
+    Ok(Html(res))
 }
