@@ -114,6 +114,7 @@ pub struct Request {
 
 pub fn doc(operation: TransformOperation) -> TransformOperation {
     operation
+        .id("createUser")
         .summary("Create a new user")
         .tag("user")
         .response_with::<200, Json<SingleResponse<User>>, _>(|t| {

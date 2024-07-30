@@ -165,6 +165,7 @@
           "user"
         ],
         "summary": "Create a new user",
+        "operationId": "createUser",
         "requestBody": {
           "content": {
             "application/json": {
