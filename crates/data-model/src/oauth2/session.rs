@@ -64,6 +64,19 @@ impl SessionState {
             Self::Finished { .. } => Err(InvalidTransitionError),
         }
     }
+
+    /// Returns the time the session was finished, if any
+    ///
+    /// Returns `None` if the session is still [`Valid`].
+    ///
+    /// [`Valid`]: SessionState::Valid
+    #[must_use]
+    pub fn finished_at(&self) -> Option<DateTime<Utc>> {
+        match self {
+            Self::Valid => None,
+            Self::Finished { finished_at } => Some(*finished_at),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
