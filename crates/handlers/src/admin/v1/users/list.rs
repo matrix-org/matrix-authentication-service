@@ -34,44 +34,57 @@ use crate::{
     impl_from_error_for_route,
 };
 
-#[derive(Deserialize, JsonSchema)]
+#[derive(Deserialize, JsonSchema, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 enum UserStatus {
-    /// The user is active
     Active,
-
-    /// The user is locked
     Locked,
 }
 
+impl std::fmt::Display for UserStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Active => write!(f, "active"),
+            Self::Locked => write!(f, "locked"),
+        }
+    }
+}
+
 #[derive(FromRequestParts, Deserialize, JsonSchema, OperationIo)]
+#[serde(rename = "UserFilter")]
 #[aide(input_with = "Query<FilterParams>")]
 #[from_request(via(Query), rejection(RouteError))]
 pub struct FilterParams {
+    /// Retrieve users with (or without) the `can_request_admin` flag set
     #[serde(rename = "filter[can_request_admin]")]
     can_request_admin: Option<bool>,
 
+    /// Retrieve the items with the given status
+    ///
+    /// Defaults to retrieve all users, including locked ones.
+    ///
+    /// * `active`: Only retrieve active users
+    ///
+    /// * `locked`: Only retrieve locked users
     #[serde(rename = "filter[status]")]
     status: Option<UserStatus>,
 }
 
-impl<'a> From<&'a FilterParams> for UserFilter<'a> {
-    fn from(val: &'a FilterParams) -> Self {
-        let filter = UserFilter::default();
+impl std::fmt::Display for FilterParams {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut sep = '?';
 
-        let filter = match val.can_request_admin {
-            Some(true) => filter.can_request_admin_only(),
-            Some(false) => filter.cannot_request_admin_only(),
-            None => filter,
-        };
+        if let Some(can_request_admin) = self.can_request_admin {
+            write!(f, "{sep}filter[can_request_admin]={can_request_admin}")?;
+            sep = '&';
+        }
+        if let Some(status) = self.status {
+            write!(f, "{sep}filter[status]={status}")?;
+            sep = '&';
+        }
 
-        let filter = match val.status {
-            Some(UserStatus::Active) => filter.active_only(),
-            Some(UserStatus::Locked) => filter.locked_only(),
-            None => filter,
-        };
-
-        filter
+        let _ = sep;
+        Ok(())
     }
 }
 
@@ -100,6 +113,7 @@ impl IntoResponse for RouteError {
 
 pub fn doc(operation: TransformOperation) -> TransformOperation {
     operation
+        .id("listUsers")
         .summary("List users")
         .tag("user")
         .response_with::<200, Json<PaginatedResponse<User>>, _>(|t| {
@@ -120,9 +134,22 @@ pub fn doc(operation: TransformOperation) -> TransformOperation {
 pub async fn handler(
     CallContext { mut repo, .. }: CallContext,
     Pagination(pagination): Pagination,
-    filter: FilterParams,
+    params: FilterParams,
 ) -> Result<Json<PaginatedResponse<User>>, RouteError> {
-    let filter = UserFilter::from(&filter);
+    let base = format!("{path}{params}", path = User::PATH);
+    let filter = UserFilter::default();
+
+    let filter = match params.can_request_admin {
+        Some(true) => filter.can_request_admin_only(),
+        Some(false) => filter.cannot_request_admin_only(),
+        None => filter,
+    };
+
+    let filter = match params.status {
+        Some(UserStatus::Active) => filter.active_only(),
+        Some(UserStatus::Locked) => filter.locked_only(),
+        None => filter,
+    };
 
     let page = repo.user().list(filter, pagination).await?;
     let count = repo.user().count(filter).await?;
@@ -131,6 +158,6 @@ pub async fn handler(
         page.map(User::from),
         pagination,
         count,
-        User::PATH,
+        &base,
     )))
 }
