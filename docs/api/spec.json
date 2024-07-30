@@ -707,6 +707,10 @@
   ],
   "tags": [
     {
+      "name": "oauth2-session",
+      "description": "Manage OAuth2 sessions"
+    },
+    {
       "name": "user",
       "description": "Manage users"
     }
