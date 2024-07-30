@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+mod get;
 mod list;
 
-pub use self::list::{doc as list_doc, handler as list};
+pub use self::{
+    get::{doc as get_doc, handler as get},
+    list::{doc as list_doc, handler as list},
+};

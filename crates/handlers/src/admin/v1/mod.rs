@@ -40,6 +40,10 @@ where
             get_with(self::oauth2_sessions::list, self::oauth2_sessions::list_doc),
         )
         .api_route(
+            "/oauth2-sessions/:id",
+            get_with(self::oauth2_sessions::get, self::oauth2_sessions::get_doc),
+        )
+        .api_route(
             "/users",
             get_with(self::users::list, self::users::list_doc)
                 .post_with(self::users::add, self::users::add_doc),
