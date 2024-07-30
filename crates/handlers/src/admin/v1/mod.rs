@@ -23,6 +23,7 @@ use mas_storage::BoxRng;
 use super::call_context::CallContext;
 use crate::passwords::PasswordManager;
 
+mod oauth2_sessions;
 mod users;
 
 pub fn router<S>() -> ApiRouter<S>
