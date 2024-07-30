@@ -22,6 +22,7 @@
           "user"
         ],
         "summary": "List users",
+        "operationId": "listUsers",
         "parameters": [
           {
             "in": "query",
@@ -74,7 +75,9 @@
           {
             "in": "query",
             "name": "filter[can_request_admin]",
+            "description": "Retrieve users with (or without) the `can_request_admin` flag set",
             "schema": {
+              "description": "Retrieve users with (or without) the `can_request_admin` flag set",
               "type": "boolean",
               "nullable": true
             },
@@ -83,7 +86,9 @@
           {
             "in": "query",
             "name": "filter[status]",
+            "description": "Retrieve the items with the given status\n\nDefaults to retrieve all users, including locked ones.\n\n* `active`: Only retrieve active users\n\n* `locked`: Only retrieve locked users",
             "schema": {
+              "description": "Retrieve the items with the given status\n\nDefaults to retrieve all users, including locked ones.\n\n* `active`: Only retrieve active users\n\n* `locked`: Only retrieve locked users",
               "$ref": "#/components/schemas/UserStatus",
               "nullable": true
             },
@@ -162,6 +167,7 @@
           "user"
         ],
         "summary": "Get a user",
+        "operationId": "getUser",
         "parameters": [
           {
             "in": "path",
@@ -229,6 +235,7 @@
           "user"
         ],
         "summary": "Get a user by its username (localpart)",
+        "operationId": "getUserByUsername",
         "parameters": [
           {
             "in": "path",
@@ -355,35 +362,26 @@
         "type": "string",
         "pattern": "^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{26}$"
       },
-      "FilterParams": {
+      "UserFilter": {
         "type": "object",
         "properties": {
           "filter[can_request_admin]": {
+            "description": "Retrieve users with (or without) the `can_request_admin` flag set",
             "type": "boolean",
             "nullable": true
           },
           "filter[status]": {
+            "description": "Retrieve the items with the given status\n\nDefaults to retrieve all users, including locked ones.\n\n* `active`: Only retrieve active users\n\n* `locked`: Only retrieve locked users",
             "$ref": "#/components/schemas/UserStatus",
             "nullable": true
           }
         }
       },
       "UserStatus": {
-        "oneOf": [
-          {
-            "description": "The user is active",
-            "type": "string",
-            "enum": [
-              "active"
-            ]
-          },
-          {
-            "description": "The user is locked",
-            "type": "string",
-            "enum": [
-              "locked"
-            ]
-          }
+        "type": "string",
+        "enum": [
+          "active",
+          "locked"
         ]
       },
       "PaginatedResponse_for_User": {
