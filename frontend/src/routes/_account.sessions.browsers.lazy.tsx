@@ -23,18 +23,12 @@ import { ButtonLink } from "../components/ButtonLink";
 import EmptyState from "../components/EmptyState";
 import Filter from "../components/Filter";
 import { type BackwardPagination, usePages } from "../pagination";
+import { getNinetyDaysAgo } from "../utils/dates";
 
 import { QUERY } from "./_account.sessions.browsers";
 
 const PAGE_SIZE = 6;
 const DEFAULT_PAGE: BackwardPagination = { last: PAGE_SIZE };
-
-const getNintyDaysAgo = (): string => {
-  const date = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-  // Round down to the start of the day to avoid rerendering/requerying
-  date.setHours(0, 0, 0, 0);
-  return date.toISOString();
-};
 
 export const Route = createLazyFileRoute("/_account/sessions/browsers")({
   component: BrowserSessions,
@@ -45,7 +39,7 @@ function BrowserSessions(): React.ReactElement {
   const { inactive, ...pagination } = Route.useLoaderDeps();
 
   const variables = {
-    lastActive: inactive ? { before: getNintyDaysAgo() } : undefined,
+    lastActive: inactive ? { before: getNinetyDaysAgo() } : undefined,
     ...pagination,
   };
 
