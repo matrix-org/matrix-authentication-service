@@ -25,6 +25,7 @@ import Filter from "../components/Filter";
 import OAuth2Session from "../components/OAuth2Session";
 import BrowserSessionsOverview from "../components/UserSessionsOverview/BrowserSessionsOverview";
 import { type BackwardPagination, usePages } from "../pagination";
+import { getNinetyDaysAgo } from "../utils/dates";
 
 import { QUERY, LIST_QUERY } from "./_account.sessions.index";
 
@@ -34,13 +35,6 @@ const DEFAULT_PAGE: BackwardPagination = { last: PAGE_SIZE };
 // A type-safe way to ensure we've handled all session types
 const unknownSessionType = (type: never): never => {
   throw new Error(`Unknown session type: ${type}`);
-};
-
-const getNintyDaysAgo = (): string => {
-  const date = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-  // Round down to the start of the day to avoid rerendering/requerying
-  date.setHours(0, 0, 0, 0);
-  return date.toISOString();
 };
 
 export const Route = createLazyFileRoute("/_account/sessions/")({
@@ -57,7 +51,7 @@ function Sessions(): React.ReactElement {
   if (user === null) throw notFound();
 
   const variables = {
-    lastActive: inactive ? { before: getNintyDaysAgo() } : undefined,
+    lastActive: inactive ? { before: getNinetyDaysAgo() } : undefined,
     ...pagination,
   };
 

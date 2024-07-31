@@ -21,6 +21,7 @@ import {
   type BackwardPagination,
   paginationSchema,
 } from "../pagination";
+import { getNinetyDaysAgo } from "../utils/dates";
 
 const PAGE_SIZE = 6;
 const DEFAULT_PAGE: BackwardPagination = { last: PAGE_SIZE };
@@ -78,13 +79,6 @@ const searchSchema = z.object({
 
 type Search = z.infer<typeof searchSchema>;
 
-const getNintyDaysAgo = (): string => {
-  const date = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-  // Round down to the start of the day to avoid rerendering/requerying
-  date.setHours(0, 0, 0, 0);
-  return date.toISOString();
-};
-
 export const Route = createFileRoute("/_account/sessions/browsers")({
   // We paginate backwards, so we need to validate the `last` parameter by default
   validateSearch: paginationSchema.catch(DEFAULT_PAGE).and(searchSchema),
@@ -98,7 +92,7 @@ export const Route = createFileRoute("/_account/sessions/browsers")({
     abortController: { signal },
   }) {
     const variables = {
-      lastActive: inactive ? { before: getNintyDaysAgo() } : undefined,
+      lastActive: inactive ? { before: getNinetyDaysAgo() } : undefined,
       ...pagination,
     };
 
