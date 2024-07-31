@@ -145,6 +145,7 @@ impl Options {
             &config.matrix,
             &config.experimental,
             &config.passwords,
+            &config.account,
             &config.captcha,
         )?;
 

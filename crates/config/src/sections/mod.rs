@@ -16,6 +16,7 @@ use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+mod account;
 mod branding;
 mod captcha;
 mod clients;
@@ -32,6 +33,7 @@ mod templates;
 mod upstream_oauth2;
 
 pub use self::{
+    account::AccountConfig,
     branding::BrandingConfig,
     captcha::{CaptchaConfig, CaptchaServiceKind},
     clients::{ClientAuthMethodConfig, ClientConfig, ClientsConfig},
@@ -113,6 +115,11 @@ pub struct RootConfig {
     #[serde(default, skip_serializing_if = "CaptchaConfig::is_default")]
     pub captcha: CaptchaConfig,
 
+    /// Configuration section to configure features related to account
+    /// management
+    #[serde(default, skip_serializing_if = "AccountConfig::is_default")]
+    pub account: AccountConfig,
+
     /// Experimental configuration options
     #[serde(default, skip_serializing_if = "ExperimentalConfig::is_default")]
     pub experimental: ExperimentalConfig,
@@ -133,6 +140,7 @@ impl ConfigurationSection for RootConfig {
         self.upstream_oauth2.validate(figment)?;
         self.branding.validate(figment)?;
         self.captcha.validate(figment)?;
+        self.account.validate(figment)?;
         self.experimental.validate(figment)?;
 
         Ok(())
@@ -163,6 +171,7 @@ impl RootConfig {
             upstream_oauth2: UpstreamOAuth2Config::default(),
             branding: BrandingConfig::default(),
             captcha: CaptchaConfig::default(),
+            account: AccountConfig::default(),
             experimental: ExperimentalConfig::default(),
         })
     }
@@ -184,6 +193,7 @@ impl RootConfig {
             upstream_oauth2: UpstreamOAuth2Config::default(),
             branding: BrandingConfig::default(),
             captcha: CaptchaConfig::default(),
+            account: AccountConfig::default(),
             experimental: ExperimentalConfig::default(),
         }
     }
@@ -222,6 +232,9 @@ pub struct AppConfig {
     pub captcha: CaptchaConfig,
 
     #[serde(default)]
+    pub account: AccountConfig,
+
+    #[serde(default)]
     pub experimental: ExperimentalConfig,
 }
 
@@ -237,6 +250,7 @@ impl ConfigurationSection for AppConfig {
         self.policy.validate(figment)?;
         self.branding.validate(figment)?;
         self.captcha.validate(figment)?;
+        self.account.validate(figment)?;
         self.experimental.validate(figment)?;
 
         Ok(())

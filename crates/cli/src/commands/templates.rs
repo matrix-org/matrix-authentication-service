@@ -17,8 +17,8 @@ use std::process::ExitCode;
 use clap::Parser;
 use figment::Figment;
 use mas_config::{
-    BrandingConfig, CaptchaConfig, ConfigurationSection, ExperimentalConfig, MatrixConfig,
-    PasswordsConfig, TemplatesConfig,
+    AccountConfig, BrandingConfig, CaptchaConfig, ConfigurationSection, ExperimentalConfig,
+    MatrixConfig, PasswordsConfig, TemplatesConfig,
 };
 use mas_storage::{Clock, SystemClock};
 use rand::SeedableRng;
@@ -50,6 +50,7 @@ impl Options {
                 let matrix_config = MatrixConfig::extract(figment)?;
                 let experimental_config = ExperimentalConfig::extract(figment)?;
                 let password_config = PasswordsConfig::extract(figment)?;
+                let account_config = AccountConfig::extract(figment)?;
                 let captcha_config = CaptchaConfig::extract(figment)?;
 
                 let clock = SystemClock::default();
@@ -62,6 +63,7 @@ impl Options {
                     &matrix_config,
                     &experimental_config,
                     &password_config,
+                    &account_config,
                     &captcha_config,
                 )?;
                 let templates =
