@@ -193,6 +193,14 @@
         }
       ]
     },
+    "account": {
+      "description": "Configuration section to configure features related to account management",
+      "allOf": [
+        {
+          "$ref": "#/definitions/AccountConfig"
+        }
+      ]
+    },
     "experimental": {
       "description": "Experimental configuration options",
       "allOf": [
@@ -2107,6 +2115,32 @@
         }
       ]
     },
+    "AccountConfig": {
+      "description": "Configuration section to configure features related to account management",
+      "type": "object",
+      "properties": {
+        "email_change_allowed": {
+          "description": "Whether users are allowed to change their email addresses. Defaults to `true`.",
+          "type": "boolean"
+        },
+        "displayname_change_allowed": {
+          "description": "Whether users are allowed to change their display names. Defaults to `true`.\n\nThis should be in sync with the policy in the homeserver configuration.",
+          "type": "boolean"
+        },
+        "password_registration_enabled": {
+          "description": "Whether to enable self-service password registration. Defaults to `false` if password authentication is enabled.\n\nThis has no effect if password login is disabled.",
+          "type": "boolean"
+        },
+        "password_change_allowed": {
+          "description": "Whether users are allowed to change their passwords. Defaults to `true`.\n\nThis has no effect if password login is disabled.",
+          "type": "boolean"
+        },
+        "password_recovery_enabled": {
+          "description": "Whether email-based password recovery is enabled. Defaults to `false`.\n\nThis has no effect if password login is disabled.",
+          "type": "boolean"
+        }
+      }
+    },
     "ExperimentalConfig": {
       "description": "Configuration sections for experimental options\n\nDo not change these options unless you know what you are doing.",
       "type": "object",
@@ -2124,26 +2158,6 @@
           "format": "uint64",
           "maximum": 86400.0,
           "minimum": 60.0
-        },
-        "password_registration_enabled": {
-          "description": "Whether to enable self-service password registration. Defaults to `true` if password authentication is enabled.",
-          "type": "boolean"
-        },
-        "email_change_allowed": {
-          "description": "Whether users are allowed to change their email addresses. Defaults to `true`.",
-          "type": "boolean"
-        },
-        "displayname_change_allowed": {
-          "description": "Whether users are allowed to change their display names. Defaults to `true`.",
-          "type": "boolean"
-        },
-        "password_change_allowed": {
-          "description": "Whether users are allowed to change their passwords. Defaults to `true`.",
-          "type": "boolean"
-        },
-        "account_recovery_enabled": {
-          "description": "Whether email-based account recovery is enabled. Defaults to `false`.",
-          "type": "boolean"
         }
       }
     }

@@ -16,8 +16,9 @@ use std::time::Duration;
 
 use anyhow::Context;
 use mas_config::{
-    BrandingConfig, CaptchaConfig, DatabaseConfig, EmailConfig, EmailSmtpMode, EmailTransportKind,
-    ExperimentalConfig, MatrixConfig, PasswordsConfig, PolicyConfig, TemplatesConfig,
+    AccountConfig, BrandingConfig, CaptchaConfig, DatabaseConfig, EmailConfig, EmailSmtpMode,
+    EmailTransportKind, ExperimentalConfig, MatrixConfig, PasswordsConfig, PolicyConfig,
+    TemplatesConfig,
 };
 use mas_data_model::SiteConfig;
 use mas_email::{MailTransport, Mailer};
@@ -152,6 +153,7 @@ pub fn site_config_from_config(
     matrix_config: &MatrixConfig,
     experimental_config: &ExperimentalConfig,
     password_config: &PasswordsConfig,
+    account_config: &AccountConfig,
     captcha_config: &CaptchaConfig,
 ) -> Result<SiteConfig, anyhow::Error> {
     let captcha = captcha_config_from_config(captcha_config)?;
@@ -164,13 +166,13 @@ pub fn site_config_from_config(
         imprint: branding_config.imprint.clone(),
         password_login_enabled: password_config.enabled(),
         password_registration_enabled: password_config.enabled()
-            && experimental_config.password_registration_enabled,
-        email_change_allowed: experimental_config.email_change_allowed,
-        displayname_change_allowed: experimental_config.displayname_change_allowed,
+            && account_config.password_registration_enabled,
+        email_change_allowed: account_config.email_change_allowed,
+        displayname_change_allowed: account_config.displayname_change_allowed,
         password_change_allowed: password_config.enabled()
-            && experimental_config.password_change_allowed,
+            && account_config.password_change_allowed,
         account_recovery_allowed: password_config.enabled()
-            && experimental_config.account_recovery_enabled,
+            && account_config.password_recovery_enabled,
         captcha,
         minimum_password_complexity: password_config.minimum_complexity(),
     })
