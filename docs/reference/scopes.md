@@ -89,8 +89,9 @@ The default policy allows any client and any user to request this scope.
 
 ### `urn:mas:admin`
 
-This scope allows full access to the MAS [GraphQL API].
-It requires the `urn:mas:graphql:*` scope to be present in the request.
+This scope grants access to the MAS [Admin API].
+
+Combined with the `urn:mas:graphql:*` scope, it also grants full access to the MAS [GraphQL API].
 This allows the authenticated entity to perform any operation on the API, regardless of whether the entity owns the data or not.
 
 The default policy doesn't allow everyone to request this scope.
@@ -105,6 +106,7 @@ It allows:
 [authorization code]: ../topics/authorization.md#authorization-code-grant
 [device authorization]: ../topics/authorization.md#device-authorization-grant
 [GraphQL API]: ./graphql.md
+[Admin API]: ../topics/admin-api.md
 [Synapse admin API]: https://element-hq.github.io/synapse/latest/usage/administration/admin_api/index.html
 [OpenID Connect Core 1.0]: https://openid.net/specs/openid-connect-core-1_0.html
 [MSC2967]: https://github.com/matrix-org/matrix-spec-proposals/pull/2967
