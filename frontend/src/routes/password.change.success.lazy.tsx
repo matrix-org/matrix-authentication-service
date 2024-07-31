@@ -12,47 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createLazyFileRoute } from "@tanstack/react-router";
 import IconCheckCircle from "@vector-im/compound-design-tokens/assets/web/icons/check-circle-solid";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "urql";
 
 import BlockList from "../components/BlockList";
 import { ButtonLink } from "../components/ButtonLink";
 import Layout from "../components/Layout";
 import PageHeading from "../components/PageHeading";
-import { graphql } from "../gql";
 
-const CURRENT_VIEWER_QUERY = graphql(/* GraphQL */ `
-  query CurrentViewerQuery {
-    viewer {
-      __typename
-      ... on Node {
-        id
-      }
-    }
-  }
-`);
-
-export const Route = createFileRoute("/password/change/success")({
-  async loader({ context, abortController: { signal } }) {
-    const viewer = await context.client.query(
-      CURRENT_VIEWER_QUERY,
-      {},
-      { fetchOptions: { signal } },
-    );
-    if (viewer.error) throw viewer.error;
-    if (viewer.data?.viewer.__typename !== "User") throw notFound();
-  },
-
+export const Route = createLazyFileRoute("/password/change/success")({
   component: ChangePasswordSuccess,
 });
 
 function ChangePasswordSuccess(): React.ReactNode {
   const { t } = useTranslation();
-  const [viewer] = useQuery({ query: CURRENT_VIEWER_QUERY });
-  if (viewer.error) throw viewer.error;
-  if (viewer.data?.viewer.__typename !== "User") throw notFound();
 
   return (
     <Layout>

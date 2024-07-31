@@ -16,7 +16,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { graphql } from "../gql";
 
-const QUERY = graphql(/* GraphQL */ `
+export const QUERY = graphql(/* GraphQL */ `
   query PasswordRecoveryQuery {
     siteConfig {
       id

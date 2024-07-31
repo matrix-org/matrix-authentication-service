@@ -16,7 +16,7 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 
 import { graphql } from "../gql";
 
-const QUERY = graphql(/* GraphQL */ `
+export const QUERY = graphql(/* GraphQL */ `
   query PasswordChangeQuery {
     viewer {
       __typename
