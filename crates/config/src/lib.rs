@@ -26,4 +26,7 @@ pub(crate) mod schema;
 mod sections;
 pub(crate) mod util;
 
-pub use self::{sections::*, util::ConfigurationSection};
+pub use self::{
+    sections::*,
+    util::{ConfigurationSection, ConfigurationSectionExt},
+};

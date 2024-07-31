@@ -46,3 +46,32 @@ pub trait ConfigurationSection: Sized + DeserializeOwned {
         Ok(this)
     }
 }
+
+/// Extension trait for [`ConfigurationSection`] to allow extracting the
+/// configuration section from a [`Figment`] or return the default value if the
+/// section is not present.
+pub trait ConfigurationSectionExt: ConfigurationSection + Default {
+    /// Extract the configuration section from the given [`Figment`], or return
+    /// the default value if the section is not present.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the configuration section is invalid.
+    fn extract_or_default(figment: &Figment) -> Result<Self, figment::Error> {
+        let this: Self = if let Some(path) = Self::PATH {
+            // If the configuration section is not present, we return the default value
+            if !figment.contains(path) {
+                return Ok(Self::default());
+            }
+
+            figment.extract_inner(path)?
+        } else {
+            figment.extract()?
+        };
+
+        this.validate(figment)?;
+        Ok(this)
+    }
+}
+
+impl<T: ConfigurationSection + Default> ConfigurationSectionExt for T {}

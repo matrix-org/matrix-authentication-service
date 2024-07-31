@@ -18,7 +18,7 @@ use clap::Parser;
 use figment::Figment;
 use http_body_util::BodyExt;
 use hyper::{Response, Uri};
-use mas_config::{ConfigurationSection, PolicyConfig};
+use mas_config::{ConfigurationSectionExt, PolicyConfig};
 use mas_handlers::HttpClientFactory;
 use mas_http::HttpServiceExt;
 use tokio::io::AsyncWriteExt;
@@ -124,7 +124,7 @@ impl Options {
 
             SC::Policy => {
                 let _span = info_span!("cli.debug.policy").entered();
-                let config = PolicyConfig::extract(figment)?;
+                let config = PolicyConfig::extract_or_default(figment)?;
                 info!("Loading and compiling the policy module");
                 let policy_factory = policy_factory_from_config(&config).await?;
 

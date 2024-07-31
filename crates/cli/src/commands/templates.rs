@@ -17,8 +17,8 @@ use std::process::ExitCode;
 use clap::Parser;
 use figment::Figment;
 use mas_config::{
-    AccountConfig, BrandingConfig, CaptchaConfig, ConfigurationSection, ExperimentalConfig,
-    MatrixConfig, PasswordsConfig, TemplatesConfig,
+    AccountConfig, BrandingConfig, CaptchaConfig, ConfigurationSection, ConfigurationSectionExt,
+    ExperimentalConfig, MatrixConfig, PasswordsConfig, TemplatesConfig,
 };
 use mas_storage::{Clock, SystemClock};
 use rand::SeedableRng;
@@ -45,13 +45,13 @@ impl Options {
             SC::Check => {
                 let _span = info_span!("cli.templates.check").entered();
 
-                let template_config = TemplatesConfig::extract(figment)?;
-                let branding_config = BrandingConfig::extract(figment)?;
+                let template_config = TemplatesConfig::extract_or_default(figment)?;
+                let branding_config = BrandingConfig::extract_or_default(figment)?;
                 let matrix_config = MatrixConfig::extract(figment)?;
-                let experimental_config = ExperimentalConfig::extract(figment)?;
-                let password_config = PasswordsConfig::extract(figment)?;
-                let account_config = AccountConfig::extract(figment)?;
-                let captcha_config = CaptchaConfig::extract(figment)?;
+                let experimental_config = ExperimentalConfig::extract_or_default(figment)?;
+                let password_config = PasswordsConfig::extract_or_default(figment)?;
+                let account_config = AccountConfig::extract_or_default(figment)?;
+                let captcha_config = CaptchaConfig::extract_or_default(figment)?;
 
                 let clock = SystemClock::default();
                 // XXX: we should disallow SeedableRng::from_entropy

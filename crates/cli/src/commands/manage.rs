@@ -19,7 +19,9 @@ use clap::{ArgAction, CommandFactory, Parser};
 use console::{pad_str, style, Alignment, Style, Term};
 use dialoguer::{theme::ColorfulTheme, Confirm, FuzzySelect, Input, Password};
 use figment::Figment;
-use mas_config::{ConfigurationSection, DatabaseConfig, MatrixConfig, PasswordsConfig};
+use mas_config::{
+    ConfigurationSection, ConfigurationSectionExt, DatabaseConfig, MatrixConfig, PasswordsConfig,
+};
 use mas_data_model::{Device, TokenType, Ulid, UpstreamOAuthProvider, User};
 use mas_email::Address;
 use mas_handlers::HttpClientFactory;
@@ -192,8 +194,8 @@ impl Options {
                 let _span =
                     info_span!("cli.manage.set_password", user.username = %username).entered();
 
-                let database_config = DatabaseConfig::extract(figment)?;
-                let passwords_config = PasswordsConfig::extract(figment)?;
+                let database_config = DatabaseConfig::extract_or_default(figment)?;
+                let passwords_config = PasswordsConfig::extract_or_default(figment)?;
 
                 let mut conn = database_connection_from_config(&database_config).await?;
                 let password_manager = password_manager_from_config(&passwords_config).await?;
@@ -233,7 +235,7 @@ impl Options {
                 )
                 .entered();
 
-                let database_config = DatabaseConfig::extract(figment)?;
+                let database_config = DatabaseConfig::extract_or_default(figment)?;
                 let mut conn = database_connection_from_config(&database_config).await?;
                 let txn = conn.begin().await?;
                 let mut repo = PgRepository::from_conn(txn);
@@ -267,7 +269,7 @@ impl Options {
                 admin,
                 device_id,
             } => {
-                let database_config = DatabaseConfig::extract(figment)?;
+                let database_config = DatabaseConfig::extract_or_default(figment)?;
                 let mut conn = database_connection_from_config(&database_config).await?;
                 let txn = conn.begin().await?;
                 let mut repo = PgRepository::from_conn(txn);
@@ -312,7 +314,7 @@ impl Options {
 
             SC::ProvisionAllUsers => {
                 let _span = info_span!("cli.manage.provision_all_users").entered();
-                let database_config = DatabaseConfig::extract(figment)?;
+                let database_config = DatabaseConfig::extract_or_default(figment)?;
                 let mut conn = database_connection_from_config(&database_config).await?;
                 let mut txn = conn.begin().await?;
 
@@ -338,7 +340,7 @@ impl Options {
             SC::KillSessions { username, dry_run } => {
                 let _span =
                     info_span!("cli.manage.kill_sessions", user.username = username).entered();
-                let database_config = DatabaseConfig::extract(figment)?;
+                let database_config = DatabaseConfig::extract_or_default(figment)?;
                 let mut conn = database_connection_from_config(&database_config).await?;
                 let txn = conn.begin().await?;
                 let mut repo = PgRepository::from_conn(txn);
@@ -408,7 +410,7 @@ impl Options {
                 deactivate,
             } => {
                 let _span = info_span!("cli.manage.lock_user", user.username = username).entered();
-                let config = DatabaseConfig::extract(figment)?;
+                let config = DatabaseConfig::extract_or_default(figment)?;
                 let mut conn = database_connection_from_config(&config).await?;
                 let txn = conn.begin().await?;
                 let mut repo = PgRepository::from_conn(txn);
@@ -440,7 +442,7 @@ impl Options {
 
             SC::UnlockUser { username } => {
                 let _span = info_span!("cli.manage.lock_user", user.username = username).entered();
-                let config = DatabaseConfig::extract(figment)?;
+                let config = DatabaseConfig::extract_or_default(figment)?;
                 let mut conn = database_connection_from_config(&config).await?;
                 let txn = conn.begin().await?;
                 let mut repo = PgRepository::from_conn(txn);
@@ -473,8 +475,8 @@ impl Options {
                 ignore_password_complexity,
             } => {
                 let http_client_factory = HttpClientFactory::new();
-                let password_config = PasswordsConfig::extract(figment)?;
-                let database_config = DatabaseConfig::extract(figment)?;
+                let password_config = PasswordsConfig::extract_or_default(figment)?;
+                let database_config = DatabaseConfig::extract_or_default(figment)?;
                 let matrix_config = MatrixConfig::extract(figment)?;
 
                 let password_manager = password_manager_from_config(&password_config).await?;
