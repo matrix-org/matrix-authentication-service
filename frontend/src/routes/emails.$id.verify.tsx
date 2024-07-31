@@ -13,13 +13,10 @@
 // limitations under the License.
 
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { useQuery } from "urql";
 
-import Layout from "../components/Layout";
-import VerifyEmailComponent from "../components/VerifyEmail";
 import { graphql } from "../gql";
 
-const QUERY = graphql(/* GraphQL */ `
+export const QUERY = graphql(/* GraphQL */ `
   query VerifyEmailQuery($id: ID!) {
     userEmail(id: $id) {
       ...UserEmail_verifyEmail
@@ -39,21 +36,4 @@ export const Route = createFileRoute("/emails/$id/verify")({
     if (result.error) throw result.error;
     if (!result.data?.userEmail) throw notFound();
   },
-
-  component: EmailVerify,
 });
-
-function EmailVerify(): React.ReactElement {
-  const { id } = Route.useParams();
-  const [result] = useQuery({ query: QUERY, variables: { id } });
-
-  if (result.error) throw result.error;
-  const email = result.data?.userEmail;
-  if (email == null) throw notFound();
-
-  return (
-    <Layout>
-      <VerifyEmailComponent email={email} />
-    </Layout>
-  );
-}

@@ -13,28 +13,19 @@
 // limitations under the License.
 
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { H5 } from "@vector-im/compound-web";
-import { useTranslation } from "react-i18next";
-import { useQuery } from "urql";
 import * as z from "zod";
 
-import BlockList from "../components/BlockList";
-import BrowserSession from "../components/BrowserSession";
-import { ButtonLink } from "../components/ButtonLink";
-import EmptyState from "../components/EmptyState";
-import Filter from "../components/Filter";
 import { graphql } from "../gql";
 import {
-  BackwardPagination,
-  Pagination,
+  type Pagination,
+  type BackwardPagination,
   paginationSchema,
-  usePages,
 } from "../pagination";
 
 const PAGE_SIZE = 6;
 const DEFAULT_PAGE: BackwardPagination = { last: PAGE_SIZE };
 
-const QUERY = graphql(/* GraphQL */ `
+export const QUERY = graphql(/* GraphQL */ `
   query BrowserSessionList(
     $first: Int
     $after: String
@@ -119,95 +110,5 @@ export const Route = createFileRoute("/_account/sessions/browsers")({
       throw notFound();
   },
 
-  component: BrowserSessions,
+  component: () => <div>Hello /_account/sessions/browsers!</div>,
 });
-
-function BrowserSessions(): React.ReactElement {
-  const { t } = useTranslation();
-  const { inactive, ...pagination } = Route.useLoaderDeps();
-
-  const variables = {
-    lastActive: inactive ? { before: getNintyDaysAgo() } : undefined,
-    ...pagination,
-  };
-
-  const [list] = useQuery({ query: QUERY, variables });
-  if (list.error) throw list.error;
-  const currentSession =
-    list.data?.viewerSession.__typename === "BrowserSession"
-      ? list.data.viewerSession
-      : null;
-  if (currentSession === null) throw notFound();
-
-  const [backwardPage, forwardPage] = usePages(
-    pagination,
-    currentSession.user.browserSessions.pageInfo,
-    PAGE_SIZE,
-  );
-
-  // We reverse the list as we are paginating backwards
-  const edges = [...currentSession.user.browserSessions.edges].reverse();
-  return (
-    <BlockList>
-      <H5>{t("frontend.browser_sessions_overview.heading")}</H5>
-
-      <div className="flex gap-2 items-start">
-        <Filter
-          to={Route.fullPath}
-          enabled={inactive}
-          search={{ ...DEFAULT_PAGE, inactive: inactive ? undefined : true }}
-        >
-          {t("frontend.last_active.inactive_90_days")}
-        </Filter>
-      </div>
-
-      {edges.map((n) => (
-        <BrowserSession
-          key={n.cursor}
-          session={n.node}
-          isCurrent={currentSession.id === n.node.id}
-        />
-      ))}
-
-      {currentSession.user.browserSessions.totalCount === 0 && (
-        <EmptyState>
-          {inactive
-            ? t(
-                "frontend.browser_sessions_overview.no_active_sessions.inactive_90_days",
-              )
-            : t(
-                "frontend.browser_sessions_overview.no_active_sessions.default",
-              )}
-        </EmptyState>
-      )}
-
-      {/* Only show the pagination buttons if there are pages to go to */}
-      {(forwardPage || backwardPage) && (
-        <div className="flex *:flex-1">
-          <ButtonLink
-            kind="secondary"
-            size="sm"
-            disabled={!forwardPage}
-            to={Route.fullPath}
-            search={forwardPage || pagination}
-          >
-            {t("common.previous")}
-          </ButtonLink>
-
-          {/* Spacer */}
-          <div />
-
-          <ButtonLink
-            kind="secondary"
-            size="sm"
-            disabled={!backwardPage}
-            to={Route.fullPath}
-            search={backwardPage || pagination}
-          >
-            {t("common.next")}
-          </ButtonLink>
-        </div>
-      )}
-    </BlockList>
-  );
-}

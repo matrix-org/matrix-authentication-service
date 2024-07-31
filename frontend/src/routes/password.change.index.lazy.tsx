@@ -33,20 +33,7 @@ import { graphql } from "../gql";
 import { SetPasswordStatus } from "../gql/graphql";
 import { translateSetPasswordError } from "../i18n/password_changes";
 
-const QUERY = graphql(/* GraphQL */ `
-  query PasswordChangeQuery {
-    viewer {
-      __typename
-      ... on Node {
-        id
-      }
-    }
-
-    siteConfig {
-      ...PasswordCreationDoubleInput_siteConfig
-    }
-  }
-`);
+import { QUERY } from "./password.change.index";
 
 const CHANGE_PASSWORD_MUTATION = graphql(/* GraphQL */ `
   mutation ChangePassword(

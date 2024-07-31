@@ -13,30 +13,19 @@
 // limitations under the License.
 
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { H3, Separator } from "@vector-im/compound-web";
-import { useTranslation } from "react-i18next";
-import { useQuery } from "urql";
 import * as z from "zod";
 
-import BlockList from "../components/BlockList";
-import { ButtonLink } from "../components/ButtonLink";
-import CompatSession from "../components/CompatSession";
-import EmptyState from "../components/EmptyState";
-import Filter from "../components/Filter";
-import OAuth2Session from "../components/OAuth2Session";
-import BrowserSessionsOverview from "../components/UserSessionsOverview/BrowserSessionsOverview";
 import { graphql } from "../gql";
 import {
-  BackwardPagination,
-  Pagination,
+  type BackwardPagination,
+  type Pagination,
   paginationSchema,
-  usePages,
 } from "../pagination";
 
 const PAGE_SIZE = 6;
 const DEFAULT_PAGE: BackwardPagination = { last: PAGE_SIZE };
 
-const QUERY = graphql(/* GraphQL */ `
+export const QUERY = graphql(/* GraphQL */ `
   query SessionsOverviewQuery {
     viewer {
       __typename
@@ -49,7 +38,7 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-const LIST_QUERY = graphql(/* GraphQL */ `
+export const LIST_QUERY = graphql(/* GraphQL */ `
   query AppSessionsListQuery(
     $before: String
     $after: String
@@ -91,11 +80,6 @@ const LIST_QUERY = graphql(/* GraphQL */ `
     }
   }
 `);
-
-// A type-safe way to ensure we've handled all session types
-const unknownSessionType = (type: never): never => {
-  throw new Error(`Unknown session type: ${type}`);
-};
 
 const searchSchema = z.object({
   inactive: z.literal(true).optional().catch(undefined),
@@ -139,108 +123,4 @@ export const Route = createFileRoute("/_account/sessions/")({
     if (overview.data?.viewer?.__typename !== "User") throw notFound();
     if (list.data?.viewer?.__typename !== "User") throw notFound();
   },
-
-  component: Sessions,
 });
-
-function Sessions(): React.ReactElement {
-  const { t } = useTranslation();
-  const { inactive, ...pagination } = Route.useLoaderDeps();
-  const [overview] = useQuery({ query: QUERY });
-  if (overview.error) throw overview.error;
-  const user =
-    overview.data?.viewer.__typename === "User" ? overview.data.viewer : null;
-  if (user === null) throw notFound();
-
-  const variables = {
-    lastActive: inactive ? { before: getNintyDaysAgo() } : undefined,
-    ...pagination,
-  };
-
-  const [list] = useQuery({ query: LIST_QUERY, variables });
-  if (list.error) throw list.error;
-  const appSessions =
-    list.data?.viewer.__typename === "User"
-      ? list.data.viewer.appSessions
-      : null;
-  if (appSessions === null) throw notFound();
-
-  const [backwardPage, forwardPage] = usePages(
-    pagination,
-    appSessions.pageInfo,
-    PAGE_SIZE,
-  );
-
-  // We reverse the list as we are paginating backwards
-  const edges = [...appSessions.edges].reverse();
-
-  return (
-    <BlockList>
-      <H3>{t("frontend.user_sessions_overview.heading")}</H3>
-      <BrowserSessionsOverview user={user} />
-      <Separator />
-      <div className="flex gap-2 justify-start items-center">
-        <Filter
-          to={Route.fullPath}
-          enabled={inactive}
-          search={{ ...DEFAULT_PAGE, inactive: inactive ? undefined : true }}
-        >
-          {t("frontend.last_active.inactive_90_days")}
-        </Filter>
-      </div>
-      {edges.map((session) => {
-        const type = session.node.__typename;
-        switch (type) {
-          case "Oauth2Session":
-            return (
-              <OAuth2Session key={session.cursor} session={session.node} />
-            );
-          case "CompatSession":
-            return (
-              <CompatSession key={session.cursor} session={session.node} />
-            );
-          default:
-            unknownSessionType(type);
-        }
-      })}
-
-      {appSessions.totalCount === 0 && (
-        <EmptyState>
-          {inactive
-            ? t(
-                "frontend.user_sessions_overview.no_active_sessions.inactive_90_days",
-              )
-            : t("frontend.user_sessions_overview.no_active_sessions.default")}
-        </EmptyState>
-      )}
-
-      {/* Only show the pagination buttons if there are pages to go to */}
-      {(forwardPage || backwardPage) && (
-        <div className="flex *:flex-1">
-          <ButtonLink
-            kind="secondary"
-            size="sm"
-            disabled={!forwardPage}
-            to={Route.fullPath}
-            search={{ inactive, ...(forwardPage || pagination) }}
-          >
-            {t("common.previous")}
-          </ButtonLink>
-
-          {/* Spacer */}
-          <div />
-
-          <ButtonLink
-            kind="secondary"
-            size="sm"
-            disabled={!backwardPage}
-            to={Route.fullPath}
-            search={{ inactive, ...(backwardPage || pagination) }}
-          >
-            {t("common.next")}
-          </ButtonLink>
-        </div>
-      )}
-    </BlockList>
-  );
-}

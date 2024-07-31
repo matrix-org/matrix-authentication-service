@@ -32,14 +32,7 @@ import { graphql } from "../gql";
 import { SetPasswordStatus } from "../gql/graphql";
 import { translateSetPasswordError } from "../i18n/password_changes";
 
-const QUERY = graphql(/* GraphQL */ `
-  query PasswordRecoveryQuery {
-    siteConfig {
-      id
-      ...PasswordCreationDoubleInput_siteConfig
-    }
-  }
-`);
+import { QUERY } from "./password.recovery.index";
 
 const RECOVER_PASSWORD_MUTATION = graphql(/* GraphQL */ `
   mutation RecoverPassword($ticket: String!, $newPassword: String!) {

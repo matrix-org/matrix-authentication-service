@@ -13,13 +13,10 @@
 // limitations under the License.
 
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { useQuery } from "urql";
 
-import OAuth2ClientDetail from "../components/Client/OAuth2ClientDetail";
-import Layout from "../components/Layout";
 import { graphql } from "../gql";
 
-const QUERY = graphql(/* GraphQL */ `
+export const QUERY = graphql(/* GraphQL */ `
   query OAuth2ClientQuery($id: ID!) {
     oauth2Client(id: $id) {
       ...OAuth2Client_detail
@@ -37,22 +34,4 @@ export const Route = createFileRoute("/clients/$id")({
     if (result.error) throw result.error;
     if (!result.data?.oauth2Client) throw notFound();
   },
-  component: ClientDetail,
 });
-
-function ClientDetail(): React.ReactElement {
-  const { id } = Route.useParams();
-  const [result] = useQuery({
-    query: QUERY,
-    variables: { id },
-  });
-  if (result.error) throw result.error;
-  const client = result.data?.oauth2Client;
-  if (!client) throw new Error(); // Should have been caught by the loader
-
-  return (
-    <Layout>
-      <OAuth2ClientDetail client={client} />
-    </Layout>
-  );
-}
