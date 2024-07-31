@@ -18,7 +18,9 @@ use anyhow::Context;
 use clap::Parser;
 use figment::Figment;
 use itertools::Itertools;
-use mas_config::{AppConfig, ClientsConfig, ConfigurationSection, UpstreamOAuth2Config};
+use mas_config::{
+    AppConfig, ClientsConfig, ConfigurationSection, ConfigurationSectionExt, UpstreamOAuth2Config,
+};
 use mas_handlers::{ActivityTracker, CookieManager, HttpClientFactory, Limiter, MetadataCache};
 use mas_listener::{server::Server, shutdown::ShutdownStream};
 use mas_matrix_synapse::SynapseConnection;
@@ -103,8 +105,8 @@ impl Options {
         } else {
             // Sync the configuration with the database
             let mut conn = pool.acquire().await?;
-            let clients_config = ClientsConfig::extract(figment)?;
-            let upstream_oauth2_config = UpstreamOAuth2Config::extract(figment)?;
+            let clients_config = ClientsConfig::extract_or_default(figment)?;
+            let upstream_oauth2_config = UpstreamOAuth2Config::extract_or_default(figment)?;
 
             crate::sync::config_sync(
                 upstream_oauth2_config,

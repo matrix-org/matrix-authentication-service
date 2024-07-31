@@ -17,7 +17,7 @@ use std::process::ExitCode;
 use anyhow::Context;
 use clap::Parser;
 use figment::Figment;
-use mas_config::{ConfigurationSection, DatabaseConfig};
+use mas_config::{ConfigurationSectionExt, DatabaseConfig};
 use mas_storage_pg::MIGRATOR;
 use tracing::{info_span, Instrument};
 
@@ -38,7 +38,7 @@ enum Subcommand {
 impl Options {
     pub async fn run(self, figment: &Figment) -> anyhow::Result<ExitCode> {
         let _span = info_span!("cli.database.migrate").entered();
-        let config = DatabaseConfig::extract(figment)?;
+        let config = DatabaseConfig::extract_or_default(figment)?;
         let mut conn = database_connection_from_config(&config).await?;
 
         // Run pending migrations
