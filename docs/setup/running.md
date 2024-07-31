@@ -37,6 +37,7 @@ A few configuration sections might still require some tweaking, including:
  - [`telemetry`](../reference/configuration.md#telemetry): to setup metrics, tracing and Sentry crash reporting
  - [`email`](../reference/configuration.md#email): to setup email sending
  - [`password`](../reference/configuration.md#password): to enable/disable password authentication
+ - [`account`](../reference/configuration.md#account): to configure what account management features are enabled
  - [`upstream_oauth`](../reference/configuration.md#upstream-oauth): to configure upstream OAuth providers
 
 
