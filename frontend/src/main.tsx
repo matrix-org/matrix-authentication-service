@@ -33,6 +33,7 @@ const router = createRouter({
   basepath: config.root,
   defaultErrorComponent: GenericError,
   defaultPreload: "intent",
+  defaultPendingMinMs: 0,
   context: { client },
 });
 
