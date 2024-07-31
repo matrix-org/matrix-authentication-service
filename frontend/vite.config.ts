@@ -50,14 +50,13 @@ export default defineConfig((env) => ({
 
   define: {
     "import.meta.vitest": "undefined",
+    "process.env.NODE_ENV": JSON.stringify(env.mode),
   },
 
   build: {
     manifest: "manifest.json",
     assetsDir: "",
-    assetsInlineLimit: 0,
     sourcemap: true,
-    modulePreload: false,
     target: browserslistToEsbuild(),
     cssCodeSplit: true,
 
