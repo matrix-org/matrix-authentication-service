@@ -12,12 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use mas_data_model::SiteConfig;
+use mas_axum_utils::http_client_factory::HttpClientFactory;
+use mas_data_model::{SiteConfig, UserAgent};
+use mas_i18n::DataLocale;
 use mas_matrix::HomeserverConnection;
 use mas_policy::Policy;
+use mas_router::UrlBuilder;
 use mas_storage::{BoxClock, BoxRepository, BoxRng, RepositoryError};
 
-use crate::{graphql::Requester, passwords::PasswordManager};
+use crate::{graphql::Requester, passwords::PasswordManager, BoundActivityTracker};
 
 #[async_trait::async_trait]
 pub trait State {
@@ -28,6 +31,8 @@ pub trait State {
     fn clock(&self) -> BoxClock;
     fn rng(&self) -> BoxRng;
     fn site_config(&self) -> &SiteConfig;
+    fn http_client_factory(&self) -> &HttpClientFactory;
+    fn url_builder(&self) -> &UrlBuilder;
 }
 
 pub type BoxState = Box<dyn State + Send + Sync + 'static>;
@@ -36,6 +41,16 @@ pub trait ContextExt {
     fn state(&self) -> &BoxState;
 
     fn requester(&self) -> &Requester;
+
+    /// Get the parsed user agent of the client making the request.
+    /// Not guaranteed to be present.
+    fn user_agent(&self) -> Option<&UserAgent>;
+
+    /// Get the preferred language/locale of the client making the request.
+    fn preferred_locale(&self) -> &DataLocale;
+
+    /// Get the activity tracker bound to the requester.
+    fn activity_tracker(&self) -> &BoundActivityTracker;
 }
 
 impl ContextExt for async_graphql::Context<'_> {
@@ -44,6 +59,18 @@ impl ContextExt for async_graphql::Context<'_> {
     }
 
     fn requester(&self) -> &Requester {
+        self.data_unchecked()
+    }
+
+    fn user_agent(&self) -> Option<&UserAgent> {
+        self.data_unchecked::<Option<UserAgent>>().as_ref()
+    }
+
+    fn preferred_locale(&self) -> &DataLocale {
+        self.data_unchecked()
+    }
+
+    fn activity_tracker(&self) -> &BoundActivityTracker {
         self.data_unchecked()
     }
 }

@@ -35,11 +35,13 @@ use futures_util::TryStreamExt;
 use headers::{authorization::Bearer, Authorization, ContentType, HeaderValue};
 use hyper::header::CACHE_CONTROL;
 use mas_axum_utils::{
-    cookies::CookieJar, sentry::SentryEventID, FancyError, SessionInfo, SessionInfoExt,
+    cookies::CookieJar, http_client_factory::HttpClientFactory, sentry::SentryEventID, FancyError,
+    SessionInfo, SessionInfoExt,
 };
-use mas_data_model::{BrowserSession, Session, SiteConfig, User};
+use mas_data_model::{BrowserSession, Session, SiteConfig, User, UserAgent};
 use mas_matrix::HomeserverConnection;
 use mas_policy::{InstantiateError, Policy, PolicyFactory};
+use mas_router::UrlBuilder;
 use mas_storage::{BoxClock, BoxRepository, BoxRng, Clock, RepositoryError, SystemClock};
 use mas_storage_pg::PgRepository;
 use opentelemetry_semantic_conventions::trace::{GRAPHQL_DOCUMENT, GRAPHQL_OPERATION_NAME};
@@ -60,7 +62,9 @@ use self::{
     mutations::Mutation,
     query::Query,
 };
-use crate::{impl_from_error_for_route, passwords::PasswordManager, BoundActivityTracker};
+use crate::{
+    impl_from_error_for_route, passwords::PasswordManager, BoundActivityTracker, PreferredLanguage,
+};
 
 #[cfg(test)]
 mod tests;
@@ -71,6 +75,8 @@ struct GraphQLState {
     policy_factory: Arc<PolicyFactory>,
     site_config: SiteConfig,
     password_manager: PasswordManager,
+    http_client_factory: HttpClientFactory,
+    url_builder: UrlBuilder,
 }
 
 #[async_trait]
@@ -111,6 +117,14 @@ impl state::State for GraphQLState {
         let rng = ChaChaRng::from_rng(rng).expect("Failed to seed rng");
         Box::new(rng)
     }
+
+    fn http_client_factory(&self) -> &HttpClientFactory {
+        &self.http_client_factory
+    }
+
+    fn url_builder(&self) -> &UrlBuilder {
+        &self.url_builder
+    }
 }
 
 #[must_use]
@@ -120,6 +134,8 @@ pub fn schema(
     homeserver_connection: impl HomeserverConnection<Error = anyhow::Error> + 'static,
     site_config: SiteConfig,
     password_manager: PasswordManager,
+    http_client_factory: HttpClientFactory,
+    url_builder: UrlBuilder,
 ) -> Schema {
     let state = GraphQLState {
         pool: pool.clone(),
@@ -127,6 +143,8 @@ pub fn schema(
         homeserver_connection: Arc::new(homeserver_connection),
         site_config,
         password_manager,
+        http_client_factory,
+        url_builder,
     };
     let state: BoxState = Box::new(state);
 
@@ -281,12 +299,14 @@ async fn get_requester(
 
 pub async fn post(
     AxumState(schema): AxumState<Schema>,
+    PreferredLanguage(locale): PreferredLanguage,
     clock: BoxClock,
     repo: BoxRepository,
     activity_tracker: BoundActivityTracker,
     cookie_jar: CookieJar,
     content_type: Option<TypedHeader<ContentType>>,
     authorization: Option<TypedHeader<Authorization<Bearer>>>,
+    user_agent: Option<TypedHeader<headers::UserAgent>>,
     body: Body,
 ) -> Result<impl IntoResponse, RouteError> {
     let body = body.into_data_stream();
@@ -304,8 +324,11 @@ pub async fn post(
             .into_async_read(),
         MultipartOptions::default(),
     )
-    .await?
-    .data(requester); // XXX: this should probably return another error response?
+    .await? // XXX: this should probably return another error response?
+    .data(requester)
+    .data(user_agent.map(|ua| UserAgent::parse(ua.as_str().to_owned())))
+    .data(locale)
+    .data(activity_tracker);
 
     let span = span_for_graphql_request(&request);
     let response = schema.execute(request).instrument(span).await;
@@ -328,6 +351,7 @@ pub async fn get(
     activity_tracker: BoundActivityTracker,
     cookie_jar: CookieJar,
     authorization: Option<TypedHeader<Authorization<Bearer>>>,
+    user_agent: Option<TypedHeader<headers::UserAgent>>,
     RawQuery(query): RawQuery,
 ) -> Result<impl IntoResponse, FancyError> {
     let token = authorization
@@ -336,8 +360,10 @@ pub async fn get(
     let (session_info, _cookie_jar) = cookie_jar.session_info();
     let requester = get_requester(&clock, &activity_tracker, repo, session_info, token).await?;
 
-    let request =
-        async_graphql::http::parse_query_string(&query.unwrap_or_default())?.data(requester);
+    let request = async_graphql::http::parse_query_string(&query.unwrap_or_default())?
+        .data(requester)
+        .data(activity_tracker)
+        .data(user_agent);
 
     let span = span_for_graphql_request(&request);
     let response = schema.execute(request).instrument(span).await;
