@@ -1382,6 +1382,29 @@ export default {
             ]
           },
           {
+            "name": "registerUser",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "RegisterUserPayload",
+                "ofType": null
+              }
+            },
+            "args": [
+              {
+                "name": "input",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Any"
+                  }
+                }
+              }
+            ]
+          },
+          {
             "name": "removeEmail",
             "type": {
               "kind": "NON_NULL",
@@ -2419,6 +2442,75 @@ export default {
                 "kind": "UNION",
                 "name": "ViewerSession",
                 "ofType": null
+              }
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "RegisterUserPayload",
+        "fields": [
+          {
+            "name": "emailViolations",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Any"
+                  }
+                }
+              }
+            },
+            "args": []
+          },
+          {
+            "name": "miscViolations",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Any"
+                  }
+                }
+              }
+            },
+            "args": []
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Any"
+              }
+            },
+            "args": []
+          },
+          {
+            "name": "usernameViolations",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Any"
+                  }
+                }
               }
             },
             "args": []

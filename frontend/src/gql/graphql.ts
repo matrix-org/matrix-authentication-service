@@ -221,6 +221,16 @@ export type CaptchaConfig = {
   siteKey: Scalars['String']['output'];
 };
 
+/**
+ * Form (or GraphQL input) containing a CAPTCHA provider's response
+ * for one of the providers.
+ */
+export type CaptchaForm = {
+  cfTurnstileResponse?: InputMaybe<Scalars['String']['input']>;
+  gRecaptchaResponse?: InputMaybe<Scalars['String']['input']>;
+  hCaptchaResponse?: InputMaybe<Scalars['String']['input']>;
+};
+
 /** Which Captcha service is being used */
 export enum CaptchaService {
   CloudflareTurnstile = 'CLOUDFLARE_TURNSTILE',
@@ -501,6 +511,11 @@ export type Mutation = {
   endOauth2Session: EndOAuth2SessionPayload;
   /** Lock a user. This is only available to administrators. */
   lockUser: LockUserPayload;
+  /**
+   * Register a user. If enabled, can be used by anonymous requesters to
+   * create an account. May require a CAPTCHA challenge to be completed.
+   */
+  registerUser: RegisterUserPayload;
   /** Remove an email address */
   removeEmail: RemoveEmailPayload;
   /** Send a verification code for an email address */
@@ -577,6 +592,12 @@ export type MutationEndOauth2SessionArgs = {
 /** The mutations root of the GraphQL interface. */
 export type MutationLockUserArgs = {
   input: LockUserInput;
+};
+
+
+/** The mutations root of the GraphQL interface. */
+export type MutationRegisterUserArgs = {
+  input: RegisterUserInput;
 };
 
 
@@ -873,6 +894,66 @@ export type QueryUsersArgs = {
   last?: InputMaybe<Scalars['Int']['input']>;
   state?: InputMaybe<UserState>;
 };
+
+/** The input for the `registerUser` mutation. */
+export type RegisterUserInput = {
+  /** Accept the terms of service */
+  acceptTerms: Scalars['Boolean']['input'];
+  captcha: CaptchaForm;
+  /**
+   * E-mail address to register on the account.
+   * A verification e-mail will be sent here.
+   */
+  email: Scalars['String']['input'];
+  /** Password to set on the account, used for logging in. */
+  password: Scalars['String']['input'];
+  /** The desired username to be registered. */
+  username: Scalars['String']['input'];
+};
+
+/** The return type for the `registerUser` mutation. */
+export type RegisterUserPayload = {
+  __typename?: 'RegisterUserPayload';
+  /**
+   * Set when the `status` is [`RegisterUserStatus::PolicyViolation`],
+   * this is a list of violations related to the e-mail address.
+   */
+  emailViolations: Array<Scalars['String']['output']>;
+  /**
+   * Set when the `status` is [`RegisterUserStatus::PolicyViolation`],
+   * this is a list of miscellaneous violations not related to a specific
+   * field.
+   */
+  miscViolations: Array<Scalars['String']['output']>;
+  status: RegisterUserStatus;
+  /**
+   * Set when the `status` is [`RegisterUserStatus::PolicyViolation`],
+   * this is a list of violations related to the username.
+   */
+  usernameViolations: Array<Scalars['String']['output']>;
+};
+
+/** The status of the `registerUser` mutation. */
+export enum RegisterUserStatus {
+  /** The user was registered. */
+  Allowed = 'ALLOWED',
+  /** The CAPTCHA challenge response is not valid. */
+  InvalidCaptcha = 'INVALID_CAPTCHA',
+  /** The supplied e-mail address is not valid. */
+  InvalidEmail = 'INVALID_EMAIL',
+  /** The supplied password does not meet complexity requirements. */
+  InvalidPassword = 'INVALID_PASSWORD',
+  /** The username is not valid. */
+  InvalidUsername = 'INVALID_USERNAME',
+  /** Must accept terms of service to register. */
+  MustAcceptTerms = 'MUST_ACCEPT_TERMS',
+  /** Local policy prevents this registration. */
+  PolicyViolation = 'POLICY_VIOLATION',
+  /** Self-registration is not enabled. */
+  SelfRegistrationDisabled = 'SELF_REGISTRATION_DISABLED',
+  /** The username is already in use or is otherwise reserved. */
+  UsernameNotAvailable = 'USERNAME_NOT_AVAILABLE'
+}
 
 /** The input for the `removeEmail` mutation */
 export type RemoveEmailInput = {

@@ -313,6 +313,16 @@ type CaptchaConfig {
 }
 
 """
+Form (or GraphQL input) containing a CAPTCHA provider's response
+for one of the providers.
+"""
+input CaptchaForm {
+  gRecaptchaResponse: String
+  hCaptchaResponse: String
+  cfTurnstileResponse: String
+}
+
+"""
 Which Captcha service is being used
 """
 enum CaptchaService {
@@ -804,6 +814,11 @@ type Mutation {
   """
   setPasswordByRecovery(input: SetPasswordByRecoveryInput!): SetPasswordPayload!
   """
+  Register a user. If enabled, can be used by anonymous requesters to
+  create an account. May require a CAPTCHA challenge to be completed.
+  """
+  registerUser(input: RegisterUserInput!): RegisterUserPayload!
+  """
   Create a new arbitrary OAuth 2.0 Session.
 
   Only available for administrators.
@@ -1117,6 +1132,95 @@ type Query {
   Get the viewer's session
   """
   viewerSession: ViewerSession!
+}
+
+"""
+The input for the `registerUser` mutation.
+"""
+input RegisterUserInput {
+  """
+  The desired username to be registered.
+  """
+  username: String!
+  """
+  E-mail address to register on the account.
+  A verification e-mail will be sent here.
+  """
+  email: String!
+  """
+  Password to set on the account, used for logging in.
+  """
+  password: String!
+  captcha: CaptchaForm!
+  """
+  Accept the terms of service
+  """
+  acceptTerms: Boolean!
+}
+
+"""
+The return type for the `registerUser` mutation.
+"""
+type RegisterUserPayload {
+  status: RegisterUserStatus!
+  """
+  Set when the `status` is [`RegisterUserStatus::PolicyViolation`],
+  this is a list of miscellaneous violations not related to a specific
+  field.
+  """
+  miscViolations: [String!]!
+  """
+  Set when the `status` is [`RegisterUserStatus::PolicyViolation`],
+  this is a list of violations related to the username.
+  """
+  usernameViolations: [String!]!
+  """
+  Set when the `status` is [`RegisterUserStatus::PolicyViolation`],
+  this is a list of violations related to the e-mail address.
+  """
+  emailViolations: [String!]!
+}
+
+"""
+The status of the `registerUser` mutation.
+"""
+enum RegisterUserStatus {
+  """
+  The user was registered.
+  """
+  ALLOWED
+  """
+  The username is not valid.
+  """
+  INVALID_USERNAME
+  """
+  The username is already in use or is otherwise reserved.
+  """
+  USERNAME_NOT_AVAILABLE
+  """
+  The supplied password does not meet complexity requirements.
+  """
+  INVALID_PASSWORD
+  """
+  Must accept terms of service to register.
+  """
+  MUST_ACCEPT_TERMS
+  """
+  The supplied e-mail address is not valid.
+  """
+  INVALID_EMAIL
+  """
+  Self-registration is not enabled.
+  """
+  SELF_REGISTRATION_DISABLED
+  """
+  The CAPTCHA challenge response is not valid.
+  """
+  INVALID_CAPTCHA
+  """
+  Local policy prevents this registration.
+  """
+  POLICY_VIOLATION
 }
 
 """
