@@ -21,7 +21,7 @@
     "@fontsource/inter": "^5.0.18",
     "@radix-ui/react-dialog": "^1.0.5",
     "@tanstack/react-router": "^1.43.4",
-    "@urql/core": "^5.0.4",
+    "@urql/core": "^5.0.5",
     "@urql/devtools": "^2.0.3",
     "@urql/exchange-graphcache": "^7.1.2",
     "@urql/exchange-refocus": "^1.1.0",
