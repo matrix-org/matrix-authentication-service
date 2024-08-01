@@ -87,6 +87,5 @@
     "vite-plugin-graphql-codegen": "^3.3.8",
     "vite-plugin-manifest-sri": "^0.2.0",
     "vitest": "^1.4.0"
-  },
-  "packageManager": "pnpm@8.6.10+sha1.98fe2755061026799bfa30e7dc8d6d48e9c3edf0"
+  }
 }
