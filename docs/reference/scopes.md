@@ -87,12 +87,11 @@ When [authorized as a user](../topics/authorization.md#authorized-as-a-user-or-a
 
 The default policy allows any client and any user to request this scope.
 
+However, as noted in the [Internal GraphQL API] documentation, access to the Internal GraphQL API from outside of MAS itself is deprecated in favour of the [Admin API].
+
 ### `urn:mas:admin`
 
-This scope grants access to the MAS [Admin API].
-
-Combined with the `urn:mas:graphql:*` scope, it also grants full access to the MAS [Internal GraphQL API].
-This allows the authenticated entity to perform any operation on the API, regardless of whether the entity owns the data or not.
+This scope grants full access to the MAS [Admin API].
 
 The default policy doesn't allow everyone to request this scope.
 It allows:
