@@ -3,6 +3,8 @@
 MAS provides a REST-like API for administrators to manage the service.
 This API is intended to build tools on top of MAS, and is only available to administrators.
 
+> **Note:** This Admin API is now the correct way for external tools to interact with MAS. External access to the [Internal GraphQL API](../development/graphql.md) is deprecated and will be removed in a future release.
+
 ## Enabling the API
 
 The API isn't exposed by default, and must be added to either a public or a private HTTP listener.
@@ -37,7 +39,7 @@ http:
 ## Reference documentation
 
 The API is documented using the [OpenAPI specification](https://spec.openapis.org/oas/v3.1.0).
-The API schema is avaialble [here](../api/spec.json).
+The API schema is available [here](../api/spec.json).
 This schema can be viewed in tools like Swagger UI, available [here](../api/).
 
 If admin API is enabled, MAS will also serve the specification at `/api/spec.json`, with a Swagger UI available at `/api/doc/`.
@@ -157,7 +159,7 @@ When querying a list of resources, the response is generally shaped like this:
 }
 ```
 
-The `meta` will have the total numer of items in it, and the `links` object contains the links to the next and previous pages, if any.
+The `meta` will have the total number of items in it, and the `links` object contains the links to the next and previous pages, if any.
 
 Pagination is cursor-based, where the ID of items is used as the cursor.
 Resources can be paginated forwards using the `page[after]` and `page[first]` parameters, and backwards using the `page[before]` and `page[last]` parameters.

@@ -86,11 +86,11 @@ the API can be requested by a session which has the [`urn:mas:graphql:*`] and th
 MAS supports a few different authorization grants for OAuth 2.0 sessions.
 Whilst this section won't go into the technical details of how those grants work, it's important to understand what they are and what they are used for.
 
-| Grant type                                          | Entity | User interaction | Matrix C-S API | Synapse admin API |  MAS GraphQL API |
-| --------------------------------------------------- | ------ | ---------------- | -------------- | ----------------- | ---------------- |
-| [Authorization code](#authorization-code-grant)     | User   | Same device      | Yes            | Yes               | Yes              |
-| [Device authorization](#device-authorization-grant) | User   | Other device     | Yes            | Yes               | Yes              |
-| [Client credentials](#client-credentials-grant)     | Client | None             | No             | No[^admin]        | No               |
+| Grant type                                          | Entity | User interaction | Matrix C-S API | Synapse admin API |  MAS Internal GraphQL API | MAS Admin API |
+| --------------------------------------------------- | ------ | ---------------- | -------------- | ----------------- | ------------------------- | ------------- |
+| [Authorization code](#authorization-code-grant)     | User   | Same device      | Yes            | Yes               | Yes                       | TODO: ?       |
+| [Device authorization](#device-authorization-grant) | User   | Other device     | Yes            | Yes               | Yes                       | TODO: ?       |
+| [Client credentials](#client-credentials-grant)     | Client | None             | No             | No[^admin]        | No                        | TODO: ?       |
 
 [^admin]: The Synapse admin API doesn't strictly require a user, but Synapse doesn't support client-only sessions yet. In the future, it will be possible to leverage the client credentials grant to access the Synapse admin API.
 
