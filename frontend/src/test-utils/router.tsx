@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import {
-  RouterProvider,
+  RouterContextProvider,
   createMemoryHistory,
   createRootRoute,
   createRoute,
@@ -22,25 +22,15 @@ import {
 
 const rootRoute = createRootRoute();
 const index = createRoute({ getParentRoute: () => rootRoute, path: "/" });
-rootRoute.addChildren([index]);
 
 const router = createRouter({
   history: createMemoryHistory(),
-  routeTree: rootRoute,
+  routeTree: rootRoute.addChildren([index]),
 });
-
-const routerReady = router.load();
-// Because we also use this in the stories, we need to make sure we call this only in tests
-if (import.meta.vitest) {
-  // Make sure the router is ready before running any tests
-  import("vitest").then(({ beforeAll }) =>
-    beforeAll(async () => await routerReady),
-  );
-}
 
 export const DummyRouter: React.FC<React.PropsWithChildren> = ({
   children,
 }) => (
   /** @ts-expect-error: The router we pass doesn't match the "real" router, which is fine for tests */
-  <RouterProvider router={router} defaultComponent={() => children} />
+  <RouterContextProvider router={router}>{children}</RouterContextProvider>
 );
