@@ -81,7 +81,7 @@ MAS also has a few scopes that are specific to the MAS implementation.
 
 ### `urn:mas:graphql:*`
 
-This scope grants access to the whole MAS [GraphQL API].
+This scope grants access to the whole MAS [Internal GraphQL API].
 What permission the session has on the API is determined by the entity that the session is authorized as.
 When [authorized as a user](../topics/authorization.md#authorized-as-a-user-or-authorized-as-a-client) (and without the `mas:urn:admin` scope), this will usually allow querying and mutating the user's own data.
 
@@ -91,7 +91,7 @@ The default policy allows any client and any user to request this scope.
 
 This scope grants access to the MAS [Admin API].
 
-Combined with the `urn:mas:graphql:*` scope, it also grants full access to the MAS [GraphQL API].
+Combined with the `urn:mas:graphql:*` scope, it also grants full access to the MAS [Internal GraphQL API].
 This allows the authenticated entity to perform any operation on the API, regardless of whether the entity owns the data or not.
 
 The default policy doesn't allow everyone to request this scope.
@@ -105,7 +105,7 @@ It allows:
 
 [authorization code]: ../topics/authorization.md#authorization-code-grant
 [device authorization]: ../topics/authorization.md#device-authorization-grant
-[GraphQL API]: ./graphql.md
+[Internal GraphQL API]: ../development/graphql.md
 [Admin API]: ../topics/admin-api.md
 [Synapse admin API]: https://element-hq.github.io/synapse/latest/usage/administration/admin_api/index.html
 [OpenID Connect Core 1.0]: https://openid.net/specs/openid-connect-core-1_0.html
