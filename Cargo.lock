@@ -3744,7 +3744,7 @@ dependencies = [
  "opentelemetry-semantic-conventions",
  "rand",
  "rand_chacha",
- "sea-query",
+ "sea-query 0.30.7",
  "sea-query-binder",
  "serde",
  "serde_json",
@@ -5432,6 +5432,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "sea-query"
+version = "0.31.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7e5073b2cfed767511a57d18115f3b3d8bcb5690bf8c89518caec6cb22c0cd74"
+dependencies = [
+ "chrono",
+ "inherent",
+ "uuid",
+]
+
+[[package]]
 name = "sea-query-attr"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5445,12 +5456,12 @@ dependencies = [
 
 [[package]]
 name = "sea-query-binder"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36bbb68df92e820e4d5aeb17b4acd5cc8b5d18b2c36a4dd6f4626aabfa7ab1b9"
+checksum = "754965d4aee6145bec25d0898e5c931e6c22859789ce62fd85a42a15ed5a8ce3"
 dependencies = [
  "chrono",
- "sea-query",
+ "sea-query 0.31.0",
  "sqlx",
  "uuid",
 ]
