@@ -15,12 +15,20 @@ updates:
       aws:
         patterns:
           - "aws-*"
+      axum:
+        patterns:
+          - "axum"
+          - "axum-*"
       opentelemetry:
         patterns:
           - "opentelemetry"
           - "opentelemetry_sdk"
           - "opentelemetry-*"
           - "tracing-opentelemetry"
+      sea-query:
+        patterns:
+          - "sea-query"
+          - "sea-query-*"
       sentry:
         patterns:
           - "sentry"
@@ -53,16 +61,16 @@ updates:
     groups:
       storybook:
         patterns:
-         - "storybook"
-         - "storybook-*"
-         - "@storybook/*"
+          - "storybook"
+          - "storybook-*"
+          - "@storybook/*"
       fontsource:
         patterns:
-         - "@fontsource/*"
+          - "@fontsource/*"
       vitest:
         patterns:
-         - "vitest"
-         - "@vitest/*"
+          - "vitest"
+          - "@vitest/*"
       vite:
         patterns:
           - "vite"
