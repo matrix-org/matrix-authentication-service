@@ -74,7 +74,7 @@
     "eslint-plugin-matrix-org": "^1.2.1",
     "happy-dom": "^14.12.3",
     "i18next-parser": "^9.0.1",
-    "postcss": "^8.4.39",
+    "postcss": "^8.4.40",
     "postcss-modules": "^6.0.0",
     "postcss-nesting": "^12.1.5",
     "prettier": "3.3.2",
