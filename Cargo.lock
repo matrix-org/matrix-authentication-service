@@ -3079,7 +3079,7 @@ dependencies = [
  "percent-encoding",
  "quoted_printable",
  "rustls 0.23.12",
- "rustls-pemfile 2.1.2",
+ "rustls-pemfile 2.1.3",
  "socket2 0.5.7",
  "tokio",
  "tokio-rustls",
@@ -3311,7 +3311,7 @@ dependencies = [
  "pem-rfc7468",
  "rand",
  "rand_chacha",
- "rustls-pemfile 2.1.2",
+ "rustls-pemfile 2.1.3",
  "rustls-pki-types",
  "schemars",
  "serde",
@@ -3592,7 +3592,7 @@ dependencies = [
  "hyper-util",
  "libc",
  "pin-project-lite",
- "rustls-pemfile 2.1.2",
+ "rustls-pemfile 2.1.3",
  "socket2 0.5.7",
  "thiserror",
  "tokio",
@@ -5090,7 +5090,7 @@ dependencies = [
  "pin-project-lite",
  "quinn",
  "rustls 0.23.12",
- "rustls-pemfile 2.1.2",
+ "rustls-pemfile 2.1.3",
  "rustls-pki-types",
  "serde",
  "serde_json",
@@ -5244,7 +5244,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f1fb85efa936c42c6d5fc28d2629bb51e4b2f4b8a5211e297d599cc5a093792"
 dependencies = [
  "openssl-probe",
- "rustls-pemfile 2.1.2",
+ "rustls-pemfile 2.1.3",
  "rustls-pki-types",
  "schannel",
  "security-framework",
@@ -5261,9 +5261,9 @@ dependencies = [
 
 [[package]]
 name = "rustls-pemfile"
-version = "2.1.2"
+version = "2.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29993a25686778eb88d4189742cd713c9bce943bc54251a33509dc63cbacf73d"
+checksum = "196fe16b00e106300d3e45ecfcb764fa292a535d7326a29a5875c579c7417425"
 dependencies = [
  "base64 0.22.1",
  "rustls-pki-types",
