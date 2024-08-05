@@ -14,11 +14,13 @@
 
 import { ArgTypes, Decorator, Parameters, Preview } from "@storybook/react";
 import { useLayoutEffect } from "react";
+import { TooltipProvider } from "@vector-im/compound-web";
 
 import "../src/shared.css";
 import i18n from "../src/i18n";
 
 import localazyMetadata from "./locales";
+import { DummyRouter } from "../src/test-utils/router";
 
 export const parameters: Parameters = {
   controls: {
@@ -75,7 +77,27 @@ const withThemeProvider: Decorator = (Story, context) => {
   );
 };
 
-export const decorators: Decorator[] = [withThemeProvider];
+const withDummyRouter: Decorator = (Story, context) => {
+  return (
+    <DummyRouter>
+      <Story />
+    </DummyRouter>
+  );
+};
+
+const withTooltipProvider: Decorator = (Story, context) => {
+  return (
+    <TooltipProvider>
+      <Story />
+    </TooltipProvider>
+  );
+};
+
+export const decorators: Decorator[] = [
+  withThemeProvider,
+  withDummyRouter,
+  withTooltipProvider,
+];
 
 const locales = Object.fromEntries(
   localazyMetadata.languages.map(({ language, name, localizedName }) => [

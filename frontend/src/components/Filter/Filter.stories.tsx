@@ -14,8 +14,6 @@
 
 import { Meta, StoryObj } from "@storybook/react";
 
-import { DummyRouter } from "../../test-utils/router";
-
 import { Filter } from "./Filter";
 
 const meta = {
@@ -28,11 +26,9 @@ const meta = {
   },
   decorators: [
     (Story): React.ReactElement => (
-      <DummyRouter>
-        <div className="flex gap-4">
-          <Story />
-        </div>
-      </DummyRouter>
+      <div className="flex gap-4">
+        <Story />
+      </div>
     ),
   ],
 } satisfies Meta<typeof Filter>;
