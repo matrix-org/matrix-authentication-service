@@ -76,7 +76,7 @@
     "i18next-parser": "^9.0.1",
     "postcss": "^8.4.40",
     "postcss-modules": "^6.0.0",
-    "postcss-nesting": "^12.1.5",
+    "postcss-nesting": "^13.0.0",
     "prettier": "3.3.2",
     "react-test-renderer": "^18.3.1",
     "rimraf": "^5.0.7",
