@@ -9,14 +9,10 @@
 ARG DEBIAN_VERSION=12
 ARG DEBIAN_VERSION_NAME=bookworm
 ARG RUSTC_VERSION=1.80.0
-# XXX: Upgrade to 0.10.0 blocked by https://github.com/ziglang/zig/issues/10915#issuecomment-1354548110
-# XXX: Upgrade to 0.11.0 blocked by https://github.com/rust-cross/cargo-zigbuild/issues/162
-ARG ZIG_VERSION=0.9.1
-ARG NODEJS_VERSION=20.12.2
+ARG NODEJS_VERSION=20.15.0
 ARG OPA_VERSION=0.64.1
-ARG CARGO_AUDITABLE_VERSION=0.6.3
-ARG CARGO_CHEF_VERSION=0.1.66
-ARG CARGO_ZIGBUILD_VERSION=0.18.4
+ARG CARGO_AUDITABLE_VERSION=0.6.4
+ARG CARGO_CHEF_VERSION=0.1.67
 
 ##########################################
 ## Build stage that builds the frontend ##
@@ -67,26 +63,17 @@ FROM --platform=${BUILDPLATFORM} docker.io/library/rust:${RUSTC_VERSION}-${DEBIA
 
 ARG CARGO_AUDITABLE_VERSION
 ARG CARGO_CHEF_VERSION
-ARG CARGO_ZIGBUILD_VERSION
 ARG RUSTC_VERSION
-ARG ZIG_VERSION
 
 # Make cargo use the git cli for fetching dependencies
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 
-# Install pinned versions of cargo-chef, cargo-zigbuild and cargo-auditable
+# Install pinned versions of cargo-chef and cargo-auditable
 # Network access: to fetch dependencies
 RUN --network=default \
   cargo install --locked \
   cargo-chef@=${CARGO_CHEF_VERSION} \
-  cargo-zigbuild@=${CARGO_ZIGBUILD_VERSION} \
   cargo-auditable@=${CARGO_AUDITABLE_VERSION}
-
-# Download zig compiler for cross-compilation
-# Network access: to download zig
-RUN --network=default \
-  curl -L "https://ziglang.org/download/${ZIG_VERSION}/zig-linux-$(uname -m)-${ZIG_VERSION}.tar.xz" | tar -J -x -C /usr/local && \
-  ln -s "/usr/local/zig-linux-$(uname -m)-${ZIG_VERSION}/zig" /usr/local/bin/zig
 
 # Install all cross-compilation targets
 # Network access: to download the targets
@@ -95,6 +82,31 @@ RUN --network=default \
   --toolchain "${RUSTC_VERSION}" \
   x86_64-unknown-linux-gnu \
   aarch64-unknown-linux-gnu
+
+RUN --network=none \
+  dpkg --add-architecture arm64 && \
+  dpkg --add-architecture amd64
+
+ARG BUILDPLATFORM
+
+# Install cross-compilation toolchains for all supported targets
+# Network access: to install apt packages
+RUN --network=default \
+  apt-get update && apt-get install -y \
+  $(if [ "${BUILDPLATFORM}" != "linux/arm64" ]; then echo "g++-aarch64-linux-gnu"; fi) \
+  $(if [ "${BUILDPLATFORM}" != "linux/amd64" ]; then echo "g++-x86-64-linux-gnu"; fi) \
+  libc6-dev-amd64-cross \
+  libc6-dev-arm64-cross \
+  g++
+
+# Setup the cross-compilation environment
+ENV \
+  CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
+  CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc \
+  CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++ \
+  CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc \
+  CC_x86_64_unknown_linux_gnu=x86_64-linux-gnu-gcc \
+  CXX_x86_64_unknown_linux_gnu=x86_64-linux-gnu-g++
 
 # Set the working directory
 WORKDIR /app
@@ -118,7 +130,6 @@ COPY --from=planner /app/recipe.json recipe.json
 # Network access: cargo-chef cook fetches the dependencies
 RUN --network=default \
   cargo chef cook \
-  --zigbuild \
   --bin mas-cli \
   --release \
   --recipe-path recipe.json \
@@ -134,7 +145,7 @@ COPY ./crates /app/crates
 ENV SQLX_OFFLINE=true
 # Network access: cargo auditable needs it
 RUN --network=default \
-  cargo auditable zigbuild \
+  cargo auditable build \
   --locked \
   --release \
   --bin mas-cli \
@@ -162,7 +173,7 @@ COPY ./translations/ /share/translations
 ##################################
 ## Runtime stage, debug variant ##
 ##################################
-FROM --platform=${TARGETPLATFORM} gcr.io/distroless/base-nossl-debian${DEBIAN_VERSION}:debug-nonroot AS debug
+FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:debug-nonroot AS debug
 
 ARG TARGETARCH
 COPY --from=builder /usr/local/bin/mas-cli-${TARGETARCH} /usr/local/bin/mas-cli
@@ -174,7 +185,7 @@ ENTRYPOINT ["/usr/local/bin/mas-cli"]
 ###################
 ## Runtime stage ##
 ###################
-FROM --platform=${TARGETPLATFORM} gcr.io/distroless/base-nossl-debian${DEBIAN_VERSION}:nonroot
+FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:nonroot
 
 ARG TARGETARCH
 COPY --from=builder /usr/local/bin/mas-cli-${TARGETARCH} /usr/local/bin/mas-cli
