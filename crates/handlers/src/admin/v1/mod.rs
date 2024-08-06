@@ -61,6 +61,10 @@ where
             get_with(self::users::by_username, self::users::by_username_doc),
         )
         .api_route(
+            "/users/:id/set-admin",
+            post_with(self::users::set_admin, self::users::set_admin_doc),
+        )
+        .api_route(
             "/users/:id/deactivate",
             post_with(self::users::deactivate, self::users::deactivate_doc),
         )
