@@ -151,6 +151,11 @@ version = "0.27.2"
 features = ["http1", "http2"]
 default-features = false
 
+# Snapshot testing
+[workspace.dependencies.insta]
+version = "1.39.0"
+features = ["yaml", "json"]
+
 # Email sending
 [workspace.dependencies.lettre]
 version = "0.11.7"

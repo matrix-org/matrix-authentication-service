@@ -36,5 +36,5 @@ mas-iana.workspace = true
 mas-jose.workspace = true
 
 [dev-dependencies]
-insta = { version = "1.39.0", features = ["yaml"] }
+insta.workspace = true
 rand_chacha = "0.3.1"
