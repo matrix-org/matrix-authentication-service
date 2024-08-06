@@ -350,6 +350,23 @@
               }
             }
           },
+          "400": {
+            "description": "Password is too weak",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "errors": [
+                    {
+                      "title": "Password is too weak"
+                    }
+                  ]
+                }
+              }
+            }
+          },
           "404": {
             "description": "User was not found",
             "content": {
@@ -963,6 +980,11 @@
               "hunter2"
             ],
             "type": "string"
+          },
+          "skip_password_check": {
+            "description": "Skip the password complexity check",
+            "type": "boolean",
+            "nullable": true
           }
         }
       },

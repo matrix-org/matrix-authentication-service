@@ -33,6 +33,9 @@ pub enum RouteError {
     #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
 
+    #[error("Password is too weak")]
+    PasswordTooWeak,
+
     #[error("Password hashing failed")]
     Password(#[source] anyhow::Error),
 
@@ -47,6 +50,7 @@ impl IntoResponse for RouteError {
         let error = ErrorResponse::from_error(&self);
         let status = match self {
             Self::Internal(_) | Self::Password(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::PasswordTooWeak => StatusCode::BAD_REQUEST,
             Self::NotFound(_) => StatusCode::NOT_FOUND,
         };
         (status, Json(error)).into_response()
@@ -64,6 +68,9 @@ pub struct Request {
     /// The password to set for the user
     #[schemars(example = "password_example")]
     password: String,
+
+    /// Skip the password complexity check
+    skip_password_check: Option<bool>,
 }
 
 pub fn doc(operation: TransformOperation) -> TransformOperation {
@@ -72,6 +79,10 @@ pub fn doc(operation: TransformOperation) -> TransformOperation {
         .summary("Set the password for a user")
         .tag("user")
         .response_with::<200, StatusCode, _>(|t| t.description("Password was set"))
+        .response_with::<400, RouteError, _>(|t| {
+            let response = ErrorResponse::from_error(&RouteError::PasswordTooWeak);
+            t.description("Password is too weak").example(response)
+        })
         .response_with::<404, RouteError, _>(|t| {
             let response = ErrorResponse::from_error(&RouteError::NotFound(Ulid::nil()));
             t.description("User was not found").example(response)
@@ -93,6 +104,16 @@ pub async fn handler(
         .lookup(*id)
         .await?
         .ok_or(RouteError::NotFound(*id))?;
+
+    let skip_password_check = params.skip_password_check.unwrap_or(false);
+    tracing::info!(skip_password_check, "skip_password_check");
+    if !skip_password_check
+        && !password_manager
+            .is_password_complex_enough(&params.password)
+            .unwrap_or(false)
+    {
+        return Err(RouteError::PasswordTooWeak);
+    }
 
     let password = Zeroizing::new(params.password.into_bytes());
     let (version, hashed_password) = password_manager
@@ -144,7 +165,7 @@ mod tests {
         let request = Request::post(format!("/api/admin/v1/users/{user_id}/set-password"))
             .bearer(&token)
             .json(serde_json::json!({
-                "password": "hunter2",
+                "password": "this is a good enough password",
             }));
 
         let response = state.request(request).await;
@@ -153,7 +174,66 @@ mod tests {
         // Check that the user now has a password
         let mut repo = state.repository().await.unwrap();
         let user_password = repo.user_password().active(&user).await.unwrap().unwrap();
-        let password = Zeroizing::new(b"hunter2".to_vec());
+        let password = Zeroizing::new(b"this is a good enough password".to_vec());
+        state
+            .password_manager
+            .verify(
+                user_password.version,
+                password,
+                user_password.hashed_password,
+            )
+            .await
+            .unwrap();
+    }
+
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_weak_password(pool: PgPool) {
+        setup();
+        let mut state = TestState::from_pool(pool).await.unwrap();
+        let token = state.token_with_scope("urn:mas:admin").await;
+
+        // Create a user
+        let mut repo = state.repository().await.unwrap();
+        let user = repo
+            .user()
+            .add(&mut state.rng(), &state.clock, "alice".to_owned())
+            .await
+            .unwrap();
+        repo.save().await.unwrap();
+
+        let user_id = user.id;
+
+        // Set a weak password through the API
+        let request = Request::post(format!("/api/admin/v1/users/{user_id}/set-password"))
+            .bearer(&token)
+            .json(serde_json::json!({
+                "password": "password",
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::BAD_REQUEST);
+
+        // Check that the user still has a password
+        let mut repo = state.repository().await.unwrap();
+        let user_password = repo.user_password().active(&user).await.unwrap();
+        assert!(user_password.is_none());
+        repo.save().await.unwrap();
+
+        // Now try with the skip_password_check flag
+        let request = Request::post(format!("/api/admin/v1/users/{user_id}/set-password"))
+            .bearer(&token)
+            .json(serde_json::json!({
+                "password": "password",
+                "skip_password_check": true,
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::NO_CONTENT);
+
+        // Check that the user now has a password
+        let mut repo = state.repository().await.unwrap();
+        let user_password = repo.user_password().active(&user).await.unwrap().unwrap();
+        let password = Zeroizing::new(b"password".to_vec());
         state
             .password_manager
             .verify(
@@ -175,7 +255,7 @@ mod tests {
         let request = Request::post("/api/admin/v1/users/01040G2081040G2081040G2081/set-password")
             .bearer(&token)
             .json(serde_json::json!({
-                "password": "hunter2",
+                "password": "this is a good enough password",
             }));
 
         let response = state.request(request).await;
