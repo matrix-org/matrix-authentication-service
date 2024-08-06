@@ -285,3 +285,58 @@ pub async fn handler(
         &base,
     )))
 }
+
+#[cfg(test)]
+mod tests {
+    use hyper::{Request, StatusCode};
+    use sqlx::PgPool;
+
+    use crate::test_utils::{setup, RequestBuilderExt, ResponseExt, TestState};
+
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_oauth2_simple_session_list(pool: PgPool) {
+        setup();
+        let mut state = TestState::from_pool(pool).await.unwrap();
+        let token = state.token_with_scope("urn:mas:admin").await;
+
+        // We already have a session because of the token above
+        let request = Request::get("/api/admin/v1/oauth2-sessions")
+            .bearer(&token)
+            .empty();
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        let body: serde_json::Value = response.json();
+        insta::assert_json_snapshot!(body, @r###"
+        {
+          "meta": {
+            "count": 1
+          },
+          "data": [
+            {
+              "type": "oauth2-session",
+              "id": "01FSHN9AG0MKGTBNZ16RDR3PVY",
+              "attributes": {
+                "created_at": "2022-01-16T14:40:00Z",
+                "finished_at": null,
+                "user_id": null,
+                "user_session_id": null,
+                "client_id": "01FSHN9AG0FAQ50MT1E9FFRPZR",
+                "scope": "urn:mas:admin",
+                "user_agent": null,
+                "last_active_at": null,
+                "last_active_ip": null
+              },
+              "links": {
+                "self": "/api/admin/v1/oauth2-sessions/01FSHN9AG0MKGTBNZ16RDR3PVY"
+              }
+            }
+          ],
+          "links": {
+            "self": "/api/admin/v1/oauth2-sessions?page[first]=10",
+            "first": "/api/admin/v1/oauth2-sessions?page[first]=10",
+            "last": "/api/admin/v1/oauth2-sessions?page[last]=10"
+          }
+        }
+        "###);
+    }
+}
