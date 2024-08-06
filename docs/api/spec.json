@@ -777,6 +777,85 @@
         }
       }
     },
+    "/api/admin/v1/users/{id}/set-admin": {
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Set whether a user can request admin",
+        "description": "Calling this endpoint will not have any effect on existing sessions, meaning that their existing sessions will keep admin access if they were granted it.",
+        "operationId": "userSetAdmin",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "title": "The ID of the resource",
+              "$ref": "#/components/schemas/ULID"
+            },
+            "style": "simple"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserSetAdminRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "User had admin privileges set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SingleResponse_for_User"
+                },
+                "example": {
+                  "data": {
+                    "type": "user",
+                    "id": "02081040G2081040G2081040G2",
+                    "attributes": {
+                      "username": "bob",
+                      "created_at": "1970-01-01T00:00:00Z",
+                      "locked_at": null,
+                      "can_request_admin": true
+                    },
+                    "links": {
+                      "self": "/api/admin/v1/users/02081040G2081040G2081040G2"
+                    }
+                  },
+                  "links": {
+                    "self": "/api/admin/v1/users/02081040G2081040G2081040G2/set-admin"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User ID not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "errors": [
+                    {
+                      "title": "User ID 00000000000000000000000000 not found"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/v1/users/{id}/deactivate": {
       "post": {
         "tags": [
@@ -1485,6 +1564,19 @@
           "username": {
             "description": "The username (localpart) of the user to get",
             "type": "string"
+          }
+        }
+      },
+      "UserSetAdminRequest": {
+        "title": "JSON payload for the `POST /api/admin/v1/users/:id/set-admin` endpoint",
+        "type": "object",
+        "required": [
+          "can_request_admin"
+        ],
+        "properties": {
+          "can_request_admin": {
+            "description": "Whether the user can request admin privileges.",
+            "type": "boolean"
           }
         }
       }
