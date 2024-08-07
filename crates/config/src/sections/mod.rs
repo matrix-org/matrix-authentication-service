@@ -27,6 +27,7 @@ mod http;
 mod matrix;
 mod passwords;
 mod policy;
+mod rate_limiting;
 mod secrets;
 mod telemetry;
 mod templates;
@@ -47,6 +48,7 @@ pub use self::{
     matrix::MatrixConfig,
     passwords::{Algorithm as PasswordAlgorithm, PasswordsConfig},
     policy::PolicyConfig,
+    rate_limiting::RateLimitingConfig,
     secrets::SecretsConfig,
     telemetry::{
         MetricsConfig, MetricsExporterKind, Propagator, TelemetryConfig, TracingConfig,
@@ -103,6 +105,11 @@ pub struct RootConfig {
     #[serde(default, skip_serializing_if = "PolicyConfig::is_default")]
     pub policy: PolicyConfig,
 
+    /// Configuration related to limiting the rate of user actions to prevent
+    /// abuse
+    #[serde(default, skip_serializing_if = "RateLimitingConfig::is_default")]
+    pub rate_limiting: RateLimitingConfig,
+
     /// Configuration related to upstream OAuth providers
     #[serde(default, skip_serializing_if = "UpstreamOAuth2Config::is_default")]
     pub upstream_oauth2: UpstreamOAuth2Config,
@@ -137,6 +144,7 @@ impl ConfigurationSection for RootConfig {
         self.secrets.validate(figment)?;
         self.matrix.validate(figment)?;
         self.policy.validate(figment)?;
+        self.rate_limiting.validate(figment)?;
         self.upstream_oauth2.validate(figment)?;
         self.branding.validate(figment)?;
         self.captcha.validate(figment)?;
@@ -168,6 +176,7 @@ impl RootConfig {
             secrets: SecretsConfig::generate(&mut rng).await?,
             matrix: MatrixConfig::generate(&mut rng),
             policy: PolicyConfig::default(),
+            rate_limiting: RateLimitingConfig::default(),
             upstream_oauth2: UpstreamOAuth2Config::default(),
             branding: BrandingConfig::default(),
             captcha: CaptchaConfig::default(),
@@ -190,6 +199,7 @@ impl RootConfig {
             secrets: SecretsConfig::test(),
             matrix: MatrixConfig::test(),
             policy: PolicyConfig::default(),
+            rate_limiting: RateLimitingConfig::default(),
             upstream_oauth2: UpstreamOAuth2Config::default(),
             branding: BrandingConfig::default(),
             captcha: CaptchaConfig::default(),
@@ -226,6 +236,9 @@ pub struct AppConfig {
     pub policy: PolicyConfig,
 
     #[serde(default)]
+    pub rate_limiting: RateLimitingConfig,
+
+    #[serde(default)]
     pub branding: BrandingConfig,
 
     #[serde(default)]
@@ -248,6 +261,7 @@ impl ConfigurationSection for AppConfig {
         self.secrets.validate(figment)?;
         self.matrix.validate(figment)?;
         self.policy.validate(figment)?;
+        self.rate_limiting.validate(figment)?;
         self.branding.validate(figment)?;
         self.captcha.validate(figment)?;
         self.account.validate(figment)?;

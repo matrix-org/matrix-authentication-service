@@ -359,6 +359,38 @@ policy:
       require_number: true
 ```
 
+## `rate_limiting`
+
+Settings for limiting the rate of user actions to prevent abuse.
+
+Each rate limiter consists of two options:
+- `burst`: a base amount of how many actions are allowed in one go.
+- `per_second`: how many units of the allowance replenish per second.
+
+```yaml
+rate_limiting:
+  # Limits how many login attempts are allowed.
+  #
+  # Note: these limit also applies to password checks when a user attempts to
+  # change their own password.
+  login:
+    # Controls how many login attempts are permitted
+    # based on source address.
+    # This can protect against brute force login attempts.
+    per_address:
+      burst: 3
+      per_second: 0.05
+
+    # Controls how many login attempts are permitted
+    # based on the account that is being attempted to be logged into.
+    # This can protect against a distributed brute force attack
+    # but should be set high enough to prevent someone's account being
+    # casually locked out.
+    per_account:
+      burst: 1800
+      per_second: 0.5
+```
+
 ## `telemetry`
 
 Settings related to metrics and traces
