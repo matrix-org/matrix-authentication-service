@@ -30,8 +30,9 @@ use axum::{
     http::Method,
     response::{Html, IntoResponse},
     routing::{get, post},
-    Router,
+    Extension, Router,
 };
+use graphql::ExtraRouterParameters;
 use headers::HeaderName;
 use hyper::{
     header::{
@@ -108,7 +109,7 @@ where
     Router::new().route(mas_router::Healthcheck::route(), get(self::health::get))
 }
 
-pub fn graphql_router<S>(playground: bool) -> Router<S>
+pub fn graphql_router<S>(playground: bool, undocumented_oauth2_access: bool) -> Router<S>
 where
     S: Clone + Send + Sync + 'static,
     graphql::Schema: FromRef<S>,
@@ -123,6 +124,11 @@ where
             mas_router::GraphQL::route(),
             get(self::graphql::get).post(self::graphql::post),
         )
+        // Pass the undocumented_oauth2_access parameter through the request extension, as it is
+        // per-listener
+        .layer(Extension(ExtraRouterParameters {
+            undocumented_oauth2_access,
+        }))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
