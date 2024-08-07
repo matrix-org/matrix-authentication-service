@@ -1,6 +1,6 @@
 {
   "name": "@matrix-org/syn2mas",
-  "version": "0.9.0",
+  "version": "0.10.0-rc.0",
   "description": "A tool to migrate Synapse users and sessions to the Matrix Authentication Service",
   "license": "Apache-2.0",
   "author": "Matrix.org",
@@ -12,7 +12,13 @@
   "bin": {
     "syn2mas": "dist/index.js"
   },
-  "files": ["src", "dist", "package.json", "LICENSE", "README.md"],
+  "files": [
+    "src",
+    "dist",
+    "package.json",
+    "LICENSE",
+    "README.md"
+  ],
   "publishConfig": {
     "access": "public"
   },
