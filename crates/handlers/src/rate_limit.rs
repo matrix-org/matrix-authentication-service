@@ -14,13 +14,10 @@
 
 use std::{net::IpAddr, sync::Arc, time::Duration};
 
-use governor::{clock::QuantaClock, state::keyed::DashMapStateStore, Quota, RateLimiter};
+use governor::{clock::QuantaClock, state::keyed::DashMapStateStore, RateLimiter};
+use mas_config::RateLimitingConfig;
 use mas_data_model::User;
-use nonzero_ext::nonzero;
 use ulid::Ulid;
-
-const PASSWORD_CHECK_FOR_REQUESTER_QUOTA: Quota = Quota::per_minute(nonzero!(3u32));
-const PASSWORD_CHECK_FOR_USER_QUOTA: Quota = Quota::per_hour(nonzero!(1800u32));
 
 #[derive(Debug, Clone, Copy, thiserror::Error)]
 pub enum PasswordCheckLimitedError {
@@ -60,7 +57,7 @@ impl RequesterFingerprint {
 }
 
 /// Rate limiters for the different operations
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Limiter {
     inner: Arc<LimiterInner>,
 }
@@ -73,16 +70,27 @@ struct LimiterInner {
     password_check_for_user: KeyedRateLimiter<Ulid>,
 }
 
-impl Default for LimiterInner {
-    fn default() -> Self {
-        Self {
-            password_check_for_requester: RateLimiter::keyed(PASSWORD_CHECK_FOR_REQUESTER_QUOTA),
-            password_check_for_user: RateLimiter::keyed(PASSWORD_CHECK_FOR_USER_QUOTA),
-        }
+impl LimiterInner {
+    fn new(config: &RateLimitingConfig) -> Option<Self> {
+        Some(Self {
+            password_check_for_requester: RateLimiter::keyed(config.login.per_address.to_quota()?),
+            password_check_for_user: RateLimiter::keyed(config.login.per_account.to_quota()?),
+        })
     }
 }
 
 impl Limiter {
+    /// Creates a new `Limiter` based on a `RateLimitingConfig`.
+    ///
+    /// If the config is not valid, returns `None`.
+    /// (This should not happen if the config was validated, though.)
+    #[must_use]
+    pub fn new(config: &RateLimitingConfig) -> Option<Self> {
+        Some(Self {
+            inner: Arc::new(LimiterInner::new(config)?),
+        })
+    }
+
     /// Start the rate limiter housekeeping task
     ///
     /// This task will periodically remove old entries from the rate limiters,
@@ -142,7 +150,7 @@ mod tests {
         let now = MockClock::default().now();
         let mut rng = rand_chacha::ChaChaRng::seed_from_u64(42);
 
-        let limiter = Limiter::default();
+        let limiter = Limiter::new(&RateLimitingConfig::default()).unwrap();
 
         // Let's create a lot of requesters to test account-level rate limiting
         let requesters: [_; 768] = (0..=255)

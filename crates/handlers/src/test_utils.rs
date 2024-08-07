@@ -37,6 +37,7 @@ use mas_axum_utils::{
     http_client_factory::HttpClientFactory,
     ErrorWrapper,
 };
+use mas_config::RateLimitingConfig;
 use mas_data_model::SiteConfig;
 use mas_i18n::Translator;
 use mas_keystore::{Encrypter, JsonWebKey, JsonWebKeySet, Keystore, PrivateKey};
@@ -214,7 +215,7 @@ impl TestState {
         let activity_tracker =
             ActivityTracker::new(pool.clone(), std::time::Duration::from_secs(1));
 
-        let limiter = Limiter::default();
+        let limiter = Limiter::new(&RateLimitingConfig::default()).unwrap();
 
         Ok(Self {
             pool,
