@@ -57,7 +57,7 @@ impl IntoResponse for RouteError {
 #[serde(rename = "UserSetAdminRequest")]
 pub struct Request {
     /// Whether the user can request admin privileges.
-    can_request_admin: bool,
+    admin: bool,
 }
 
 pub fn doc(operation: TransformOperation) -> TransformOperation {
@@ -94,7 +94,7 @@ pub async fn handler(
 
     let user = repo
         .user()
-        .set_can_request_admin(user, params.can_request_admin)
+        .set_can_request_admin(user, params.admin)
         .await?;
 
     repo.save().await?;
@@ -130,14 +130,14 @@ mod tests {
         let request = Request::post(format!("/api/admin/v1/users/{}/set-admin", user.id))
             .bearer(&token)
             .json(serde_json::json!({
-                "can_request_admin": true,
+                "admin": true,
             }));
 
         let response = state.request(request).await;
         response.assert_status(StatusCode::OK);
         let body: serde_json::Value = response.json();
 
-        assert_eq!(body["data"]["attributes"]["can_request_admin"], true);
+        assert_eq!(body["data"]["attributes"]["admin"], true);
 
         // Look at the state from the repository
         let mut repo = state.repository().await.unwrap();
@@ -149,14 +149,14 @@ mod tests {
         let request = Request::post(format!("/api/admin/v1/users/{}/set-admin", user.id))
             .bearer(&token)
             .json(serde_json::json!({
-                "can_request_admin": false,
+                "admin": false,
             }));
 
         let response = state.request(request).await;
         response.assert_status(StatusCode::OK);
         let body: serde_json::Value = response.json();
 
-        assert_eq!(body["data"]["attributes"]["can_request_admin"], false);
+        assert_eq!(body["data"]["attributes"]["admin"], false);
 
         // Look at the state from the repository
         let mut repo = state.repository().await.unwrap();

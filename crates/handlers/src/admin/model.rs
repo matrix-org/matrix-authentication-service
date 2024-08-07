@@ -54,7 +54,7 @@ pub struct User {
     locked_at: Option<DateTime<Utc>>,
 
     /// Whether the user can request admin privileges.
-    can_request_admin: bool,
+    admin: bool,
 }
 
 impl User {
@@ -66,21 +66,21 @@ impl User {
                 username: "alice".to_owned(),
                 created_at: DateTime::default(),
                 locked_at: None,
-                can_request_admin: false,
+                admin: false,
             },
             Self {
                 id: Ulid::from_bytes([0x02; 16]),
                 username: "bob".to_owned(),
                 created_at: DateTime::default(),
                 locked_at: None,
-                can_request_admin: true,
+                admin: true,
             },
             Self {
                 id: Ulid::from_bytes([0x03; 16]),
                 username: "charlie".to_owned(),
                 created_at: DateTime::default(),
                 locked_at: Some(DateTime::default()),
-                can_request_admin: false,
+                admin: false,
             },
         ]
     }
@@ -93,7 +93,7 @@ impl From<mas_data_model::User> for User {
             username: user.username,
             created_at: user.created_at,
             locked_at: user.locked_at,
-            can_request_admin: user.can_request_admin,
+            admin: user.can_request_admin,
         }
     }
 }
