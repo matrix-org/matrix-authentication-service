@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{num::NonZero, time::Duration};
+use std::{num::NonZeroU32, time::Duration};
 
 use governor::Quota;
 use schemars::JsonSchema;
@@ -54,8 +54,7 @@ pub struct LoginRateLimitingConfig {
 pub struct RateLimiterConfiguration {
     /// A one-off burst of actions that the user can perform
     /// in one go without waiting.
-    /// Replenishes at the rate.
-    pub burst: u32,
+    pub burst: NonZeroU32,
     /// How quickly the allowance replenishes, in number of actions per second.
     /// Can be fractional to replenish slower.
     pub per_second: f64,
@@ -82,10 +81,6 @@ impl ConfigurationSection for RateLimitingConfig {
         // Check one limiter's configuration for errors
         let error_on_limiter =
             |limiter: &RateLimiterConfiguration| -> Option<figment::error::Error> {
-                if limiter.burst == 0 {
-                    return Some(figment::error::Error::custom("`burst` must not be zero, as this would mean the action could never be performed"));
-                }
-
                 let recip = limiter.per_second.recip();
                 // period must be at least 1 nanosecond according to the governor library
                 if recip < 1.0e-9 || !recip.is_finite() {
@@ -120,21 +115,20 @@ impl RateLimiterConfiguration {
         if !reciprocal.is_finite() {
             return None;
         }
-        let burst = NonZero::new(self.burst)?;
-        Some(Quota::with_period(Duration::from_secs_f64(reciprocal))?.allow_burst(burst))
+        Some(Quota::with_period(Duration::from_secs_f64(reciprocal))?.allow_burst(self.burst))
     }
 }
 
 fn default_login_per_address() -> RateLimiterConfiguration {
     RateLimiterConfiguration {
-        burst: 3,
+        burst: NonZeroU32::new(3).unwrap(),
         per_second: 3.0 / 60.0,
     }
 }
 
 fn default_login_per_account() -> RateLimiterConfiguration {
     RateLimiterConfiguration {
-        burst: 1800,
+        burst: NonZeroU32::new(1800).unwrap(),
         per_second: 1800.0 / 3600.0,
     }
 }

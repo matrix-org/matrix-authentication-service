@@ -1726,7 +1726,7 @@
           "description": "A one-off burst of actions that the user can perform in one go without waiting. Replenishes at the rate.",
           "type": "integer",
           "format": "uint32",
-          "minimum": 0.0
+          "minimum": 1.0
         },
         "per_second": {
           "description": "How quickly the allowance replenishes, in number of actions per second. Can be fractional to replenish slower.",
