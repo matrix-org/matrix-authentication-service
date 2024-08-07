@@ -291,8 +291,12 @@ pub enum Resource {
     /// GraphQL endpoint
     GraphQL {
         /// Enabled the GraphQL playground
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
         playground: bool,
+
+        /// Allow access for OAuth 2.0 clients (undocumented)
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        undocumented_oauth2_access: bool,
     },
 
     /// OAuth-related APIs
@@ -379,7 +383,10 @@ impl Default for HttpConfig {
                         Resource::Human,
                         Resource::OAuth,
                         Resource::Compat,
-                        Resource::GraphQL { playground: true },
+                        Resource::GraphQL {
+                            playground: false,
+                            undocumented_oauth2_access: false,
+                        },
                         Resource::Assets {
                             path: http_listener_assets_path_default(),
                         },

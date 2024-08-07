@@ -201,9 +201,13 @@ pub fn build_router(
             mas_config::HttpResource::Human => {
                 router.merge(mas_handlers::human_router::<AppState>(templates.clone()))
             }
-            mas_config::HttpResource::GraphQL { playground } => {
-                router.merge(mas_handlers::graphql_router::<AppState>(*playground))
-            }
+            mas_config::HttpResource::GraphQL {
+                playground,
+                undocumented_oauth2_access,
+            } => router.merge(mas_handlers::graphql_router::<AppState>(
+                *playground,
+                *undocumented_oauth2_access,
+            )),
             mas_config::HttpResource::Assets { path } => {
                 let static_service = ServeDir::new(path)
                     .append_index_html_on_directories(false)

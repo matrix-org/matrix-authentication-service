@@ -27,7 +27,7 @@ use axum::{
     extract::{RawQuery, State as AxumState},
     http::StatusCode,
     response::{Html, IntoResponse, Response},
-    Json,
+    Extension, Json,
 };
 use axum_extra::typed_header::TypedHeader;
 use chrono::{DateTime, Utc};
@@ -64,6 +64,13 @@ use crate::{impl_from_error_for_route, passwords::PasswordManager, BoundActivity
 
 #[cfg(test)]
 mod tests;
+
+/// Extra parameters we get from the listener configuration, because they are
+/// per-listener options. We pass them through request extensions.
+#[derive(Debug, Clone)]
+pub struct ExtraRouterParameters {
+    pub undocumented_oauth2_access: bool,
+}
 
 struct GraphQLState {
     pool: PgPool,
@@ -217,6 +224,7 @@ impl IntoResponse for RouteError {
 }
 
 async fn get_requester(
+    undocumented_oauth2_access: bool,
     clock: &impl Clock,
     activity_tracker: &BoundActivityTracker,
     mut repo: BoxRepository,
@@ -224,6 +232,11 @@ async fn get_requester(
     token: Option<&str>,
 ) -> Result<Requester, RouteError> {
     let requester = if let Some(token) = token {
+        // If we haven't enabled undocumented_oauth2_access on the listener, we bail out
+        if !undocumented_oauth2_access {
+            return Err(RouteError::InvalidToken);
+        }
+
         let token = repo
             .oauth2_access_token()
             .find_by_token(token)
@@ -281,6 +294,9 @@ async fn get_requester(
 
 pub async fn post(
     AxumState(schema): AxumState<Schema>,
+    Extension(ExtraRouterParameters {
+        undocumented_oauth2_access,
+    }): Extension<ExtraRouterParameters>,
     clock: BoxClock,
     repo: BoxRepository,
     activity_tracker: BoundActivityTracker,
@@ -294,7 +310,15 @@ pub async fn post(
         .as_ref()
         .map(|TypedHeader(Authorization(bearer))| bearer.token());
     let (session_info, _cookie_jar) = cookie_jar.session_info();
-    let requester = get_requester(&clock, &activity_tracker, repo, session_info, token).await?;
+    let requester = get_requester(
+        undocumented_oauth2_access,
+        &clock,
+        &activity_tracker,
+        repo,
+        session_info,
+        token,
+    )
+    .await?;
 
     let content_type = content_type.map(|TypedHeader(h)| h.to_string());
 
@@ -323,6 +347,9 @@ pub async fn post(
 
 pub async fn get(
     AxumState(schema): AxumState<Schema>,
+    Extension(ExtraRouterParameters {
+        undocumented_oauth2_access,
+    }): Extension<ExtraRouterParameters>,
     clock: BoxClock,
     repo: BoxRepository,
     activity_tracker: BoundActivityTracker,
@@ -334,7 +361,15 @@ pub async fn get(
         .as_ref()
         .map(|TypedHeader(Authorization(bearer))| bearer.token());
     let (session_info, _cookie_jar) = cookie_jar.session_info();
-    let requester = get_requester(&clock, &activity_tracker, repo, session_info, token).await?;
+    let requester = get_requester(
+        undocumented_oauth2_access,
+        &clock,
+        &activity_tracker,
+        repo,
+        session_info,
+        token,
+    )
+    .await?;
 
     let request =
         async_graphql::http::parse_query_string(&query.unwrap_or_default())?.data(requester);

@@ -35,8 +35,7 @@
                 "name": "compat"
               },
               {
-                "name": "graphql",
-                "playground": true
+                "name": "graphql"
               },
               {
                 "name": "assets"
@@ -742,7 +741,10 @@
             },
             "playground": {
               "description": "Enabled the GraphQL playground",
-              "default": false,
+              "type": "boolean"
+            },
+            "undocumented_oauth2_access": {
+              "description": "Allow access for OAuth 2.0 clients (undocumented)",
               "type": "boolean"
             }
           }

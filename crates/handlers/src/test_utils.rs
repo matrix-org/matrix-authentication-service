@@ -249,7 +249,9 @@ impl TestState {
             .merge(crate::api_router())
             .merge(crate::compat_router())
             .merge(crate::human_router(self.templates.clone()))
-            .merge(crate::graphql_router(false))
+            // We enable undocumented_oauth2_access for the tests, as it is easier to query the API
+            // with it
+            .merge(crate::graphql_router(false, true))
             .merge(crate::admin_api_router().1)
             .with_state(self.clone())
             .into_service();
