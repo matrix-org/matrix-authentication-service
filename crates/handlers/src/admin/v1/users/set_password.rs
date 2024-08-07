@@ -36,6 +36,9 @@ pub enum RouteError {
     #[error("Password is too weak")]
     PasswordTooWeak,
 
+    #[error("Password auth is disabled")]
+    PasswordAuthDisabled,
+
     #[error("Password hashing failed")]
     Password(#[source] anyhow::Error),
 
@@ -50,6 +53,7 @@ impl IntoResponse for RouteError {
         let error = ErrorResponse::from_error(&self);
         let status = match self {
             Self::Internal(_) | Self::Password(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::PasswordAuthDisabled => StatusCode::FORBIDDEN,
             Self::PasswordTooWeak => StatusCode::BAD_REQUEST,
             Self::NotFound(_) => StatusCode::NOT_FOUND,
         };
@@ -83,6 +87,11 @@ pub fn doc(operation: TransformOperation) -> TransformOperation {
             let response = ErrorResponse::from_error(&RouteError::PasswordTooWeak);
             t.description("Password is too weak").example(response)
         })
+        .response_with::<403, RouteError, _>(|t| {
+            let response = ErrorResponse::from_error(&RouteError::PasswordAuthDisabled);
+            t.description("Password auth is disabled in the server configuration")
+                .example(response)
+        })
         .response_with::<404, RouteError, _>(|t| {
             let response = ErrorResponse::from_error(&RouteError::NotFound(Ulid::nil()));
             t.description("User was not found").example(response)
@@ -99,6 +108,10 @@ pub async fn handler(
     id: UlidPathParam,
     Json(params): Json<Request>,
 ) -> Result<StatusCode, RouteError> {
+    if !password_manager.is_enabled() {
+        return Err(RouteError::PasswordAuthDisabled);
+    }
+
     let user = repo
         .user()
         .lookup(*id)
@@ -137,7 +150,10 @@ mod tests {
     use sqlx::PgPool;
     use zeroize::Zeroizing;
 
-    use crate::test_utils::{setup, RequestBuilderExt, ResponseExt, TestState};
+    use crate::{
+        passwords::PasswordManager,
+        test_utils::{setup, RequestBuilderExt, ResponseExt, TestState},
+    };
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_set_password(pool: PgPool) {
@@ -266,5 +282,25 @@ mod tests {
             body["errors"][0]["title"],
             "User ID 01040G2081040G2081040G2081 not found"
         );
+    }
+
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_disabled(pool: PgPool) {
+        setup();
+        let mut state = TestState::from_pool(pool).await.unwrap();
+        state.password_manager = PasswordManager::disabled();
+        let token = state.token_with_scope("urn:mas:admin").await;
+
+        let request = Request::post("/api/admin/v1/users/01040G2081040G2081040G2081/set-password")
+            .bearer(&token)
+            .json(serde_json::json!({
+                "password": "hunter2",
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::FORBIDDEN);
+
+        let body: serde_json::Value = response.json();
+        assert_eq!(body["errors"][0]["title"], "Password auth is disabled");
     }
 }

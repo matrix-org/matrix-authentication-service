@@ -367,6 +367,23 @@
               }
             }
           },
+          "403": {
+            "description": "Password auth is disabled in the server configuration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "errors": [
+                    {
+                      "title": "Password auth is disabled"
+                    }
+                  ]
+                }
+              }
+            }
+          },
           "404": {
             "description": "User was not found",
             "content": {
