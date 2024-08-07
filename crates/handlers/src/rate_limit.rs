@@ -82,7 +82,7 @@ type KeyedRateLimiter<K> = RateLimiter<K, DashMapStateStore<K>, QuantaClock>;
 #[derive(Debug)]
 struct LimiterInner {
     account_recovery_per_requester: KeyedRateLimiter<RequesterFingerprint>,
-    account_recovery_per_email: KeyedRateLimiter<String>, // TODO lowercased?
+    account_recovery_per_email: KeyedRateLimiter<String>,
     password_check_for_requester: KeyedRateLimiter<RequesterFingerprint>,
     password_check_for_user: KeyedRateLimiter<Ulid>,
     registration_per_requester: KeyedRateLimiter<RequesterFingerprint>,
