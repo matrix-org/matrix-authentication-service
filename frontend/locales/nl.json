@@ -6,7 +6,8 @@
     "close": "Sluiten",
     "continue": "Doorgaan",
     "edit": "Bewerken",
-    "save": "Opslaan"
+    "save": "Opslaan",
+    "save_and_continue": "Save and continue"
   },
   "branding": {
     "privacy_policy": {
@@ -23,7 +24,9 @@
     "error": "Fout",
     "loading": "Laden...",
     "next": "Volgende",
-    "previous": "Vorige"
+    "previous": "Vorige",
+    "saved": "Saved",
+    "saving": "Saving…"
   },
   "frontend": {
     "account": {
@@ -33,6 +36,11 @@
         "title": "Profiel bewerken",
         "username_label": "Gebruikersnaam"
       },
+      "password": {
+        "change": "Change password",
+        "change_disabled": "Password changes are disabled by the administrator.",
+        "label": "Password"
+      },
       "title": "Uw account"
     },
     "add_email_form": {
@@ -40,16 +48,19 @@
         "text": "Het ingevoerde e-mailadres is niet toegestaan volgens het serverbeleid.",
         "title": "E-mailadres geweigerd door het beleid"
       },
+      "email_denied_error": "The entered email is not allowed by the server policy",
       "email_exists_alert": {
         "text": "Het ingevoerde e-mailadres is al toegevoegd aan dit account",
         "title": "E-mailadres bestaat al"
       },
+      "email_exists_error": "The entered email is already added to this account",
       "email_field_help": "Voeg een alternatief e-mailadres toe dat u kunt gebruiken om toegang tot dit account te krijgen.",
       "email_field_label": "E-mailadres toevoegen",
       "email_invalid_alert": {
         "text": "Het ingevoerde e-mailadres is ongeldig",
         "title": "Ongeldig e-mailadres"
-      }
+      },
+      "email_invalid_error": "The entered email is invalid"
     },
     "app_sessions_list": {
       "error": "Kan app-sessies niet laden",
@@ -63,6 +74,10 @@
       "body:one": "{{count}} actieve sessie",
       "body:other": "{{count}} actieve sessies",
       "heading": "Browsers",
+      "no_active_sessions": {
+        "default": "You are not signed in to any web browsers.",
+        "inactive_90_days": "All your sessions have been active in the last 90 days."
+      },
       "view_all_button": "Bekijk alles"
     },
     "compat_session_detail": {
@@ -89,6 +104,9 @@
       "title": "Er is iets misgegaan"
     },
     "error_boundary_title": "Er is iets misgegaan",
+    "errors": {
+      "field_required": "This field is required"
+    },
     "last_active": {
       "active_date": "Actief {{relativeDate}}",
       "active_now": "Nu actief",
@@ -116,6 +134,81 @@
     },
     "pagination_controls": {
       "total": "Totaal: {{totalCount}}"
+    },
+    "password_change": {
+      "current_password_label": "Current password",
+      "failure": {
+        "description": {
+          "account_locked": "Your account is locked and can not be recovered at this time. If this is not expected, please contact your server administrator.",
+          "expired_recovery_ticket": "The recovery link has expired. Please start the account recovery process again from the start.",
+          "invalid_new_password": "The new password you chose is invalid; it may not meet the configured security policy.",
+          "no_current_password": "You don't have a current password.",
+          "no_such_recovery_ticket": "The recovery link is invalid. If you copied the link from the recovery e-mail, please check the full link was copied.",
+          "password_changes_disabled": "Password changes are disabled.",
+          "recovery_ticket_already_used": "The recovery link has already been used. It cannot be used again.",
+          "unspecified": "This might be a temporary problem, so please try again later. If the problem persists, please contact your server administrator.",
+          "wrong_password": "The password you supplied as your current password is incorrect. Please try again."
+        },
+        "title": "Failed to update password"
+      },
+      "new_password_again_label": "Enter new password again",
+      "new_password_label": "New password",
+      "passwords_match": "Passwords match!",
+      "passwords_no_match": "Passwords don't match",
+      "subtitle": "Choose a new password for your account.",
+      "success": {
+        "description": "Your password has been updated successfully.",
+        "title": "Password updated"
+      },
+      "title": "Change your password"
+    },
+    "password_reset": {
+      "title": "Reset your password"
+    },
+    "password_strength": {
+      "placeholder": "Password strength",
+      "score": {
+        "0": "Extremely weak password",
+        "1": "Very weak password",
+        "2": "Weak password",
+        "3": "Strong password",
+        "4": "Very strong password"
+      },
+      "suggestion": {
+        "all_uppercase": "Capitalise some, but not all letters.",
+        "another_word": "Add more words that are less common.",
+        "associated_years": "Avoid years that are associated with you.",
+        "capitalization": "Capitalise more than the first letter.",
+        "dates": "Avoid dates and years that are associated with you.",
+        "l33t": "Avoid predictable letter substitutions like '@' for 'a'.",
+        "longer_keyboard_pattern": "Use longer keyboard patterns and change typing direction multiple times.",
+        "no_need": "You can create strong passwords without using symbols, numbers, or uppercase letters.",
+        "pwned": "If you use this password elsewhere, you should change it.",
+        "recent_years": "Avoid recent years.",
+        "repeated": "Avoid repeated words and characters.",
+        "reverse_words": "Avoid reversed spellings of common words.",
+        "sequences": "Avoid common character sequences.",
+        "use_words": "Use multiple words, but avoid common phrases."
+      },
+      "too_weak": "This password is too weak",
+      "warning": {
+        "common": "This is a commonly used password.",
+        "common_names": "Common names and surnames are easy to guess.",
+        "dates": "Dates are easy to guess.",
+        "extended_repeat": "Repeated character patterns like \"abcabcabc\" are easy to guess.",
+        "key_pattern": "Short keyboard patterns are easy to guess.",
+        "names_by_themselves": "Single names or surnames are easy to guess.",
+        "pwned": "Your password was exposed by a data breach on the Internet.",
+        "recent_years": "Recent years are easy to guess.",
+        "sequences": "Common character sequences like \"abc\" are easy to guess.",
+        "similar_to_common": "This is similar to a commonly used password.",
+        "simple_repeat": "Repeated characters like \"aaa\" are easy to guess.",
+        "straight_row": "Straight rows of keys on your keyboard are easy to guess.",
+        "top_hundred": "This is a frequently used password.",
+        "top_ten": "This is a heavily used password.",
+        "user_inputs": "There should not be any personal or page related data.",
+        "word_by_itself": "Single words are easy to guess."
+      }
     },
     "reset_cross_signing": {
       "button": "Het resetten van de crypto identiteit toestaan",
@@ -196,7 +289,11 @@
     "user_sessions_overview": {
       "active_sessions:one": "{{count}} actieve sessie",
       "active_sessions:other": "{{count}} actieve sessies",
-      "heading": "Where you're signed in"
+      "heading": "Where you're signed in",
+      "no_active_sessions": {
+        "default": "You are not signed in to any application.",
+        "inactive_90_days": "All your sessions have been active in the last 90 days."
+      }
     },
     "verify_email": {
       "code_field_error": "Code not recognised",

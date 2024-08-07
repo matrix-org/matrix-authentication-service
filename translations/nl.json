@@ -1,10 +1,12 @@
 {
   "action": {
+    "back": "Back",
     "cancel": "Annuleren",
     "continue": "Doorgaan",
     "create_account": "Registreren",
     "sign_in": "Inloggen",
     "sign_out": "Uitloggen",
+    "start_over": "Start over",
     "submit": "Bevestigen"
   },
   "app": {
@@ -39,6 +41,9 @@
       "heading": "Add an email address"
     },
     "back_to_homepage": "Go back to the homepage",
+    "captcha": {
+      "noscript": "This form is protected by a CAPTCHA and requires JavaScript to be enabled to submit it. Please enable JavaScript in your browser and reload this page."
+    },
     "change_password": {
       "change": "Wachtwoord wijzigen",
       "confirm": "Bevestig wachtwoord",
@@ -47,8 +52,44 @@
       "heading": "Change my password",
       "new": "New password"
     },
+    "consent": {
+      "client_wants_access": "<span>%(client_name)s</span> at <span>%(redirect_uri)s</span> wants to acccess your account.",
+      "heading": "Allow access to your account?",
+      "make_sure_you_trust": "Make sure that you trust <span>%(client_name)s</span>.",
+      "this_will_allow": "This will allow <span>%(client_name)s</span> to:",
+      "you_may_be_sharing": "You may be sharing sensitive information with this site or app."
+    },
+    "device_card": {
+      "access_requested": "Access requested",
+      "device_code": "Code",
+      "generic_device": "Device",
+      "ip_address": "IP address"
+    },
+    "device_code_link": {
+      "description": "Link a device",
+      "headline": "Enter the code displayed on your device"
+    },
+    "device_consent": {
+      "another_device_access": "Another device wants to access your account.",
+      "denied": {
+        "description": "You denied access to %(client_name)s. You can close this window.",
+        "heading": "Access denied"
+      },
+      "granted": {
+        "description": "You granted access to %(client_name)s. You can close this window.",
+        "heading": "Access granted"
+      }
+    },
     "emails": {
       "greeting": "Hello %(username)s,",
+      "recovery": {
+        "click_button": "Click on the button below to create a new password:",
+        "copy_link": "Copy the following link and paste it into a browser to create a new password:",
+        "create_new_password": "Create new password",
+        "headline": "You requested a password reset for your %(server_name)s account.",
+        "subject": "Reset your account password (%(mxid)s)",
+        "you_can_ignore": "If you didn't ask for a new password, you can ignore this email. Your current password will continue to work."
+      },
       "verify": {
         "body_html": "Your verification code to confirm this email address is: <strong>%(code)s</strong>",
         "body_text": "Your verification code to confirm this email address is: %(code)s",
@@ -56,16 +97,19 @@
       }
     },
     "errors": {
+      "captcha": "CAPTCHA verification failed, please try again",
       "denied_policy": "Denied by policy: %(policy)s",
       "field_required": "This field is required",
       "invalid_credentials": "Ongeldige gegevens",
       "password_mismatch": "Password fields don't match",
+      "rate_limit_exceeded": "You've made too many requests in a short period. Please wait a few minutes and try again.",
       "username_taken": "This username is already taken"
     },
     "login": {
       "call_to_register": "Don't have an account yet?",
       "continue_with_provider": "Doorgaan met %(provider)s",
       "description": "Please sign in to continue:",
+      "forgot_password": "Forgot password?",
       "headline": "Inloggen",
       "link": {
         "description": "Linking your <span class=\"break-keep text-links\">%(provider)s</span> account",
@@ -89,6 +133,38 @@
       "description": "This might be because of the client which authored the request, the currently logged in user, or the request itself.",
       "heading": "The authorization request was denied the policy enforced by this service",
       "logged_as": "Logged as <span class=\"font-semibold\">%(username)s</span>"
+    },
+    "recovery": {
+      "consumed": {
+        "description": "To create a new password, start over and select “Forgot password”.",
+        "heading": "The link to reset your password has already been used"
+      },
+      "disabled": {
+        "description": "If you have lost your credentials, please contact the administrator to recover your account.",
+        "heading": "Account recovery is disabled"
+      },
+      "expired": {
+        "description": "Request a new email that will be sent to: <span>%(email)s</span>.",
+        "heading": "The link to reset your password has expired",
+        "resend_email": "Resend email"
+      },
+      "finish": {
+        "confirm": "Enter new password again",
+        "description": "Choose a new password for your account.",
+        "heading": "Reset your password",
+        "new": "New password",
+        "save_and_continue": "Save and continue"
+      },
+      "progress": {
+        "change_email": "Try a different email",
+        "description": "We sent an email with a link to reset your password if there's an account using <span>%(email)s</span>.",
+        "heading": "Check your email",
+        "resend_email": "Resend email"
+      },
+      "start": {
+        "description": "An email will be sent with a link to reset your password.",
+        "heading": "Enter your email to continue"
+      }
     },
     "register": {
       "call_to_login": "Already have an account?",
