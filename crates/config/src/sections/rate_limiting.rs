@@ -140,7 +140,7 @@ impl ConfigurationSection for RateLimitingConfig {
         }
 
         if let Some(error) = error_on_limiter(&self.login.per_ip) {
-            return Err(error_on_nested_field(error, "login", "per_address"));
+            return Err(error_on_nested_field(error, "login", "per_ip"));
         }
         if let Some(error) = error_on_limiter(&self.login.per_account) {
             return Err(error_on_nested_field(error, "login", "per_account"));
