@@ -1689,7 +1689,7 @@
         "login": {
           "description": "Login-specific rate limits",
           "default": {
-            "per_address": {
+            "per_ip": {
               "burst": 3,
               "per_second": 0.05
             },
@@ -1770,7 +1770,7 @@
     "LoginRateLimitingConfig": {
       "type": "object",
       "properties": {
-        "per_address": {
+        "per_ip": {
           "description": "Controls how many login attempts are permitted based on source IP address. This can protect against brute force login attempts.\n\nNote: this limit also applies to password checks when a user attempts to change their own password.",
           "default": {
             "burst": 3,

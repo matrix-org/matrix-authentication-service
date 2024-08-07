@@ -396,7 +396,7 @@ rate_limiting:
     # Controls how many login attempts are permitted
     # based on source IP address.
     # This can protect against brute force login attempts.
-    per_address:
+    per_ip:
       burst: 3
       per_second: 0.05
 

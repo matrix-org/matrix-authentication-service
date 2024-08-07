@@ -43,8 +43,8 @@ pub struct LoginRateLimitingConfig {
     ///
     /// Note: this limit also applies to password checks when a user attempts to
     /// change their own password.
-    #[serde(default = "default_login_per_address")]
-    pub per_address: RateLimiterConfiguration,
+    #[serde(default = "default_login_per_ip")]
+    pub per_ip: RateLimiterConfiguration,
     /// Controls how many login attempts are permitted
     /// based on the account that is being attempted to be logged into.
     /// This can protect against a distributed brute force attack
@@ -139,7 +139,7 @@ impl ConfigurationSection for RateLimitingConfig {
             return Err(error_on_field(error, "registration"));
         }
 
-        if let Some(error) = error_on_limiter(&self.login.per_address) {
+        if let Some(error) = error_on_limiter(&self.login.per_ip) {
             return Err(error_on_nested_field(error, "login", "per_address"));
         }
         if let Some(error) = error_on_limiter(&self.login.per_account) {
@@ -166,7 +166,7 @@ impl RateLimiterConfiguration {
     }
 }
 
-fn default_login_per_address() -> RateLimiterConfiguration {
+fn default_login_per_ip() -> RateLimiterConfiguration {
     RateLimiterConfiguration {
         burst: NonZeroU32::new(3).unwrap(),
         per_second: 3.0 / 60.0,
@@ -214,7 +214,7 @@ impl Default for RateLimitingConfig {
 impl Default for LoginRateLimitingConfig {
     fn default() -> Self {
         LoginRateLimitingConfig {
-            per_address: default_login_per_address(),
+            per_ip: default_login_per_ip(),
             per_account: default_login_per_account(),
         }
     }

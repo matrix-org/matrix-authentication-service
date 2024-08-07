@@ -97,7 +97,7 @@ impl LimiterInner {
             account_recovery_per_email: RateLimiter::keyed(
                 config.account_recovery.per_address.to_quota()?,
             ),
-            password_check_for_requester: RateLimiter::keyed(config.login.per_address.to_quota()?),
+            password_check_for_requester: RateLimiter::keyed(config.login.per_ip.to_quota()?),
             password_check_for_user: RateLimiter::keyed(config.login.per_account.to_quota()?),
             registration_per_requester: RateLimiter::keyed(config.registration.to_quota()?),
         })
