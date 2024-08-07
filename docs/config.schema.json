@@ -1723,7 +1723,7 @@
       ],
       "properties": {
         "burst": {
-          "description": "A one-off burst of actions that the user can perform in one go without waiting. Replenishes at the rate.",
+          "description": "A one-off burst of actions that the user can perform in one go without waiting.",
           "type": "integer",
           "format": "uint32",
           "minimum": 1.0
