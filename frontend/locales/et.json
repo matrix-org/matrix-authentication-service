@@ -1,0 +1,329 @@
+{
+  "action": {
+    "back": "Tagasi",
+    "cancel": "Tühista",
+    "clear": "Tühjenda",
+    "close": "Sulge",
+    "continue": "Jätka",
+    "edit": "Muuda",
+    "save": "Salvesta",
+    "save_and_continue": "Salvesta ja jätka"
+  },
+  "branding": {
+    "privacy_policy": {
+      "alt": "Link selle teenuse privaatsuspoliitikale",
+      "link": "Privaatsuspoliitika"
+    },
+    "terms_and_conditions": {
+      "alt": "Link selle teenuse kasutustingimustele",
+      "link": "Kasutustingimused"
+    }
+  },
+  "common": {
+    "add": "Lisa",
+    "error": "Viga",
+    "loading": "Laadime…",
+    "next": "Edasi",
+    "previous": "Tagasi",
+    "saved": "Salvestatud",
+    "saving": "Salvestame…"
+  },
+  "frontend": {
+    "account": {
+      "edit_profile": {
+        "display_name_help": "Kui sa oled sisse loginud, siis muud osapooled näevad alljärgnevat teavet",
+        "display_name_label": "Kuvatav nimi",
+        "title": "Muuda profiili",
+        "username_label": "Kasutajanimi"
+      },
+      "password": {
+        "change": "Muuda salasõna",
+        "change_disabled": "Serveri haldaja on salasõnade muutmise võimaluse välja lülitanud.",
+        "label": "Salasõna"
+      },
+      "title": "Sinu kasutajakonto"
+    },
+    "add_email_form": {
+      "email_denied_alert": {
+        "text": "Serveri reeglite alusel pole selle e-posti aadressi kasutamine lubatud.",
+        "title": "Serveri reeglid ei luba seda e-posti aadressi kasutada"
+      },
+      "email_denied_error": "Sisestatud e-posti aadressi kasutamine on serveri reeglitega keelatud",
+      "email_exists_alert": {
+        "text": "See e-posti aadress on juba antud kasutajakontoga seotud",
+        "title": "E-posti aadress on juba kasutusel"
+      },
+      "email_exists_error": "Sisestatud e-posti aadress on juba selle kasutajakontoga seotud",
+      "email_field_help": "Ligipääsuks sellele kasutajakontole lisa täiendav e-posti aadress.",
+      "email_field_label": "Lisa e-posti aadress",
+      "email_invalid_alert": {
+        "text": "Lisatud e-posti aadress on vigane",
+        "title": "Vigane e-posti aadress"
+      },
+      "email_invalid_error": "Sisestatud e-posti aadress on vigane"
+    },
+    "app_sessions_list": {
+      "error": "Rakenduse sessioonide laadimine ei õnnestunud",
+      "heading": "Rakendused"
+    },
+    "browser_session_details": {
+      "current_badge": "Praegune sessioon",
+      "session_details_title": "Sessioon"
+    },
+    "browser_sessions_overview": {
+      "body:one": "{{count}} aktiivne sessioon",
+      "body:other": "{{count}} aktiivset sessiooni",
+      "heading": "Veebibrauserid",
+      "no_active_sessions": {
+        "default": "Sa pole sisse loginud mitte üheski brauseris.",
+        "inactive_90_days": "Kõik sinu sessioonid on olnud aktiivsed viimase 90 päeva jooksul."
+      },
+      "view_all_button": "Näita kõiki"
+    },
+    "compat_session_detail": {
+      "client_details_title": "Kliendi teave",
+      "name": "Nimi",
+      "session_details_title": "Sessioon"
+    },
+    "device_type_icon_label": {
+      "desktop": "Töölauarakendus",
+      "mobile": "Rakendus nutitelefonis",
+      "pc": "Rakendus arvutis",
+      "tablet": "Rakendus tahvelarvutis",
+      "unknown": "Tundmatu seadme tüüp",
+      "web": "Veebirakendus"
+    },
+    "end_session_button": {
+      "confirmation_modal_title": "Kas sa oled kindel, et soovid selle sessiooni lõpetada?",
+      "text": "Logi välja"
+    },
+    "error": {
+      "hideDetails": "Peida lisateave",
+      "showDetails": "Näita lisateavet",
+      "subtitle": "Tekkis ootamatu viga. Palun proovi uuesti.",
+      "title": "Midagi läks viltu"
+    },
+    "error_boundary_title": "Midagi läks viltu",
+    "errors": {
+      "field_required": "Selle välja täitmine on kohustuslik"
+    },
+    "last_active": {
+      "active_date": "Viimati kasutusel {{relativeDate}}",
+      "active_now": "Hetkel kasutusel",
+      "inactive_90_days": "Pole kasutusel olnud üle 90 päeva"
+    },
+    "nav": {
+      "devices": "Seadmed",
+      "profile": "Profiil",
+      "sessions": "Sessioonid",
+      "settings": "Seadistused"
+    },
+    "not_found_alert_title": "Ei leidu.",
+    "not_logged_in_alert": "Sa pole sisse loginud.",
+    "oauth2_client_detail": {
+      "details_title": "Kliendi teave",
+      "id": "Kliendi tunnus",
+      "name": "Nimi",
+      "policy": "Reeglid",
+      "terms": "Kasutustingimused"
+    },
+    "oauth2_session_detail": {
+      "client_details_name": "Nimi",
+      "client_title": "Kliendi teave",
+      "session_details_title": "Sessioon"
+    },
+    "pagination_controls": {
+      "total": "Kokku: {{totalCount}}"
+    },
+    "password_change": {
+      "current_password_label": "Praegune salasõna",
+      "failure": {
+        "description": {
+          "account_locked": "Sinu kasutajakonto on lukustatud ning salasõna taastamist ei ole hetkel võimalik teha. Kui antud olukord tundub sulle kahtlane, siis palun teavita sellest sinu serveri haldajat.",
+          "expired_recovery_ticket": "Salasõna taastamiseks mõeldud link on aegunud. Palun alusta taastamisprotsessi algusest.",
+          "invalid_new_password": "Sinu sisestatud uus salasõna pole korrektne, ta ilmselt ei vasta seadistatud turvareeglitele.",
+          "no_current_password": "Sul on hetkel kehtiv salasõna määramata.",
+          "no_such_recovery_ticket": "Salasõna taastamiseks mõeldud link on vigane. Kui sa kopeerisid ja e-kirjast, siis palun kontrolli, et kopeerisid kogu lingi ühe tervikuna.",
+          "password_changes_disabled": "Salasõnade muutmine pole lubatud.",
+          "recovery_ticket_already_used": "Sa oled salasõna taastamiseks mõeldud linki juba kasutanud ja seda ei saa uuesti teha.",
+          "unspecified": "See ilmselt on ajutine probleem, palun proovi mõne aja pärast uuesti. Kui viga ei kao, siis abi saad serveri haldajalt.",
+          "wrong_password": "Sinu sisestatud salasõna ei vasta hetkel kehtivale salasõnale. Palun proovi uuesti.,"
+        },
+        "title": "Salasõna uuendamine ei õnnestunud"
+      },
+      "new_password_again_label": "Sisesta uus salasõna veel üks kord",
+      "new_password_label": "Uus salasõna",
+      "passwords_match": "Salasõnad klapivad omavahel!",
+      "passwords_no_match": "Salasõnad ei klapi omavahel",
+      "subtitle": "Vali oma kasutajakontole uus salasõna.",
+      "success": {
+        "description": "Sinu salasõna muutmine õnnestus.",
+        "title": "Salasõna on muudetud"
+      },
+      "title": "Muuda oma salasõna"
+    },
+    "password_reset": {
+      "title": "Lähtesta oma salasõna"
+    },
+    "password_strength": {
+      "placeholder": "Salasõna turvalisuse tase",
+      "score": {
+        "0": "Eriti nõrk salasõna",
+        "1": "Väga nõrk salasõna",
+        "2": "Nõrk salasõna",
+        "3": "Tugev salasõna",
+        "4": "Väga tugev salasõna"
+      },
+      "suggestion": {
+        "all_uppercase": "Muuda mõned tähed suurtähtedeks, aga mitte kõik.",
+        "another_word": "Lisa juurde mõni vähelevinud sõna.",
+        "associated_years": "Väldi sinuga seotud aastanumbreid.",
+        "capitalization": "Lisaks esimesele suurähele lisa veel suurtähti.",
+        "dates": "Väldi sinuga seotud kuupäevi ja aastanumbreid.",
+        "l33t": "Väldi kergesti ennustatavaid täheasendusi nagu „@“ „a“ asemel.",
+        "longer_keyboard_pattern": "Kasuta pikemaid klahvivajutuse mustreid ja muuda paar korda liikumise suunda klaviatuuril.",
+        "no_need": "Sa saad luua turvalisi salasõnu ka ilma sümbolite, numbrite ja suurtähtedeta.",
+        "pwned": "Kui sa kasutad sama salasõna mujalgi, siis kindlasti muuda seda.",
+        "recent_years": "Väldi hiljutisi aastaid.",
+        "repeated": "Väldi korduvaid sõnu ja tähemärke.",
+        "reverse_words": "Väldi tavaliste sõnade kirjutamist tagurpidi.",
+        "sequences": "Väldi levinud tähemärkide järjestusi.",
+        "use_words": "Kasuta mitut sõna, kuid väldi levinud lauseid ja fraase."
+      },
+      "too_weak": "See salasõna in liiga nõrk.",
+      "warning": {
+        "common": "See on üldlevinud salasõna.",
+        "common_names": "Levinud eesnimede ja perenimede äraarvamine on lihtne.",
+        "dates": "Kuupäevade äraarvamine on lihtne.",
+        "extended_repeat": "Tähemärkide korduvate kombinatsioonide, nagu „abcabcabc“ äraarvamine on lihtne.",
+        "key_pattern": "Lühikeste klaviatuurimustrite äraarvamine on lihtne.",
+        "names_by_themselves": "Üksikute eesnimede ja perenimede äraarvamine on lihtne.",
+        "pwned": "Sinu sisestatud salasõna leidub internetis rändama läinud salasõnade andmekogus.",
+        "recent_years": "Hiljutiste aastate äraarvamine on lihtne.",
+        "sequences": "Levinud tähejadade nagu „abc“ äraarvamine on lihtne.",
+        "similar_to_common": "See salasõna sarnaneb ühele tavaliselt kasutatavale salasõnale.",
+        "simple_repeat": "Korduvate tähejadade nagu „aaa“ äraarvamine on lihtne.",
+        "straight_row": "Klaviatuuril järjestikku asuvate klahvide põhiste tähejadade äraarvamine on lihtne.",
+        "top_hundred": "See on sagedasti kasutatav salasõna.",
+        "top_ten": "See on ülisagedasti kasutatav salasõna.",
+        "user_inputs": "Salasõnas ei peaks olema isiklikku ega selle veebilehega seotud andmeid.",
+        "word_by_itself": "Üksikute sõnade äraarvamine on lihtne."
+      }
+    },
+    "reset_cross_signing": {
+      "button": "Luba krüptoidentiteedi lähtestamine",
+      "description": "Kui sa pole mitte üheski seadmes Matrixi võrku sisse loginud ja oled unustanud või kaotanud kõik oma kasutajakontole ligipääsu taastamise võimalused, siis sa pead oma krüptoidentiteedi lähtestama. See tähendab, et kaotsi läheb sinu senine sõnumite ajalugu ning muud kasutajad näevad, et oled oma krüptoidentiteedi lähtestanud ja nad peavad sinu kasutatavad seadmed uuesti verifitseerima.",
+      "failure": {
+        "description": "Tegemist võib olla ajutuse probleemiga, palun proovi mõne aja pärast uuesti. Kui viga on püsiv, siis abi saad oma serveri haldajalt.",
+        "title": "Viga krüptoidentiteedi oleku muutmisel"
+      },
+      "heading": "Lähtesta krüptoidentiteet",
+      "success": {
+        "description": "Oma Matrixi kliendist saad nüüd oma krüptoidentiteedi uuesti luua. Antud tegevuse jaoks järgi oma Matrixi kliendi kasutusjuhendit.",
+        "title": "Krüptoidentiteedi lähtestamine on ajutuselt lubatud"
+      }
+    },
+    "selectable_session": {
+      "label": "Vali sessioon"
+    },
+    "session": {
+      "client_id_label": "Kliendi tunnus",
+      "current": "Praegune",
+      "current_badge": "Praegune",
+      "device_id_label": "Seadme tunnus",
+      "finished_date": "Lõpetatud <datetime/>",
+      "finished_label": "Lõpetatud",
+      "id_label": "ID",
+      "ip_label": "IP-aadress",
+      "last_active_label": "Viimati kasutusel",
+      "last_auth_label": "Viimati autenditud",
+      "name_for_platform": "{{name}} / {{platform}}",
+      "scopes_label": "Õigused",
+      "signed_in_date": "Sisse logitud <datetime/>",
+      "signed_in_label": "Sisse logitud",
+      "title": "Seadme andmed",
+      "unknown_browser": "Tundmatu brauser",
+      "unknown_device": "Tundmatu seade",
+      "uri_label": "Aadress",
+      "user_id_label": "Kasutajatunnus",
+      "username_label": "Kasutajanimi"
+    },
+    "session_detail": {
+      "alert": {
+        "button": "Mine tagasi",
+        "text": "Seda sessiooni kas pole olemas või ta pole enam aktiivne.",
+        "title": "Sessiooni ei õnnestu leida: {{deviceId}}"
+      }
+    },
+    "unknown_route": "Tundmatu marsruut {{route}}",
+    "unverified_email_alert": {
+      "button": "Vaata üle ja kinnita",
+      "text:one": "Sul on {{count}} kinnitamata e-posti aadress.",
+      "text:other": "Sul on {{count}} kinnitamata e-posti aadressi.",
+      "title": "Kinnitamata e-posti aadress"
+    },
+    "user_email": {
+      "cant_delete_primary": "Selle e-posti aadressi kustutamiseks vali uus põhiline e-posti aadress.",
+      "delete_button_confirmation_modal": {
+        "action": "Kustuta e-posti aadress",
+        "body": "Kas kustutame selle e-posti aadressi?"
+      },
+      "delete_button_title": "Eemalda e-posti aadress",
+      "email": "E-posti aadress",
+      "make_primary_button": "Määra põhiliseks e-posti aadressiks",
+      "not_verified": "E-posti aadress on kinnitamata",
+      "primary_email": "Põhiline e-posti aadress",
+      "retry_button": "Saada kood uuesti",
+      "unverified": "Kinnitamata"
+    },
+    "user_email_list": {
+      "heading": "E-posti aadressid",
+      "no_primary_email_alert": "Põhilist e-posti aadressi pole"
+    },
+    "user_greeting": {
+      "error": "Kasutaja andmete laadimine ei õnnestunud"
+    },
+    "user_name": {
+      "display_name_field_label": "Kuvatav nimi"
+    },
+    "user_sessions_overview": {
+      "active_sessions:one": "{{count}} aktiivne sessioon",
+      "active_sessions:other": "{{count}} aktiivset sessiooni",
+      "heading": "Kus sa oled sisse logitud",
+      "no_active_sessions": {
+        "default": "Sa pole mitte üheski rakenduses sisse loginud.",
+        "inactive_90_days": "Kõik sinu sessioonid on olnud aktiivsed viimase 90 päeva jooksul."
+      }
+    },
+    "verify_email": {
+      "code_field_error": "Kood pole õige",
+      "code_field_label": "6-numbriline kood",
+      "code_field_wrong_shape": "Kood peab olema 6-numbriline",
+      "email_sent_alert": {
+        "description": "Sisesta alljärgnevale väljale uus kood.",
+        "title": "Uus kood on saadetud"
+      },
+      "enter_code_prompt": "Sisesta 6-kohaline kood, mis saadeti e-posti aadressile: <email>{{email}}</email>",
+      "heading": "Kinnita oma e-posti aadress",
+      "invalid_code_alert": {
+        "description": "Jätkamiseks kirjuta siis kood, mille saatsime sinu e-posti aadressile.",
+        "title": "Sa sisestasid vale koodi"
+      },
+      "resend_code": "Saada kood uuesti",
+      "resend_email": "Saada e-kiri uuesti",
+      "sent": "Saadetud!",
+      "unknown_email": "Tundmatu e-posti aadress"
+    }
+  },
+  "mas": {
+    "scope": {
+      "edit_profile": "Muuta sinu kasutajaprofiili ning kontaktandmeid",
+      "manage_sessions": "Hallata sinu seadmeid ja sessioone",
+      "mas_admin": "Hallata iga kasutajat teenuses matrix-authentication-service",
+      "send_messages": "Saata sõnumeid sinu nimel",
+      "synapse_admin": "Hallata seda Synapse koduserverit",
+      "view_messages": "Vaadata sinu sõnumeid ja andmeid",
+      "view_profile": "Näha sinu profiili teavet ja kontaktandmeid"
+    }
+  }
+}

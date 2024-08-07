@@ -1,10 +1,12 @@
 {
   "action": {
+    "back": "Zurück",
     "cancel": "Abbrechen",
     "continue": "Weiter",
     "create_account": "Konto erstellen",
     "sign_in": "Anmelden",
     "sign_out": "Abmelden",
+    "start_over": "Von vorne anfangen",
     "submit": "Absenden"
   },
   "app": {
@@ -39,6 +41,9 @@
       "heading": "E-Mail-Adresse hinzufügen"
     },
     "back_to_homepage": "Zurück",
+    "captcha": {
+      "noscript": "Dieses Formular ist durch ein CAPTCHA geschützt und erfordert die Aktivierung von JavaScript, um es abschicken zu können. Bitte aktivieren Sie JavaScript in Ihrem Browser und laden Sie diese Seite neu."
+    },
     "change_password": {
       "change": "Passwort ändern",
       "confirm": "Passwort wiederholen",
@@ -47,8 +52,44 @@
       "heading": "Mein Passwort ändern",
       "new": "Neues Passwort"
     },
+    "consent": {
+      "client_wants_access": "<span>%(client_name)s</span> auf <span>%(redirect_uri)s</span> möchte auf Ihr Konto zugreifen.",
+      "heading": "Zugriff auf Ihr Konto zulassen?",
+      "make_sure_you_trust": "Stellen Sie sicher, dass Sie <span>%(client_name)s</span> vertrauen.",
+      "this_will_allow": "Dies wird <span>%(client_name)s</span> ermöglichen:",
+      "you_may_be_sharing": "Möglicherweise teilen Sie vertrauliche Informationen mit dieser Webseite oder App."
+    },
+    "device_card": {
+      "access_requested": "Zugriff beantragt",
+      "device_code": "Code",
+      "generic_device": "Gerät",
+      "ip_address": "IP-Adresse"
+    },
+    "device_code_link": {
+      "description": "Ein Gerät verknüpfen",
+      "headline": "Geben Sie den auf Ihrem Gerät angezeigten Code ein"
+    },
+    "device_consent": {
+      "another_device_access": "Ein anderes Gerät möchte auf Ihr Konto zugreifen.",
+      "denied": {
+        "description": "Sie haben den Zugriff auf %(client_name)s verweigert. Sie können dieses Fenster schließen.",
+        "heading": "Zugriff verweigert"
+      },
+      "granted": {
+        "description": "Sie haben Zugriff auf %(client_name)s gewährt. Sie können dieses Fenster schließen.",
+        "heading": "Zugriff gewährt"
+      }
+    },
     "emails": {
       "greeting": "Hallo %(username)s,",
+      "recovery": {
+        "click_button": "Klicken Sie auf die Schaltfläche unten, um ein neues Passwort zu erstellen:",
+        "copy_link": "Kopieren Sie den folgenden Link und fügen Sie ihn in einen Browser ein, um ein neues Passwort zu erstellen:",
+        "create_new_password": "Neues Passwort erstellen",
+        "headline": "Sie haben ein Zurücksetzen des Passworts für Ihr %(server_name)s Konto angefordert.",
+        "subject": "Setzen Sie Ihr Kontokennwort zurück (%(mxid)s )",
+        "you_can_ignore": "Wenn Sie nicht nach einem neuen Passwort gefragt haben, können Sie diese E-Mail ignorieren. Ihr aktuelles Passwort wird weiterhin funktionieren."
+      },
       "verify": {
         "body_html": "Ihr Code zur Bestätigung dieser E-Mail-Adresse lautet: <strong>%(code)s</strong>",
         "body_text": "Ihr Code zur Bestätigung dieser E-Mail-Adresse lautet: %(code)s",
@@ -56,16 +97,19 @@
       }
     },
     "errors": {
+      "captcha": "Die CAPTCHA-Überprüfung ist fehlgeschlagen, bitte versuchen Sie es erneut",
       "denied_policy": "Abgelehnt durch Richtlinie: %(policy)s",
       "field_required": "Dieses Feld ist ein Pflichtfeld",
       "invalid_credentials": "Ungültige Anmeldeinformationen",
       "password_mismatch": "Die Passwortfelder stimmen nicht überein",
+      "rate_limit_exceeded": "Sie haben in kurzer Zeit zu viele Anfragen gestellt. Bitte warten Sie einige Minuten und versuchen Sie es erneut.",
       "username_taken": "Dieser Benutzername ist bereits vergeben"
     },
     "login": {
       "call_to_register": "Sie haben noch kein Konto?",
       "continue_with_provider": "Weiter mit %(provider)s",
       "description": "Bitte melden Sie sich an, um fortzufahren:",
+      "forgot_password": "Passwort vergessen?",
       "headline": "Anmelden",
       "link": {
         "description": "Ihr <span class=\"break-keep text-links\">%(provider)s</span> Konto verknüpfen",
@@ -89,6 +133,38 @@
       "description": "Dies kann am Client liegen, der die Anfrage erstellt hat, am aktuell angemeldeten Benutzer oder an der Anfrage selbst.",
       "heading": "Die Autorisierungsanfrage wurde durch eine Richtlinie dieses Dienstes abgelehnt",
       "logged_as": "Eingeloggt als <span class=\"font-semibold\">%(username)s</span>"
+    },
+    "recovery": {
+      "consumed": {
+        "description": "Um ein neues Passwort zu erstellen, beginnen Sie von vorne und wählen Sie „Passwort vergessen“.",
+        "heading": "Der Link zum Zurücksetzen Ihres Passworts wurde bereits verwendet"
+      },
+      "disabled": {
+        "description": "Wenn Sie Ihre Zugangsdaten verloren haben, wenden Sie sich bitte an den Administrator, um Ihr Konto wiederherzustellen.",
+        "heading": "Die Kontowiederherstellung ist deaktiviert"
+      },
+      "expired": {
+        "description": "Fordern Sie eine neue E-Mail an, die an folgende Adresse gesendet wird: <span>%(email)s</span>.",
+        "heading": "Der Link zum Zurücksetzen Ihres Passworts ist abgelaufen",
+        "resend_email": "E-Mail erneut senden"
+      },
+      "finish": {
+        "confirm": "Neues Passwort erneut eingeben",
+        "description": "Wählen Sie ein neues Passwort für Ihr Konto.",
+        "heading": "Ihr Passwort zurücksetzen",
+        "new": "Neues Passwort",
+        "save_and_continue": "Speichern und fortfahren"
+      },
+      "progress": {
+        "change_email": "Versuchen Sie es mit einer anderen E-Mail",
+        "description": "Wir haben eine E-Mail mit einem Link zum Zurücksetzen Ihres Passworts gesendet, wenn es ein Konto mit <span>%(email)s</span> gibt.",
+        "heading": "Überprüfen Sie Ihre E-Mails",
+        "resend_email": "E-Mail erneut senden"
+      },
+      "start": {
+        "description": "Es wird eine E-Mail mit einem Link zum Zurücksetzen Ihres Passworts gesendet.",
+        "heading": "Geben Sie Ihre E-Mail-Adresse ein, um fortzufahren"
+      }
     },
     "register": {
       "call_to_login": "Sie haben bereits ein Konto?",

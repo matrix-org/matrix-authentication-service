@@ -6,7 +6,8 @@
     "close": "Fermer",
     "continue": "Continuer",
     "edit": "Éditer",
-    "save": "Enregistrer"
+    "save": "Enregistrer",
+    "save_and_continue": "Enregistrer et continuer"
   },
   "branding": {
     "privacy_policy": {
@@ -23,7 +24,9 @@
     "error": "Erreur",
     "loading": "Chargement…",
     "next": "Suivant",
-    "previous": "Précédent"
+    "previous": "Précédent",
+    "saved": "Sauvegardé",
+    "saving": "Enregistrement..."
   },
   "frontend": {
     "account": {
@@ -33,27 +36,31 @@
         "title": "Editer le profil",
         "username_label": "Nom d’utilisateur"
       },
-      "title": "Votre compte",
       "password": {
-        "label": "Mot de passe",
-        "change": "Changer le mot de passe"
-      }
+        "change": "Changer de mot de passe",
+        "change_disabled": "Le changement de mot de passe a été désactivé par l'administrateur.",
+        "label": "Mot de passe"
+      },
+      "title": "Votre compte"
     },
     "add_email_form": {
       "email_denied_alert": {
         "text": "L’adresse e-mail saisie n’est pas autorisée par la politique du serveur.",
         "title": "Adresse e-mail refusé par la politique du serveur"
       },
+      "email_denied_error": "L’adresse e-mail saisie n’est pas conforme à la politique du serveur",
       "email_exists_alert": {
         "text": "L’adresse e-mail saisie est déjà ajoutée à ce compte",
         "title": "Cette adresse e-mail existe déjà"
       },
+      "email_exists_error": "L’adresse e-mail saisie est déjà ajoutée à ce compte",
       "email_field_help": "Ajouter une autre adresse e-mail à utiliser pour ce compte.",
       "email_field_label": "Ajouter une adresse e-mail",
       "email_invalid_alert": {
         "text": "L’adresse e-mail saisie est invalide",
         "title": "Adresse e-mail invalide"
-      }
+      },
+      "email_invalid_error": "L’adresse e-mail saisie n’est pas valide"
     },
     "app_sessions_list": {
       "error": "Impossible de charger les sessions d'application",
@@ -67,6 +74,10 @@
       "body:one": "{{count}} session active",
       "body:other": "{{count}} sessions actives",
       "heading": "Navigateurs",
+      "no_active_sessions": {
+        "default": "Vous n'êtes connecté sur aucun navigateur web.",
+        "inactive_90_days": "Toutes vos sessions ont été actives au cours des 90 derniers jours."
+      },
       "view_all_button": "Tout voir"
     },
     "compat_session_detail": {
@@ -92,10 +103,10 @@
       "subtitle": "Une erreur inattendue s'est produite. Veuillez réessayer",
       "title": "Un problème est survenu"
     },
+    "error_boundary_title": "Un problème est survenu",
     "errors": {
       "field_required": "Ce champ est requis"
     },
-    "error_boundary_title": "Un problème est survenu",
     "last_active": {
       "active_date": "Actif {{relativeDate}}",
       "active_now": "Actif maintenant",
@@ -125,11 +136,79 @@
       "total": "Total : {{totalCount}}"
     },
     "password_change": {
-      "title": "Changer le mot de passe",
-      "subtitle": "Cela modifiera le mot de passe de votre compte.",
       "current_password_label": "Mot de passe actuel",
+      "failure": {
+        "description": {
+          "account_locked": "Votre compte est bloqué et ne peut pas être récupéré pour le moment. Si cela n'est pas normal, contactez l'administrateur de votre serveur.",
+          "expired_recovery_ticket": "Le lien de récupération a expiré. Veuillez recommencer le processus de récupération de compte depuis le début.",
+          "invalid_new_password": "Le mot de passe choisi n'est pas valide ; il ne correspond peut-être pas à la politique de sécurité configurée.",
+          "no_current_password": "Vous n'avez pas de mot de passe actuel.",
+          "no_such_recovery_ticket": "Le lien de restauration n'est pas valide. Si vous avez copié le lien depuis l'e-mail de restauration, vérifiez que le lien complet a été copié.",
+          "password_changes_disabled": "Les changements de mot de passe sont désactivés.",
+          "recovery_ticket_already_used": "Le lien de restauration a déjà été utilisé. Il ne peut pas être réutilisé.",
+          "unspecified": "Il s'agit peut-être d'un problème temporaire, veuillez donc réessayer ultérieurement. Si le problème persiste, contactez l'administrateur de votre serveur.",
+          "wrong_password": "Le mot de passe que vous avez fourni comme mot de passe actuel est incorrect. Veuillez réessayer."
+        },
+        "title": "Impossible de mettre à jour le mot de passe"
+      },
+      "new_password_again_label": "Saisir à nouveau le nouveau mot de passe",
       "new_password_label": "Nouveau mot de passe",
-      "new_password_again_label": "Confirmer le mot de passe"
+      "passwords_match": "Les mots de passe correspondent.",
+      "passwords_no_match": "Les mots de passe ne correspondent pas",
+      "subtitle": "Choisissez un nouveau mot de passe pour votre compte.",
+      "success": {
+        "description": "Votre mot de passe a été mis à jour avec succès.",
+        "title": "Mot de passe mis à jour"
+      },
+      "title": "Modifier votre mot de passe"
+    },
+    "password_reset": {
+      "title": "Reinitialisez votre mot de passe"
+    },
+    "password_strength": {
+      "placeholder": "Complexité du mot de passe",
+      "score": {
+        "0": "Mot de passe extrêmement faible",
+        "1": "Mot de passe très faible",
+        "2": "Mot de passe faible",
+        "3": "Mot de passe fort",
+        "4": "Mot de passe très fort"
+      },
+      "suggestion": {
+        "all_uppercase": "Mettez certaines lettres en majuscule, mais pas toutes.",
+        "another_word": "Ajoutez des mots moins courants.",
+        "associated_years": "Évitez les années qui vous sont associées.",
+        "capitalization": "Mettez plus de majuscule que simplement la première lettre.",
+        "dates": "Évitez les dates et les années qui vous sont associées.",
+        "l33t": "Évitez les substitutions de lettres prévisibles telles que « @ » pour « a ».",
+        "longer_keyboard_pattern": "Utilisez des suites de caractères plus longues sur votre clavier, en changeant de direction plusieurs fois.",
+        "no_need": "Vous pouvez créer des mots de passe sécurisés sans utiliser de symboles, de chiffres ou de majuscules.",
+        "pwned": "Si vous utilisez ce mot de passe ailleurs, vous devriez le modifier.",
+        "recent_years": "Évitez les dernières années.",
+        "repeated": "Évitez les répétitions de mots et de caractères.",
+        "reverse_words": "Évitez d'utiliser des mots courants inversés.",
+        "sequences": "Évitez les séquences de caractères courantes.",
+        "use_words": "Utilisez plusieurs mots, mais évitez les expressions courantes."
+      },
+      "too_weak": "Ce mot de passe est trop faible",
+      "warning": {
+        "common": "Il s’agit d’un mot de passe couramment utilisé.",
+        "common_names": "Les noms et prénoms communs sont faciles à deviner.",
+        "dates": "Les dates sont faciles à deviner.",
+        "extended_repeat": "Les caractères répétés comme \"abcabcabc\" sont faciles à deviner.",
+        "key_pattern": "Les suites de touches de clavier courtes sont faciles à deviner.",
+        "names_by_themselves": "Les noms et prénoms seuls sont faciles à deviner.",
+        "pwned": "Votre mot de passe a été exposé lors d'une fuite de données sur Internet.",
+        "recent_years": "Les dernières années sont faciles à deviner.",
+        "sequences": "Les séquences de caractères courantes comme « abc » sont faciles à deviner.",
+        "similar_to_common": "Ce mot de passe est similaire à un mot de passe couramment utilisé.",
+        "simple_repeat": "Les caractères répétés tels que « aaa » sont faciles à deviner.",
+        "straight_row": "Les suites de touches droites de votre clavier sont faciles à deviner.",
+        "top_hundred": "Il s'agit d'un mot de passe fréquemment utilisé.",
+        "top_ten": "Il s'agit d'un mot de passe très utilisé.",
+        "user_inputs": "Votre mot de passe ne dois pas contenir de données personnelles ou relatives à la page.",
+        "word_by_itself": "Les mots seuls sont faciles à deviner."
+      }
     },
     "reset_cross_signing": {
       "button": "Autoriser le remplacement de l'identité cryptographique",
@@ -210,7 +289,11 @@
     "user_sessions_overview": {
       "active_sessions:one": "{{count}}session active",
       "active_sessions:other": "{{count}}sessions actives",
-      "heading": "Où vous êtes connecté"
+      "heading": "Où vous êtes connecté",
+      "no_active_sessions": {
+        "default": "Vous n'êtes connecté à aucune application.",
+        "inactive_90_days": "Toutes vos sessions ont été actives au cours des 90 derniers jours."
+      }
     },
     "verify_email": {
       "code_field_error": "Code non reconnu",

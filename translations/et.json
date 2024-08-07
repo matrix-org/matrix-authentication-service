@@ -1,0 +1,223 @@
+{
+  "action": {
+    "back": "Tagasi",
+    "cancel": "Katkesta",
+    "continue": "Jätka",
+    "create_account": "Loo konto",
+    "sign_in": "Logi sisse",
+    "sign_out": "Logi välja",
+    "start_over": "Alusta uuesti",
+    "submit": "Saada"
+  },
+  "app": {
+    "human_name": "Matrix Authentication Service",
+    "name": "matrix-authentication-service",
+    "technical_description": "OpenID Connect teenuse tuvastusdokument: <a class=\"cpd-link\" data-kind=\"primary\" href=\"%(discovery_url)s\">%(discovery_url)s</a>"
+  },
+  "branding": {
+    "privacy_policy": {
+      "alt": "Link selle teenuse privaatsuspoliitikale",
+      "link": "Privaatsuspoliitika"
+    },
+    "terms_and_conditions": {
+      "alt": "Link selle teenuse kasutustingimustele",
+      "link": "Kasutustingimused"
+    }
+  },
+  "common": {
+    "display_name": "Kuvatav nimi",
+    "email_address": "E-posti aadress",
+    "mxid": "Matrixi kasutajatunnus",
+    "password": "Salasõna",
+    "password_confirm": "Korda salasõna",
+    "username": "Kasutajanimi"
+  },
+  "error": {
+    "unexpected": "Ootamatu viga"
+  },
+  "mas": {
+    "add_email": {
+      "description": "Selleks, et saaksid vajaduse korral taastada ligipääsu oma kasutajakontole, palun sisesta oma e-posti aadress.",
+      "heading": "Lisa e-posti aadress"
+    },
+    "back_to_homepage": "Tagasi avalehele",
+    "captcha": {
+      "noscript": "Sellel vormil kasutame turvameetmena robotilõksu ning vormi kasutamiseks peab JavaScript toimima. Palun võta oma brauseris siin lehel JavaScript kasutusele ja laadi leht uuesti."
+    },
+    "change_password": {
+      "change": "Muuda salasõna",
+      "confirm": "Korda salasõna",
+      "current": "Senine salasõna",
+      "description": "Järgnevaga muudad oma kasutajakonto salasõna.",
+      "heading": "Muuda minu salasõna",
+      "new": "Uus salasõna"
+    },
+    "consent": {
+      "client_wants_access": "<span>%(client_name)s</span> aadressil <span>%(redirect_uri)s</span> soovib ligipääsu sinu kasutajakontole.",
+      "heading": "Kas lubad ligipääsu sinu kasutajakontole?",
+      "make_sure_you_trust": "Palun kontrolli, et <span>%(client_name)s</span> on sinu jaoks usaldusväärne teenus.",
+      "this_will_allow": "Sellega <span>%(client_name)s</span> saab õigused:",
+      "you_may_be_sharing": "Sa tõenäoliselt jagad privaatset teavet selle veebisaidi või rakendusega."
+    },
+    "device_card": {
+      "access_requested": "Ligipääsupäring",
+      "device_code": "Kood",
+      "generic_device": "Seade",
+      "ip_address": "IP-aadress"
+    },
+    "device_code_link": {
+      "description": "Seo seade",
+      "headline": "Sisesta sinu seadmes kuvatud kood"
+    },
+    "device_consent": {
+      "another_device_access": "Üks seade soovib ligipääsu sinu kasutajakontole.",
+      "denied": {
+        "description": "Sa keelasid seadmele %(client_name)s ligipääsu. Sa võid nüüd selle akna sulgeda.",
+        "heading": "Ligipääs on keelatud"
+      },
+      "granted": {
+        "description": "Sa lubasid seadmele %(client_name)s ligipääsu. Sa võid nüüd selle akna sulgeda.",
+        "heading": "Ligipääs on lubatud"
+      }
+    },
+    "emails": {
+      "greeting": "Tere %(username)s,",
+      "recovery": {
+        "click_button": "Uue salasõna loomiseks klõpsa alloleval nupul:",
+        "copy_link": "Uue salasõna loomiseks kopeeri see link ja aseta ta veebibrauseri aadressireale:",
+        "create_new_password": "Loo uus salasõna",
+        "headline": "Sa soovisid lähtestada oma kasutajakontot serveris %(server_name)s",
+        "subject": "Lähtesta oma kasutajakonto salasõna (%(mxid)s)",
+        "you_can_ignore": "Kui sa ei soovinud oma salasõna muuta, siis palun eira seda kirja. Sinu senine salasõna jääb kehtima."
+      },
+      "verify": {
+        "body_html": "Selle e-postiaadressi õigsuse kinnitamiseks vajalik tuvastuskood on: <strong>%(code)s</strong>",
+        "body_text": "Selle e-postiaadressi õigsuse kinnitamiseks vajalik tuvastuskood on: %(code)s",
+        "subject": "Sinu e-postiaadressi õigsuse kinnitamiseks vajalik tuvastuskood on: %(code)s"
+      }
+    },
+    "errors": {
+      "captcha": "Robotilõksu tehtud kontroll ei luba jätkata. Palun proovi uuesti.",
+      "denied_policy": "See on keelatud serveri kasutusjuhendi alusel: %(policy)s",
+      "field_required": "Selle välja täitmine on kohustuslik",
+      "invalid_credentials": "Vigased kasutajatunnused",
+      "password_mismatch": "Salasõnad ei klapi omavahel",
+      "rate_limit_exceeded": "Sa oled lühikese aja jooksul teinud liiga palju päringuid. Palun oota paar minutit ja proovi uuesti.",
+      "username_taken": "Selline kasutajanimi on juba olemas"
+    },
+    "login": {
+      "call_to_register": "Sul veel pole kasutajakontot?",
+      "continue_with_provider": "Jätka teenusepakkujaga %(provider)s",
+      "description": "Jätkamaks palun logi sisse:",
+      "forgot_password": "Kas unustasid salasõna?",
+      "headline": "Logi sisse",
+      "link": {
+        "description": "Seome sinu <span class=\"break-keep text-links\">%(provider)s</span> teenusepakkuja kasutajakontot",
+        "headline": "Konto sidumiseks logi sisse"
+      },
+      "no_login_methods": "Ühtegi sisselogimisvõimalust pole saadaval.",
+      "separator": "või"
+    },
+    "navbar": {
+      "my_account": "Minu kasutajakonto",
+      "register": "Loo kasutajakonto",
+      "signed_in_as": "Sisselogitud kui <span class=\"font-semibold\">%(username)s</span>."
+    },
+    "not_found": {
+      "description": "Sinu otsitud lehte kas pole olemas või on ta aadress muutunud",
+      "heading": "Lehte ei leidu"
+    },
+    "not_you": "Kas sina pole %(username)s?",
+    "or_separator": "või",
+    "policy_violation": {
+      "description": "Põhjustajaks võib olla autentimispäringu teinud klient, hetkel sisselogitud kasutaja või päring ise.",
+      "heading": "Selle teenuse reeglite alusel keelduti autentimispäringust",
+      "logged_as": "Sisselogitud kui <span class=\"font-semibold\">%(username)s</span>"
+    },
+    "recovery": {
+      "consumed": {
+        "description": "Uue salasõna loomiseks alusta uuesti ning vali „Unustasin salasõna“.",
+        "heading": "Sinu salasõna lähtestamiseks mõeldud link on juba kasutatud"
+      },
+      "disabled": {
+        "description": "Kui sa oled kaotanud või unustanud sisselogimiseks vajaliku kasutajanime ja salasõna, siis kasutajakontole ligipääsu taastamiseks võta ühendust serveri haldajaga.",
+        "heading": "Kasutajakontole ligipääsu taastamise võimalus on välja lülitatud"
+      },
+      "expired": {
+        "description": "Saada uus e-kiri aadressile <span>%(email)s</span>.",
+        "heading": "Sinu salasõna lähtestamiseks mõeldud link on aegunud",
+        "resend_email": "Saada e-kiri uuesti"
+      },
+      "finish": {
+        "confirm": "Sisesta uus salasõna uuesti",
+        "description": "Vali uus salasõna oma kasutajakonto jaoks.",
+        "heading": "Lähtesta oma salasõna",
+        "new": "Uus salasõna",
+        "save_and_continue": "Salvesta ja jätka"
+      },
+      "progress": {
+        "change_email": "Proovi mõnda muud e-posti aadressi",
+        "description": "Saatsime e-posti aadressile <span>%(email)s</span> kirja lingiga salasõna lähtestamiseks.",
+        "heading": "Vaata oma e-kirjade postkasti",
+        "resend_email": "Saada e-kiri uuesti"
+      },
+      "start": {
+        "description": "Sa saad e-kirja, kus on link lehele, millel saad oma salasõna lähtestada.",
+        "heading": "Jätkamiseks sisesta oma e-posti aadress"
+      }
+    },
+    "register": {
+      "call_to_login": "Sul on kasutajakonto juba olemas?",
+      "create_account": {
+        "description": "Alustamiseks palun loo kasutajakonto:",
+        "heading": "Loo kasutajakonto"
+      },
+      "sign_in_instead": "Siis logi sisse",
+      "terms_of_service": "Ma nõustun <a href=\"%s\" data-kind=\"primary\" class=\"cpd-link\">teenuse kasutustingimustega</a>"
+    },
+    "scope": {
+      "edit_profile": "Muuta sinu kasutajaprofiili ning kontaktandmeid",
+      "manage_sessions": "Hallata sinu seadmeid ja sessioone",
+      "mas_admin": "Hallata iga kasutajat teenuses matrix-authentication-service",
+      "send_messages": "Saata sõnumeid sinu nimel",
+      "synapse_admin": "Hallata seda Synapse koduserverit",
+      "view_messages": "Vaadata sinu sõnumeid ja andmeid",
+      "view_profile": "Vaadata sinu profiili teavet ja kontaktadmeid"
+    },
+    "upstream_oauth2": {
+      "link_mismatch": {
+        "heading": "Algse teenuse konto juba on seotud ühe teise kasutajakontoga."
+      },
+      "register": {
+        "choose_username": {
+          "description": "Seda ei saa hiljem muuta.",
+          "heading": "Vali oma kasutajanimi"
+        },
+        "create_account": "Loo uus kasutajakonto",
+        "enforced_by_policy": "Seda rakendatakse serveri reeglite alusel",
+        "forced_display_name": "Kasutab järgnevat kuvatavat nime",
+        "forced_email": "Kasutab järgnevat e-posti aadressi",
+        "forced_localpart": "Kasutab järgnevat kasutajanime",
+        "import_data": {
+          "description": "Kinnita teave, mis seotakse sinu uue kasutajakontoga serveris %(server_name)s.",
+          "heading": "Impordi oma andmed"
+        },
+        "imported_from_upstream": "Imporditud algsest teenusest",
+        "link_existing": "Seo olemasoleva kasutajakontoga",
+        "suggested_display_name": "Impordi kuvatav nimi",
+        "suggested_email": "Impordi e-posti aadress",
+        "use": "Kasuta"
+      },
+      "suggest_link": {
+        "action": "Seo",
+        "heading": "Seo oma olemasoleva kasutajakontoga"
+      }
+    },
+    "verify_email": {
+      "6_digit_code": "6-kohaline kood",
+      "code": "Kood",
+      "description": "Sisesta 6-kohaline kood, mis saadeti e-posti aadressile: <em>%(email)s</em>",
+      "headline": "Kinnita oma e-posti aadressi õigsust"
+    }
+  }
+}
