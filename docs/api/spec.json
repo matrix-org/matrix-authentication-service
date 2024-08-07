@@ -378,10 +378,10 @@
           },
           {
             "in": "query",
-            "name": "filter[can_request_admin]",
-            "description": "Retrieve users with (or without) the `can_request_admin` flag set",
+            "name": "filter[admin]",
+            "description": "Retrieve users with (or without) the `admin` flag set",
             "schema": {
-              "description": "Retrieve users with (or without) the `can_request_admin` flag set",
+              "description": "Retrieve users with (or without) the `admin` flag set",
               "type": "boolean",
               "nullable": true
             },
@@ -419,7 +419,7 @@
                         "username": "alice",
                         "created_at": "1970-01-01T00:00:00Z",
                         "locked_at": null,
-                        "can_request_admin": false
+                        "admin": false
                       },
                       "links": {
                         "self": "/api/admin/v1/users/01040G2081040G2081040G2081"
@@ -432,7 +432,7 @@
                         "username": "bob",
                         "created_at": "1970-01-01T00:00:00Z",
                         "locked_at": null,
-                        "can_request_admin": true
+                        "admin": true
                       },
                       "links": {
                         "self": "/api/admin/v1/users/02081040G2081040G2081040G2"
@@ -445,7 +445,7 @@
                         "username": "charlie",
                         "created_at": "1970-01-01T00:00:00Z",
                         "locked_at": "1970-01-01T00:00:00Z",
-                        "can_request_admin": false
+                        "admin": false
                       },
                       "links": {
                         "self": "/api/admin/v1/users/030C1G60R30C1G60R30C1G60R3"
@@ -496,7 +496,7 @@
                       "username": "alice",
                       "created_at": "1970-01-01T00:00:00Z",
                       "locked_at": null,
-                      "can_request_admin": false
+                      "admin": false
                     },
                     "links": {
                       "self": "/api/admin/v1/users/01040G2081040G2081040G2081"
@@ -581,7 +581,7 @@
                       "username": "alice",
                       "created_at": "1970-01-01T00:00:00Z",
                       "locked_at": null,
-                      "can_request_admin": false
+                      "admin": false
                     },
                     "links": {
                       "self": "/api/admin/v1/users/01040G2081040G2081040G2081"
@@ -744,7 +744,7 @@
                       "username": "alice",
                       "created_at": "1970-01-01T00:00:00Z",
                       "locked_at": null,
-                      "can_request_admin": false
+                      "admin": false
                     },
                     "links": {
                       "self": "/api/admin/v1/users/01040G2081040G2081040G2081"
@@ -823,7 +823,7 @@
                       "username": "bob",
                       "created_at": "1970-01-01T00:00:00Z",
                       "locked_at": null,
-                      "can_request_admin": true
+                      "admin": true
                     },
                     "links": {
                       "self": "/api/admin/v1/users/02081040G2081040G2081040G2"
@@ -892,7 +892,7 @@
                       "username": "charlie",
                       "created_at": "1970-01-01T00:00:00Z",
                       "locked_at": "1970-01-01T00:00:00Z",
-                      "can_request_admin": false
+                      "admin": false
                     },
                     "links": {
                       "self": "/api/admin/v1/users/030C1G60R30C1G60R30C1G60R3"
@@ -961,7 +961,7 @@
                       "username": "charlie",
                       "created_at": "1970-01-01T00:00:00Z",
                       "locked_at": "1970-01-01T00:00:00Z",
-                      "can_request_admin": false
+                      "admin": false
                     },
                     "links": {
                       "self": "/api/admin/v1/users/030C1G60R30C1G60R30C1G60R3"
@@ -1029,7 +1029,7 @@
                       "username": "alice",
                       "created_at": "1970-01-01T00:00:00Z",
                       "locked_at": null,
-                      "can_request_admin": false
+                      "admin": false
                     },
                     "links": {
                       "self": "/api/admin/v1/users/01040G2081040G2081040G2081"
@@ -1397,8 +1397,8 @@
       "UserFilter": {
         "type": "object",
         "properties": {
-          "filter[can_request_admin]": {
-            "description": "Retrieve users with (or without) the `can_request_admin` flag set",
+          "filter[admin]": {
+            "description": "Retrieve users with (or without) the `admin` flag set",
             "type": "boolean",
             "nullable": true
           },
@@ -1474,7 +1474,7 @@
         "description": "A user",
         "type": "object",
         "required": [
-          "can_request_admin",
+          "admin",
           "created_at",
           "username"
         ],
@@ -1494,7 +1494,7 @@
             "format": "date-time",
             "nullable": true
           },
-          "can_request_admin": {
+          "admin": {
             "description": "Whether the user can request admin privileges.",
             "type": "boolean"
           }
@@ -1571,10 +1571,10 @@
         "title": "JSON payload for the `POST /api/admin/v1/users/:id/set-admin` endpoint",
         "type": "object",
         "required": [
-          "can_request_admin"
+          "admin"
         ],
         "properties": {
-          "can_request_admin": {
+          "admin": {
             "description": "Whether the user can request admin privileges.",
             "type": "boolean"
           }

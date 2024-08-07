@@ -55,9 +55,9 @@ impl std::fmt::Display for UserStatus {
 #[aide(input_with = "Query<FilterParams>")]
 #[from_request(via(Query), rejection(RouteError))]
 pub struct FilterParams {
-    /// Retrieve users with (or without) the `can_request_admin` flag set
-    #[serde(rename = "filter[can_request_admin]")]
-    can_request_admin: Option<bool>,
+    /// Retrieve users with (or without) the `admin` flag set
+    #[serde(rename = "filter[admin]")]
+    admin: Option<bool>,
 
     /// Retrieve the items with the given status
     ///
@@ -74,8 +74,8 @@ impl std::fmt::Display for FilterParams {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut sep = '?';
 
-        if let Some(can_request_admin) = self.can_request_admin {
-            write!(f, "{sep}filter[can_request_admin]={can_request_admin}")?;
+        if let Some(admin) = self.admin {
+            write!(f, "{sep}filter[admin]={admin}")?;
             sep = '&';
         }
         if let Some(status) = self.status {
@@ -139,7 +139,7 @@ pub async fn handler(
     let base = format!("{path}{params}", path = User::PATH);
     let filter = UserFilter::default();
 
-    let filter = match params.can_request_admin {
+    let filter = match params.admin {
         Some(true) => filter.can_request_admin_only(),
         Some(false) => filter.cannot_request_admin_only(),
         None => filter,
