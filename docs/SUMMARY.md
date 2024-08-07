@@ -1,4 +1,4 @@
-# Summary 
+# Summary
 
 # Introduction
 
@@ -21,11 +21,12 @@
 
 - [Policy engine](./topics/policy.md)
 - [Authorization and sessions](./topics/authorization.md)
+- [Use the Admin API](./topics/admin-api.md)
 
 # Reference
 
 - [Configuration file reference](./reference/configuration.md)
-- [GraphQL API](./reference/graphql.md)
+- [Admin API](./api/index.html)
 - [OAuth 2.0 scopes](./reference/scopes.md)
 - [Command line tool](./reference/cli/README.md)
     - [`config`](./reference/cli/config.md)
@@ -40,6 +41,7 @@
 - [Contributing](./development/contributing.md)
 - [Architecture](./development/architecture.md)
 - [Database](./development/database.md)
+- [Internal GraphQL API](./development/graphql.md)
 
 ---
 

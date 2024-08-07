@@ -44,6 +44,8 @@ http:
         # Serve the given folder on the /assets/ path
         - name: assets
           path: ./share/assets/
+        # Serve the admin API on the /api/admin/v1/ path. Disabled by default
+        #- name: adminapi
 
       # List of addresses and ports to listen to
       binds:

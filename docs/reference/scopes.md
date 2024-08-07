@@ -8,8 +8,8 @@ The [default policy](../topics/policy.md#authorization-requests) shipped with MA
  - [`urn:matrix:org.matrix.msc2967.client:device:[device id]`](#urnmatrixorgmatrixmsc2967clientdevicedevice-id)
  - [`urn:matrix:org.matrix.msc2967.client:guest`](#urnmatrixorgmatrixmsc2967clientguest)
  - [`urn:synapse:admin:*`](#urnsynapseadmin)
- - [`urn:mas:graphql:*`](#urnmasgraphql)
  - [`urn:mas:admin`](#urnmasadmin)
+ - [`urn:mas:graphql:*`](#urnmasgraphql)
 
 ## OpenID Connect scopes
 
@@ -79,19 +79,9 @@ It allows:
 
 MAS also has a few scopes that are specific to the MAS implementation.
 
-### `urn:mas:graphql:*`
-
-This scope grants access to the whole MAS [GraphQL API].
-What permission the session has on the API is determined by the entity that the session is authorized as.
-When [authorized as a user](../topics/authorization.md#authorized-as-a-user-or-authorized-as-a-client) (and without the `mas:urn:admin` scope), this will usually allow querying and mutating the user's own data.
-
-The default policy allows any client and any user to request this scope.
-
 ### `urn:mas:admin`
 
-This scope allows full access to the MAS [GraphQL API].
-It requires the `urn:mas:graphql:*` scope to be present in the request.
-This allows the authenticated entity to perform any operation on the API, regardless of whether the entity owns the data or not.
+This scope grants full access to the MAS [Admin API].
 
 The default policy doesn't allow everyone to request this scope.
 It allows:
@@ -102,9 +92,20 @@ It allows:
 - for the "client credentials" grant:
   - clients that are listed in the [`policy.data.admin_clients`](../reference/configuration.md#policy) configuration option
 
+### `urn:mas:graphql:*`
+
+This scope grants access to the whole MAS [Internal GraphQL API].
+What permission the session has on the API is determined by the entity that the session is authorized as.
+When [authorized as a user](../topics/authorization.md#authorized-as-a-user-or-authorized-as-a-client) (and without the `mas:urn:admin` scope), this will usually allow querying and mutating the user's own data.
+
+The default policy allows any client and any user to request this scope.
+
+However, as noted in the [Internal GraphQL API] documentation, access to the Internal GraphQL API from outside of MAS itself is deprecated in favour of the [Admin API].
+
 [authorization code]: ../topics/authorization.md#authorization-code-grant
 [device authorization]: ../topics/authorization.md#device-authorization-grant
-[GraphQL API]: ./graphql.md
+[Internal GraphQL API]: ../development/graphql.md
+[Admin API]: ../topics/admin-api.md
 [Synapse admin API]: https://element-hq.github.io/synapse/latest/usage/administration/admin_api/index.html
 [OpenID Connect Core 1.0]: https://openid.net/specs/openid-connect-core-1_0.html
 [MSC2967]: https://github.com/matrix-org/matrix-spec-proposals/pull/2967
