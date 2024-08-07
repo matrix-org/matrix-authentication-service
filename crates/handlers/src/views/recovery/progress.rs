@@ -17,6 +17,7 @@ use axum::{
     response::{Html, IntoResponse, Response},
     Form,
 };
+use hyper::StatusCode;
 use mas_axum_utils::{
     cookies::CookieJar,
     csrf::{CsrfExt, ProtectedForm},
@@ -31,7 +32,7 @@ use mas_storage::{
 use mas_templates::{EmptyContext, RecoveryProgressContext, TemplateContext, Templates};
 use ulid::Ulid;
 
-use crate::PreferredLanguage;
+use crate::{Limiter, PreferredLanguage, RequesterFingerprint};
 
 pub(crate) async fn get(
     mut rng: BoxRng,
@@ -74,7 +75,7 @@ pub(crate) async fn get(
         return Ok((cookie_jar, Html(rendered)).into_response());
     }
 
-    let context = RecoveryProgressContext::new(recovery_session)
+    let context = RecoveryProgressContext::new(recovery_session, false)
         .with_csrf(csrf_token.form_value())
         .with_language(locale);
 
@@ -92,6 +93,7 @@ pub(crate) async fn post(
     State(site_config): State<SiteConfig>,
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
+    (State(limiter), requester): (State<Limiter>, RequesterFingerprint),
     PreferredLanguage(locale): PreferredLanguage,
     cookie_jar: CookieJar,
     Path(id): Path<Ulid>,
@@ -130,6 +132,17 @@ pub(crate) async fn post(
     // Verify the CSRF token
     let () = cookie_jar.verify_form(&clock, form)?;
 
+    // Check the rate limit if we are about to process the form
+    if let Err(e) = limiter.check_account_recovery(requester, &recovery_session.email) {
+        tracing::warn!(error = &e as &dyn std::error::Error);
+        let context = RecoveryProgressContext::new(recovery_session, true)
+            .with_csrf(csrf_token.form_value())
+            .with_language(locale);
+        let rendered = templates.render_recovery_progress(&context)?;
+
+        return Ok((StatusCode::TOO_MANY_REQUESTS, (cookie_jar, Html(rendered))).into_response());
+    }
+
     // Schedule a new batch of emails
     repo.job()
         .schedule_job(SendAccountRecoveryEmailsJob::new(&recovery_session))
@@ -137,7 +150,7 @@ pub(crate) async fn post(
 
     repo.save().await?;
 
-    let context = RecoveryProgressContext::new(recovery_session)
+    let context = RecoveryProgressContext::new(recovery_session, false)
         .with_csrf(csrf_token.form_value())
         .with_language(locale);
 

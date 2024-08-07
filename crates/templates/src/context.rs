@@ -1056,13 +1056,18 @@ impl TemplateContext for RecoveryStartContext {
 #[derive(Serialize)]
 pub struct RecoveryProgressContext {
     session: UserRecoverySession,
+    /// Whether resending the e-mail was denied because of rate limits
+    resend_failed_due_to_rate_limit: bool,
 }
 
 impl RecoveryProgressContext {
     /// Constructs a context for the recovery progress page
     #[must_use]
-    pub fn new(session: UserRecoverySession) -> Self {
-        Self { session }
+    pub fn new(session: UserRecoverySession, resend_failed_due_to_rate_limit: bool) -> Self {
+        Self {
+            session,
+            resend_failed_due_to_rate_limit,
+        }
     }
 }
 
@@ -1081,7 +1086,16 @@ impl TemplateContext for RecoveryProgressContext {
             consumed_at: None,
         };
 
-        vec![Self { session }]
+        vec![
+            Self {
+                session: session.clone(),
+                resend_failed_due_to_rate_limit: false,
+            },
+            Self {
+                session,
+                resend_failed_due_to_rate_limit: true,
+            },
+        ]
     }
 }
 

@@ -296,7 +296,7 @@
       },
       "rate_limit_exceeded": "You've made too many requests in a short period. Please wait a few minutes and try again.",
       "@rate_limit_exceeded": {
-        "context": "components/errors.html:23:7-42"
+        "context": "components/errors.html:23:7-42, pages/recovery/progress.html:34:11-46"
       },
       "username_taken": "This username is already taken",
       "@username_taken": {
@@ -461,7 +461,7 @@
       "progress": {
         "change_email": "Try a different email",
         "@change_email": {
-          "context": "pages/recovery/progress.html:38:33-72",
+          "context": "pages/recovery/progress.html:43:33-72",
           "description": "Button to change the email address for the password recovery link"
         },
         "description": "We sent an email with a link to reset your password if there's an account using <span>%(email)s</span>.",
@@ -476,7 +476,7 @@
         },
         "resend_email": "Resend email",
         "@resend_email": {
-          "context": "pages/recovery/progress.html:35:36-75",
+          "context": "pages/recovery/progress.html:40:36-75",
           "description": "Button to resend the email with the password recovery link"
         }
       },

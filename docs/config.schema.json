@@ -1668,6 +1668,24 @@
       "description": "Configuration related to sending emails",
       "type": "object",
       "properties": {
+        "account_recovery": {
+          "description": "Account Recovery-specific rate limits",
+          "default": {
+            "per_ip": {
+              "burst": 3,
+              "per_second": 0.0008333333333333334
+            },
+            "per_address": {
+              "burst": 3,
+              "per_second": 0.0002777777777777778
+            }
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/AccountRecoveryRateLimitingConfig"
+            }
+          ]
+        },
         "login": {
           "description": "Login-specific rate limits",
           "default": {
@@ -1685,17 +1703,29 @@
               "$ref": "#/definitions/LoginRateLimitingConfig"
             }
           ]
+        },
+        "registration": {
+          "description": "Controls how many registrations attempts are permitted based on source address.",
+          "default": {
+            "burst": 3,
+            "per_second": 0.0008333333333333334
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/RateLimiterConfiguration"
+            }
+          ]
         }
       }
     },
-    "LoginRateLimitingConfig": {
+    "AccountRecoveryRateLimitingConfig": {
       "type": "object",
       "properties": {
-        "per_address": {
-          "description": "Controls how many login attempts are permitted based on source address. This can protect against brute force login attempts.\n\nNote: this limit also applies to password checks when a user attempts to change their own password.",
+        "per_ip": {
+          "description": "Controls how many account recovery attempts are permitted based on source IP address. This can protect against causing e-mail spam to many targets.\n\nNote: this limit also applies to re-sends.",
           "default": {
             "burst": 3,
-            "per_second": 0.05
+            "per_second": 0.0008333333333333334
           },
           "allOf": [
             {
@@ -1703,11 +1733,11 @@
             }
           ]
         },
-        "per_account": {
-          "description": "Controls how many login attempts are permitted based on the account that is being attempted to be logged into. This can protect against a distributed brute force attack but should be set high enough to prevent someone's account being casually locked out.\n\nNote: this limit also applies to password checks when a user attempts to change their own password.",
+        "per_address": {
+          "description": "Controls how many account recovery attempts are permitted based on the e-mail address entered into the recovery form. This can protect against causing e-mail spam to one target.\n\nNote: this limit also applies to re-sends.",
           "default": {
-            "burst": 1800,
-            "per_second": 0.5
+            "burst": 3,
+            "per_second": 0.0002777777777777778
           },
           "allOf": [
             {
@@ -1734,6 +1764,35 @@
           "description": "How quickly the allowance replenishes, in number of actions per second. Can be fractional to replenish slower.",
           "type": "number",
           "format": "double"
+        }
+      }
+    },
+    "LoginRateLimitingConfig": {
+      "type": "object",
+      "properties": {
+        "per_address": {
+          "description": "Controls how many login attempts are permitted based on source IP address. This can protect against brute force login attempts.\n\nNote: this limit also applies to password checks when a user attempts to change their own password.",
+          "default": {
+            "burst": 3,
+            "per_second": 0.05
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/RateLimiterConfiguration"
+            }
+          ]
+        },
+        "per_account": {
+          "description": "Controls how many login attempts are permitted based on the account that is being attempted to be logged into. This can protect against a distributed brute force attack but should be set high enough to prevent someone's account being casually locked out.\n\nNote: this limit also applies to password checks when a user attempts to change their own password.",
+          "default": {
+            "burst": 1800,
+            "per_second": 0.5
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/RateLimiterConfiguration"
+            }
+          ]
         }
       }
     },

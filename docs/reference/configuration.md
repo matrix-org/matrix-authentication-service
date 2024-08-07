@@ -371,13 +371,30 @@ Each rate limiter consists of two options:
 
 ```yaml
 rate_limiting:
+  # Limits how many account recovery attempts are allowed.
+  # These limits can protect against e-mail spam.
+  #
+  # Note: these limit also apply to recovery e-mail re-sends.
+  account_recovery:
+    # Controls how many account recovery attempts are permitted
+    # based on source IP address.
+    per_ip:
+      burst: 3
+      per_second: 0.0008
+
+    # Controls how many account recovery attempts are permitted
+    # based on the e-mail address that is being used for recovery.
+    per_address:
+      burst: 3
+      per_second: 0.0002
+
   # Limits how many login attempts are allowed.
   #
   # Note: these limit also applies to password checks when a user attempts to
   # change their own password.
   login:
     # Controls how many login attempts are permitted
-    # based on source address.
+    # based on source IP address.
     # This can protect against brute force login attempts.
     per_address:
       burst: 3
@@ -391,6 +408,13 @@ rate_limiting:
     per_account:
       burst: 1800
       per_second: 0.5
+
+  # Limits how many registrations attempts are allowed,
+  # based on source IP address.
+  # This limit can protect against e-mail spam and against people registering too many accounts.
+  registration:
+    burst: 3
+    per_second: 0.0008
 ```
 
 ## `telemetry`
