@@ -12,19 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::str::FromStr;
+
 use anyhow::Context as _;
-use async_graphql::{Context, Description, Enum, InputObject, Object, ID};
+use async_graphql::{Context, Description, Enum, InputObject, Object, SimpleObject, ID};
+use lettre::Address;
 use mas_storage::{
-    job::{DeactivateUserJob, JobRepositoryExt, ProvisionUserJob},
+    job::{DeactivateUserJob, JobRepositoryExt, ProvisionUserJob, VerifyEmailJob},
     user::UserRepository,
 };
 use tracing::{info, warn};
 use zeroize::Zeroizing;
 
-use crate::graphql::{
-    model::{NodeType, User},
-    state::ContextExt,
-    Requester, UserId,
+use crate::{
+    captcha,
+    graphql::{
+        model::{NodeType, User},
+        state::ContextExt,
+        Requester, UserId,
+    },
 };
 
 #[derive(Default)]
@@ -330,6 +336,94 @@ impl SetPasswordPayload {
         self.status
     }
 }
+
+/// The input for the `registerUser` mutation.
+#[derive(InputObject)]
+pub struct RegisterUserInput {
+    /// The desired username to be registered.
+    username: String,
+
+    /// E-mail address to register on the account.
+    /// A verification e-mail will be sent here.
+    email: String,
+
+    /// Password to set on the account, used for logging in.
+    password: String,
+
+    captcha: captcha::Form,
+
+    /// Accept the terms of service
+    accept_terms: bool,
+}
+
+/// The return type for the `registerUser` mutation.
+#[derive(Description, SimpleObject)]
+struct RegisterUserPayload {
+    status: RegisterUserStatus,
+
+    /// Set when the `status` is [`RegisterUserStatus::PolicyViolation`],
+    /// this is a list of miscellaneous violations not related to a specific
+    /// field.
+    misc_violations: Vec<String>,
+
+    /// Set when the `status` is [`RegisterUserStatus::PolicyViolation`],
+    /// this is a list of violations related to the username.
+    username_violations: Vec<String>,
+
+    /// Set when the `status` is [`RegisterUserStatus::PolicyViolation`],
+    /// this is a list of violations related to the e-mail address.
+    email_violations: Vec<String>,
+}
+
+/// The status of the `registerUser` mutation.
+#[derive(Enum, Copy, Clone, Eq, PartialEq)]
+enum RegisterUserStatus {
+    /// The user was registered.
+    Allowed,
+
+    /// The username is not valid.
+    InvalidUsername,
+
+    /// The username is already in use or is otherwise reserved.
+    UsernameNotAvailable,
+
+    /// The supplied password does not meet complexity requirements.
+    InvalidPassword,
+
+    /// Must accept terms of service to register.
+    MustAcceptTerms,
+
+    /// The supplied e-mail address is not valid.
+    InvalidEmail,
+
+    /// Self-registration is not enabled.
+    SelfRegistrationDisabled,
+
+    /// The CAPTCHA challenge response is not valid.
+    InvalidCaptcha,
+
+    /// Local policy prevents this registration.
+    PolicyViolation,
+}
+
+impl From<RegisterUserStatus> for Result<RegisterUserPayload, async_graphql::Error> {
+    fn from(val: RegisterUserStatus) -> Self {
+        Ok(RegisterUserPayload {
+            status: val,
+            misc_violations: Vec::new(),
+            username_violations: Vec::new(),
+            email_violations: Vec::new(),
+        })
+    }
+}
+
+// #[Object(use_type_description)]
+// impl RegisterUserPayload {
+//     /// Status of the operation
+//     async fn status(&self) -> RegisterUserStatus {
+//         self.status
+//     }
+// }
 
 fn valid_username_character(c: char) -> bool {
     c.is_ascii_lowercase()
@@ -765,5 +859,155 @@ impl UserMutations {
         Ok(SetPasswordPayload {
             status: SetPasswordStatus::Allowed,
         })
+    }
+
+    /// Register a user. If enabled, can be used by anonymous requesters to
+    /// create an account. May require a CAPTCHA challenge to be completed.
+    #[allow(clippy::too_many_lines)]
+    async fn register_user(
+        &self,
+        ctx: &Context<'_>,
+        input: RegisterUserInput,
+    ) -> Result<RegisterUserPayload, async_graphql::Error> {
+        let state = ctx.state();
+        let site_config = state.site_config();
+        if !site_config.password_registration_enabled {
+            return RegisterUserStatus::SelfRegistrationDisabled.into();
+        }
+
+        let activity_tracker = ctx.activity_tracker();
+        let http_client_factory = state.http_client_factory();
+        let url_builder = state.url_builder();
+        let mut repo = state.repository().await?;
+        let mut policy = state.policy().await?;
+        let clock = state.clock();
+        let homeserver = state.homeserver_connection();
+        let password_manager = state.password_manager();
+        let mut rng = state.rng();
+
+        // Validate the captcha
+        let passed_captcha = input
+            .captcha
+            .verify(
+                activity_tracker,
+                http_client_factory,
+                url_builder.public_hostname(),
+                site_config.captcha.as_ref(),
+            )
+            .await
+            .is_ok();
+
+        if !passed_captcha {
+            return RegisterUserStatus::InvalidCaptcha.into();
+        }
+
+        if input.username.is_empty() {
+            // TODO are there no other grammar restrictions???
+            return RegisterUserStatus::InvalidUsername.into();
+        } else if repo.user().exists(&input.username).await? {
+            // The user already exists in the database
+            return RegisterUserStatus::UsernameNotAvailable.into();
+        } else if !homeserver.is_localpart_available(&input.username).await? {
+            // The user already exists on the homeserver
+            // XXX: we may want to return different errors like "this username is reserved"
+            tracing::warn!(
+                username = &input.username,
+                "User tried to register with a reserved username"
+            );
+
+            return RegisterUserStatus::UsernameNotAvailable.into();
+        }
+
+        if input.email.is_empty() || Address::from_str(&input.email).is_err() {
+            return RegisterUserStatus::InvalidEmail.into();
+        }
+
+        if input.password.is_empty()
+            || !password_manager.is_password_complex_enough(&input.password)?
+        {
+            return RegisterUserStatus::InvalidPassword.into();
+        }
+
+        // If the site has terms of service, the user must accept them
+        if site_config.tos_uri.is_some() && !input.accept_terms {
+            return RegisterUserStatus::MustAcceptTerms.into();
+        }
+
+        let res = policy
+            .evaluate_register(&input.username, &input.email)
+            .await?;
+
+        if !res.violations.is_empty() {
+            let mut email_violations = Vec::new();
+            let mut username_violations = Vec::new();
+            let mut misc_violations = Vec::new();
+            for violation in res.violations {
+                match violation.field.as_deref() {
+                    Some("email") => {
+                        email_violations.push(violation.msg);
+                    }
+                    Some("username") => {
+                        username_violations.push(violation.msg);
+                    }
+                    _ => {
+                        misc_violations.push(violation.msg);
+                    }
+                }
+            }
+
+            return Ok(RegisterUserPayload {
+                status: RegisterUserStatus::PolicyViolation,
+                misc_violations,
+                username_violations,
+                email_violations,
+            });
+        }
+
+        let user = repo.user().add(&mut rng, &clock, input.username).await?;
+
+        if let Some(tos_uri) = &site_config.tos_uri {
+            repo.user_terms()
+                .accept_terms(&mut rng, &clock, &user, tos_uri.clone())
+                .await?;
+        }
+
+        let password = Zeroizing::new(input.password.into_bytes());
+        let (version, hashed_password) = password_manager.hash(&mut rng, password).await?;
+        let user_password = repo
+            .user_password()
+            .add(&mut rng, &clock, &user, version, hashed_password, None)
+            .await?;
+
+        let user_email = repo
+            .user_email()
+            .add(&mut rng, &clock, &user, input.email)
+            .await?;
+
+        let session = repo
+            .browser_session()
+            .add(&mut rng, &clock, &user, ctx.user_agent().cloned())
+            .await?;
+
+        repo.browser_session()
+            .authenticate_with_password(&mut rng, &clock, &session, &user_password)
+            .await?;
+
+        repo.job()
+            .schedule_job(
+                VerifyEmailJob::new(&user_email).with_language(ctx.preferred_locale().to_string()),
+            )
+            .await?;
+
+        repo.job()
+            .schedule_job(ProvisionUserJob::new(&user))
+            .await?;
+
+        repo.save().await?;
+
+        activity_tracker
+            .record_browser_session(&clock, &session)
+            .await;
+
+        RegisterUserStatus::Allowed.into()
     }
 }

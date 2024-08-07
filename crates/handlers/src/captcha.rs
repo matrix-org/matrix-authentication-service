@@ -14,6 +14,7 @@
 
 use std::net::IpAddr;
 
+use async_graphql::InputObject;
 use axum::BoxError;
 use hyper::Request;
 use mas_axum_utils::http_client_factory::HttpClientFactory;
@@ -58,8 +59,11 @@ pub enum Error {
     RequestFailed(#[source] BoxError),
 }
 
+/// Form (or GraphQL input) containing a CAPTCHA provider's response
+/// for one of the providers.
 #[allow(clippy::struct_field_names)]
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, InputObject)]
+#[graphql(input_name = "CaptchaForm")]
 #[serde(rename_all = "kebab-case")]
 pub struct Form {
     g_recaptcha_response: Option<String>,

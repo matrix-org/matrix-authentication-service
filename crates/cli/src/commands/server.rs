@@ -213,6 +213,8 @@ impl Options {
             homeserver_connection.clone(),
             site_config.clone(),
             password_manager.clone(),
+            http_client_factory.clone(),
+            url_builder.clone(),
         );
 
         let state = {

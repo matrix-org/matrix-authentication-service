@@ -206,6 +206,8 @@ impl TestState {
             rng: Arc::clone(&rng),
             clock: Arc::clone(&clock),
             password_manager: password_manager.clone(),
+            http_client_factory: http_client_factory.clone(),
+            url_builder: url_builder.clone(),
         };
         let state: crate::graphql::BoxState = Box::new(graphql_state);
 
@@ -368,6 +370,8 @@ struct TestGraphQLState {
     clock: Arc<MockClock>,
     rng: Arc<Mutex<ChaChaRng>>,
     password_manager: PasswordManager,
+    http_client_factory: HttpClientFactory,
+    url_builder: UrlBuilder,
 }
 
 #[async_trait]
@@ -404,6 +408,13 @@ impl graphql::State for TestGraphQLState {
         let mut parent_rng = self.rng.lock().expect("Failed to lock RNG");
         let rng = ChaChaRng::from_rng(&mut *parent_rng).expect("Failed to seed RNG");
         Box::new(rng)
+    }
+
+    fn http_client_factory(&self) -> &HttpClientFactory {
+        &self.http_client_factory
+    }
+    fn url_builder(&self) -> &UrlBuilder {
+        &self.url_builder
     }
 }
 

@@ -117,6 +117,7 @@ where
     BoxClock: FromRequestParts<S>,
     Encrypter: FromRef<S>,
     CookieJar: FromRequestParts<S>,
+    PreferredLanguage: FromRequestParts<S>,
 {
     let mut router = Router::new()
         .route(

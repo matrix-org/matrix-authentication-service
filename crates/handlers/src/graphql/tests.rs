@@ -786,3 +786,46 @@ async fn test_add_user(pool: PgPool) {
         })
     );
 }
+
+/// Test the registerUser mutation
+#[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+async fn test_register_user(pool: PgPool) {
+    setup();
+    let state = TestState::from_pool(pool).await.unwrap();
+
+    // We should now be able to call the registerUser mutation
+    let request = Request::post("/graphql")
+        .json(serde_json::json!({
+            "query": r#"
+                mutation {
+                    registerUser(input: {username: "alice", email: "alice@example.org", captcha: {}, password: "correct horse battery staple", acceptTerms: true}) {
+                        status
+                    }
+                }
+            "#,
+        }));
+    let response = state.request(request).await;
+    response.assert_status(StatusCode::OK);
+    let response: GraphQLResponse = response.json();
+    assert!(response.errors.is_empty(), "{:?}", response.errors);
+
+    assert_eq!(
+        response.data,
+        serde_json::json!({
+            "registerUser": {
+                "status": "ALLOWED",
+            }
+        })
+    );
+
+    // Check the user exists in the database
+    let _ = state
+        .repository()
+        .await
+        .unwrap()
+        .user()
+        .find_by_username("alice")
+        .await
+        .unwrap()
+        .expect("alice doesn't exist");
+}
