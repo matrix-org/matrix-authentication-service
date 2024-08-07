@@ -46,8 +46,8 @@ use zeroize::Zeroizing;
 
 use super::shared::OptionalPostAuthAction;
 use crate::{
-    captcha::Form as CaptchaForm, passwords::PasswordManager, BoundActivityTracker,
-    PreferredLanguage, SiteConfig,
+    captcha::Form as CaptchaForm, passwords::PasswordManager, BoundActivityTracker, Limiter,
+    PreferredLanguage, RequesterFingerprint, SiteConfig,
 };
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -122,12 +122,15 @@ pub(crate) async fn post(
     State(site_config): State<SiteConfig>,
     State(homeserver): State<BoxHomeserverConnection>,
     State(http_client_factory): State<HttpClientFactory>,
+    (State(limiter), requester): (State<Limiter>, RequesterFingerprint),
     mut policy: Policy,
     mut repo: BoxRepository,
-    activity_tracker: BoundActivityTracker,
+    (user_agent, activity_tracker): (
+        Option<TypedHeader<headers::UserAgent>>,
+        BoundActivityTracker,
+    ),
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: CookieJar,
-    user_agent: Option<TypedHeader<headers::UserAgent>>,
     Form(form): Form<ProtectedForm<RegisterForm>>,
 ) -> Result<Response, FancyError> {
     let user_agent = user_agent.map(|ua| UserAgent::parse(ua.as_str().to_owned()));
@@ -240,6 +243,14 @@ pub(crate) async fn post(
                 _ => state.add_error_on_form(FormError::Policy {
                     message: violation.msg,
                 }),
+            }
+        }
+
+        if state.is_valid() {
+            // Check the rate limit if we are about to process the form
+            if let Err(e) = limiter.check_registration(requester) {
+                tracing::warn!(error = &e as &dyn std::error::Error);
+                state.add_error_on_form(FormError::RateLimitExceeded);
             }
         }
 

@@ -29,6 +29,11 @@ limitations under the License.
   </header>
 
   <div class="flex flex-col gap-6">
+    {% if resend_failed_due_to_rate_limit | default(false) %}
+      <div class="text-critical font-medium">
+        {{ _("mas.errors.rate_limit_exceeded") }}
+      </div>
+    {% endif %}
     <form class="cpd-form-root" method="POST">
       <input type="hidden" name="csrf" value="{{ csrf_token }}" />
 
