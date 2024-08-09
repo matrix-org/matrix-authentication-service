@@ -28,6 +28,15 @@ import { graphql } from "../gql";
 
 import { CURRENT_VIEWER_QUERY } from "./reset-cross-signing";
 
+declare global {
+  interface Window {
+    // Synapse may fling the user here via UIA fallback,
+    // this is part of the API to signal completion to the calling client
+    // https://spec.matrix.org/v1.11/client-server-api/#fallback
+    onAuthDone?(): void;
+  }
+}
+
 const ALLOW_CROSS_SIGING_RESET_MUTATION = graphql(/* GraphQL */ `
   mutation AllowCrossSigningReset($userId: ID!) {
     allowUserCrossSigningReset(input: { userId: $userId }) {
@@ -52,8 +61,18 @@ function ResetCrossSigning(): React.ReactNode {
 
   const [result, allowReset] = useMutation(ALLOW_CROSS_SIGING_RESET_MUTATION);
 
-  const onClick = (): void => {
-    allowReset({ userId });
+  const onClick = async (): Promise<void> => {
+    await allowReset({ userId });
+    setTimeout(() => {
+      // Synapse may fling the user here via UIA fallback,
+      // this is part of the API to signal completion to the calling client
+      // https://spec.matrix.org/v1.11/client-server-api/#fallback
+      if (window.onAuthDone) {
+        window.onAuthDone();
+      } else if (window.opener && window.opener.postMessage) {
+        window.opener.postMessage("authDone", "*");
+      }
+    });
   };
 
   return (
