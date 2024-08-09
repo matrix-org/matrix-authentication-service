@@ -356,23 +356,37 @@ pub struct RegisterUserInput {
     accept_terms: bool,
 }
 
+#[derive(Copy, Clone, Enum, Eq, PartialEq)]
+enum RegisterField {
+    Email,
+    Username,
+}
+
+#[derive(SimpleObject)]
+struct RegisterViolation {
+    /// The field that this violation applies to, or `None` if the violation
+    /// is general.
+    field: Option<RegisterField>,
+    /// A human-readable message describing the violation.
+    message: String,
+}
+
+impl RegisterViolation {
+    pub fn new(field: impl Into<Option<RegisterField>>, message: impl Into<String>) -> Self {
+        let field = field.into();
+        let message = message.into();
+        Self { field, message }
+    }
+}
+
 /// The return type for the `registerUser` mutation.
 #[derive(Description, SimpleObject)]
 struct RegisterUserPayload {
     status: RegisterUserStatus,
 
     /// Set when the `status` is [`RegisterUserStatus::PolicyViolation`],
-    /// this is a list of miscellaneous violations not related to a specific
-    /// field.
-    misc_violations: Vec<String>,
-
-    /// Set when the `status` is [`RegisterUserStatus::PolicyViolation`],
-    /// this is a list of violations related to the username.
-    username_violations: Vec<String>,
-
-    /// Set when the `status` is [`RegisterUserStatus::PolicyViolation`],
-    /// this is a list of violations related to the e-mail address.
-    email_violations: Vec<String>,
+    /// this is a list of violations preventing the registration.
+    violations: Vec<RegisterViolation>,
 }
 
 /// The status of the `registerUser` mutation.
@@ -410,9 +424,7 @@ impl From<RegisterUserStatus> for Result<RegisterUserPayload, async_graphql::Err
     fn from(val: RegisterUserStatus) -> Self {
         Ok(RegisterUserPayload {
             status: val,
-            misc_violations: Vec::new(),
-            username_violations: Vec::new(),
-            email_violations: Vec::new(),
+            violations: Vec::new(),
         })
     }
 }
@@ -938,28 +950,28 @@ impl UserMutations {
             .await?;
 
         if !res.violations.is_empty() {
-            let mut email_violations = Vec::new();
-            let mut username_violations = Vec::new();
-            let mut misc_violations = Vec::new();
+            let mut violations = Vec::new();
             for violation in res.violations {
                 match violation.field.as_deref() {
                     Some("email") => {
-                        email_violations.push(violation.msg);
+                        violations
+                            .push(RegisterViolation::new(RegisterField::Email, violation.msg));
                     }
                     Some("username") => {
-                        username_violations.push(violation.msg);
+                        violations.push(RegisterViolation::new(
+                            RegisterField::Username,
+                            violation.msg,
+                        ));
                     }
                     _ => {
-                        misc_violations.push(violation.msg);
+                        violations.push(RegisterViolation::new(None, violation.msg));
                     }
                 }
             }
 
             return Ok(RegisterUserPayload {
                 status: RegisterUserStatus::PolicyViolation,
-                misc_violations,
-                username_violations,
-                email_violations,
+                violations,
             });
         }
 
