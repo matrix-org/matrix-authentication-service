@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use mas_axum_utils::http_client_factory::HttpClientFactory;
+use std::sync::{Arc, Mutex};
+
+use mas_axum_utils::{cookies::CookieJar, http_client_factory::HttpClientFactory};
 use mas_data_model::{SiteConfig, UserAgent};
 use mas_i18n::DataLocale;
 use mas_matrix::HomeserverConnection;
@@ -51,6 +53,10 @@ pub trait ContextExt {
 
     /// Get the activity tracker bound to the requester.
     fn activity_tracker(&self) -> &BoundActivityTracker;
+
+    /// Get a wrapper for the cookie jar, which can be used to view and set
+    /// cookies.
+    fn cookie_jar(&self) -> &GraphQLCookieJar;
 }
 
 impl ContextExt for async_graphql::Context<'_> {
@@ -72,5 +78,57 @@ impl ContextExt for async_graphql::Context<'_> {
 
     fn activity_tracker(&self) -> &BoundActivityTracker {
         self.data_unchecked()
+    }
+
+    fn cookie_jar(&self) -> &GraphQLCookieJar {
+        // This Arc should never be cloned, as the request must not have any strong
+        // references to it after the request is finished. This way, the request
+        // handling code can unwrap the Arc afterwards and send the cookies to the HTTP
+        // client.
+        self.data_unchecked::<Arc<GraphQLCookieJar>>()
+    }
+}
+
+pub struct GraphQLCookieJar {
+    /// The underlying cookie jar.
+    /// The cookie jar is always present,
+    /// the option is just so we can borrow it temporarily but it should always
+    /// be returned immediately.
+    jar: Mutex<Option<CookieJar>>,
+}
+
+impl GraphQLCookieJar {
+    /// Create a new wrapper for the cookie jar
+    pub fn new(jar: CookieJar) -> Self {
+        Self {
+            jar: Mutex::new(Some(jar)),
+        }
+    }
+
+    /// Unwrap the cookie jar
+    pub fn into_inner(self) -> CookieJar {
+        // unwrap: the cookie jar is always present and we don't care about handling
+        // poisoned mutexes
+        self.jar.into_inner().unwrap().unwrap()
+    }
+
+    /// Operate on the cookie jar, by taking it and replacing it with a new
+    /// (modified) one.
+    pub fn with(&self, f: impl FnOnce(CookieJar) -> CookieJar) {
+        // unwrap: poisoned mutexes are not worth handling
+        let mut jar_guard = self.jar.lock().unwrap();
+        // unwrap: the cookie jar is always present
+        let jar = jar_guard.take().unwrap();
+        *jar_guard = Some(f(jar));
+    }
+
+    /// Access (read-only) the cookie jar
+    #[allow(dead_code)]
+    pub fn inspect<T>(&self, f: impl FnOnce(&CookieJar) -> T) -> T {
+        // unwrap: poisoned mutexes are not worth handling
+        let jar_guard = self.jar.lock().unwrap();
+        // unwrap: the cookie jar is always present
+        let jar = jar_guard.as_ref().unwrap();
+        f(jar)
     }
 }

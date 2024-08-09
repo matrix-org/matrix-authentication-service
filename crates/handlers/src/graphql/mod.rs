@@ -61,6 +61,7 @@ use self::{
     model::{CreationEvent, Node},
     mutations::Mutation,
     query::Query,
+    state::GraphQLCookieJar,
 };
 use crate::{
     impl_from_error_for_route, passwords::PasswordManager, BoundActivityTracker, PreferredLanguage,
@@ -313,10 +314,12 @@ pub async fn post(
     let token = authorization
         .as_ref()
         .map(|TypedHeader(Authorization(bearer))| bearer.token());
-    let (session_info, _cookie_jar) = cookie_jar.session_info();
+    let (session_info, cookie_jar) = cookie_jar.session_info();
     let requester = get_requester(&clock, &activity_tracker, repo, session_info, token).await?;
 
     let content_type = content_type.map(|TypedHeader(h)| h.to_string());
+
+    let gql_cookie_jar = Arc::new(GraphQLCookieJar::new(cookie_jar));
 
     let request = async_graphql::http::receive_body(
         content_type,
@@ -328,7 +331,8 @@ pub async fn post(
     .data(requester)
     .data(user_agent.map(|ua| UserAgent::parse(ua.as_str().to_owned())))
     .data(locale)
-    .data(activity_tracker);
+    .data(activity_tracker)
+    .data(gql_cookie_jar.clone());
 
     let span = span_for_graphql_request(&request);
     let response = schema.execute(request).instrument(span).await;
@@ -341,7 +345,10 @@ pub async fn post(
 
     let headers = response.http_headers.clone();
 
-    Ok((headers, cache_control, Json(response)))
+    // unwrap: the cookie jar only has one reference (ours) after the request
+    let cookie_jar = Arc::into_inner(gql_cookie_jar).unwrap().into_inner();
+
+    Ok((headers, cache_control, cookie_jar, Json(response)))
 }
 
 pub async fn get(
@@ -357,13 +364,16 @@ pub async fn get(
     let token = authorization
         .as_ref()
         .map(|TypedHeader(Authorization(bearer))| bearer.token());
-    let (session_info, _cookie_jar) = cookie_jar.session_info();
+    let (session_info, cookie_jar) = cookie_jar.session_info();
     let requester = get_requester(&clock, &activity_tracker, repo, session_info, token).await?;
+
+    let gql_cookie_jar = Arc::new(GraphQLCookieJar::new(cookie_jar));
 
     let request = async_graphql::http::parse_query_string(&query.unwrap_or_default())?
         .data(requester)
         .data(activity_tracker)
-        .data(user_agent);
+        .data(user_agent)
+        .data(gql_cookie_jar.clone());
 
     let span = span_for_graphql_request(&request);
     let response = schema.execute(request).instrument(span).await;
@@ -376,7 +386,10 @@ pub async fn get(
 
     let headers = response.http_headers.clone();
 
-    Ok((headers, cache_control, Json(response)))
+    // unwrap: the cookie jar only has one reference (ours) after the request
+    let cookie_jar = Arc::into_inner(gql_cookie_jar).unwrap().into_inner();
+
+    Ok((headers, cache_control, cookie_jar, Json(response)))
 }
 
 pub async fn playground() -> impl IntoResponse {

@@ -17,6 +17,7 @@ use std::str::FromStr;
 use anyhow::Context as _;
 use async_graphql::{Context, Description, Enum, InputObject, Object, SimpleObject, ID};
 use lettre::Address;
+use mas_axum_utils::SessionInfoExt;
 use mas_storage::{
     job::{DeactivateUserJob, JobRepositoryExt, ProvisionUserJob, VerifyEmailJob},
     user::UserRepository,
@@ -880,6 +881,7 @@ impl UserMutations {
         }
 
         let activity_tracker = ctx.activity_tracker();
+        let cookie_jar = ctx.cookie_jar();
         let http_client_factory = state.http_client_factory();
         let url_builder = state.url_builder();
         let mut repo = state.repository().await?;
@@ -1010,6 +1012,8 @@ impl UserMutations {
         activity_tracker
             .record_browser_session(&clock, &session)
             .await;
+
+        cookie_jar.with(|jar| jar.set_session(&session));
 
         RegisterUserStatus::Allowed.into()
     }
