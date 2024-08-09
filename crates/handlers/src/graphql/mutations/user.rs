@@ -905,8 +905,7 @@ impl UserMutations {
             return RegisterUserStatus::InvalidCaptcha.into();
         }
 
-        if input.username.is_empty() {
-            // TODO are there no other grammar restrictions???
+        if input.username.is_empty() || !username_valid(&input.username) {
             return RegisterUserStatus::InvalidUsername.into();
         } else if repo.user().exists(&input.username).await? {
             // The user already exists in the database
