@@ -429,14 +429,6 @@ impl From<RegisterUserStatus> for Result<RegisterUserPayload, async_graphql::Err
     }
 }
 
-// #[Object(use_type_description)]
-// impl RegisterUserPayload {
-//     /// Status of the operation
-//     async fn status(&self) -> RegisterUserStatus {
-//         self.status
-//     }
-// }
-
 fn valid_username_character(c: char) -> bool {
     c.is_ascii_lowercase()
         || c.is_ascii_digit()
