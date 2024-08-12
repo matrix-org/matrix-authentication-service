@@ -79,10 +79,12 @@ function Index(): React.ReactElement {
           )}
         </div>
 
-        <Separator />
-
         {siteConfig.passwordLoginEnabled && (
-          <AccountManagementPasswordPreview siteConfig={siteConfig} />
+          <>
+            <Separator />
+
+            <AccountManagementPasswordPreview siteConfig={siteConfig} />
+          </>
         )}
 
         <Separator />
