@@ -6,7 +6,8 @@
     "close": "Schließen",
     "continue": "Fortfahren",
     "edit": "Bearbeiten",
-    "save": "Speichern"
+    "save": "Speichern",
+    "save_and_continue": "Speichern und fortfahren"
   },
   "branding": {
     "privacy_policy": {
@@ -23,7 +24,9 @@
     "error": "Fehler",
     "loading": "Lade …",
     "next": "Weiter",
-    "previous": "Zurück"
+    "previous": "Zurück",
+    "saved": "Gespeichert",
+    "saving": "Speichern..."
   },
   "frontend": {
     "account": {
@@ -33,6 +36,11 @@
         "title": "Profil bearbeiten",
         "username_label": "Benutzername"
       },
+      "password": {
+        "change": "Passwort ändern",
+        "change_disabled": "Passwortänderungen wurden vom Administrator deaktiviert.",
+        "label": "Passwort"
+      },
       "title": "Dein Konto"
     },
     "add_email_form": {
@@ -40,16 +48,19 @@
         "text": "Die eingegebene E-Mail-Adresse wird von der Serverrichtlinie nicht zugelassen.",
         "title": "E-Mail-Adresse durch Richtlinie abgelehnt"
       },
+      "email_denied_error": "Die eingegebene E-Mail wird von der Serverrichtlinie nicht zugelassen.",
       "email_exists_alert": {
         "text": "Die eingegebene E-Mail-Adresse ist diesem Konto bereits zugeordnet",
         "title": "Diese E-Mailadresse existiert bereits"
       },
+      "email_exists_error": "Die eingegebene E-Mail-Adresse ist diesem Konto bereits zugeordnet",
       "email_field_help": "Fügen Sie eine alternative E-Mail-Adresse hinzu, mit der Sie auf dieses Konto zugreifen können.",
       "email_field_label": "E-Mail-Adresse hinzufügen",
       "email_invalid_alert": {
         "text": "Die eingegebene E-Mail-Adresse ist ungültig",
         "title": "Ungültige Email-Adresse"
-      }
+      },
+      "email_invalid_error": "Die eingegebene E-Mail ist ungültig"
     },
     "app_sessions_list": {
       "error": "App-Sitzungen konnten nicht geladen werden",
@@ -63,6 +74,10 @@
       "body:one": "{{count}} aktive Sitzung",
       "body:other": "{{count}} aktive Sitzungen",
       "heading": "Browser",
+      "no_active_sessions": {
+        "default": "Sie sind bei keinem Webbrowser angemeldet.",
+        "inactive_90_days": "Alle Ihre Sitzungen waren in den letzten 90 Tagen aktiv."
+      },
       "view_all_button": "Alle anzeigen"
     },
     "compat_session_detail": {
@@ -89,6 +104,9 @@
       "title": "Etwas ist schief gelaufen"
     },
     "error_boundary_title": "Etwas ist schief gelaufen",
+    "errors": {
+      "field_required": "Dieses Feld ist erforderlich"
+    },
     "last_active": {
       "active_date": "Aktiv {{relativeDate}}",
       "active_now": "Jetzt aktiv",
@@ -116,6 +134,81 @@
     },
     "pagination_controls": {
       "total": "Gesamt: {{totalCount}}"
+    },
+    "password_change": {
+      "current_password_label": "Aktuelles Passwort",
+      "failure": {
+        "description": {
+          "account_locked": "Ihr Konto ist gesperrt und kann derzeit nicht wiederhergestellt werden. Wenn dies unerwartet auftritt, wenden Sie sich bitte an Ihren Serveradministrator.",
+          "expired_recovery_ticket": "Der Wiederherstellungslink ist abgelaufen. Bitte starten Sie den Kontowiederherstellungsprozess erneut von Anfang an.",
+          "invalid_new_password": "Das neue Passwort, das Sie gewählt haben, ist ungültig; es entspricht möglicherweise nicht der konfigurierten Sicherheitsrichtlinie.",
+          "no_current_password": "Sie haben kein aktuelles Passwort.",
+          "no_such_recovery_ticket": "Der Wiederherstellungslink ist ungültig. Wenn Sie den Link aus der Wiederherstellungs-E-Mail kopiert haben, überprüfen Sie bitte, ob der vollständige Link kopiert wurde.",
+          "password_changes_disabled": "Passwortänderungen sind deaktiviert.",
+          "recovery_ticket_already_used": "Der Wiederherstellungslink wurde bereits verwendet. Er kann nicht erneut verwendet werden.",
+          "unspecified": "Dies könnte ein vorübergehendes Problem sein. Bitte versuchen Sie es später erneut. Wenn das Problem weiterhin besteht, wenden Sie sich bitte an Ihren Serveradministrator.",
+          "wrong_password": "Das Passwort, das Sie als Ihr aktuelles Passwort eingegeben haben, ist falsch. Bitte versuchen Sie es erneut."
+        },
+        "title": "Aktualisierung des Passworts fehlgeschlagen"
+      },
+      "new_password_again_label": "Geben Sie das neue Passwort erneut ein",
+      "new_password_label": "Neues Passwort",
+      "passwords_match": "Passwörter stimmen überein!",
+      "passwords_no_match": "Passwörter stimmen nicht überein",
+      "subtitle": "Wählen Sie ein neues Passwort für Ihren Account.",
+      "success": {
+        "description": "Ihr Passwort wurde erfolgreich aktualisiert.",
+        "title": "Passwort aktualisiert"
+      },
+      "title": "Ändern Sie Ihr Passwort"
+    },
+    "password_reset": {
+      "title": "Passwort zurücksetzen"
+    },
+    "password_strength": {
+      "placeholder": "Passwortstärke",
+      "score": {
+        "0": "Extrem schwaches Passwort",
+        "1": "Sehr schwaches Passwort",
+        "2": "Schwaches Passwort",
+        "3": "Starkes Passwort",
+        "4": "Sehr starkes Passwort"
+      },
+      "suggestion": {
+        "all_uppercase": "Schreiben Sie einige, aber nicht alle Buchstaben groß.",
+        "another_word": "Fügen Sie weitere Wörter hinzu, die weniger gebräuchlich sind.",
+        "associated_years": "Vermeiden Sie Jahre, die mit Ihnen in Verbindung gebracht werden.",
+        "capitalization": "Schreiben Sie mehr als den ersten Buchstaben groß.",
+        "dates": "Vermeiden Sie Daten und Jahre, die mit Ihnen in Verbindung gebracht werden.",
+        "l33t": "Vermeiden Sie vorhersehbare Buchstabenersetzungen wie '@' für 'a'.",
+        "longer_keyboard_pattern": "Verwenden Sie längere Eingaben und ändern Sie die Tipprichtung mehrmals.",
+        "no_need": "Sie können sichere Passwörter erstellen, ohne Symbole, Zahlen oder Großbuchstaben zu verwenden.",
+        "pwned": "Wenn Sie dieses Passwort woanders verwenden, sollten Sie es ändern.",
+        "recent_years": "Vermeiden Sie die letzten Jahre.",
+        "repeated": "Vermeiden Sie Wort- und Zeichenwiederholungen.",
+        "reverse_words": "Vermeiden Sie umgekehrte Schreibweisen gängiger Wörter.",
+        "sequences": "Vermeiden Sie gängige Zeichenfolgen.",
+        "use_words": "Verwenden Sie mehrere Wörter, vermeiden Sie jedoch gebräuchliche Ausdrücke."
+      },
+      "too_weak": "Dieses Passwort ist zu schwach",
+      "warning": {
+        "common": "Dies ist ein häufig verwendetes Passwort.",
+        "common_names": "Gebräuchliche Vor- und Nachnamen sind leicht zu erraten.",
+        "dates": "Daten sind leicht zu erraten.",
+        "extended_repeat": "Wiederholte Zeichenmuster wie „abcabcabc“ sind leicht zu erraten.",
+        "key_pattern": "Kurze Eingaben sind leicht zu erraten.",
+        "names_by_themselves": "Einzelne Vor- oder Nachnamen sind leicht zu erraten.",
+        "pwned": "Ihr Passwort wurde durch eine Datenpanne im Internet preisgegeben.",
+        "recent_years": "Die letzten Jahre sind leicht zu erraten.",
+        "sequences": "Gängige Zeichenfolgen wie „abc“ sind leicht zu erraten.",
+        "similar_to_common": "Dies ähnelt einem häufig verwendeten Passwort.",
+        "simple_repeat": "Sich wiederholende Zeichen wie \"aaa\" sind leicht zu erraten.",
+        "straight_row": "Gerade Tastenreihen auf Ihrer Tastatur sind leicht zu erraten.",
+        "top_hundred": "Dies ist ein häufig verwendetes Passwort.",
+        "top_ten": "Dies ist ein häufig verwendetes Passwort.",
+        "user_inputs": "Es sollten keine persönlichen oder seitenbezogenen Daten vorhanden sein.",
+        "word_by_itself": "Einzelne Wörter sind leicht zu erraten."
+      }
     },
     "reset_cross_signing": {
       "button": "Zurücksetzen der Kryptoidentität zulassen",
@@ -196,7 +289,11 @@
     "user_sessions_overview": {
       "active_sessions:one": "{{count}} aktive Sitzung",
       "active_sessions:other": "{{count}} aktive Sitzungen",
-      "heading": "Wo Sie angemeldet sind"
+      "heading": "Wo Sie angemeldet sind",
+      "no_active_sessions": {
+        "default": "Sie sind bei keiner Anwendung angemeldet.",
+        "inactive_90_days": "Alle Ihre Sitzungen waren in den letzten 90 Tagen aktiv."
+      }
     },
     "verify_email": {
       "code_field_error": "Code nicht erkannt",

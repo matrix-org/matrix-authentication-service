@@ -78,11 +78,17 @@ function Index(): React.ReactElement {
             <AddEmailForm userId={user.id} onAdd={onAdd} />
           )}
         </div>
-        <Separator />
+
         {siteConfig.passwordLoginEnabled && (
-          <AccountManagementPasswordPreview siteConfig={siteConfig} />
+          <>
+            <Separator />
+
+            <AccountManagementPasswordPreview siteConfig={siteConfig} />
+          </>
         )}
+
         <Separator />
+
         <Collapsible.Root>
           <Collapsible.Trigger>
             <Heading size="sm" weight="semibold">

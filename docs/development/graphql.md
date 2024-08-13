@@ -1,11 +1,10 @@
-# GraphQL API
+# Internal GraphQL API
 
-MAS provides a GraphQL API which serves two purposes:
+> **Note:** This API used to be the way for external tools to interact with MAS. However, **external usage is now deprecated** in favour of the REST based [Admin API](../topics/admin-api.md). External access to this API will be removed in a future release.
 
- - it is used by the self-service user interface (usually accessible on `/account/`), for users to manage their own account.
- - it can be used with external tools to manage the service.
+MAS uses an internal GraphQL API which is used by the self-service user interface (usually accessible on `/account/`), for users to manage their own account.
 
-The endpoint for this API can be discovered through the OpenID Connect discovery document, under the `"org.matrix.matrix-authentication-service.graphql_endpoint` key.
+The endpoint for this API can be discovered through the OpenID Connect discovery document, under the `org.matrix.matrix-authentication-service.graphql_endpoint` key.
 Though it is usually hosted at `https://<mas-host>/graphql`.
 
 GraphQL uses [a self-describing schema](https://github.com/matrix-org/matrix-authentication-service/blob/main/frontend/schema.graphql), which means that the API can be explored in tools like the GraphQL Playground.
@@ -23,5 +22,5 @@ With only this scope, the session will be authorized as the user who owns the ac
 
 To get full access to the GraphQL API, the access token must have the [`urn:mas:admin`] scope in addition to the [`urn:mas:graphql:*`] scope.
 
-[`urn:mas:graphql:*`]: ./scopes.md#urnmasgraphql
-[`urn:mas:admin`]: ./scopes.md#urnmasadmin
+[`urn:mas:graphql:*`]: ../reference/scopes.md#urnmasgraphql
+[`urn:mas:admin`]: ../reference/scopes.md#urnmasadmin

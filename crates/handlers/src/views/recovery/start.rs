@@ -33,12 +33,12 @@ use mas_storage::{
     BoxClock, BoxRepository, BoxRng,
 };
 use mas_templates::{
-    EmptyContext, FieldError, FormState, RecoveryStartContext, RecoveryStartFormField,
+    EmptyContext, FieldError, FormError, FormState, RecoveryStartContext, RecoveryStartFormField,
     TemplateContext, Templates,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{BoundActivityTracker, PreferredLanguage};
+use crate::{BoundActivityTracker, Limiter, PreferredLanguage, RequesterFingerprint};
 
 #[derive(Deserialize, Serialize)]
 pub(crate) struct StartRecoveryForm {
@@ -90,6 +90,7 @@ pub(crate) async fn post(
     State(site_config): State<SiteConfig>,
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
+    (State(limiter), requester): (State<Limiter>, RequesterFingerprint),
     PreferredLanguage(locale): PreferredLanguage,
     cookie_jar: CookieJar,
     Form(form): Form<ProtectedForm<StartRecoveryForm>>,
@@ -118,6 +119,14 @@ pub(crate) async fn post(
     if Address::from_str(&form.email).is_err() {
         form_state =
             form_state.with_error_on_field(RecoveryStartFormField::Email, FieldError::Invalid);
+    }
+
+    if form_state.is_valid() {
+        // Check the rate limit if we are about to process the form
+        if let Err(e) = limiter.check_account_recovery(requester, &form.email) {
+            tracing::warn!(error = &e as &dyn std::error::Error);
+            form_state.add_error_on_form(FormError::RateLimitExceeded);
+        }
     }
 
     if !form_state.is_valid() {

@@ -197,13 +197,17 @@ impl Options {
         let activity_tracker = ActivityTracker::new(pool.clone(), Duration::from_secs(60));
         let trusted_proxies = config.http.trusted_proxies.clone();
 
+        // Build a rate limiter.
+        // This should not raise an error here as the config should already have been
+        // validated.
+        let limiter = Limiter::new(&config.rate_limiting)
+            .context("rate-limiting configuration is not valid")?;
+
         // Explicitly the config to properly zeroize secret keys
         drop(config);
 
         // Listen for SIGHUP
         register_sighup(&templates, &activity_tracker)?;
-
-        let limiter = Limiter::default();
 
         limiter.start();
 

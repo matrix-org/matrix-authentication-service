@@ -14,13 +14,19 @@
 
 use std::{net::IpAddr, sync::Arc, time::Duration};
 
-use governor::{clock::QuantaClock, state::keyed::DashMapStateStore, Quota, RateLimiter};
+use governor::{clock::QuantaClock, state::keyed::DashMapStateStore, RateLimiter};
+use mas_config::RateLimitingConfig;
 use mas_data_model::User;
-use nonzero_ext::nonzero;
 use ulid::Ulid;
 
-const PASSWORD_CHECK_FOR_REQUESTER_QUOTA: Quota = Quota::per_minute(nonzero!(3u32));
-const PASSWORD_CHECK_FOR_USER_QUOTA: Quota = Quota::per_hour(nonzero!(1800u32));
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum AccountRecoveryLimitedError {
+    #[error("Too many account recovery requests for requester {0}")]
+    Requester(RequesterFingerprint),
+
+    #[error("Too many account recovery requests for e-mail {0}")]
+    Email(String),
+}
 
 #[derive(Debug, Clone, Copy, thiserror::Error)]
 pub enum PasswordCheckLimitedError {
@@ -29,6 +35,12 @@ pub enum PasswordCheckLimitedError {
 
     #[error("Too many password checks for user {0}")]
     User(Ulid),
+}
+
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum RegistrationLimitedError {
+    #[error("Too many account registration requests for requester {0}")]
+    Requester(RequesterFingerprint),
 }
 
 /// Key used to rate limit requests per requester
@@ -60,7 +72,7 @@ impl RequesterFingerprint {
 }
 
 /// Rate limiters for the different operations
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Limiter {
     inner: Arc<LimiterInner>,
 }
@@ -69,20 +81,41 @@ type KeyedRateLimiter<K> = RateLimiter<K, DashMapStateStore<K>, QuantaClock>;
 
 #[derive(Debug)]
 struct LimiterInner {
+    account_recovery_per_requester: KeyedRateLimiter<RequesterFingerprint>,
+    account_recovery_per_email: KeyedRateLimiter<String>,
     password_check_for_requester: KeyedRateLimiter<RequesterFingerprint>,
     password_check_for_user: KeyedRateLimiter<Ulid>,
+    registration_per_requester: KeyedRateLimiter<RequesterFingerprint>,
 }
 
-impl Default for LimiterInner {
-    fn default() -> Self {
-        Self {
-            password_check_for_requester: RateLimiter::keyed(PASSWORD_CHECK_FOR_REQUESTER_QUOTA),
-            password_check_for_user: RateLimiter::keyed(PASSWORD_CHECK_FOR_USER_QUOTA),
-        }
+impl LimiterInner {
+    fn new(config: &RateLimitingConfig) -> Option<Self> {
+        Some(Self {
+            account_recovery_per_requester: RateLimiter::keyed(
+                config.account_recovery.per_ip.to_quota()?,
+            ),
+            account_recovery_per_email: RateLimiter::keyed(
+                config.account_recovery.per_address.to_quota()?,
+            ),
+            password_check_for_requester: RateLimiter::keyed(config.login.per_ip.to_quota()?),
+            password_check_for_user: RateLimiter::keyed(config.login.per_account.to_quota()?),
+            registration_per_requester: RateLimiter::keyed(config.registration.to_quota()?),
+        })
     }
 }
 
 impl Limiter {
+    /// Creates a new `Limiter` based on a `RateLimitingConfig`.
+    ///
+    /// If the config is not valid, returns `None`.
+    /// (This should not happen if the config was validated, though.)
+    #[must_use]
+    pub fn new(config: &RateLimitingConfig) -> Option<Self> {
+        Some(Self {
+            inner: Arc::new(LimiterInner::new(config)?),
+        })
+    }
+
     /// Start the rate limiter housekeeping task
     ///
     /// This task will periodically remove old entries from the rate limiters,
@@ -97,12 +130,42 @@ impl Limiter {
 
             loop {
                 // Call the retain_recent method on each rate limiter
+                this.inner.account_recovery_per_email.retain_recent();
+                this.inner.account_recovery_per_requester.retain_recent();
                 this.inner.password_check_for_requester.retain_recent();
                 this.inner.password_check_for_user.retain_recent();
+                this.inner.registration_per_requester.retain_recent();
 
                 interval.tick().await;
             }
         });
+    }
+
+    /// Check if an account recovery can be performed
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation is rate limited.
+    pub fn check_account_recovery(
+        &self,
+        requester: RequesterFingerprint,
+        email_address: &str,
+    ) -> Result<(), AccountRecoveryLimitedError> {
+        self.inner
+            .account_recovery_per_requester
+            .check_key(&requester)
+            .map_err(|_| AccountRecoveryLimitedError::Requester(requester))?;
+
+        // Convert to lowercase to prevent bypassing the limit by enumerating different
+        // case variations.
+        // A case-folding transformation may be more proper.
+        let canonical_email = email_address.to_lowercase();
+        self.inner
+            .account_recovery_per_email
+            .check_key(&canonical_email)
+            .map_err(|_| AccountRecoveryLimitedError::Email(canonical_email))?;
+
+        Ok(())
     }
 
     /// Check if a password check can be performed
@@ -127,6 +190,23 @@ impl Limiter {
 
         Ok(())
     }
+
+    /// Check if an account registration can be performed
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation is rate limited.
+    pub fn check_registration(
+        &self,
+        requester: RequesterFingerprint,
+    ) -> Result<(), RegistrationLimitedError> {
+        self.inner
+            .registration_per_requester
+            .check_key(&requester)
+            .map_err(|_| RegistrationLimitedError::Requester(requester))?;
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -142,7 +222,7 @@ mod tests {
         let now = MockClock::default().now();
         let mut rng = rand_chacha::ChaChaRng::seed_from_u64(42);
 
-        let limiter = Limiter::default();
+        let limiter = Limiter::new(&RateLimitingConfig::default()).unwrap();
 
         // Let's create a lot of requesters to test account-level rate limiting
         let requesters: [_; 768] = (0..=255)

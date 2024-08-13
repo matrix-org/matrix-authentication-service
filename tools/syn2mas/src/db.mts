@@ -57,7 +57,9 @@ export async function connectToSynapseDatabase({
   database.args.sslkey && (ssl.key = await readFile(database.args.sslkey));
   database.args.sslpassword && (ssl.passphrase = database.args.sslpassword);
 
-  connection.ssl = ssl;
+  if (Object.keys(ssl).length > 0) {
+    connection.ssl = ssl;
+  }
 
   return knex({
     client: "pg",
@@ -103,7 +105,9 @@ export async function connectToMASDatabase({
     ssl.key = await readFile(database.ssl_key_file);
   }
 
-  connection.ssl = ssl;
+  if (Object.keys(ssl).length > 0) {
+    connection.ssl = ssl;
+  }
 
   return knex({
     client: "pg",

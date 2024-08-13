@@ -2,11 +2,12 @@
   "action": {
     "back": "返回",
     "cancel": "取消",
-    "clear": "Clear",
+    "clear": "清除",
     "close": "关闭",
     "continue": "继续",
-    "edit": "Edit",
-    "save": "保存"
+    "edit": "编辑",
+    "save": "保存",
+    "save_and_continue": "Save and continue"
   },
   "branding": {
     "privacy_policy": {
@@ -23,33 +24,43 @@
     "error": "错误",
     "loading": "加载中...",
     "next": "下一步",
-    "previous": "上一步"
+    "previous": "上一步",
+    "saved": "Saved",
+    "saving": "Saving…"
   },
   "frontend": {
     "account": {
       "edit_profile": {
-        "display_name_help": "This is what others will see wherever you’re signed in.",
-        "display_name_label": "Display name",
-        "title": "Edit profile",
-        "username_label": "Username"
+        "display_name_help": "无论您在哪里登录，其他人都会看到此内容。",
+        "display_name_label": "显示名称",
+        "title": "编辑个人资料",
+        "username_label": "用户名"
       },
-      "title": "Your account"
+      "password": {
+        "change": "Change password",
+        "change_disabled": "Password changes are disabled by the administrator.",
+        "label": "Password"
+      },
+      "title": "你的账户"
     },
     "add_email_form": {
       "email_denied_alert": {
         "text": "服务器策略不允许输入的电子邮件地址。",
         "title": "电子邮件地址被策略拒绝"
       },
+      "email_denied_error": "The entered email is not allowed by the server policy",
       "email_exists_alert": {
         "text": "输入的电子邮件地址已添加到此账户",
         "title": "电子邮件地址已经存在"
       },
+      "email_exists_error": "The entered email is already added to this account",
       "email_field_help": "添加可用于访问此账户的备用电子邮件地址。",
       "email_field_label": "添加电子邮件地址",
       "email_invalid_alert": {
         "text": "输入的电子邮件地址无效",
         "title": "无效的电子邮件地址"
-      }
+      },
+      "email_invalid_error": "The entered email is invalid"
     },
     "app_sessions_list": {
       "error": "加载应用程序会话失败",
@@ -62,6 +73,10 @@
     "browser_sessions_overview": {
       "body:other": "{{count}}活跃会话",
       "heading": "浏览器",
+      "no_active_sessions": {
+        "default": "You are not signed in to any web browsers.",
+        "inactive_90_days": "All your sessions have been active in the last 90 days."
+      },
       "view_all_button": "查看全部"
     },
     "compat_session_detail": {
@@ -72,14 +87,14 @@
     "device_type_icon_label": {
       "desktop": "桌面",
       "mobile": "手机",
-      "pc": "Computer",
-      "tablet": "Tablet",
+      "pc": "计算机",
+      "tablet": "平板电脑",
       "unknown": "未知设备类型",
       "web": "网页"
     },
     "end_session_button": {
       "confirmation_modal_title": "你确定要结束这个会话吗？",
-      "text": "结束会话"
+      "text": "登出"
     },
     "error": {
       "hideDetails": "隐藏详细信息",
@@ -88,16 +103,19 @@
       "title": "出了点问题"
     },
     "error_boundary_title": "出了点问题",
+    "errors": {
+      "field_required": "This field is required"
+    },
     "last_active": {
       "active_date": "活跃 {{relativeDate}}",
       "active_now": "活跃",
       "inactive_90_days": "已停用90天以上"
     },
     "nav": {
-      "devices": "Devices",
+      "devices": "设备",
       "profile": "个人资料",
       "sessions": "会话",
-      "settings": "Settings"
+      "settings": "设置"
     },
     "not_found_alert_title": "未找到。",
     "not_logged_in_alert": "尚未登录。",
@@ -116,6 +134,81 @@
     "pagination_controls": {
       "total": "总计：{{totalCount}}"
     },
+    "password_change": {
+      "current_password_label": "Current password",
+      "failure": {
+        "description": {
+          "account_locked": "Your account is locked and can not be recovered at this time. If this is not expected, please contact your server administrator.",
+          "expired_recovery_ticket": "The recovery link has expired. Please start the account recovery process again from the start.",
+          "invalid_new_password": "The new password you chose is invalid; it may not meet the configured security policy.",
+          "no_current_password": "You don't have a current password.",
+          "no_such_recovery_ticket": "The recovery link is invalid. If you copied the link from the recovery e-mail, please check the full link was copied.",
+          "password_changes_disabled": "Password changes are disabled.",
+          "recovery_ticket_already_used": "The recovery link has already been used. It cannot be used again.",
+          "unspecified": "This might be a temporary problem, so please try again later. If the problem persists, please contact your server administrator.",
+          "wrong_password": "The password you supplied as your current password is incorrect. Please try again."
+        },
+        "title": "Failed to update password"
+      },
+      "new_password_again_label": "Enter new password again",
+      "new_password_label": "New password",
+      "passwords_match": "Passwords match!",
+      "passwords_no_match": "Passwords don't match",
+      "subtitle": "Choose a new password for your account.",
+      "success": {
+        "description": "Your password has been updated successfully.",
+        "title": "Password updated"
+      },
+      "title": "Change your password"
+    },
+    "password_reset": {
+      "title": "Reset your password"
+    },
+    "password_strength": {
+      "placeholder": "Password strength",
+      "score": {
+        "0": "Extremely weak password",
+        "1": "Very weak password",
+        "2": "Weak password",
+        "3": "Strong password",
+        "4": "Very strong password"
+      },
+      "suggestion": {
+        "all_uppercase": "Capitalise some, but not all letters.",
+        "another_word": "Add more words that are less common.",
+        "associated_years": "Avoid years that are associated with you.",
+        "capitalization": "Capitalise more than the first letter.",
+        "dates": "Avoid dates and years that are associated with you.",
+        "l33t": "Avoid predictable letter substitutions like '@' for 'a'.",
+        "longer_keyboard_pattern": "Use longer keyboard patterns and change typing direction multiple times.",
+        "no_need": "You can create strong passwords without using symbols, numbers, or uppercase letters.",
+        "pwned": "If you use this password elsewhere, you should change it.",
+        "recent_years": "Avoid recent years.",
+        "repeated": "Avoid repeated words and characters.",
+        "reverse_words": "Avoid reversed spellings of common words.",
+        "sequences": "Avoid common character sequences.",
+        "use_words": "Use multiple words, but avoid common phrases."
+      },
+      "too_weak": "This password is too weak",
+      "warning": {
+        "common": "This is a commonly used password.",
+        "common_names": "Common names and surnames are easy to guess.",
+        "dates": "Dates are easy to guess.",
+        "extended_repeat": "Repeated character patterns like \"abcabcabc\" are easy to guess.",
+        "key_pattern": "Short keyboard patterns are easy to guess.",
+        "names_by_themselves": "Single names or surnames are easy to guess.",
+        "pwned": "Your password was exposed by a data breach on the Internet.",
+        "recent_years": "Recent years are easy to guess.",
+        "sequences": "Common character sequences like \"abc\" are easy to guess.",
+        "similar_to_common": "This is similar to a commonly used password.",
+        "simple_repeat": "Repeated characters like \"aaa\" are easy to guess.",
+        "straight_row": "Straight rows of keys on your keyboard are easy to guess.",
+        "top_hundred": "This is a frequently used password.",
+        "top_ten": "This is a heavily used password.",
+        "user_inputs": "There should not be any personal or page related data.",
+        "word_by_itself": "Single words are easy to guess."
+      }
+    },
     "reset_cross_signing": {
       "button": "允许重置加密身份",
       "description": "如果您没有在其他地方登录，并且忘记或丢失了所有恢复选项，则需要重置您的加密身份。这意味着您将丢失现有的信息历史记录，其他用户会看到您已重置身份，您需要再次验证现有设备。",
@@ -133,8 +226,8 @@
       "label": "选择会话"
     },
     "session": {
-      "client_id_label": "Client ID",
-      "current": "Current",
+      "client_id_label": "客户端ID",
+      "current": "当前",
       "current_badge": "当前",
       "device_id_label": "设备 ID",
       "finished_date": "已完成 <datetime/>",
@@ -143,13 +236,13 @@
       "ip_label": "IP 地址",
       "last_active_label": "最后活动",
       "last_auth_label": "最后认证",
-      "name_for_platform": "{{name}} for {{platform}}",
+      "name_for_platform": "{{name}}对于 {{platform}}",
       "scopes_label": "范围",
       "signed_in_date": "<datetime/>已登录",
       "signed_in_label": "已登录",
-      "title": "Device details",
-      "unknown_browser": "Unknown browser",
-      "unknown_device": "Unknown device",
+      "title": "设备详情",
+      "unknown_browser": "未知浏览器",
+      "unknown_device": "未知设备",
       "uri_label": "Uri",
       "user_id_label": "用户 ID",
       "username_label": "用户名"
@@ -193,7 +286,11 @@
     },
     "user_sessions_overview": {
       "active_sessions:other": "{{count}}个活跃会话",
-      "heading": "您登录的位置"
+      "heading": "您登录的位置",
+      "no_active_sessions": {
+        "default": "You are not signed in to any application.",
+        "inactive_90_days": "All your sessions have been active in the last 90 days."
+      }
     },
     "verify_email": {
       "code_field_error": "无法识别代码",

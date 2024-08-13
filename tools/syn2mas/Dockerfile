@@ -45,4 +45,4 @@ COPY --from=builder /syn2mas/dist ./dist
 ARG TARGETARCH
 COPY --from=deps /deps/${TARGETARCH}/node_modules ./node_modules
 
-ENTRYPOINT ["/nodejs/bin/node", "--enable-source-maps", "dist/index.js"]
+ENTRYPOINT ["/nodejs/bin/node", "--enable-source-maps", "/syn2mas/dist/index.js"]

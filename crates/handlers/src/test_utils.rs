@@ -37,6 +37,7 @@ use mas_axum_utils::{
     http_client_factory::HttpClientFactory,
     ErrorWrapper,
 };
+use mas_config::RateLimitingConfig;
 use mas_data_model::SiteConfig;
 use mas_i18n::Translator;
 use mas_keystore::{Encrypter, JsonWebKey, JsonWebKeySet, Keystore, PrivateKey};
@@ -214,7 +215,7 @@ impl TestState {
         let activity_tracker =
             ActivityTracker::new(pool.clone(), std::time::Duration::from_secs(1));
 
-        let limiter = Limiter::default();
+        let limiter = Limiter::new(&RateLimitingConfig::default()).unwrap();
 
         Ok(Self {
             pool,
@@ -249,7 +250,9 @@ impl TestState {
             .merge(crate::api_router())
             .merge(crate::compat_router())
             .merge(crate::human_router(self.templates.clone()))
-            .merge(crate::graphql_router(false))
+            // We enable undocumented_oauth2_access for the tests, as it is easier to query the API
+            // with it
+            .merge(crate::graphql_router(false, true))
             .merge(crate::admin_api_router().1)
             .with_state(self.clone())
             .into_service();

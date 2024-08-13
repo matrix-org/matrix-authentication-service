@@ -1,10 +1,12 @@
 {
   "action": {
+    "back": "Retour",
     "cancel": "Annuler",
     "continue": "Continuer",
     "create_account": "Créer un compte",
     "sign_in": "Se connecter",
     "sign_out": "Se déconnecter",
+    "start_over": "Recommencer",
     "submit": "Soumettre"
   },
   "app": {
@@ -39,6 +41,9 @@
       "heading": "Ajouter une adresse e-mail"
     },
     "back_to_homepage": "Retourner sur la page d'accueil",
+    "captcha": {
+      "noscript": "Ce formulaire est protégé par un CAPTCHA et nécessite l'activation de JavaScript pour le soumettre. Veuillez activer JavaScript dans votre navigateur et recharger cette page."
+    },
     "change_password": {
       "change": "Changer de mot de passe",
       "confirm": "Confirmer le mot de passe",
@@ -47,8 +52,44 @@
       "heading": "Modifier mon mot de passe",
       "new": "Nouveau mot de passe"
     },
+    "consent": {
+      "client_wants_access": "<span>%(client_name)s</span> à l'adresse <span>%(redirect_uri)s</span> souhaite accéder à votre compte.",
+      "heading": "Autoriser l'accès à votre compte ?",
+      "make_sure_you_trust": "Assurez-vous de faire confiance <span>%(client_name)s</span>.",
+      "this_will_allow": "Cela va permettre à <span>%(client_name)s</span> de :",
+      "you_may_be_sharing": "Vous partagez peut-être des informations sensibles avec ce site ou cette application."
+    },
+    "device_card": {
+      "access_requested": "Accès demandé",
+      "device_code": "Code",
+      "generic_device": "Appareil",
+      "ip_address": "Adresse IP"
+    },
+    "device_code_link": {
+      "description": "Associer un appareil",
+      "headline": "Entrez le code affiché sur votre appareil"
+    },
+    "device_consent": {
+      "another_device_access": "Un autre appareil souhaite accéder à votre compte.",
+      "denied": {
+        "description": "Vous avez refusé l'accès à %(client_name)s. Vous pouvez fermer cette fenêtre.",
+        "heading": "Accès refusé"
+      },
+      "granted": {
+        "description": "Vous avez accordé l'accès à %(client_name)s. Vous pouvez fermer cette fenêtre.",
+        "heading": "Accès accordé"
+      }
+    },
     "emails": {
       "greeting": "Bonjour %(username)s,",
+      "recovery": {
+        "click_button": "Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe :",
+        "copy_link": "Copiez le lien suivant et collez-le dans un navigateur pour créer un nouveau mot de passe :",
+        "create_new_password": "Créer un nouveau mot de passe",
+        "headline": "Vous avez demandé la réinitialisation du mot de passe de votre compte %(server_name)s.",
+        "subject": "Réinitialisez le mot de passe de votre compte (%(mxid)s)",
+        "you_can_ignore": "Si vous n’avez pas demandé à réinitialisation votre mot de passe, vous pouvez ignorer cet e-mail. Votre mot de passe actuel continuera de fonctionner."
+      },
       "verify": {
         "body_html": "Votre code de vérification pour confirmer cette adresse e-mail est : <strong>%(code)s</strong>",
         "body_text": "Votre code de vérification pour confirmer cette adresse e-mail est : %(code)s",
@@ -56,16 +97,19 @@
       }
     },
     "errors": {
+      "captcha": "La vérification du CAPTCHA a échoué, veuillez réessayer",
       "denied_policy": "Refusé par la politique du serveur : %(policy)s",
       "field_required": "Ce champ est requis",
       "invalid_credentials": "Identifiants invalides",
       "password_mismatch": "Les champs du mot de passe ne correspondent pas.",
+      "rate_limit_exceeded": "Vous avez effectué trop de requêtes sur une courte période. Veuillez patienter quelques minutes et réessayer.",
       "username_taken": "Ce nom d'utilisateur est déjà utilisé"
     },
     "login": {
       "call_to_register": "Vous n’avez pas encore de compte ?",
       "continue_with_provider": "Poursuivre avec %(provider)s",
       "description": "Veuillez vous connecter pour continuer :",
+      "forgot_password": "Mot de passe oublié ?",
       "headline": "Se connecter",
       "link": {
         "description": "Associer votre compte <span class=\"break-keep text-links\">%(provider)s</span>",
@@ -89,6 +133,38 @@
       "description": "Cela peut être dû à l'application auteur de la demande, à l'utilisateur actuellement connecté ou à la demande elle-même.",
       "heading": "La demande d'autorisation a été refusée, conformément à la politique appliquée par ce service.",
       "logged_as": "Connecté en tant que <span class=\"font-semibold\">%(username)s</span>"
+    },
+    "recovery": {
+      "consumed": {
+        "description": "Pour créer un nouveau mot de passe, recommencez et sélectionnez « Mot de passe oublié ».",
+        "heading": "Le lien pour réinitialiser votre mot de passe a déjà été utilisé"
+      },
+      "disabled": {
+        "description": "Si vous avez perdu vos identifiants, veuillez contacter l'administrateur pour récupérer votre compte.",
+        "heading": "La récupération de compte est désactivée"
+      },
+      "expired": {
+        "description": "Demander un nouvel e-mail qui sera envoyé à : <span>%(email)s</span>.",
+        "heading": "Le lien pour réinitialiser votre mot de passe a expiré",
+        "resend_email": "Renvoyer un e-mail"
+      },
+      "finish": {
+        "confirm": "Entrez de nouveau votre nouveau mot de passe",
+        "description": "Choisissez un nouveau mot de passe pour votre compte.",
+        "heading": "Réinitialiser votre mot de passe",
+        "new": "Nouveau mot de passe",
+        "save_and_continue": "Sauvegarder et continuer"
+      },
+      "progress": {
+        "change_email": "Essayez une autre adresse e-mail",
+        "description": "Nous avons envoyé un e-mail contenant un lien pour réinitialiser votre mot de passe si un compte utilise <span>%(email)s</span>.",
+        "heading": "Vérifiez vos e-mails",
+        "resend_email": "Renvoyer un e-mail"
+      },
+      "start": {
+        "description": "Un e-mail contenant un lien vous permettant de réinitialiser votre mot de passe vous sera envoyé.",
+        "heading": "Entrez votre adresse e-mail pour continuer"
+      }
     },
     "register": {
       "call_to_login": "Vous avez déjà un compte ?",
