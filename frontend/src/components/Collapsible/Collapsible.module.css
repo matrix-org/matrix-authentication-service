@@ -14,19 +14,19 @@
  */
 
 .trigger {
-    display: flex;
-    width: 100%;
+  display: flex;
+  width: 100%;
 }
 
 .trigger-title {
-    flex-grow: 1;
-    text-align: start;
+  flex-grow: 1;
+  text-align: start;
 }
 
 [data-state="closed"] .trigger-icon {
-    transform: rotate(180deg);
+  transform: rotate(180deg);
 }
 
 .content {
-    margin-top: var(--cpd-space-2x);
+  margin-top: var(--cpd-space-2x);
 }
