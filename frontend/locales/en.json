@@ -24,7 +24,8 @@
     "next": "Next",
     "previous": "Previous",
     "saved": "Saved",
-    "saving": "Saving…"
+    "saving": "Saving…",
+    "e2ee": "End-to-end encryption"
   },
   "frontend": {
     "account": {
