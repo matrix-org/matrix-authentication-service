@@ -123,10 +123,10 @@ exports[`<OAuth2SessionDetail> > renders a finished session details 1`] = `
           Scopes
         </h5>
         <ul
-          class="_scopeList_7f22f8"
+          class="_list_7f22f8"
         >
           <li
-            class="_scope_7f22f8"
+            class="_item_7f22f8"
           >
             <svg
               color="var(--cpd-color-icon-tertiary)"
@@ -153,7 +153,7 @@ exports[`<OAuth2SessionDetail> > renders a finished session details 1`] = `
             </p>
           </li>
           <li
-            class="_scope_7f22f8"
+            class="_item_7f22f8"
           >
             <svg
               color="var(--cpd-color-icon-tertiary)"
@@ -174,7 +174,7 @@ exports[`<OAuth2SessionDetail> > renders a finished session details 1`] = `
             </p>
           </li>
           <li
-            class="_scope_7f22f8"
+            class="_item_7f22f8"
           >
             <svg
               color="var(--cpd-color-icon-tertiary)"
@@ -370,10 +370,10 @@ exports[`<OAuth2SessionDetail> > renders session details 1`] = `
           Scopes
         </h5>
         <ul
-          class="_scopeList_7f22f8"
+          class="_list_7f22f8"
         >
           <li
-            class="_scope_7f22f8"
+            class="_item_7f22f8"
           >
             <svg
               color="var(--cpd-color-icon-tertiary)"
@@ -400,7 +400,7 @@ exports[`<OAuth2SessionDetail> > renders session details 1`] = `
             </p>
           </li>
           <li
-            class="_scope_7f22f8"
+            class="_item_7f22f8"
           >
             <svg
               color="var(--cpd-color-icon-tertiary)"
@@ -421,7 +421,7 @@ exports[`<OAuth2SessionDetail> > renders session details 1`] = `
             </p>
           </li>
           <li
-            class="_scope_7f22f8"
+            class="_item_7f22f8"
           >
             <svg
               color="var(--cpd-color-icon-tertiary)"
