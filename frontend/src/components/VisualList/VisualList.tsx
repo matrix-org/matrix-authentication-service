@@ -36,7 +36,7 @@ export const VisualListItem: FC<{
   label: string;
 }> = ({ Icon, iconColor, label }) => {
   return (
-    <li className={styles.scope}>
+    <li className={styles.item}>
       <Icon color={iconColor ?? "var(--cpd-color-icon-tertiary)"} />
       <Text size="md" weight="medium">
         {label}
@@ -46,5 +46,5 @@ export const VisualListItem: FC<{
 };
 
 export const VisualList: React.FC<Props> = ({ children }) => {
-  return <ul className={styles.scopeList}>{children}</ul>;
+  return <ul className={styles.list}>{children}</ul>;
 };
