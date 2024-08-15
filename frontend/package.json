@@ -19,7 +19,7 @@
   "dependencies": {
     "@fontsource/inconsolata": "^5.0.18",
     "@fontsource/inter": "^5.0.20",
-    "@radix-ui/react-collapsible": "^1.1.0",
+    "@radix-ui/react-collapsible": "1.0.3",
     "@radix-ui/react-dialog": "^1.0.5",
     "@tanstack/react-router": "^1.46.7",
     "@urql/core": "^5.0.5",
