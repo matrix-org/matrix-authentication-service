@@ -253,6 +253,11 @@ passwords:
   # If disabled, users will only be able to log in using upstream OIDC providers
   enabled: true
 
+  # Minimum complexity required for passwords, estimated by the zxcvbn algorithm
+  # Must be between 0 and 4, default is 3
+  # See https://github.com/dropbox/zxcvbn#usage for more information
+  minimum_complexity: 3
+
   # List of password hashing schemes being used
   # /!\ Only change this if you know what you're doing
   # TODO: document this section better
@@ -345,20 +350,13 @@ policy:
     # Dynamic Client Registration
     client_registration:
       # don't require URIs to be on the same host. default: false
-      allow_host_mismatch: true
+      allow_host_mismatch: false
       # allow non-SSL and localhost URIs. default: false
-      allow_insecure_uris: true
-
-    # Registration using passwords
-    passwords:
-      # minimum length of a password. default: 0
-      min_length: 8
-      # require at least one lowercase character in a password. default: false
-      require_lowercase: true
-      # require at least one uppercase character in a password. default: false
-      require_uppercase: true
-      # require at least one number in a password. default: false
-      require_number: true
+      allow_insecure_uris: false
+      # don't require clients to provide a client_uri. default: false
+      allow_missing_client_uri: false
+      # don't require clients to provide a contacts field. default: false
+      allow_missing_contacts: false
 ```
 
 ## `rate_limiting`
@@ -638,16 +636,4 @@ experimental:
 
   # Time-to-live of compatibility access tokens in seconds, when refresh tokens are supported. Defaults to 300, 5 minutes.
   #compat_token_ttl: 300
-
-  # Whether to enable self-service password registration. Defaults to `true` if password authentication is enabled.
-  #password_registration_enabled: false
-
-  # Whether users are allowed to change their email addresses. Defaults to `true`.
-  #email_change_allowed: false
-
-  # Whether users are allowed to change their display names. Defaults to `true`.
-  #displayname_change_allowed: false
-
-  # Whether users are allowed to change their passwords. Defaults to `true`.
-  #password_change_allowed: false
 ```
