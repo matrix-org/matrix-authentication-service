@@ -21,6 +21,11 @@ Other than the binary, the service needs a few files to run:
 
 Be sure to check the [installation instructions](./installation.md) for more information on how to get these files, and make sure the configuration file is updated accordingly.
 
+**If you are using [the docker image](./installation.md#using-the-docker-image)**, everything is already included in the image at the right place, so in most cases you don't need to do anything.
+
+**If you are using [the pre-built binaries](./installation.md#pre-built-binaries)**, those files are shipped alongside them in the `share` directory.
+The default configuration will look for them from the current working directory, meaning that you don't have to adjust the paths, as long as you are running the service from the parent directory of the `share` directory.
+
 ## Configure the HTTP server
 
 The service can be configured to have multiple HTTP listeners, serving different resources.

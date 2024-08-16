@@ -2,12 +2,10 @@
 
 ## Pre-built binaries
 
-Pre-built binaries can be found attached on each release, for Linux and macOS, on both `x86_64` and `aarch64` architectures.
+Pre-built binaries can be found attached on each release, for Linux on both `x86_64` and `aarch64` architectures.
 
 - [`mas-cli-aarch64-linux.tar.gz`](https://github.com/matrix-org/matrix-authentication-service/releases/latest/download/mas-cli-aarch64-linux.tar.gz)
 - [`mas-cli-x86_64-linux.tar.gz`](https://github.com/matrix-org/matrix-authentication-service/releases/latest/download/mas-cli-x86_64-linux.tar.gz)
-- [`mas-cli-aarch64-macos.tar.gz`](https://github.com/matrix-org/matrix-authentication-service/releases/latest/download/mas-cli-aarch64-macos.tar.gz)
-- [`mas-cli-x86_64-macos.tar.gz`](https://github.com/matrix-org/matrix-authentication-service/releases/latest/download/mas-cli-x86_64-macos.tar.gz)
 
 Each archive contains:
 
@@ -27,7 +25,7 @@ Example shell commands to download and extract the `mas-cli` binary:
 
 ```sh
 ARCH=x86_64 # or aarch64
-OS=linux # or macos
+OS=linux
 VERSION=latest # or a specific version, like "v0.1.0"
 
 # URL to the right archive
@@ -41,13 +39,12 @@ curl -sL "$URL" | tar xzC /path/to/mas
 /path/to/mas/mas-cli --help
 ```
 
-**Note for macOS users**: the binaries are not signed, so if the archive is downloaded from a browser, it may be necessary to run `xattr -d com.apple.quarantine mas-cli` to remove the quarantine attribute on the binary.
-
 
 ## Using the Docker image
 
-A pre-built Docker image is available here: [`ghcr.io/matrix-org/matrix-authentication-service:main`](https://ghcr.io/matrix-org/matrix-authentication-service:main)
+A pre-built Docker image is available here: [`ghcr.io/matrix-org/matrix-authentication-service:latest`](https://ghcr.io/matrix-org/matrix-authentication-service:latest)
 
+The `latest` tag is built using the latest release.
 The `main` tag is built from the `main` branch, and each commit on the `main` branch is also tagged with a stable `sha-<commit sha>` tag.
 
 The image can also be built from the source:

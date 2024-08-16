@@ -18,6 +18,14 @@ There will be tools to help with the migration process itself. But these aren't 
 
 The deployment is non-trivial so it is important to read through and understand the steps involved and make a plan before starting.
 
+### Get `syn2mas`
+
+The easiest way to get `syn2mas` is through [`npm`](https://www.npmjs.com/package/@matrix-org/syn2mas):
+
+```sh
+npm install -g @matrix-org/syn2mas
+```
+
 ### Run the migration advisor
 
 You can use the advisor mode of the `syn2mas` tool to identify extra configuration steps or issues with the configuration of the homeserver.
@@ -37,6 +45,15 @@ Follow the instructions in the [installation guide](installation.md) to install 
 If you are using an upstream SSO provider then you will need to provision the upstream provide in MAS manually.
 
 Each upstream provider will need to be given as an `--upstreamProviderMapping` command line option to the import tool.
+
+### Prepare the MAS database
+
+Once the database is created, it still needs to have its schema created and synced with the configuration.
+This can be done with the following command:
+
+```sh
+mas-cli config sync
+```
 
 ### Do a dry-run of the import to test
 
