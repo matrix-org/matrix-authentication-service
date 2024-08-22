@@ -334,6 +334,23 @@ Policy settings
 
 ```yaml
 policy:
+  # Path to the WASM module
+  # Default for docker feature: `/usr/local/share/mas-cli/policy.wasm`
+  # Default for dist feature: `./share/policy.wasm`
+  # Default otherwise: `./policies/policy.wasm`
+  wasm_module: ./policies/policy.wasm
+  # Entrypoint to use when evaluating client registrations
+  client_registration_entrypoint: client_registration/violation
+  # Entrypoint to use when evaluating user registrations
+  register_entrypoint: register/violation
+  # Entrypoint to use when evaluating authorization grants
+  authorization_grant_entrypoint: authorization_grant/violation
+  # Entrypoint to use when changing password
+  password_entrypoint: password/violation
+  # Entrypoint to use when adding an email address
+  email_entrypoint: email/violation
+
+  # This data is being passed to the policy
   data:
     # Users which are allowed to ask for admin access. If possible, use the
     # can_request_admin flag on users instead.
