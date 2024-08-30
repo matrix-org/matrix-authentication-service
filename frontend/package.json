@@ -17,7 +17,7 @@
     "i18n": "i18next"
   },
   "dependencies": {
-    "@fontsource/inconsolata": "^5.0.18",
+    "@fontsource/inconsolata": "^5.0.19",
     "@fontsource/inter": "^5.0.20",
     "@radix-ui/react-collapsible": "1.0.3",
     "@radix-ui/react-dialog": "^1.0.5",
