@@ -57,7 +57,7 @@ export const Route = createFileRoute("/devices/$")({
     const result = await context.client.query(
       QUERY,
       {
-        deviceId: params._splat,
+        deviceId: params._splat || "",
         userId: viewer.data.viewer.id,
       },
       { fetchOptions: { signal } },
