@@ -1,4 +1,4 @@
-/* Copyright 2023 The Matrix.org Foundation C.I.C.
+/* Copyright 2024 The Matrix.org Foundation C.I.C.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,29 +13,20 @@
  * limitations under the License.
  */
 
-.wrapper {
+.trigger {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--cpd-space-4x);
-  margin-bottom: var(--cpd-space-4x);
-  margin-top: var(--cpd-space-8x);
+  width: 100%;
 }
 
-.wrapper h5 {
-  color: var(--cpd-color-text-secondary);
-}
-
-.wrapper .datum {
-  width: max-content;
-}
-
-.datum {
+.trigger-title {
   flex-grow: 1;
-  max-width: 100%;
+  text-align: start;
 }
 
-.datum-value {
-  font-size: var(--cpd-font-size-body-md);
-  text-overflow: ellipsis;
-  overflow: hidden;
+[data-state="closed"] .trigger-icon {
+  transform: rotate(180deg);
+}
+
+.content {
+  margin-top: var(--cpd-space-2x);
 }

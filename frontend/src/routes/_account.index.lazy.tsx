@@ -17,15 +17,15 @@ import {
   notFound,
   useNavigate,
 } from "@tanstack/react-router";
-import IconKey from "@vector-im/compound-design-tokens/assets/web/icons/key";
-import { Alert, Separator } from "@vector-im/compound-web";
+import { Alert, Heading, Separator, Text } from "@vector-im/compound-web";
 import { Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "urql";
 
 import AccountManagementPasswordPreview from "../components/AccountManagementPasswordPreview";
-import BlockList from "../components/BlockList/BlockList";
+import BlockList from "../components/BlockList";
 import { ButtonLink } from "../components/ButtonLink";
+import * as Collapsible from "../components/Collapsible";
 import LoadingSpinner from "../components/LoadingSpinner";
 import UserEmail from "../components/UserEmail";
 import AddEmailForm from "../components/UserProfile/AddEmailForm";
@@ -89,14 +89,23 @@ function Index(): React.ReactElement {
 
         <Separator />
 
-        <ButtonLink
-          to="/reset-cross-signing"
-          kind="tertiary"
-          destructive
-          Icon={IconKey}
-        >
-          {t("frontend.reset_cross_signing.heading")}
-        </ButtonLink>
+        <Collapsible.Root>
+          <Collapsible.Trigger>
+            <Heading size="sm" weight="semibold">
+              {t("common.e2ee")}
+            </Heading>
+          </Collapsible.Trigger>
+          <Collapsible.Content>
+            <BlockList>
+              <Text className="text-secondary" size="md">
+                {t("frontend.reset_cross_signing.description")}
+              </Text>
+              <ButtonLink to="/reset-cross-signing" kind="primary" destructive>
+                {t("frontend.reset_cross_signing.button")}
+              </ButtonLink>
+            </BlockList>
+          </Collapsible.Content>
+        </Collapsible.Root>
       </BlockList>
     </>
   );

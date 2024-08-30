@@ -109,12 +109,13 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
           Scopes
         </h5>
         <ul
-          class="_scopeList_040867"
+          class="_list_7f22f8"
         >
           <li
-            class="_scope_040867"
+            class="_item_7f22f8"
           >
             <svg
+              color="var(--cpd-color-icon-tertiary)"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"
@@ -138,9 +139,10 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
             </p>
           </li>
           <li
-            class="_scope_040867"
+            class="_item_7f22f8"
           >
             <svg
+              color="var(--cpd-color-icon-tertiary)"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"
@@ -158,9 +160,10 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
             </p>
           </li>
           <li
-            class="_scope_040867"
+            class="_item_7f22f8"
           >
             <svg
+              color="var(--cpd-color-icon-tertiary)"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"
@@ -366,12 +369,13 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
           Scopes
         </h5>
         <ul
-          class="_scopeList_040867"
+          class="_list_7f22f8"
         >
           <li
-            class="_scope_040867"
+            class="_item_7f22f8"
           >
             <svg
+              color="var(--cpd-color-icon-tertiary)"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"
@@ -395,9 +399,10 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
             </p>
           </li>
           <li
-            class="_scope_040867"
+            class="_item_7f22f8"
           >
             <svg
+              color="var(--cpd-color-icon-tertiary)"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"
@@ -415,9 +420,10 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
             </p>
           </li>
           <li
-            class="_scope_040867"
+            class="_item_7f22f8"
           >
             <svg
+              color="var(--cpd-color-icon-tertiary)"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"
@@ -592,12 +598,13 @@ exports[`<CompatSessionDetail> > renders a finished compatability session detail
           Scopes
         </h5>
         <ul
-          class="_scopeList_040867"
+          class="_list_7f22f8"
         >
           <li
-            class="_scope_040867"
+            class="_item_7f22f8"
           >
             <svg
+              color="var(--cpd-color-icon-tertiary)"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"
@@ -621,9 +628,10 @@ exports[`<CompatSessionDetail> > renders a finished compatability session detail
             </p>
           </li>
           <li
-            class="_scope_040867"
+            class="_item_7f22f8"
           >
             <svg
+              color="var(--cpd-color-icon-tertiary)"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"
@@ -641,9 +649,10 @@ exports[`<CompatSessionDetail> > renders a finished compatability session detail
             </p>
           </li>
           <li
-            class="_scope_040867"
+            class="_item_7f22f8"
           >
             <svg
+              color="var(--cpd-color-icon-tertiary)"
               fill="currentColor"
               height="1em"
               viewBox="0 0 24 24"

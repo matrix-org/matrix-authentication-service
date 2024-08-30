@@ -25,6 +25,7 @@ import { useTranslation } from "react-i18next";
 import Block from "../Block/Block";
 import DateTime from "../DateTime";
 import LastActive from "../Session/LastActive";
+import { VisualList, VisualListItem } from "../VisualList/VisualList";
 
 import styles from "./SessionDetails.module.css";
 
@@ -68,12 +69,7 @@ const Scope: React.FC<{ scope: string }> = ({ scope }) => {
   return (
     <>
       {mappedScopes.map(([Icon, text], i) => (
-        <li className={styles.scope} key={i}>
-          <Icon />
-          <Text size="md" weight="medium">
-            {text}
-          </Text>
-        </li>
+        <VisualListItem key={i} Icon={Icon} label={text} />
       ))}
     </>
   );
@@ -153,11 +149,11 @@ const SessionDetails: React.FC<Props> = ({
         <Datum
           label={t("frontend.session.scopes_label")}
           value={
-            <ul className={styles.scopeList}>
+            <VisualList>
               {scopes.map((scope) => (
                 <Scope key={scope} scope={scope} />
               ))}
-            </ul>
+            </VisualList>
           }
         />
       )}
