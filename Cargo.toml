@@ -256,7 +256,7 @@ version = "1.0.63"
 
 # Async runtime
 [workspace.dependencies.tokio]
-version = "1.39.2"
+version = "1.40.0"
 features = ["full"]
 
 # Tower services
