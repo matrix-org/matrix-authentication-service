@@ -7,7 +7,7 @@
     "continue": "继续",
     "edit": "编辑",
     "save": "保存",
-    "save_and_continue": "Save and continue"
+    "save_and_continue": "保存并继续"
   },
   "branding": {
     "privacy_policy": {
@@ -21,12 +21,13 @@
   },
   "common": {
     "add": "添加",
+    "e2ee": "End-to-end encryption",
     "error": "错误",
     "loading": "加载中...",
     "next": "下一步",
     "previous": "上一步",
-    "saved": "Saved",
-    "saving": "Saving…"
+    "saved": "已保存",
+    "saving": "正在保存..."
   },
   "frontend": {
     "account": {
@@ -37,9 +38,9 @@
         "username_label": "用户名"
       },
       "password": {
-        "change": "Change password",
-        "change_disabled": "Password changes are disabled by the administrator.",
-        "label": "Password"
+        "change": "更改密码",
+        "change_disabled": "管理员禁止更改密码。",
+        "label": "密码"
       },
       "title": "你的账户"
     },
@@ -48,19 +49,19 @@
         "text": "服务器策略不允许输入的电子邮件地址。",
         "title": "电子邮件地址被策略拒绝"
       },
-      "email_denied_error": "The entered email is not allowed by the server policy",
+      "email_denied_error": "服务器策略不允许输入的邮箱地址。",
       "email_exists_alert": {
         "text": "输入的电子邮件地址已添加到此账户",
         "title": "电子邮件地址已经存在"
       },
-      "email_exists_error": "The entered email is already added to this account",
+      "email_exists_error": "输入的电子邮件地址已添加到此账户",
       "email_field_help": "添加可用于访问此账户的备用电子邮件地址。",
       "email_field_label": "添加电子邮件地址",
       "email_invalid_alert": {
         "text": "输入的电子邮件地址无效",
         "title": "无效的电子邮件地址"
       },
-      "email_invalid_error": "The entered email is invalid"
+      "email_invalid_error": "输入的电子邮件地址无效"
     },
     "app_sessions_list": {
       "error": "加载应用程序会话失败",
@@ -74,8 +75,8 @@
       "body:other": "{{count}}活跃会话",
       "heading": "浏览器",
       "no_active_sessions": {
-        "default": "You are not signed in to any web browsers.",
-        "inactive_90_days": "All your sessions have been active in the last 90 days."
+        "default": "您尚未登录任何网络浏览器。",
+        "inactive_90_days": "您的所有会话在过去 90 天内均处于活跃状态。"
       },
       "view_all_button": "查看全部"
     },
@@ -104,7 +105,7 @@
     },
     "error_boundary_title": "出了点问题",
     "errors": {
-      "field_required": "This field is required"
+      "field_required": "此字段为必填项"
     },
     "last_active": {
       "active_date": "活跃 {{relativeDate}}",
@@ -135,92 +136,105 @@
       "total": "总计：{{totalCount}}"
     },
     "password_change": {
-      "current_password_label": "Current password",
+      "current_password_label": "当前密码",
       "failure": {
         "description": {
-          "account_locked": "Your account is locked and can not be recovered at this time. If this is not expected, please contact your server administrator.",
-          "expired_recovery_ticket": "The recovery link has expired. Please start the account recovery process again from the start.",
-          "invalid_new_password": "The new password you chose is invalid; it may not meet the configured security policy.",
-          "no_current_password": "You don't have a current password.",
-          "no_such_recovery_ticket": "The recovery link is invalid. If you copied the link from the recovery e-mail, please check the full link was copied.",
-          "password_changes_disabled": "Password changes are disabled.",
-          "recovery_ticket_already_used": "The recovery link has already been used. It cannot be used again.",
-          "unspecified": "This might be a temporary problem, so please try again later. If the problem persists, please contact your server administrator.",
-          "wrong_password": "The password you supplied as your current password is incorrect. Please try again."
+          "account_locked": "您的账户已被锁定，暂时无法恢复。如果这是意外情况，请联系您的服务器管理员。",
+          "expired_recovery_ticket": "恢复链接已过期。请从头重新开始账户恢复流程。",
+          "invalid_new_password": "您选择的新密码无效；它可能不符合配置的安全策略。",
+          "no_current_password": "您当前没有密码。",
+          "no_such_recovery_ticket": "恢复链接无效。如果您是从恢复电子邮件中复制的链接，请检查是否复制的完整链接。",
+          "password_changes_disabled": "密码更改已禁用。",
+          "recovery_ticket_already_used": "恢复链接已被使用。无法再次使用。",
+          "unspecified": "这可能是暂时的问题，请稍后再试。如果问题仍然存在，请联系服务器管理员。",
+          "wrong_password": "您提供的当前密码不正确。请重试。"
         },
-        "title": "Failed to update password"
+        "title": "更新密码失败"
       },
-      "new_password_again_label": "Enter new password again",
-      "new_password_label": "New password",
-      "passwords_match": "Passwords match!",
-      "passwords_no_match": "Passwords don't match",
-      "subtitle": "Choose a new password for your account.",
+      "new_password_again_label": "再次输入新密码",
+      "new_password_label": "新密码",
+      "passwords_match": "密码匹配！",
+      "passwords_no_match": "密码不匹配",
+      "subtitle": "为您的账户选择一个新密码。",
       "success": {
-        "description": "Your password has been updated successfully.",
-        "title": "Password updated"
+        "description": "您的密码已成功更新。",
+        "title": "密码已更新"
       },
-      "title": "Change your password"
+      "title": "更改密码"
     },
     "password_reset": {
-      "title": "Reset your password"
+      "title": "重置密码"
     },
     "password_strength": {
-      "placeholder": "Password strength",
+      "placeholder": "密码强度",
       "score": {
-        "0": "Extremely weak password",
-        "1": "Very weak password",
-        "2": "Weak password",
-        "3": "Strong password",
-        "4": "Very strong password"
+        "0": "极弱的密码",
+        "1": "非常弱的密码",
+        "2": "弱密码",
+        "3": "强密码",
+        "4": "非常强的密码"
       },
       "suggestion": {
-        "all_uppercase": "Capitalise some, but not all letters.",
-        "another_word": "Add more words that are less common.",
-        "associated_years": "Avoid years that are associated with you.",
-        "capitalization": "Capitalise more than the first letter.",
-        "dates": "Avoid dates and years that are associated with you.",
-        "l33t": "Avoid predictable letter substitutions like '@' for 'a'.",
-        "longer_keyboard_pattern": "Use longer keyboard patterns and change typing direction multiple times.",
-        "no_need": "You can create strong passwords without using symbols, numbers, or uppercase letters.",
-        "pwned": "If you use this password elsewhere, you should change it.",
-        "recent_years": "Avoid recent years.",
-        "repeated": "Avoid repeated words and characters.",
-        "reverse_words": "Avoid reversed spellings of common words.",
-        "sequences": "Avoid common character sequences.",
-        "use_words": "Use multiple words, but avoid common phrases."
+        "all_uppercase": "将部分字母大写，但不是全部字母大写。",
+        "another_word": "添加更多不常用的单词。",
+        "associated_years": "避开与您有关的年份。",
+        "capitalization": "不止首字母需要大写。",
+        "dates": "避免使用与您有关的日期和年份。",
+        "l33t": "避免可预见的字母替换，例如用\"@\"替换 \"a\"。",
+        "longer_keyboard_pattern": "使用较长的键盘模式，并多次改变输入方向。",
+        "no_need": "不使用符号、数字或大写字母也能创建强密码。",
+        "pwned": "如果您在其他地方使用该密码，则应进行更改。",
+        "recent_years": "避免近几年。",
+        "repeated": "避免重复的词语和字符。",
+        "reverse_words": "避免使用常用单词的反向拼写。",
+        "sequences": "避免使用常见的字符序列。",
+        "use_words": "使用多个单词，但避免使用常用短语。"
       },
-      "too_weak": "This password is too weak",
+      "too_weak": "密码太弱",
       "warning": {
-        "common": "This is a commonly used password.",
-        "common_names": "Common names and surnames are easy to guess.",
-        "dates": "Dates are easy to guess.",
-        "extended_repeat": "Repeated character patterns like \"abcabcabc\" are easy to guess.",
-        "key_pattern": "Short keyboard patterns are easy to guess.",
-        "names_by_themselves": "Single names or surnames are easy to guess.",
-        "pwned": "Your password was exposed by a data breach on the Internet.",
-        "recent_years": "Recent years are easy to guess.",
-        "sequences": "Common character sequences like \"abc\" are easy to guess.",
-        "similar_to_common": "This is similar to a commonly used password.",
-        "simple_repeat": "Repeated characters like \"aaa\" are easy to guess.",
-        "straight_row": "Straight rows of keys on your keyboard are easy to guess.",
-        "top_hundred": "This is a frequently used password.",
-        "top_ten": "This is a heavily used password.",
-        "user_inputs": "There should not be any personal or page related data.",
-        "word_by_itself": "Single words are easy to guess."
+        "common": "这是一个常用密码。",
+        "common_names": "常见的名字和姓氏很容易被猜到。",
+        "dates": "日期很容易被猜到。",
+        "extended_repeat": "像“abcabcabc”这样的重复字符模式很容易被猜到。",
+        "key_pattern": "短键盘模式很容易被猜到。",
+        "names_by_themselves": "单个名字或姓氏很容易被猜到。",
+        "pwned": "您的密码因互联网上的数据泄露而被泄露。",
+        "recent_years": "最近几年很容易被猜到。",
+        "sequences": "像“abc”这样的常见字符序列很容易被猜到。",
+        "similar_to_common": "这与常用密码类似。",
+        "simple_repeat": "像“aaa”这样的重复字符很容易被猜到。",
+        "straight_row": "键盘上成排的按键很容易被猜到。",
+        "top_hundred": "这是一个常用密码。",
+        "top_ten": "这是一个使用率很高的密码。",
+        "user_inputs": "不应有任何个人或页面相关数据。",
+        "word_by_itself": "单个单词很容易被猜到。"
       }
     },
     "reset_cross_signing": {
       "button": "允许重置加密身份",
+      "cancelled": {
+        "description_1": "You can close this window and go back to the app to continue.",
+        "description_2": "If you're signed out everywhere and don't remember your recovery code, you'll still need to reset your identity.",
+        "heading": "Identity reset cancelled."
+      },
       "description": "如果您没有在其他地方登录，并且忘记或丢失了所有恢复选项，则需要重置您的加密身份。这意味着您将丢失现有的信息历史记录，其他用户会看到您已重置身份，您需要再次验证现有设备。",
+      "effect_list": {
+        "negative_1": "You will lose your existing message history",
+        "negative_2": "You will need to verify all your existing devices and contacts again",
+        "positive_1": "Your account details, contacts, preferences, and chat list will be kept"
+      },
       "failure": {
         "description": "这可能是暂时的问题，请稍后再试。如果问题仍然存在，请联系服务器管理员。",
+        "heading": "Failed to allow crypto identity reset",
         "title": "无法允许加密身份"
       },
       "heading": "重置加密身份",
       "success": {
         "description": "客户端现在可以临时重置您的账户加密身份。请按照客户端中的说明完成该过程。",
+        "heading": "Identity reset successfully. Go back to the app to finish the process.",
         "title": "临时允许重置加密身份"
-      }
+      },
+      "warning": "Only reset your identity if you don't have access to another signed-in device and you've lost your recovery key."
     },
     "selectable_session": {
       "label": "选择会话"
@@ -288,8 +302,8 @@
       "active_sessions:other": "{{count}}个活跃会话",
       "heading": "您登录的位置",
       "no_active_sessions": {
-        "default": "You are not signed in to any application.",
-        "inactive_90_days": "All your sessions have been active in the last 90 days."
+        "default": "您尚未登录任何应用程序。",
+        "inactive_90_days": "您的所有会话在过去 90 天内均处于活跃状态。"
       }
     },
     "verify_email": {

@@ -21,6 +21,7 @@
   },
   "common": {
     "add": "Ajouter",
+    "e2ee": "Chiffrement de bout en bout",
     "error": "Erreur",
     "loading": "Chargement…",
     "next": "Suivant",
@@ -211,17 +212,30 @@
       }
     },
     "reset_cross_signing": {
-      "button": "Autoriser le remplacement de l'identité cryptographique",
-      "description": "Si vous n'êtes connecté nulle part ailleurs et que vous avez oublié ou perdu toutes vos options de récupération, vous devez réinitialiser votre identité cryptographique. Cela signifie que vous perdrez votre historique de message, que les autres utilisateurs verront que vous avez réinitialisé votre identité et que vous devrez à nouveau vérifier vos appareils existants.",
+      "button": "Réinitialiser l'identité",
+      "cancelled": {
+        "description_1": "Vous pouvez fermer cette fenêtre et revenir à l'application pour continuer.",
+        "description_2": "Si vous êtes déconnecté partout et que vous ne vous souvenez pas de votre code de récupération, vous devrez tout de même réinitialiser votre identité.",
+        "heading": "La réinitialisation d'identité a été annulée."
+      },
+      "description": "Si vous n'êtes connecté à aucun autre appareil et que vous avez perdu votre clé de récupération, vous devrez réinitialiser votre identité pour continuer à utiliser l'application.",
+      "effect_list": {
+        "negative_1": "Vous perdrez votre historique de messages existant",
+        "negative_2": "Vous devrez vérifier à nouveau tous vos appareils et contacts existants",
+        "positive_1": "Les détails de votre compte, vos contacts, vos préférences et votre liste de discussion seront conservés"
+      },
       "failure": {
         "description": "Il s'agit peut-être d'un problème temporaire, veuillez donc réessayer ultérieurement. Si le problème persiste, contactez l'administrateur de votre serveur.",
+        "heading": "Impossible d'autoriser la réinitialisation de l'identité cryptographique",
         "title": "Impossible d'autoriser le remplacement de l'identité cryptographique"
       },
-      "heading": "Réinitialiser l'identité cryptographique",
+      "heading": "Réinitialisez votre identité au cas où vous ne pourriez pas la vérifier autrement",
       "success": {
-        "description": "Une application peut temporairement réinitialiser l'identité cryptographique de votre compte. Suivez les instructions de votre client pour terminer ce processus.",
+        "description": "La réinitialisation de l'identité a été approuvée pour les prochaines {{minutes}} minutes. Vous pouvez fermer cette fenêtre et revenir à l'application pour continuer.",
+        "heading": "Réinitialisation de l'identité réussie. Retournez dans l'application pour terminer le processus.",
         "title": "Réinitialisation de l'identité cryptographique temporairement autorisée"
-      }
+      },
+      "warning": "Ne réinitialisez votre identité que si vous n'avez accès à aucun autre appareil connecté et que vous avez perdu votre clé de récupération."
     },
     "selectable_session": {
       "label": "Sélectionner une session"

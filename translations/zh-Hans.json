@@ -1,12 +1,12 @@
 {
   "action": {
-    "back": "Back",
+    "back": "返回",
     "cancel": "取消",
     "continue": "继续",
     "create_account": "创建账户",
     "sign_in": "登录",
     "sign_out": "注销",
-    "start_over": "Start over",
+    "start_over": "重新开始",
     "submit": "提交"
   },
   "app": {
@@ -42,7 +42,7 @@
     },
     "back_to_homepage": "返回主页",
     "captcha": {
-      "noscript": "This form is protected by a CAPTCHA and requires JavaScript to be enabled to submit it. Please enable JavaScript in your browser and reload this page."
+      "noscript": "此表格受验证码保护，需要启用 JavaScript 才能提交。请在浏览器中启用 JavaScript 并重新加载此页面。"
     },
     "change_password": {
       "change": "更改密码",
@@ -53,42 +53,42 @@
       "new": "新密码"
     },
     "consent": {
-      "client_wants_access": "<span>%(client_name)s</span> at <span>%(redirect_uri)s</span> wants to acccess your account.",
-      "heading": "Allow access to your account?",
-      "make_sure_you_trust": "Make sure that you trust <span>%(client_name)s</span>.",
-      "this_will_allow": "This will allow <span>%(client_name)s</span> to:",
-      "you_may_be_sharing": "You may be sharing sensitive information with this site or app."
+      "client_wants_access": "<span>%(client_name)s</span> 在 <span>%(redirect_uri)s</span> 希望访问您的账户。",
+      "heading": "允许访问您的账户？",
+      "make_sure_you_trust": "请确保您信任 <span>%(client_name)s</span> 。",
+      "this_will_allow": "这将允许 <span>%(client_name)s</span> ：",
+      "you_may_be_sharing": "您可能正在与本网站或应用程序共享敏感信息。"
     },
     "device_card": {
-      "access_requested": "Access requested",
-      "device_code": "Code",
-      "generic_device": "Device",
-      "ip_address": "IP address"
+      "access_requested": "已请求访问权限",
+      "device_code": "代码",
+      "generic_device": "设备",
+      "ip_address": "IP 地址"
     },
     "device_code_link": {
-      "description": "Link a device",
-      "headline": "Enter the code displayed on your device"
+      "description": "链接设备",
+      "headline": "输入设备上显示的代码"
     },
     "device_consent": {
-      "another_device_access": "Another device wants to access your account.",
+      "another_device_access": "另一个设备想要访问您的账户。",
       "denied": {
-        "description": "You denied access to %(client_name)s. You can close this window.",
-        "heading": "Access denied"
+        "description": "您拒绝了%(client_name)s 的访问。您可以关闭此窗口。",
+        "heading": "访问被拒绝"
       },
       "granted": {
-        "description": "You granted access to %(client_name)s. You can close this window.",
-        "heading": "Access granted"
+        "description": "您已授权 %(client_name)s 访问。您可以关闭此窗口。",
+        "heading": "已授予访问权限"
       }
     },
     "emails": {
       "greeting": "%(username)s 你好，",
       "recovery": {
-        "click_button": "Click on the button below to create a new password:",
-        "copy_link": "Copy the following link and paste it into a browser to create a new password:",
-        "create_new_password": "Create new password",
-        "headline": "You requested a password reset for your %(server_name)s account.",
-        "subject": "Reset your account password (%(mxid)s)",
-        "you_can_ignore": "If you didn't ask for a new password, you can ignore this email. Your current password will continue to work."
+        "click_button": "点击下面的按钮创建新密码：",
+        "copy_link": "复制以下链接并粘贴到浏览器中以创建新密码：",
+        "create_new_password": "创建新密码",
+        "headline": "您请求重置您在 %(server_name)s 的账户密码。",
+        "subject": "重置账户密码 (%(mxid)s)",
+        "you_can_ignore": "如果您没有请求重置密码，可以忽略此邮件。您当前的密码仍然有效。"
       },
       "verify": {
         "body_html": "确认此电子邮件地址的验证码是： <strong>%(code)s</strong>",
@@ -97,19 +97,19 @@
       }
     },
     "errors": {
-      "captcha": "CAPTCHA verification failed, please try again",
+      "captcha": "验证码验证失败，请重试",
       "denied_policy": "被该策略拒绝：%(policy)s",
       "field_required": "此字段为必填项",
       "invalid_credentials": "无效的凭据",
       "password_mismatch": "密码字段不匹配",
-      "rate_limit_exceeded": "You've made too many requests in a short period. Please wait a few minutes and try again.",
+      "rate_limit_exceeded": "您在短时间内发出了过多请求。请等待几分钟后重试。",
       "username_taken": "此用户名已被使用"
     },
     "login": {
       "call_to_register": "还没有账户？",
       "continue_with_provider": "以 %(provider)s 继续",
       "description": "请登录以继续：",
-      "forgot_password": "Forgot password?",
+      "forgot_password": "忘记密码？",
       "headline": "登录",
       "link": {
         "description": "关联您的 <span class=\"break-keep text-links\">%(provider)s</span> 账户",
@@ -136,34 +136,34 @@
     },
     "recovery": {
       "consumed": {
-        "description": "To create a new password, start over and select “Forgot password”.",
-        "heading": "The link to reset your password has already been used"
+        "description": "要创建新密码，请重新开始并选择 \"忘记密码\"。",
+        "heading": "重置密码的链接已被使用"
       },
       "disabled": {
-        "description": "If you have lost your credentials, please contact the administrator to recover your account.",
-        "heading": "Account recovery is disabled"
+        "description": "如果您丢失了凭据，请联系管理员以恢复您的账户。",
+        "heading": "账户恢复已禁用"
       },
       "expired": {
-        "description": "Request a new email that will be sent to: <span>%(email)s</span>.",
-        "heading": "The link to reset your password has expired",
-        "resend_email": "Resend email"
+        "description": "请求发送一封新电子邮件，该电子邮件将发送至：<span>%(email)s</span>.",
+        "heading": "重置密码的链接已过期",
+        "resend_email": "重新发送电子邮件"
       },
       "finish": {
-        "confirm": "Enter new password again",
-        "description": "Choose a new password for your account.",
-        "heading": "Reset your password",
-        "new": "New password",
-        "save_and_continue": "Save and continue"
+        "confirm": "再次输入新密码",
+        "description": "为您的账户选择一个新密码。",
+        "heading": "重置密码",
+        "new": "新密码",
+        "save_and_continue": "保存并继续"
       },
       "progress": {
-        "change_email": "Try a different email",
-        "description": "We sent an email with a link to reset your password if there's an account using <span>%(email)s</span>.",
-        "heading": "Check your email",
-        "resend_email": "Resend email"
+        "change_email": "尝试不同的电子邮件地址",
+        "description": "如果有账户使用 <span>%(email)s</span> ，我们会发送一封带有重置密码链接的电子邮件。",
+        "heading": "检查你的电子邮箱",
+        "resend_email": "重新发送电子邮件"
       },
       "start": {
-        "description": "An email will be sent with a link to reset your password.",
-        "heading": "Enter your email to continue"
+        "description": "系统将发送一封电子邮件，内含重置密码的链接。",
+        "heading": "输入你的电子邮箱地址以继续"
       }
     },
     "register": {
