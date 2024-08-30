@@ -195,6 +195,22 @@ version = "0.3.3"
 version = "0.8.21"
 features = ["url", "chrono", "preserve_order"]
 
+# Query builder
+[workspace.dependencies.sea-query]
+version = "0.32.0-rc.1"
+features = ["derive", "attr", "with-uuid", "with-chrono", "postgres-array"]
+
+# Query builder
+[workspace.dependencies.sea-query-binder]
+version = "0.7.0-rc.1"
+features = [
+    "sqlx",
+    "sqlx-postgres",
+    "with-uuid",
+    "with-chrono",
+    "postgres-array",
+]
+
 # Sentry error tracking
 [workspace.dependencies.sentry]
 version = "0.34.0"
@@ -222,9 +238,10 @@ features = ["preserve_order"]
 
 # SQL database support
 [workspace.dependencies.sqlx]
-version = "0.7.4"
+version = "0.8.1"
 features = [
-    "runtime-tokio-rustls",
+    "runtime-tokio",
+    "tls-rustls-aws-lc-rs",
     "postgres",
     "migrate",
     "chrono",
@@ -294,3 +311,8 @@ sha2.opt-level = 3
 digest.opt-level = 3
 block-buffer.opt-level = 3
 generic-array.opt-level = 3
+
+[patch.crates-io]
+# Waiting for https://github.com/SeaQL/sea-query/pull/810
+sea-query = { git = "https://github.com/sandhose/sea-query", branch = "binder/relax-sqlx-dependency" }
+sea-query-binder = { git = "https://github.com/sandhose/sea-query", branch = "binder/relax-sqlx-dependency" }
