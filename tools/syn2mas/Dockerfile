@@ -19,9 +19,9 @@ COPY ./package.json ./package-lock.json ./
 RUN sed -i '/"prepare"/d' package.json
 RUN --network=default \
   npm ci \
-    --target_arch=amd64 \
-    --target_platform=linux \
-    --omit=dev
+  --target_arch=amd64 \
+  --target_platform=linux \
+  --omit=dev
 
 WORKDIR /deps/amd64
 
@@ -30,13 +30,13 @@ COPY ./package.json ./package-lock.json ./
 RUN sed -i '/"prepare"/d' package.json
 RUN --network=default \
   npm ci \
-    --target_arch=x64 \
-    --target_platform=linux \
-    --omit=dev
+  --target_arch=x64 \
+  --target_platform=linux \
+  --omit=dev
 
 
 # Runtime stage
-FROM --platform=${TARGETPLATFORM} gcr.io/distroless/nodejs18-debian12:debug-nonroot
+FROM gcr.io/distroless/nodejs18-debian12:debug-nonroot
 
 WORKDIR /syn2mas
 COPY ./package.json ./package-lock.json ./
