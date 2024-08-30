@@ -173,7 +173,7 @@ COPY ./translations/ /share/translations
 ##################################
 ## Runtime stage, debug variant ##
 ##################################
-FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:debug-nonroot AS debug
+FROM gcr.io/distroless/cc-debian${DEBIAN_VERSION}:debug-nonroot AS debug
 
 ARG TARGETARCH
 COPY --from=builder /usr/local/bin/mas-cli-${TARGETARCH} /usr/local/bin/mas-cli
@@ -185,7 +185,7 @@ ENTRYPOINT ["/usr/local/bin/mas-cli"]
 ###################
 ## Runtime stage ##
 ###################
-FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:nonroot
+FROM gcr.io/distroless/cc-debian${DEBIAN_VERSION}:nonroot
 
 ARG TARGETARCH
 COPY --from=builder /usr/local/bin/mas-cli-${TARGETARCH} /usr/local/bin/mas-cli
