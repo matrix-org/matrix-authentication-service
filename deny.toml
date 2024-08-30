@@ -54,17 +54,11 @@ multiple-versions = "deny"
 skip = [
     { name = "base64", version = "0.21.7" },         # many dependencies depends on this old version
     { name = "syn", version = "1.0.109" },           # sea-query, sqlx depend on the old version
-    { name = "event-listener", version = "2.5.3" },  # sqlx-core depend on the old version
     { name = "regex-syntax", version = "0.6.29" },   # tracing-subscriber[env-filter] -> matchers depends on the old version
     { name = "regex-automata", version = "0.1.10" }, # ^
     { name = "regex-automata", version = "0.2.0" },  # icu_list depends on this old version
     { name = "indexmap", version = "1.9.3" },        # schemars depends on this old version
     { name = "hashbrown" },                          # Too many versions :(
-    # sqlx uses old versions of those:
-    { name = "rustls", version = "0.21.10" },
-    { name = "rustls-pemfile", version = "1.0.4" },
-    { name = "rustls-webpki", version = "0.101.7" },
-    { name = "webpki-roots", version = "0.25.3" },
     # axum-macros, sqlx-macros and sea-query-attr use an old version
     { name = "heck", version = "0.4.1" },
     # sea-query-attr uses an old version of darling
@@ -95,4 +89,4 @@ deny = ["oldtime"]
 unknown-registry = "warn"
 unknown-git = "warn"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
-allow-git = []
+allow-git = ["https://github.com/sandhose/sea-query"]
