@@ -574,6 +574,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
                 ON CONFLICT (oauth2_client_id)
                 DO
                     UPDATE SET encrypted_client_secret = EXCLUDED.encrypted_client_secret
+                             , redirect_uris = EXCLUDED.redirect_uris
                              , grant_type_authorization_code = EXCLUDED.grant_type_authorization_code
                              , grant_type_refresh_token = EXCLUDED.grant_type_refresh_token
                              , grant_type_client_credentials = EXCLUDED.grant_type_client_credentials
