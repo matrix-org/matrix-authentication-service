@@ -335,9 +335,9 @@ Policy settings
 ```yaml
 policy:
   # Path to the WASM module
-  # Default for docker feature: `/usr/local/share/mas-cli/policy.wasm`
-  # Default for dist feature: `./share/policy.wasm`
-  # Default otherwise: `./policies/policy.wasm`
+  # Default in Docker distribution: `/usr/local/share/mas-cli/policy.wasm`
+  # Default in pre-built binaries: `./share/policy.wasm`
+  # Default in locally-built binaries: `./policies/policy.wasm`
   wasm_module: ./policies/policy.wasm
   # Entrypoint to use when evaluating client registrations
   client_registration_entrypoint: client_registration/violation
