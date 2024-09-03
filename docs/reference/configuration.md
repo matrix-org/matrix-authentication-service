@@ -374,13 +374,14 @@ policy:
       allow_missing_client_uri: false
       # don't require clients to provide a contacts field. default: false
       allow_missing_contacts: false
-      # restrict emails on registration to a specific domain
-      # This array is evaluated as a glob
-      allowed_domains:
-        - *.example.com
-      # ban specific domains from registration
-      banned_domains:
-        - *.banned.example.com
+
+    # Restrict emails on registration to a specific domain
+    # Items in this array are evaluated as a glob
+    allowed_domains:
+      - *.example.com
+    # Ban specific domains from registration
+    banned_domains:
+      - *.banned.example.com
 ```
 
 ## `rate_limiting`
