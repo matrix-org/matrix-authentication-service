@@ -20,3 +20,5 @@ git-repository-url = "https://github.com/matrix-org/matrix-authentication-servic
 
 # The path that the docs are hosted on
 site-url = "/matrix-authentication-service/"
+
+additional-css = ["theme/additional.css"]

@@ -1,0 +1,20 @@
+#page-wrapper .page {
+    display: flex;
+    flex-direction: column;
+}
+
+.deprecation-notice {
+    box-sizing: border-box;
+    order: 2;
+    color: rgb(213, 25, 40);
+    background-color: rgb(255, 247, 246);
+    border: 1px solid rgb(213, 25, 40);
+    padding: 1rem 2rem;
+    margin: 1rem 0;
+    align-self: center;
+    max-width: var(--content-max-width);
+}
+
+#content {
+    order: 3;
+}
