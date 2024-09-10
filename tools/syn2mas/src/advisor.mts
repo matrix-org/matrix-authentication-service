@@ -125,8 +125,8 @@ export async function advisor(): Promise<void> {
     );
   }
   if (synapseConfig.enable_registration_captcha) {
-    error(
-      "Synapse config has registration CAPTCHA enabled which isn't supported by MAS: https://github.com/matrix-org/matrix-authentication-service/issues/138",
+    warn(
+      "Synapse config has registration CAPTCHA enabled which will need to be configured in MAS",
     );
   }
   if (synapseConfig.user_consent) {
@@ -209,10 +209,6 @@ export async function advisor(): Promise<void> {
     warn(
       "Synapse has a non-standard password auth enabled which won't work after migration and will need to be manually mapped to an upstream OpenID Provider during migration",
     );
-  } else if (synapseConfig.password_config?.enabled !== false) {
-    warn(
-      "Synapse has password auth enabled, but support for password auth in MAS is not feature complete",
-    );
   }
 
   const externalIdAuthProviders = (await synapse
@@ -231,7 +227,7 @@ export async function advisor(): Promise<void> {
   );
   if (usersWithPassword > 0) {
     warn(
-      `Synapse database contains ${usersWithPassword} users with a password which will be migrated. However, support for password auth in MAS is not feature complete`,
+      `Synapse database contains ${usersWithPassword} users with a password which will be migrated`,
     );
   }
 
