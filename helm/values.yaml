@@ -1,0 +1,396 @@
+# Default values for mas.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/element-hq/matrix-authentication-service
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "0.13.0"
+  # debug images are available with have a shell use $imageTag-debug
+  # the debug version has the mas-cli in /usr/local/bin
+  # the command `mas-cli doctor` can test some functionality
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Automatically mount a ServiceAccount's API credentials?
+  automount: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: "mas-sa"
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # kubernetes.io/tls-acme: "true"
+    # nginx.ingress.kubernetes.io/use-regex: "true"
+  hosts:
+    - host: auth.example.com
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+    - host: synapse.example.com
+      paths:
+        - path: /_matrix/client/(.*)/(login|logout|refresh)
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 2
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+# Additional volumes on the output Deployment definition.
+volumes:
+  - name: config-main
+    configMap:
+      name: "config-main"
+      items:
+        - key: config.yaml
+          path: config.yaml
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
+
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts:
+  - name: config-main
+    mountPath: "/config.yaml"
+    subPath: config.yaml
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+config:
+  http:
+    # MAS URL
+    # dont add trailing slash
+    public_base: https://auth.example.com
+    # OIDC issuer advertised by the service. Defaults to `public_base`
+    issuer:
+  listeners:
+    resources:
+      - name: discovery # Serves the .well-known/openid-configuration document
+      - name: human # Serves the human-facing pages, such as the login page
+      - name: oauth # Serves the OAuth 2.0/OIDC endpoints
+      - name: compat # Serves the Matrix C-S API compatibility endpoints
+      - name: graphql # Serve the GraphQL API used by the frontend, and optionally the GraphQL playground
+        playground: false
+      - name: assets # Serve the given folder on the /assets/ path
+        path: /usr/local/share/mas-cli/assets/
+
+  proxy_protocol: false
+  trusted_proxies:
+  - 192.168.0.0/16
+  - 172.16.0.0/12
+  - 10.0.0.0/10
+  - 127.0.0.1/8
+  - fd00::/8
+  - ::1/128
+
+# must be PostgreSQL
+database:
+  host: postgres
+  port: 5432
+  username: user1
+  password: password
+  dbName: database
+  min_connections: 0
+  max_connections: 10
+  connect_timeout: 30
+  idle_timeout: 600
+  max_lifetime: 1800
+
+# Settings related to the connection to the Matrix homeserver
+matrix:
+  # `server_name` in the Synapse configuration file
+  homeserver: example.com
+  sharedSecret: someRandomSecret
+  homeserverUrl: https://synapse.example.com
+
+# Allows loading custom templates
+# From where to load the templates
+# This is relative to the current working directory, *not* the config file
+templates:
+  enabled: false
+  path: /usr/local/share/mas-cli/templates/
+  # Path to the frontend assets manifest file
+  assets: /to/manifest.json
+
+clients:
+  # Confidential client
+  # Each client_id must be a ULID https://github.com/ulid/spec
+  client_id: 0000000000000000000SYNAPSE
+  client_auth_method: client_secret_post
+  client_secret: secret
+  redirect_uris:
+    - http://localhost:1234/callback
+  # Public client
+  pub_id: 0000000000000000000SYNAPSX
+  pubAuthMethod: none
+
+
+passwords:
+  # Whether to enable the password database.
+  # If disabled, users will only be able to log in using upstream OIDC providers
+  enabled: true
+  schemes:
+    - version: 2
+      algorithm: argon2id
+    - version: 1
+      algorithm: bcrypt
+
+account:
+  # Whether users are allowed to change their email addresses.
+  #
+  # Defaults to `true`.
+  email_change_allowed: true
+  # Whether users are allowed to change their display names
+  #
+  # Defaults to `true`.
+  # This should be in sync with the policy in the homeserver configuration.
+  displayname_change_allowed: true
+  # Whether to enable self-service password registration
+  #
+  # Defaults to `false`.
+  # This has no effect if password login is disabled.
+  password_registration_enabled: false
+  # Whether users are allowed to change their passwords
+  #
+  # Defaults to `true`.
+  # This has no effect if password login is disabled.
+  password_change_allowed: true
+  # Whether email-based password recovery is enabled
+  #
+  # Defaults to `false`.
+  # This has no effect if password login is disabled.
+  password_recovery_enabled: false
+
+
+policy:
+  data:
+    hasAdminUsers: false
+    admins:
+      - system-admin
+    admin_clients:
+      - My_Admin_Client
+    # defaults to false
+    clientHostMismatch: true
+    # defaults to false
+    clientNoSsl: true
+    # defaults to false
+    clientMissingUri: false
+    # defaults to false
+    missingContacts: false
+    pass:
+      minLength: 8
+      reqLowCase: true
+      reqUpCase: true
+      reqNum: true
+
+
+rate_limiting:
+  # Limits how many account recovery attempts are allowed.
+  # These limits can protect against e-mail spam.
+  #
+  # Note: these limit also apply to recovery e-mail re-sends.
+  account_recovery:
+    # Controls how many account recovery attempts are permitted
+    # based on source IP address.
+    ip:
+      burst: 3
+      second: 0.0008
+
+    # Controls how many account recovery attempts are permitted
+    # based on the e-mail address that is being used for recovery.
+    address:
+      burst: 3
+      second: 0.0002
+
+  # Limits how many login attempts are allowed.
+  #
+  # Note: these limit also applies to password checks when a user attempts to
+  # change their own password.
+  login:
+    # Controls how many login attempts are permitted
+    # based on source IP address.
+    # This can protect against brute force login attempts.
+    ip:
+      burst: 3
+      second: 0.05
+
+    # Controls how many login attempts are permitted
+    # based on the account that is being attempted to be logged into.
+    # This can protect against a distributed brute force attack
+    # but should be set high enough to prevent someone's account being
+    # casually locked out.
+    account:
+      burst: 1800
+      second: 0.5
+
+  # Limits how many registrations attempts are allowed,
+  # based on source IP address.
+  # This limit can protect against e-mail spam and against people registering too many accounts.
+  registration:
+    burst: 3
+    second: 0.0008
+
+
+telemetry:
+  # disables telemetry, metrics export sentry
+  enabled: false
+  propagators:
+      #- tracecontext #Propagate according to the W3C Trace Context specification
+      #- baggage #Propagate according to the W3C Baggage specification
+      #- b3 #Propagate trace context with Zipkin compatible headers (single `b3` header variant)
+      #- b3multi #Propagate trace context with Zipkin compatible headers (multiple `x-b3-*` headers variant)
+
+  # telementry exporter can be none, otlp
+  exporter: none
+  useOTLP:
+    enabled: false
+    endpoint: https://localhost:4317
+
+  metrics:
+    # disables only metrics export/collection
+    enabled: false
+    # can be otlp, prometheus (requires mounting the `prometheus` resource to an HTTP listener)
+    exporter: none
+    endpoint: https://localhost:4317
+
+  sentry:
+    enabled: true
+    dsn: https://public@host:port/1
+
+email:
+  from: '"The almighty auth service" <auth@example.com>'
+  reply2: '"No reply" <no-reply@example.com>'
+  # possible values: smtp, sendmail, blackhole (don't send any) default: blackhole
+  transport: blackhole
+  hostname: localhost
+  # path of your sendmail binary
+  command: "/usr/sbin/sendmail"
+  # possinle values: plain, tls, starttls
+  mode: starttls
+  port: 587
+  username:
+  password:
+
+  # Sample configurations for popular providers can be found in the upstream provider setup guide.
+  # https://element-hq.github.io/matrix-authentication-service/setup/sso.html
+upstream_oauth2:
+  enabled: false
+  providers: {}
+  #  - id: "01HFS67GJ145HCM9ZASYS9DC3J"
+  #    human_name: GitHub
+  #    brand_name: github
+  #    discovery_mode: disabled
+  #    fetch_userinfo: true
+  #    token_endpoint_auth_method: "client_secret_post"
+  #    client_id: "<client-id>" # TO BE FILLED
+  #    client_secret: "<client-secret>" # TO BE FILLED
+  #    authorization_endpoint: "https://github.com/login/oauth/authorize"
+  #    token_endpoint: "https://github.com/login/oauth/access_token"
+  #    userinfo_endpoint: "https://api.github.com/user"
+  #    scope: "read:user"
+  #    claims_imports:
+  #      subject:
+  #        template: "{{ userinfo_claims.id }}"
+  #      displayname:
+  #        action: suggest
+  #        template: "{{`{{ userinfo_claims.name }}"
+  #      localpart:
+  #        action: ignore
+  #      email:
+  #        action: suggest
+  #        template: "{{ userinfo_claims.email }}"
+  #      account_name:
+  #        template: "@{{ userinfo_claims.login }}"
+  #  - client_id: 01JAYS74TCG3BTWKADN5Q4518C
+  #    client_name: "<Service ID>" # TO BE FILLED
+  #    scope: "openid name email"
+  #    response_mode: "form_post"
+  #    token_endpoint_auth_method: "sign_in_with_apple"
+  #    sign_in_with_apple:
+  #      private_key: |
+  #        # Content of the PEM-encoded private key file, TO BE FILLED
+  #      team_id: "<Team ID>" # TO BE FILLED
+  #      key_id: "<Key ID>" # TO BE FILLED
+  #    claims_imports:
+  #      localpart:
+  #        action: ignore
+  #      displayname:
+  #        action: suggest
+  #        # SiWA passes down the user infos as query parameters in the callback
+  #        # which is available in the extra_callback_parameters variable
+  #        template: |
+  #          {%- set u = extra_callback_parameters["user"] | from_json -%}
+  #          {{- u.name.firstName }} {{ u.name.lastName -}}
+  #      email:
+  #        action: suggest
+  #      account_name:
+  #        template: |
+  #          {%- set u = extra_callback_parameters["user"] | from_json -%}
+  #          {{- u.name.firstName }} {{ u.name.lastName -}}

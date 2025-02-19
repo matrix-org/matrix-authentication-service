@@ -1,0 +1,318 @@
+http:
+  # Public URL base used when building absolute public URLs
+  public_base: "{{ required "you need to set a URL for .Values.config.http.public_base" .Values.config.http.public_base -}}/"
+
+  # OIDC issuer advertised by the service. Defaults to `public_base`
+  issuer: {{ .Values.config.http.issuer | default .Values.config.http.public_base | quote }}
+
+  # Each listener can serve multiple resources, and listen on multiple TCP ports or UNIX sockets.
+  # List of HTTP listeners, see below
+  listeners:
+    # The name of the listener, used in logs and metrics
+    - name: web
+
+      # List of resources to serve
+      resources: {{- range .Values.config.listeners.resources }}
+      - name: {{ .name }}
+      {{- if .path }}
+        path: {{ .path -}}
+      {{- end }}
+      {{- if .playground }}
+        playground: {{ .playground }}
+      {{- end }}
+      {{- end }}
+      - name: health
+        path: /health
+      {{- if .Values.telemetry.metrics.enabled }}
+      - name: prometheus
+        path: /health
+      {{- end }}
+
+      binds:
+        - address: '[::]:8080'
+  proxy_protocol: {{ .Values.config.listeners.proxy_protocol }}
+  trusted_proxies: {{ range .Values.config.trusted_proxies }}
+    - {{ . }}
+    {{- end }}
+
+  # Configure how to connect to the PostgreSQL database.
+database:
+  # Full connection string as per
+  # https://www.postgresql.org/docs/13/libpq-connect.html#id-1.7.3.8.3.6
+  #uri: postgresql://user:password@hostname:5432/database?sslmode=require
+
+  # -- OR --
+  # Separate parameters
+  host: {{ .Values.database.host }}
+  port: {{ .Values.database.port }}
+  #socket:
+  username: {{ .Values.database.username }}
+  password: {{ .Values.database.password }}
+  database: {{ .Values.database.dbName }}
+
+  # Additional parameters for the connection pool
+  min_connections: {{ .Values.database.min_connections }}
+  max_connections: {{ .Values.database.max_connections }}
+  connect_timeout: {{ .Values.database.connect_timeout }}
+  idle_timeout: {{ .Values.database.idle_timeout }}
+  max_lifetime: {{ .Values.database.max_lifetime }}
+
+  # Settings related to the connection to the Matrix homeserver
+matrix:
+  # The homeserver name, as per the `server_name` in the Synapse configuration file
+  homeserver: {{ .Values.matrix.homeserver }}
+
+  # Shared secret used to authenticate the service to the homeserver
+  # This must be of high entropy, because leaking this secret would allow anyone to perform admin actions on the homeserver
+  secret: {{ .Values.matrix.sharedSecret | quote }}
+
+  # URL to which the homeserver is accessible from the service
+  endpoint: {{ .Values.matrix.homeserverUrl | quote }}
+
+  # Allows loading custom templates
+{{- if .Values.templates.enabled }}
+templates:
+  path: {{ .Values.templates.path }}
+  assets_manifest: {{ .Values.templates.assets }}
+{{- end }}
+
+  # List of OAuth 2.0/OIDC clients and their keys/secrets. Each client_id must be a ULID.
+clients:
+  # Confidential client
+  - client_id: {{ .Values.clients.client_id }}
+    client_auth_method: {{ .Values.clients.client_auth_method }}
+    client_secret: {{ .Values.clients.client_secret }}
+    # List of authorized redirect URIs
+    redirect_uris: {{ .Values.clients.redirect_uris | toYaml | nindent 6 }}
+  # Public client
+  - client_id: {{ .Values.clients.pub_id }}
+    client_auth_method: {{ .Values.clients.pubAuthMethod }}
+
+  # Signing and encryption secrets
+secrets:
+  encryption: {{ randAlphaNum 32 | printf "%x" }}
+
+  # Signing keys
+  keys:
+    - kid: {{ randAlphaNum 10 }}
+      key: |
+        {{- genPrivateKey "rsa" | nindent 10 }}
+    - kid: {{ randAlphaNum 10 }}
+      key: |
+        {{- genPrivateKey "ecdsa" | nindent 10 }}
+    - kid: {{ randAlphaNum 10 }}
+      key: |
+        {{- genPrivateKey "ecdsa" | nindent 10 }}
+    - kid: {{ randAlphaNum 10 }}
+      key: |
+        {{- genPrivateKey "ecdsa" | nindent 10 }}
+
+
+passwords:
+  # Whether to enable the password database.
+  # If disabled, users will only be able to log in using upstream OIDC providers
+  enabled: {{ .Values.passwords.enabled }}
+
+  # List of password hashing schemes being used
+  # /!\ Only change this if you know what you're doing
+  schemes: {{- range .Values.passwords.schemes }}
+    - version: {{ .version }}
+      algorithm: {{ .algorithm }}
+{{- end}}
+
+account:
+  email_change_allowed: {{ .Values.account.email_change_allowed | default "true" }}
+  displayname_change_allowed: {{ .Values.account.displayname_change_allowed | default "true" }}
+  password_registration_enabled: {{ .Values.account.password_registration_enabled | default "false" }}
+  password_change_allowed: {{ .Values.account.password_change_allowed | default "true" }}
+  password_recovery_enabled: {{ .Values.account.password_recovery_enabled | default "false" }}
+
+policy:
+  data:
+    {{- if .Values.policy.data.hasAdminUsers }}
+    {{ with .Values.policy.data.admins }}
+    admin_users:
+      {{-  . | toYaml | nindent 6 }}
+    {{- end }}
+    # Client IDs which are allowed to ask for admin access with a
+    # client_credentials grant
+    {{- with .Values.policy.data.admin_clients }}
+    admin_clients:
+      {{- . | toYaml | nindent 6 }}
+    {{- end }}
+    {{- end }}
+    # Dynamic Client Registration
+    client_registration:
+      # don't require URIs to be on the same host. default: false
+      allow_host_mismatch: {{ .Values.policy.data.clientHostMismatch | default "false" }}
+      # allow non-SSL and localhost URIs. default: false
+      allow_insecure_uris: {{ .Values.policy.data.clientNoSsl | default "false" }}
+      # don't require clients to provide a client_uri. default: false
+      allow_missing_client_uri: {{ .Values.policy.data.clientMissingUri | default "false" }}
+      # don't require clients to provide a contacts field. default: false
+      allow_missing_contacts: {{ .Values.policy.data.missingContacts | default "false" }}
+
+    # Registration using passwords
+    passwords:
+      # minimum length of a password. default: ?
+      min_length: {{ .Values.policy.data.pass.minLength }}
+      # require at least one lowercase character in a password. default: false
+      require_lowercase: {{ .Values.policy.data.pass.reqLowCase | default "false" }}
+      # require at least one uppercase character in a password. default: false
+      require_uppercase: {{ .Values.policy.data.pass.reqUpCase | default "false" }}
+      # require at least one number in a password. default: false
+      require_number: {{ .Values.policy.data.pass.reqNum | default "false" }}
+
+rate_limiting:
+  {{- with .Values.rate_limiting.account_recovery }}
+  account_recovery:
+    per_ip:
+      burst: {{ .ip.burst }}
+      per_second: {{ .ip.second }}
+    per_address:
+      burst: {{ .address.burst }}
+      per_second: {{ .address.second }}
+  {{- end }}
+  {{- with .Values.rate_limiting.login }}
+  login:
+    per_ip:
+      burst: {{ .ip.burst }}
+      per_second: {{ .ip.second }}
+    per_account:
+      burst: {{ .account.burst }}
+      per_second: {{ .account.second }}
+   {{- end }}
+  {{- with .Values.rate_limiting.registration }}
+  registration:
+    burst: {{ .burst }}
+    per_second: {{ .second }}
+  {{- end }}
+
+{{- if .Values.telemetry.enabled }}
+telemetry:
+  tracing:
+    # List of propagators to use for extracting and injecting trace contexts
+    propagators: {{ .Values.telemetry.propagators }}
+
+    # The default: don't export traces
+    exporter: {{ .Values.telemetry.exporter }}
+    {{- if .Values.telemetry.useOTLP.enabled }}
+    endpoint: {{ .Values.telemetry.useOTLP.endpoint }}
+    {{- end }}
+  {{- if .Values.telemetry.metrics.enabled}}
+  metrics:
+    exporter: {{ .Values.telemetry.metrics.exporter }}
+    endpoint: {{ .Values.telemetry.metrics.enpoint }}
+  {{- end }}
+  {{- if .Values.telemetry.sentry.enabled}}
+  sentry:
+    dsn: {{ .Values.telemetry.sentry.dsn }}
+  {{- end }}
+{{- end }}
+
+email:
+  from: {{ .Values.email.from | squote }}
+  reply_to: {{ .Values.email.reply2 | squote }}
+  transport: {{ .Values.email.transport | default "blackhole" }}
+{{- if eq .Values.email.transport "smtp" }}
+  hostname: {{ .Values.email.hostname }}
+  mode: {{ .Values.email.mode }}
+  port: {{ .Values.email.port }}
+  username: {{ .Values.email.username }}
+  password: {{ .Values.email.password }}
+{{- end }}
+{{- if eq .Values.email.transport "sendmail" }}
+  command: {{ .Values.email.command }}
+{{- end }}
+
+{{- if .Values.upstream_oauth2.enabled | default false }}
+  # Sample configurations for popular providers can be found in the upstream provider setup guide.
+  # https://element-hq.github.io/matrix-authentication-service/setup/sso.html
+upstream_oauth2:
+  providers:
+  {{- range .Values.upstream_oauth2.providers }}
+    {{- if .id }}
+    - id: {{ .id | quote }}
+      {{- if .client_id }}
+      client_id: {{ .client_id | quote }}
+      {{- end }}
+    {{- else if .client_id }}
+    - client_id: {{ .client_id | quote }}
+    {{- end }}
+      {{- if .human_name }}
+      human_name: {{ .human_name }}
+      {{- end }}
+      {{- if .brand_name }}
+      brand_name: {{ .brand_name }}
+      {{- end }}
+      {{- if .discovery_uri }}
+      discovery_mode: {{ .discovery_mode }}
+      {{- end }}
+      {{- if .fetch_userinfo }}
+      fetch_userinfo: {{ .fetch_userinfo }}
+      {{- end }}
+      {{- if .token_endpoint_auth_method }}
+      token_endpoint_auth_method: {{ .token_endpoint_auth_method | quote }}
+      {{- end }}
+      {{- if .sign_in_with_apple }}
+      sign_in_with_apple:
+        private_key: |
+        {{- with .sign_in_with_apple.private_key }}
+          {{ . | indent 12 | trim }}
+        {{- end }}
+        team_id: {{ .sign_in_with_apple.team_id | quote }}
+        key_id: {{ .sign_in_with_apple.key_id | quote }}
+      {{- end }}
+      {{- if .client_secret }}
+      client_secret: {{ .client_secret | quote }}
+      {{- end }}
+      {{- if .authorization_endpoint }}
+      authorization_endpoint: {{ .authorization_endpoint | quote }}
+      {{- end }}
+      {{- if .token_endpoint }}
+      token_endpoint: {{ .token_endpoint | quote }}
+      {{- end }}
+      {{- if .userinfo_endpoint }}
+      userinfo_endpoint: {{ .userinfo_endpoint | quote }}
+      {{- end }}
+      scope: {{ .scope | quote }}
+      {{- if .response_mode }}
+      response_mode: {{ .response_mode | quote }}
+      {{- end }}
+      {{- if .discovery_mode}}
+      discovery_mode: {{ .discovery_mode | quote }}
+      {{- end }}
+      claims_imports:
+        {{- if .claims_imports.subject }}
+        subject:
+          template: {{ .claims_imports.subject.template | quote }}
+        {{- end }}
+        {{- if .claims_imports.displayname }}
+        displayname:
+          action: {{ .claims_imports.displayname.action }}
+          template: {{ .claims_imports.displayname.template | quote }}
+        {{- end }}
+        {{- if .claims_imports.localpart }}
+        localpart:
+          action: {{ .claims_imports.localpart.action }}
+        {{- end }}
+        {{- if .claims_imports.email }}
+        email:
+          action: {{ .claims_imports.email.action }}
+          template: {{ .claims_imports.email.template | quote }}
+          {{- if .claims_imports.email.set_email_verification }}
+          set_email_verification: {{ .claims_imports.email.set_email_verification | quote }}
+          {{- end }}
+        {{- end }}
+        {{- if .claims_imports.account_name }}
+        account_name:
+          template: {{ .claims_imports.account_name.template | quote }}
+        {{- end }}
+      {{- if .issuer }}
+      issuer: {{ .issuer | quote }}
+      {{- end }}
+      {{- if .jwks_uri }}
+      jwks_uri: {{ .jwks_uri | quote }}
+      {{- end }}
+  {{- end }}
+{{- end }}
